@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- # Part of Odoo Module Developed by Bizople Solutions Pvt. Ltd.
+# See LICENSE file for full copyright and licensing details. -->
+
+<odoo>
+
+    <data>
+
+        <!-- Tree View for Spiffy App Group -->
+        <record id="view_spiffy_app_group_tree" model="ir.ui.view">
+            <field name="name">spiffy.app.group.tree</field>
+            <field name="model">spiffy.app.group</field>
+            <field name="arch" type="xml">
+                <tree string="Spiffy App Groups" editable="bottom" js_class="button_in_tree">
+                    <field name="sequence"/>
+                    <field name="name"/>
+                    <field name="group_menu_icon" widget="image" options="{'preview_image': 'group_menu_icon'}" class="o_field_image o_image_64_max"/>
+                    <field name="group_menu_list_ids" widget="many2many_tags"/>
+                    <field name="use_group_icon"/>
+                    <field name="group_icon_class_name" invisible="use_group_icon==False" placeholder="Enter class name here.. (e.g. ri-class-name)"/>         
+                </tree>
+            </field>
+        </record>
+
+        
+
+        <!-- Action to Open the Spiffy App Group Views -->
+        <record id="action_spiffy_app_group" model="ir.actions.act_window">
+            <field name="name">Spiffy App Groups</field>
+            <field name="res_model">spiffy.app.group</field>
+            <field name="view_id" ref="view_spiffy_app_group_tree"/>
+            <field name="view_mode">tree</field>
+        </record>
+
+    </data>
+
+</odoo>
