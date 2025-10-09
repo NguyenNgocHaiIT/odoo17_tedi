@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- # Part of Odoo Module Developed by Bizople Solutions Pvt. Ltd.
+# See LICENSE file for full copyright and licensing details. -->
+<odoo>
+    <data noupdate="1">
+        <record id="backend_config_data" model="backend.config">
+            <field name="light_primary_bg_color">#0097a7</field>
+            <field name="light_primary_text_color">#ffffff</field>
+            <field name="google_font_family">Rubik</field>
+            <field name="google_font_links_ids" eval="[(0, 0, {
+                'name': 'Rubik',
+                'url': 'https://fonts.googleapis.com/css2?family=Rubik&amp;display=swap',
+                'is_selected': True
+            })]"/>
+        </record>
+    </data>
+</odoo>

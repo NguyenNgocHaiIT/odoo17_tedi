@@ -1,0 +1,168 @@
+// SCSS for .top_menu_horizontal
+.top_menu_horizontal {
+   
+    .apps-list {
+        .spiffy-menu-group{
+            padding: 20px 0;
+            width: 12.5%;
+            .top_menu_horizontal {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+            }
+            @media (max-width: 991.98px) {
+                width: 20%;
+            }
+            
+            .group_app_icon {
+                // width: 55px !important;
+                // height: 55px !important;
+                transition: 0.3s;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                &:hover {
+                    transform: translateY(-5px);
+                }
+            }
+            .group-menu-name, .menu-name{
+                font-size: 14px;
+                text-align: center;
+                margin-top: 6px;
+                color: #FFFFFF;
+            }
+           
+            
+            .submenu-group {
+                position: fixed;
+                z-index: 1041;
+                background-color: rgba(0, 0, 0, 0.8) !important;
+                color: var(--biz-theme-body-text-color);
+                box-shadow: var(--box-shadow-common);
+                left: 0;
+                right: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                &.active {
+                    display: flex !important;
+                    flex-direction: row;
+                    flex-wrap: wrap;
+                }
+                .app-group-popup{
+                    display: flex;
+                    flex-wrap: wrap;
+                    max-width: 480px;
+                    background-color: rgba(255, 255, 255, 0.28);
+                    margin-left: auto;
+                    margin-right: auto;
+                    border-radius: 25px;
+                    max-height: 500px;
+                    overflow-y: auto;
+                    @media (max-width: 768px) {
+                        max-width: 335px;
+                        max-height: 300px;
+                    }
+                    
+                }
+            
+                .spiffy-main-group {
+                    margin: 20px;
+                    padding: 5px;
+                    background-color: var(--submenu-background-color);
+                    border-radius: 4px;
+                    width: 80px;
+                    @media (max-width: 768px) {
+                        width: 70px;
+                    }
+            
+                    a {
+                        align-items: center;
+                        text-decoration: none;
+                        color: var(--biz-theme-body-text-color);
+                
+                        
+                        .app_icon{
+                            width: 65px;
+                            height: 65px;
+                            transition: 0.3s;
+                            &:hover {
+                                transform: translateY(-5px);
+                            }
+                        }
+                
+                        .menu-name {
+                            font-weight: bold;
+                        }
+                
+                        &:hover {
+                            background-color: var(--submenu-hover-background-color);
+                        }
+                    }
+                }
+            }
+            .app-box {
+                margin-bottom: 16px;
+            
+                a {
+                    text-align: center;
+                    text-decoration: none;
+                    color: inherit;
+                
+                    .app-image {
+                        margin-bottom: 8px;
+                        transition: 0.3;
+                        
+                    }
+                
+                    .app-name {
+                        font-weight: bold;
+                    }
+                
+                    &:hover {
+                        background-color: var(--app-hover-background-color); 
+                    }
+                }
+            
+                .fav_app_select {
+                    display: none;
+            
+                    &.active {
+                        display: block;
+                    }
+                }
+            }
+
+        }
+    }
+    @media (max-width: 575.98px) {
+        .appdrawer_section .apps-list .spiffy-menu-group {
+            width: 33.33%;
+            margin-right: 0px;
+        }
+    }
+}
+  
+  
+@media (max-width: 768px) {
+    .top_menu_horizontal {
+        .group-menu-name{
+            white-space: normal;
+            word-wrap: break-word;
+            width: 65px;
+        }
+        .submenu-group {
+            .spiffy-main-group {
+                margin: 20px;
+                padding: 3px;
+            }
+
+        }
+    }
+}
+  
