@@ -193,7 +193,7 @@
 <!--                                <field name="ngay_ky"/>-->
 <!--                                <field name="nguoi_ky"/>-->
                                 <field name="do_khan"/>
-                                <field name="dia_diem_chuyen_ngoai" attrs="{'invisible': [('chuyen_ngoai','=', False)]}"/>
+                                <field name="dia_diem_chuyen_ngoai" invisible="not chuyen_ngoai"/>
                                   <field name="loai_van_ban"/>
 <!--                                <field name="nguoi_soan_thao"/>-->
 <!--                                <field name="dv_theo_doi_chinh"/>-->
@@ -203,7 +203,7 @@
                                   <field name="so_hieu"/>
                                 <field name="ngay_ban_hanh"/>
 
-                                <field name="ngay_chuyen_ngoai" attrs="{'invisible': [('chuyen_ngoai','=', False)]}"/>
+                                <field name="ngay_chuyen_ngoai" invisible="not chuyen_ngoai"/>
                                  <field name="chuyen_ngoai" string="Chuyển ngoài"/>
 <!--                                <field name="so_di_theo_so"/>-->
 <!--                                <field name="so_vb"/>-->
@@ -341,7 +341,7 @@
 <!--                                <field name="ngay_ky"/>-->
 <!--                                <field name="nguoi_ky"/>-->
                                 <field name="do_khan"/>
-                                <field name="dia_diem_chuyen_ngoai" attrs="{'invisible': [('chuyen_ngoai','=', False)]}"/>
+                                <field name="dia_diem_chuyen_ngoai" invisible="not chuyen_ngoai"/>
 <!--                                <field name="nguoi_soan_thao"/>-->
 <!--                                <field name="dv_theo_doi_chinh"/>-->
 <!--                                <field name="phoi_hop_xu_ly"/>-->
@@ -350,7 +350,7 @@
                                   <field name="so_hieu"/>
                                 <field name="ngay_ban_hanh"/>
 
-                                <field name="ngay_chuyen_ngoai" attrs="{'invisible': [('chuyen_ngoai','=', False)]}"/>
+                                <field name="ngay_chuyen_ngoai" invisible="not chuyen_ngoai"/>
                                  <field name="chuyen_ngoai" string="Chuyển ngoài"/>
 <!--                                <field name="so_di_theo_so"/>-->
 <!--                                <field name="so_vb"/>-->
