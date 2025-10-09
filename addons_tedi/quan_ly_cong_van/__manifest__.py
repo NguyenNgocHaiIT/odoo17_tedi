@@ -5,7 +5,7 @@
 	'author': 'HaiNN',
 	'sequence': '1',
 	'summary': '',
-	'depends': [ 'windx_documents_management_preview'
+	'depends': [
 	],
 	'data': [
 		# 'data/cron.xml',
