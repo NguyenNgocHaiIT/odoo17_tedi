@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <menuitem
+                id="office_document_menu_root"
+                name="Quản lý công văn"
+                sequence="0"/>
+        <menuitem
+                id="document_ingoing_menu"
+                name="Công văn đến"
+                parent="office_document_menu_root"
+                action="action_open_office_document_ingoing"
+                sequence="1"/>
+        <menuitem
+                id="document_outgoing_menu"
+                name="Công văn đi"
+                parent="office_document_menu_root"
+                action="action_open_office_document_outgoing"
+                sequence="12"/>
+        <menuitem
+                id="document_resolution_menu"
+                name="Quyết định"
+                parent="office_document_menu_root"
+                action="action_open_office_document_resolution"
+                sequence="13"/>
+<!--        <menuitem-->
+<!--                id="bc_so_km_menu"-->
+<!--                name="Báo cáo số km từng xe"-->
+<!--                parent="fleet.menu_root"-->
+<!--                action="action_open_bc_so_km"-->
+<!--                sequence="5"/>-->
+    </data>
+</odoo>
