@@ -66,5 +66,19 @@
                 action="action_open_office_task"
                 sequence="16"
                 groups="base.group_system,quan_ly_cong_van.group_don_vi_xu_ly"/>
+
+        <menuitem
+                id="menu_office_document_setting"
+                name="Cấu hình"
+                parent="office_document_menu_root"
+                sequence="17"
+                groups="base.group_system"/>
+
+        <menuitem
+                id="menu_office_document_category"
+                name="Phân loại văn bản"
+                parent="menu_office_document_setting"
+                action="action_office_document_category"
+                sequence="1"/>
     </data>
 </odoo>

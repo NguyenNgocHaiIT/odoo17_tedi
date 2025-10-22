@@ -1,0 +1,39 @@
+<odoo>
+    <data>
+        <!-- Form view -->
+        <record id="view_office_document_category_form" model="ir.ui.view">
+            <field name="name">office.document.category.form</field>
+            <field name="model">office.document.category</field>
+            <field name="arch" type="xml">
+                <form string="Phân loại văn bản">
+                    <sheet>
+                        <group>
+                            <field name="code"/>
+                            <field name="name"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Tree view -->
+        <record id="view_office_document_category_tree" model="ir.ui.view">
+            <field name="name">office.document.category.tree</field>
+            <field name="model">office.document.category</field>
+            <field name="arch" type="xml">
+                <tree string="Phân loại văn bản">
+                    <field name="code"/>
+                    <field name="name"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_office_document_category" model="ir.actions.act_window">
+            <field name="name">Phân loại văn bản</field>
+            <field name="res_model">office.document.category</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="view_office_document_category_tree"/>
+        </record>
+    </data>
+</odoo>

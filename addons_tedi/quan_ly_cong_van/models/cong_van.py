@@ -269,9 +269,7 @@ class OfficeDocument(models.Model):
     lanh_dao_xu_ly = fields.Many2one('res.users', string='Lãnh đạo xử lý')
     lanh_dao_theo_doi = fields.Many2one('res.users', string='Lãnh đạo theo dõi')
     ngay_den = fields.Date('Ngày đến')
-    phan_loai_van_ban = fields.Selection([
-        ('outside', 'Công văn'),
-        ('inside', 'Văn bản nội bộ')], string='Phân loại văn bản')
+    phan_loai_van_ban = fields.Many2one('office.document.category', string='Phân loại văn bản', ondelete='set null')
     so_den_tong_hop = fields.Char('Số đến tổng hợp')
     so_di_tong_hop = fields.Char('Số công văn')
     so_hieu = fields.Char('Số hiệu')

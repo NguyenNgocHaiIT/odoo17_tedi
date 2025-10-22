@@ -23,13 +23,13 @@
                 <form delete="false" duplicate="false">
                     <header>
                         <button name="trinh_lanh_dao" string="Trình lãnh đạo" type="object"
-                                groups="quan_ly_cong_van.group_van_thu"/>
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"/>
                         <button name="approve" string="Duyệt" type="object"
-                                groups="quan_ly_cong_van.group_lanh_dao"/>
+                                groups="base.group_system, quan_ly_cong_van.group_lanh_dao"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
-                                groups="quan_ly_cong_van.group_lanh_dao, quan_ly_cong_van.group_van_thu"/>
+                                groups="base.group_system, quan_ly_cong_van.group_lanh_dao, quan_ly_cong_van.group_van_thu"/>
                         <button name="phan_phat" string="Phân phát" type="object"
-                                groups="quan_ly_cong_van.group_van_thu"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb != 'da_duyet'"/>
                     </header>
                     <sheet>
@@ -66,9 +66,9 @@
                                 <!--                                <field name="do_quan_trong"/>-->
                                 <!--                                <field name="nguoi_xu_ly_chinh"/>-->
                                 <field name="so_den_tong_hop_so_den_theo_so" invisible="1"/>
-                                <field name="but_phe"/>
-                                <field name="dv_xu_ly_chinh"/>
-                                <field name="dv_dong_xu_ly" widget="many2many_tags"/>
+                                <field name="but_phe" invisible="1"/>
+                                <field name="dv_xu_ly_chinh" readonly="1"/>
+                                <field name="dv_dong_xu_ly" widget="many2many_tags" readonly="1"/>
                             </group>
                         </group>
                         <label for="trich_yeu" string="Trích yếu"/>
@@ -152,8 +152,8 @@
             <field name="name">Văn bản đến</field>
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
-            <field name="domain">[('document_type','=','incoming'), ('phan_loai_van_ban','=','outside')]</field>
-            <field name="context">{'default_document_type': 'incoming', 'default_phan_loai_van_ban': 'outside'}</field>
+            <field name="domain">[('document_type','=','incoming')]</field>
+            <field name="context">{'default_document_type': 'incoming'}</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_ingoing_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_ingoing_form')})]"/>
@@ -181,11 +181,11 @@
                 <form delete="false" duplicate="false">
                     <header>
                         <button name="phan_phat" string="Phát hành" type="object"
-                                groups="quan_ly_cong_van.group_van_thu, quan_ly_cong_van.group_lanh_dao"/>
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu, quan_ly_cong_van.group_lanh_dao"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
-                                groups="quan_ly_cong_van.group_lanh_dao, quan_ly_cong_van.group_van_thu"/>
+                                groups="base.group_system, quan_ly_cong_van.group_lanh_dao, quan_ly_cong_van.group_van_thu"/>
                         <button name="phan_phat" string="Phân phát" type="object"
-                                groups="quan_ly_cong_van.group_van_thu, quan_ly_cong_van.group_lanh_dao"/>
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu, quan_ly_cong_van.group_lanh_dao"/>
                     </header>
                     <sheet>
                         <label for="trich_yeu" string="Trích yếu"/>
@@ -303,8 +303,8 @@
             <field name="name">Văn bản đi</field>
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
-            <field name="domain">[('document_type','=','outgoing'), ('phan_loai_van_ban','=','outside')]</field>
-            <field name="context">{'default_document_type': 'outgoing', 'default_phan_loai_van_ban': 'outside'}</field>
+            <field name="domain">[('document_type','=','outgoing')]</field>
+            <field name="context">{'default_document_type': 'outgoing'}</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_outgoing_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_outgoing_form')})]"/>
@@ -539,8 +539,8 @@
             <field name="name">Văn bản nội bộ đi</field>
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
-            <field name="domain">[('document_type','=','outgoing'), ('phan_loai_van_ban','=','inside')]</field>
-            <field name="context">{'default_document_type': 'outgoing', 'default_phan_loai_van_ban': 'inside'}</field>
+            <field name="domain">[('document_type','=','outgoing')]</field>
+            <field name="context">{'default_document_type': 'outgoing'}</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_outgoing_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_outgoing_form')})]"/>
@@ -550,8 +550,8 @@
             <field name="name">Văn bản nội bộ đến</field>
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
-            <field name="domain">[('document_type','=','incoming'), ('phan_loai_van_ban','=','inside')]</field>
-            <field name="context">{'default_document_type': 'incoming', 'default_phan_loai_van_ban': 'inside'}</field>
+            <field name="domain">[('document_type','=','incoming')]</field>
+            <field name="context">{'default_document_type': 'incoming'}</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_ingoing_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_ingoing_form')})]"/>
