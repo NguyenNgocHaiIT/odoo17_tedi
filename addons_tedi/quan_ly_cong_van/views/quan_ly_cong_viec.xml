@@ -19,7 +19,7 @@
             <form string="Giao việc">
                 <header>
                     <button name="action_confirm_task" string="Giao việc" type="object" />
-                    <button name="action_cancel_task" string="Huỷ" type="object" />
+                    <button string="Huỷ" class="btn btn-secondary" special="cancel"/>
                     <button name="action_create_document" string="Tạo công văn" type="object" />
                 </header>
                 <sheet>
