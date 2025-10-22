@@ -5,12 +5,13 @@
 	'author': 'HaiNN',
 	'sequence': '1',
 	'summary': '',
-	'depends': [
+	'depends': [ 'base', 'mail', 'hr'
 	],
 	'data': [
 		# 'data/cron.xml',
 		# 'data/ir_config_param.xml',
 		# 'security/group_report.xml',
+		'security/office_document_security.xml',
 		'security/ir.model.access.csv',
 		'views/cong_van.xml',
 		'views/menu.xml',

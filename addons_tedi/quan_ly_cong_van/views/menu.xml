@@ -1,33 +1,62 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <data>
+        <!-- Menu gốc: Quản lý công văn -->
         <menuitem
                 id="office_document_menu_root"
                 name="Quản lý công văn"
-                sequence="0"/>
+                sequence="0"
+                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao,quan_ly_cong_van.group_don_vi_xu_ly"/>
+
+        <!-- Menu Công văn đến -->
         <menuitem
                 id="document_ingoing_menu"
                 name="Công văn đến"
                 parent="office_document_menu_root"
                 action="action_open_office_document_ingoing"
-                sequence="1"/>
+                sequence="1"
+                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao,quan_ly_cong_van.group_don_vi_xu_ly"/>
+
+        <!-- Menu Công văn đi -->
         <menuitem
                 id="document_outgoing_menu"
                 name="Công văn đi"
                 parent="office_document_menu_root"
                 action="action_open_office_document_outgoing"
-                sequence="12"/>
+                sequence="12"
+                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao,quan_ly_cong_van.group_don_vi_xu_ly"/>
+
+        <!-- Menu Quyết định -->
         <menuitem
                 id="document_resolution_menu"
                 name="Quyết định"
                 parent="office_document_menu_root"
                 action="action_open_office_document_resolution"
-                sequence="13"/>
+                sequence="13"
+                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao,quan_ly_cong_van.group_don_vi_xu_ly"/>
 <!--        <menuitem-->
 <!--                id="bc_so_km_menu"-->
 <!--                name="Báo cáo số km từng xe"-->
 <!--                parent="fleet.menu_root"-->
 <!--                action="action_open_bc_so_km"-->
 <!--                sequence="5"/>-->
+
+        <!-- Menu văn bản nội bộ đến -->
+        <menuitem
+                id="document_internal_ingoing_menu"
+                name="Văn bản nội bộ đến"
+                parent="office_document_menu_root"
+                action="action_open_office_document_internal_ingoing"
+                sequence="14"
+                groups="base.group_system,quan_ly_cong_van.group_don_vi_xu_ly"/>
+
+        <!-- Menu văn bản nội bộ đi -->
+        <menuitem
+                id="document_internal_outgoing_menu"
+                name="Văn bản nội bộ đi"
+                parent="office_document_menu_root"
+                action="action_open_office_document_internal_outgoing"
+                sequence="15"
+                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao"/>
     </data>
 </odoo>
