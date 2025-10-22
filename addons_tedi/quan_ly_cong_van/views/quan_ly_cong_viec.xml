@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_office_task_tree" model="ir.ui.view">
+        <field name="name">office.task.tree</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="don_vi"/>
+                <field name="noi_dung"/>
+                <field name="thoi_han"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_office_task_form" model="ir.ui.view">
+        <field name="name">office.task.form</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <form string="Giao việc">
+                <header>
+                    <button name="action_confirm_task" string="Giao việc" type="object" />
+                    <button name="action_cancel_task" string="Huỷ" type="object" />
+                    <button name="action_create_document" string="Tạo công văn" type="object" />
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="don_vi"/>
+                        </group>
+                        <group>
+                            <field name="thoi_han"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="noi_dung"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_open_office_task" model="ir.actions.act_window">
+        <field name="name">Công việc</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_office_task_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_office_task_form')})]"/>
+    </record>
+
+</odoo>

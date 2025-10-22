@@ -58,5 +58,13 @@
                 action="action_open_office_document_internal_outgoing"
                 sequence="15"
                 groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao"/>
+
+        <menuitem
+                id="Office_task_menu"
+                name="Công việc"
+                parent="office_document_menu_root"
+                action="action_open_office_task"
+                sequence="16"
+                groups="base.group_system,quan_ly_cong_van.group_don_vi_xu_ly"/>
     </data>
 </odoo>
