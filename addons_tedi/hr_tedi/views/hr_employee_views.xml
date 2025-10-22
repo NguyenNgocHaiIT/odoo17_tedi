@@ -1,0 +1,238 @@
+<odoo>
+    <!-- Hiển thị Employee Code trên tiêu đề -->
+    <record id="view_hr_employee_form_tedi_min" model="ir.ui.view">
+        <field name="name">hr.employee.form.tedi.min</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[contains(@class,'oe_title')]//h1" position="after">
+                <h2 class="d-flex align-items-center text-muted mt-1 mb-0">
+                    <span class="me-2">Mã nhân viên:</span>
+                    <field name="employee_code" string="Mã nhân viên:" nolabel="1" readonly="1" class="oe_inline"/>
+                </h2>
+            </xpath>
+            <xpath expr="//field[@name='parent_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='coach_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='category_ids']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+
+    <!-- Replace notebook VÀ ẨN CÁC FIELD -->
+    <record id="hr_employee_view_form_inherit_profile" model="ir.ui.view">
+        <field name="name">hr.employee.view.form.inherit.profile.vn</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="priority" eval="99"/>
+        <field name="arch" type="xml">
+
+            <!-- Bổ sung field ẩn ở cấp form -->
+            <xpath expr="//form" position="inside">
+                <field name="parent_id" invisible="1"/>
+                <field name="child_ids" invisible="1"/>
+                <field name="work_contact_id" invisible="1"/>
+                <field name="last_activity" invisible="1"/>
+            </xpath>
+
+            <!-- ẨN CÁC FIELD TRƯỚC KHI REPLACE -->
+            <xpath expr="//field[@name='mobile_phone']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='work_phone']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='work_email']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='department_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='job_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='coach_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- Replace toàn bộ notebook -->
+            <xpath expr="//form/sheet/notebook" position="replace">
+                <notebook>
+                    <page string="Sơ yếu lý lịch" name="profile_vn">
+                        <group col="2">
+                            <group string="Thông tin cá nhân">
+                                <field name="name" string="Họ và tên"/>
+                                <field name="birthday" string="Sinh ngày"/>
+                                <field name="country_id" string="Quốc tịch"/>
+                                <field name="ethnicity"/>
+                                <field name="occupation"/>
+                                <field name="household_address"/>
+                            </group>
+                            <group string="">
+                                <field name="citizen_id" string="Số CMND"/>
+                                <field name="citizen_issue_date"/>
+                                <field name="citizen_issuer"/>
+                                <field name="phone_personal"/>
+                                <field name="bank_account" string="Tài khoản số"/>
+                                <field name="bank_name"/>
+                                <field name="email_personal" string="Email"/>
+                            </group>
+                        </group>
+                        <separator string="TRÌNH ĐỘ CHUYÊN MÔN"/>
+                        <field name="education_ids" nolabel="1" colspan="2"
+                               context="{'default_employee_id': active_id}">
+                            <tree editable="bottom" create="1" delete="1">
+                                <field name="stt" string="STT" readonly="1"/>
+                                <field name="school"/>
+                                <field name="major"/>
+                                <field name="years"/>
+                                <field name="degree"/>
+                                <field name="issue_date"/>
+                                <field name="attachment_ids" widget="many2many_binary" string="Đính kèm"/>
+                            </tree>
+                        </field>
+                        <separator string="CHỨNG CHỈ HÀNH NGHỀ"/>
+                        <field name="certificate_ids" nolabel="1" colspan="2"
+                               context="{'default_employee_id': active_id}">
+                            <tree editable="bottom" create="1" delete="1">
+                                <field name="stt" string="STT" readonly="1"/>
+                                <field name="cert_type"/>
+                                <field name="code"/>
+                                <field name="issuer"/>
+                                <field name="practice_field"/>
+                                <field name="rank"/>
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                                <field name="attachment_ids" widget="many2many_binary" string="Đính kèm"/>
+                            </tree>
+                        </field>
+                        <separator string="XUẤT - NHẬP CẢNH"/>
+                        <field name="trip_ids" nolabel="1" colspan="2" context="{'default_employee_id': active_id}">
+                            <tree editable="bottom" create="1" delete="1">
+                                <field name="stt" string="STT" readonly="1"/>
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                                <field name="purpose"/>
+                                <field name="country_id"/>
+                                <field name="cost"/>
+                                <field name="attachment_ids" widget="many2many_binary" string="Đính kèm"/>
+                            </tree>
+                        </field>
+                    </page>
+
+                    <page string="Quá trình công tác" name="work_process">
+                        <!-- ... nội dung tab Quá trình công tác ... -->
+                        <separator string="QUÁ TRÌNH CÔNG TÁC TẠI TEDI"/>
+                        <field name="work_process_tedi_ids" nolabel="1" colspan="2">
+                            <tree editable="bottom">
+                                <field name="decision_no"/>
+                                <field name="decision_date"/>
+                                <field name="content"/>
+                                <field name="department_from_id"/>
+                                <field name="department_to_id"/>
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                            </tree>
+                        </field>
+                        <separator string="QUÁ TRÌNH CÔNG TÁC TẠI ĐƠN VỊ CŨ"/>
+                        <field name="work_process_old_ids" nolabel="1" colspan="2">
+                            <tree editable="bottom">
+                                <field name="stt" readonly="1"/>
+                                <field name="company_name"/>
+                                <field name="work_address"/>
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                                <field name="position"/>
+                            </tree>
+                        </field>
+                    </page>
+
+                    <!-- NỘI DUNG MỚI ĐƯỢC THÊM VÀO ĐÂY -->
+                    <page string="Kinh nghiệm công việc" name="exp_vn">
+                        <separator string="KINH NGHIỆM CÔNG VIỆC LIÊN QUAN"/>
+                        <field name="experience_ids" nolabel="1" colspan="2">
+                            <tree editable="bottom">
+                                <field name="project_name"/>
+                                <field name="project_type"/>
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                                <field name="position"/>
+                                <field name="status" widget="badge" decoration-success="status == 'completed'"
+                                       decoration-info="status == 'in_progress'"
+                                       decoration-warning="status == 'pending'"/>
+                            </tree>
+                        </field>
+                    </page>
+
+                    <page string="Khen thưởng - Kỷ luật" name="reward_vn">
+                        <separator string="KHEN THƯỞNG - KỶ LUẬT"/>
+                        <field name="reward_discipline_ids" nolabel="1" colspan="2">
+                            <tree editable="bottom">
+                                <field name="decision_no"/>
+                                <field name="decision_date"/>
+                                <field name="decision_level"/>
+                                <field name="content"/>
+                            </tree>
+                        </field>
+                    </page>
+                    <page string="Đảng - Đoàn thể" name="union_vn">
+                        <group>
+                            <group>
+                                <group string="THÔNG TIN ĐẢNG VIÊN" colspan="2" col="2">
+                                    <field name="party_member"/>
+                                    <field name="party_join_date" invisible="not party_member"/>
+                                    <field name="party_official_date" invisible="not party_member"/>
+                                    <field name="party_title_id" invisible="not party_member"/>
+                                    <field name="party_cell_id" invisible="not party_member"/>
+                                    <field name="party_profile_no" invisible="not party_member"/>
+                                    <field name="party_card_no" invisible="not party_member"/>
+                                    <field name="party_medal_no" invisible="not party_member"/>
+                                </group>
+                            </group>
+
+                            <group>
+                                <group string="THÔNG TIN CÔNG ĐOÀN" colspan="2" col="2">
+                                    <field name="union_member"/>
+                                    <field name="union_join_date" invisible="not union_member"/>
+                                    <field name="union_profile_no" invisible="not union_member"/>
+                                    <field name="union_card_no" invisible="not union_member"/>
+                                </group>
+                                <group string="THÔNG TIN ĐOÀN THANH NIÊN" colspan="2" col="2">
+                                    <field name="youth_member"/>
+                                    <field name="youth_join_date" invisible="not youth_member"/>
+                                    <field name="youth_card_no" invisible="not youth_member"/>
+                                </group>
+                            </group>
+                        </group>
+                    </page>
+
+                    <page string="Quá trình đào tạo" name="training_vn">
+                        <separator string="QUÁ TRÌNH ĐÀO TẠO"/>
+                        <field name="training_ids" nolabel="1" colspan="2">
+                            <tree editable="bottom">
+                                <field name="stt" readonly="1"/>
+                                <field name="name"/>
+                                <field name="training_type"/>
+                                <field name="facility"/>
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                                <field name="training_form"/>
+                                <field name="status" widget="badge"
+                                       decoration-success="status == 'completed'"
+                                       decoration-info="status == 'in_progress'"
+                                       decoration-danger="status == 'canceled'"/>
+                            </tree>
+                        </field>
+                    </page>
+
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+</odoo>
+
