@@ -278,7 +278,11 @@ class OfficeDocument(models.Model):
     ngay_ban_hanh = fields.Date('Ngày ban hành')
     noi_gui = fields.Char('Nơi gửi')
     nguoi_ky = fields.Many2one('res.users', string='Người ký')
-    do_khan = fields.Char('Độ khẩn')
+    do_khan =  fields.Selection([
+        ('thap', 'Thấp'),
+        ('thuong', 'Thường'),
+        ('trung_binh', 'Trung bình'),
+        ('cao', 'Cao')], string='Độ khẩn', default='thuong')
     vb_nhan = fields.Char('Văn bản nhận')
     tt_vb = fields.Selection([
         ('draft', 'Nháp'),

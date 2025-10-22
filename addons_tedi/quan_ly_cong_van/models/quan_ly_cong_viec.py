@@ -56,7 +56,7 @@ class OfficeTask(models.Model):
         self.trang_thai = 'da_giao'
         return True
 
-    def action_cancel_task(self):
+    def action_delete_task(self):
         self.unlink()
         return {
             'type': 'ir.actions.act_window',

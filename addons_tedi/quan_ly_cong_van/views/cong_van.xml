@@ -65,7 +65,7 @@
                                 <!--                                <field name="chuc_vu"/>-->
                                 <!--                                <field name="do_quan_trong"/>-->
                                 <!--                                <field name="nguoi_xu_ly_chinh"/>-->
-                                <field name="so_den_tong_hop_so_den_theo_so"/>
+                                <field name="so_den_tong_hop_so_den_theo_so" invisible="1"/>
                                 <field name="but_phe"/>
                                 <field name="dv_xu_ly_chinh"/>
                                 <field name="dv_dong_xu_ly" widget="many2many_tags"/>
