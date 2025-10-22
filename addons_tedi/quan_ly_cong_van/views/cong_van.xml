@@ -181,11 +181,11 @@
                 <form delete="false" duplicate="false">
                     <header>
                         <button name="phan_phat" string="Phát hành" type="object"
-                                groups="quan_ly_cong_van.group_van_thu"/>
+                                groups="quan_ly_cong_van.group_van_thu, quan_ly_cong_van.group_lanh_dao"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
-                                groups="quan_ly_cong_van.group_lanh_dao"/>
+                                groups="quan_ly_cong_van.group_lanh_dao, quan_ly_cong_van.group_van_thu"/>
                         <button name="phan_phat" string="Phân phát" type="object"
-                                groups="quan_ly_cong_van.group_van_thu"/>
+                                groups="quan_ly_cong_van.group_van_thu, quan_ly_cong_van.group_lanh_dao"/>
                     </header>
                     <sheet>
                         <label for="trich_yeu" string="Trích yếu"/>
