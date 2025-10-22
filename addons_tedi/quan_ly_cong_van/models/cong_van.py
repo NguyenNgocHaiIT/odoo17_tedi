@@ -39,7 +39,7 @@ class PhanPhat(models.TransientModel):
         doc.write({
             'nguoi_xu_ly_chinh': self.nguoi_xu_ly_chinh.id if self.nguoi_xu_ly_chinh else False,
             'nguoi_dong_xu_ly': [(6, 0, self.nguoi_dong_xu_ly.ids)],
-            'tt_vb': 'Đã phân phát',
+            'tt_vb': 'da_phan_phat',
         })
 
         # Tạo detail2 chỉ với người nhận
@@ -280,7 +280,12 @@ class OfficeDocument(models.Model):
     nguoi_ky = fields.Many2one('res.users', string='Người ký')
     do_khan = fields.Char('Độ khẩn')
     vb_nhan = fields.Char('Văn bản nhận')
-    tt_vb = fields.Char('Trạng thái văn bản')
+    tt_vb = fields.Selection([
+        ('draft', 'Nháp'),
+        ('dang_trinh', 'Đang trình lãnh đạo'),
+        ('da_duyet', 'Đã duyệt'),
+        ('da_phan_phat', 'Đã phân phát')
+    ], string='Trạng thái văn bản', default='draft', tracking=True)
     dv_xu_ly_chinh = fields.Many2one('hr.department', string='Đơn vị xử lý chính')
     dv_dong_xu_ly = fields.Many2many(
         'hr.department',
@@ -379,7 +384,7 @@ class OfficeDocument(models.Model):
         self.ensure_one()
         if not self.lanh_dao_xu_ly:
             raise UserError("Vui lòng chọn lãnh đạo xử lý trước khi trình.")
-        self.tt_vb = 'Đang trình lãnh đạo'
+        self.tt_vb = 'dang_trinh'
         partner_ids = self.lanh_dao_xu_ly.partner_id.ids if self.lanh_dao_xu_ly and self.lanh_dao_xu_ly.partner_id else []
         self.message_post(
             body=f"Văn bản '{self.trich_yeu}' đã được trình lãnh đạo {self.lanh_dao_xu_ly.name if self.lanh_dao_xu_ly else 'Không xác định'}.",
@@ -391,7 +396,7 @@ class OfficeDocument(models.Model):
         self.ensure_one()
         if not self.lanh_dao_xu_ly:
             raise UserError("Vui lòng chọn lãnh đạo xử lý trước khi duyệt.")
-        self.tt_vb = 'Đã duyệt'
+        self.tt_vb = 'da_duyet'
         partner_ids = self.lanh_dao_xu_ly.partner_id.ids if self.lanh_dao_xu_ly and self.lanh_dao_xu_ly.partner_id else []
         self.message_post(
             body=f"Văn bản/Quyết định '{self.trich_yeu}' đã được duyệt bởi {self.lanh_dao_xu_ly.name if self.lanh_dao_xu_ly else 'Không xác định'}.",

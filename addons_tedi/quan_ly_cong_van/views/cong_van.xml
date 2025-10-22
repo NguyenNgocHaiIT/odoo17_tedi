@@ -30,7 +30,7 @@
                                 groups="quan_ly_cong_van.group_lanh_dao, quan_ly_cong_van.group_van_thu"/>
                         <button name="phan_phat" string="Phân phát" type="object"
                                 groups="quan_ly_cong_van.group_van_thu"
-                                attrs="{'invisible': [('state', '!=', 'da_duyet')]}"/>
+                                invisible="tt_vb != 'da_duyet'"/>
                     </header>
                     <sheet>
                         <group>
@@ -54,7 +54,7 @@
                                 <!--                                <field name="phoi_hop_xu_ly"/>-->
                             </group>
                             <group>
-                                <field name="tt_vb"/>
+                                <field name="tt_vb" readonly="1"/>
                                 <field name="lanh_dao_xu_ly"/>
 
 
