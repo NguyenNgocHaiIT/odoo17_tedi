@@ -67,8 +67,8 @@
                                 <!--                                <field name="nguoi_xu_ly_chinh"/>-->
                                 <field name="so_den_tong_hop_so_den_theo_so" invisible="1"/>
                                 <field name="but_phe" invisible="1"/>
-                                <field name="dv_xu_ly_chinh" readonly="1"/>
-                                <field name="dv_dong_xu_ly" widget="many2many_tags" readonly="1"/>
+                                <field name="dv_xu_ly_chinh" widget="many2many_tags" readonly="1" invisible="1"/>
+                                <field name="dv_dong_xu_ly" widget="many2many_tags" readonly="1" invisible="1"/>
                             </group>
                         </group>
                         <label for="trich_yeu" string="Trích yếu"/>
@@ -99,8 +99,8 @@
                             <page string="Ý kiến chỉ đạo">
                                 <group></group>
                                 <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
-                                <field name="detail1">
-                                    <tree editable="bottom">
+                                <field name="detail1" readonly="1">
+                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
                                         <field name="nguoi_nhap_y_kien"/>
                                         <field name="nhom_phong_ban"/>
                                         <field name="noi_dung_chi_dao"/>
@@ -109,8 +109,8 @@
                                 </field>
 
                                 <label for="detail3" string="XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG"/>
-                                <field name="detail3">
-                                    <tree editable="bottom">
+                                <field name="detail3" readonly="1">
+                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
                                         <field name="nguoi_nhap_y_kien"/>
                                         <field name="nhom_phong_ban"/>
                                         <field name="noi_dung_chi_dao"/>
@@ -121,10 +121,10 @@
                             </page>
                             <page string="Phân phát">
                                 <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
-                                <field name="detail2">
-                                    <tree editable="bottom">
+                                <field name="detail2" readonly="1">
+                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
                                         <field name="nguoi_nhap_y_kien" string="Họ tên"/>
-                                        <field name="noi_dung_chi_dao" string="Nội dung"/>
+                                        <field name="noi_dung_chi_dao" string="Trách nhiệm"/>
                                         <field name="nhom_phong_ban" string="Phòng ban"/>
                                         <field name="view_time" string="Thời gian đọc văn bản"/>
                                     </tree>
@@ -251,8 +251,8 @@
                             <page string="Ý kiến chỉ đạo">
                                 <group></group>
                                 <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
-                                <field name="detail1">
-                                    <tree editable="bottom">
+                                <field name="detail1" readonly="1">
+                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
                                         <field name="nguoi_nhap_y_kien"/>
                                         <field name="nhom_phong_ban"/>
                                         <field name="noi_dung_chi_dao"/>
@@ -261,8 +261,8 @@
                                 </field>
 
                                 <label for="detail3" string="XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG"/>
-                                <field name="detail3">
-                                    <tree editable="bottom">
+                                <field name="detail3" readonly="1">
+                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
                                         <field name="nguoi_nhap_y_kien"/>
                                         <field name="nhom_phong_ban"/>
                                         <field name="noi_dung_chi_dao"/>
@@ -273,10 +273,10 @@
                             </page>
                             <page string="Phân phát">
                                 <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
-                                <field name="detail2">
-                                    <tree editable="bottom">
+                                <field name="detail2" readonly="1">
+                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
                                         <field name="nguoi_nhap_y_kien" string="Họ tên"/>
-                                        <field name="noi_dung_chi_dao" string="Nội dung"/>
+                                        <field name="noi_dung_chi_dao" string="Trách nhiệm"/>
                                         <field name="nhom_phong_ban" string="Phòng ban"/>
                                         <field name="view_time" string="Thời gian đọc văn bản"/>
                                     </tree>
@@ -470,12 +470,12 @@
                         <group>
                             <group>
                                 <!--                                <field name="nhan_van_ban"/>-->
-                                <field name="don_vi_xu_ly_chinh"/>
+                                <field name="don_vi_xu_ly_chinh" widget="many2many_tags"/>
                                 <field name="don_vi_dong_xu_ly" widget="many2many_tags"/>
                             </group>
                             <group>
                                 <!--                                <field name="noi_nhan_ban_goc_luu_tru"/>-->
-                                <field name="nguoi_xu_ly_chinh"/>
+                                <field name="nguoi_xu_ly_chinh" widget="many2many_tags"/>
                                 <field name="nguoi_dong_xu_ly" widget="many2many_tags"/>
                             </group>
                             <!--                            <group string="Đơn vị nhận">-->
