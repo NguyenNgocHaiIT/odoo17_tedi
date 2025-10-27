@@ -9,3 +9,5 @@ access_hr_employee_reward_discipline,access.hr.employee.reward.discipline,model_
 access_hr_party_cell,access.hr.party.cell,model_hr_party_cell,base.group_user,1,1,1,1
 access_hr_party_title,access.hr.party.title,model_hr_party_title,base.group_user,1,1,1,1
 access_hr_employee_training,access.hr.employee.training,model_hr_employee_training,base.group_user,1,1,1,1
+access_hr_decision_user,access.hr.decision.user,model_hr_decision,base.group_user,1,0,0,0
+access_hr_decision_manager,access.hr.decision.manager,model_hr_decision,hr.group_hr_manager,1,1,1,1
