@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+
+        <record id="view_hr_tedi_vehicle_record_tree" model="ir.ui.view">
+            <field name="name">hr.tedi.vehicle.record.tree</field>
+            <field name="model">hr_tedi.vehicle.record</field>
+            <field name="arch" type="xml">
+                <tree string="Lý lịch xe">
+                    <field name="model_name"/>
+                    <field name="description"/>
+                    <field name="country_of_manufacture"/>
+                    <field name="license_plate"/>
+                    <field name="driver_id"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_hr_tedi_vehicle_record_form" model="ir.ui.view">
+            <field name="name">hr.tedi.vehicle.record.form</field>
+            <field name="model">hr_tedi.vehicle.record</field>
+            <field name="arch" type="xml">
+                <form string="Thông tin xe">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="driver_id"/>
+                                <field name="country_of_manufacture"/>
+                                <field name="model_name"/>
+                                <field name="license_plate"/>
+                                <field name="year_manufacture"/>
+                                <field name="year_in_use"/>
+                                <field name="vin_sn"/>
+                                <field name="engine_no"/>
+                                <field name="color"/>
+                            </group>
+                            <group>
+                                <field name="cylinder_capacity"/>
+                                <field name="original_cost"/>
+                                <field name="purchase_value"/>
+                                <field name="registration_fee"/>
+                                <field name="fuel_rate"/>
+                                <field name="oil_change_rate"/>
+                                <field name="description"/>
+                                <field name="note"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Lịch sử công tác">
+                                <field name="trip_history_ids" readonly="1">
+                                    <tree>
+                                        <!-- Các trường này phải tồn tại trong model hr_tedi.vehicle.registration -->
+                                        <field name="start_date"/>
+                                        <field name="end_date"/>
+                                        <field name="distance_km"/>
+                                        <field name="trip_type"/>
+                                        <field name="destination"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_hr_tedi_vehicle_registration" model="ir.actions.act_window">
+            <field name="name">Phiếu đăng ký xe</field>
+            <field name="res_model">hr_tedi.vehicle.registration</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_tedi_vehicle_record" model="ir.actions.act_window">
+            <field name="name">Lý lịch xe</field>
+            <field name="res_model">hr_tedi.vehicle.record</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="view_hr_tedi_vehicle_record_tree"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Chưa có lý lịch xe nào.
+                </p>
+                <p>
+                    Bấm "Mới" để thêm thông tin xe.
+                </p>
+            </field>
+        </record>
+
+        <record id="view_hr_tedi_vehicle_registration_tree" model="ir.ui.view">
+            <field name="name">hr.tedi.vehicle.registration.tree</field>
+            <field name="model">hr_tedi.vehicle.registration</field>
+            <field name="arch" type="xml">
+                <tree string="Phiếu đăng ký xe">
+                    <field name="requester_id"/>
+                    <field name="start_date"/>
+                    <field name="end_date"/>
+                    <field name="trip_type"/>
+                    <field name="destination"/>
+                    <field name="assigned_vehicle_id"/>
+                    <field name="driver_id"/>
+                    <field name="work_content"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_hr_tedi_vehicle_registration_form" model="ir.ui.view">
+            <field name="name">hr.tedi.vehicle.registration.form</field>
+            <field name="model">hr_tedi.vehicle.registration</field>
+            <field name="arch" type="xml">
+                <form string="Phiếu đăng ký xe">
+                    <header>
+                        <button name="action_approve" string="Duyệt" type="object" class="oe_highlight"/>
+                    </header>
+
+                    <sheet>
+                        <group col="2">
+                            <group>
+                                <field name="requester_id" string="Người đề nghị" readonly="1"/>
+                                <field name="trip_type" string="Loại công tác"/>
+                                <field name="assigned_vehicle_id" string="Phân công xe"/>
+                                <field name="num_passengers" string="Số người đi kèm"/>
+                                <field name="attachment_ids" string="Tệp đính kèm" widget="many2many_binary"/>
+                            </group>
+
+                            <group>
+                                <label for="start_date" string="Thời gian"/>
+                                <div class="o_row">
+                                    <field name="start_date" nolabel="1"/>
+                                    <span>-</span>
+                                    <field name="end_date" nolabel="1"/>
+                                </div>
+                                <field name="destination"/>
+                                <field name="distance_km"/>
+                            </group>
+                        </group>
+
+                        <group col="1">
+                            <field name="work_content" string="Nội dung công việc"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_hr_tedi_vehicle_repair_tree" model="ir.ui.view">
+            <field name="name">hr.tedi.vehicle.repair.tree</field>
+            <field name="model">hr_tedi.vehicle.repair</field>
+            <field name="arch" type="xml">
+                <tree string="Phiếu sửa chữa xe">
+                    <field name="name"/>
+                    <field name="vehicle_id"/>
+                    <field name="requester_id"/>
+                    <field name="request_date"/>
+                    <field name="cost"/>
+                    <field name="odometer"/>
+                    <field name="state"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_hr_tedi_vehicle_repair_form" model="ir.ui.view">
+            <field name="name">hr.tedi.vehicle.repair.form</field>
+            <field name="model">hr_tedi.vehicle.repair</field>
+            <field name="arch" type="xml">
+                <form string="Phiếu sửa chữa xe">
+                    <header>
+                        <button name="action_approve"
+                                string="Duyệt"
+                                type="object"
+                                class="oe_highlight"
+                                invisible="state != 'draft'"/>
+                        <button name="action_cancel"
+                                string="Hủy"
+                                type="object"
+                                invisible="state not in ['draft', 'approved']"/>
+                    </header>
+                    <sheet>
+                        <field name="state" invisible="1"/>
+
+                        <group>
+                            <group>
+                                <field name="vehicle_id" string="Thông tin xe"/>
+                                <field name="cost" force_save="1" string="Tổng chi phí"/>
+                                <field name="odometer" string="Số km trên đồng hồ"/>
+                            </group>
+                            <group>
+                                <field name="requester_id" string="Người đề nghị"/>
+                                <field name="request_date" string="Ngày đề nghị"/>
+                                <field name="attachment_ids" widget="many2many_binary" string="Tệp đính kèm"/>
+                            </group>
+                        </group>
+
+                        <group>
+                            <field name="note" string="Ghi chú thêm"/>
+                        </group>
+
+                        <notebook>
+                            <page string="Nội dung sửa chữa">
+                                <field name="repair_line_ids">
+                                    <tree editable="bottom">
+                                        <field name="sequence" string="STT" readonly="1"/>
+                                        <field name="name" string="Hạng mục sửa chữa"/>
+                                        <field name="price_unit" string="Chi phí"/>
+                                        <field name="note" string="Ghi chú"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_hr_tedi_vehicle_repair" model="ir.actions.act_window">
+            <field name="name">Phiếu sửa chữa xe</field>
+            <field name="res_model">hr_tedi.vehicle.repair</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="view_hr_tedi_vehicle_repair_tree"/>
+        </record>
+        <record id="view_hr_tedi_vehicle_odometer_report_tree" model="ir.ui.view">
+            <field name="name">hr.tedi.vehicle.odometer.report.tree</field>
+            <field name="model">hr_tedi.vehicle.odometer.report</field>
+            <field name="arch" type="xml">
+                <tree string="Báo cáo số km từng xe" editable="bottom">
+
+                    <field name="vehicle_id"/>
+                    <field name="month"/>
+                    <field name="year"/>
+                    <field name="odometer_total"/>
+                    <field name="odometer_start"/>
+                    <field name="odometer_end"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="action_hr_tedi_vehicle_odometer_report" model="ir.actions.act_window">
+            <field name="name">Báo cáo số km từng xe</field>
+            <field name="res_model">hr_tedi.vehicle.odometer.report</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="view_hr_tedi_vehicle_odometer_report_tree"/>
+        </record>
+    </data>
+</odoo>

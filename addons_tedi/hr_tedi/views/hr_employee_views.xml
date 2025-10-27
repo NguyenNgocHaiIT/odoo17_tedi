@@ -173,6 +173,7 @@
                         <separator string="KHEN THƯỞNG - KỶ LUẬT"/>
                         <field name="reward_discipline_ids" nolabel="1" colspan="2">
                             <tree editable="bottom">
+                                <field name="decision_id"/>
                                 <field name="decision_no"/>
                                 <field name="decision_date"/>
                                 <field name="decision_level"/>
