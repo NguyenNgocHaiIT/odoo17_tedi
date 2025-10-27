@@ -2,12 +2,18 @@ from datetime import timedelta
 from odoo import models, fields, api
 from odoo.exceptions import UserError
 import odoo
+import logging
+_logger = logging.getLogger(__name__)
 
 class PhanPhat(models.TransientModel):
     _name = 'office.document.phan.phat'
 
     nhan_van_ban = fields.Char('Nhận văn bản')
-    don_vi_xu_ly_chinh = fields.Many2one('hr.department', string='Đơn vị xử lý chính')
+    don_vi_xu_ly_chinh = fields.Many2many(
+        'hr.department',
+        'office_document_dv_xu_ly_chinh_rel',
+        'phanphat_id', 'department_id',
+        string='Đơn vị xử lý chính')
     don_vi_dong_xu_ly = fields.Many2many(
         'hr.department',
         'office_document_dv_dong_xu_ly_rel',
@@ -18,13 +24,74 @@ class PhanPhat(models.TransientModel):
     ca_nhan_dv_nhan = fields.Many2one('res.users', string='Cá nhân')
     nhom_nguoi_dung_dv_nhan = fields.Char('Nhóm người dùng')
     noi_nhan_ban_goc_luu_tru = fields.Char('Nơi nhận bản gốc lưu trữ')
-    nguoi_xu_ly_chinh = fields.Many2one('res.users', string='Người xử lý chính')
+    nguoi_xu_ly_chinh = fields.Many2many(
+        'res.users',
+        'office_document_nguoi_xu_ly_chinh_rel',
+        'phanphat_id', 'user_id',
+        string='Người xử lý chính')
     nguoi_dong_xu_ly = fields.Many2many(
         'res.users',
         'office_document_nguoi_dong_xu_ly_rel',
         'phanphat_id', 'user_id',
         string='Người đồng xử lý'
     )
+
+    @api.onchange('don_vi_xu_ly_chinh', 'don_vi_dong_xu_ly', 'nguoi_xu_ly_chinh', 'nguoi_dong_xu_ly')
+    def _onchange_don_vi_xu_ly(self):
+        """Filter Many2many dropdowns dynamically in-memory to prevent duplicates across fields."""
+        domain_don_vi_chinh = []
+        domain_don_vi_dong = []
+        domain_user_chinh = []
+        domain_user_dong = []
+
+        # Filter don_vi_dong_xu_ly: exclude ALL from don_vi_xu_ly_chinh and self.don_vi_dong_xu_ly
+        excluded_dept_ids = self.don_vi_xu_ly_chinh.ids + self.don_vi_dong_xu_ly.ids
+        if excluded_dept_ids:
+            domain_don_vi_dong = [('id', 'not in', excluded_dept_ids)]
+
+        # Filter don_vi_xu_ly_chinh: exclude ALL from don_vi_dong_xu_ly and self.don_vi_xu_ly_chinh
+        excluded_dept_ids = self.don_vi_dong_xu_ly.ids + self.don_vi_xu_ly_chinh.ids
+        if excluded_dept_ids:
+            domain_don_vi_chinh = [('id', 'not in', excluded_dept_ids)]
+
+        # Filter nguoi_xu_ly_chinh: based on don_vi_xu_ly_chinh, exclude from nguoi_dong_xu_ly and self
+        excluded_user_ids = self.nguoi_dong_xu_ly.ids + self.nguoi_xu_ly_chinh.ids
+        if self.don_vi_xu_ly_chinh:
+            domain_user_chinh = [('employee_ids.department_id', 'in', self.don_vi_xu_ly_chinh.ids)]
+            if excluded_user_ids:
+                domain_user_chinh.append(('id', 'not in', excluded_user_ids))
+        else:
+            domain_user_chinh = [('id', '=', False)]  # No departments selected → empty dropdown
+
+        # Filter nguoi_dong_xu_ly: based on don_vi_dong_xu_ly, exclude from nguoi_xu_ly_chinh and self
+        excluded_user_ids = self.nguoi_xu_ly_chinh.ids + self.nguoi_dong_xu_ly.ids
+        if self.don_vi_dong_xu_ly:
+            domain_user_dong = [('employee_ids.department_id', 'in', self.don_vi_dong_xu_ly.ids)]
+            if excluded_user_ids:
+                domain_user_dong.append(('id', 'not in', excluded_user_ids))
+        else:
+            domain_user_dong = [('id', '=', False)]  # No departments selected → empty dropdown
+
+        # Reset nguoi_xu_ly_chinh: filter in-memory to keep only valid users (no DB search)
+        if self.nguoi_xu_ly_chinh and self.don_vi_xu_ly_chinh:
+            self.nguoi_xu_ly_chinh = self.nguoi_xu_ly_chinh.filtered(
+                lambda u: u.employee_ids[:1].department_id in self.don_vi_xu_ly_chinh
+            )
+
+        # Reset nguoi_dong_xu_ly: filter in-memory to keep only valid users (no DB search)
+        if self.nguoi_dong_xu_ly and self.don_vi_dong_xu_ly:
+            self.nguoi_dong_xu_ly = self.nguoi_dong_xu_ly.filtered(
+                lambda u: u.employee_ids[:1].department_id in self.don_vi_dong_xu_ly
+            )
+
+        return {
+            'domain': {
+                'don_vi_xu_ly_chinh': domain_don_vi_chinh,
+                'don_vi_dong_xu_ly': domain_don_vi_dong,
+                'nguoi_xu_ly_chinh': domain_user_chinh,
+                'nguoi_dong_xu_ly': domain_user_dong,
+            }
+        }
 
     def phan_phat(self):
         doc_id = self.env.context.get('active_id')
@@ -35,23 +102,25 @@ class PhanPhat(models.TransientModel):
         if not doc.exists():
             return
 
-        # Cập nhật văn bản (chỉ người nhận)
+        # Ghi các Many2many vào văn bản
         doc.write({
-            'nguoi_xu_ly_chinh': self.nguoi_xu_ly_chinh.id if self.nguoi_xu_ly_chinh else False,
+            'dv_xu_ly_chinh': [(6, 0, self.don_vi_xu_ly_chinh.ids)],
+            'dv_dong_xu_ly': [(6, 0, self.don_vi_dong_xu_ly.ids)],
+            'nguoi_xu_ly_chinh': [(6, 0, self.nguoi_xu_ly_chinh.ids)],
             'nguoi_dong_xu_ly': [(6, 0, self.nguoi_dong_xu_ly.ids)],
             'tt_vb': 'da_phan_phat',
         })
 
-        # Tạo detail2 chỉ với người nhận
+        # Tạo detail2
         lines_to_create = []
 
-        if self.nguoi_xu_ly_chinh:
-            if not doc.detail2.filtered(lambda l: l.nguoi_nhap_y_kien == self.nguoi_xu_ly_chinh):
+        for user in self.nguoi_xu_ly_chinh:
+            if not doc.detail2.filtered(lambda l: l.nguoi_nhap_y_kien == user):
                 lines_to_create.append({
                     'office_document_id': doc.id,
-                    'nguoi_nhap_y_kien': self.nguoi_xu_ly_chinh.id,
-                    'nhom_phong_ban': self.nguoi_xu_ly_chinh.employee_ids[
-                                      :1].department_id.name if self.nguoi_xu_ly_chinh.employee_ids else 'Không xác định',
+                    'nguoi_nhap_y_kien': user.id,
+                    'nhom_phong_ban': user.employee_ids[
+                                      :1].department_id.name if user.employee_ids else 'Không xác định',
                     'noi_dung_chi_dao': 'Xử lý chính',
                     'thoi_diem_chi_dao': fields.Datetime.now(),
                 })
@@ -70,10 +139,9 @@ class PhanPhat(models.TransientModel):
         if lines_to_create:
             self.env['office.document.detail2'].create(lines_to_create)
 
-        # Gửi thông báo cho người nhận
+        # Gửi thông báo
         partner_ids = []
-        if self.nguoi_xu_ly_chinh and self.nguoi_xu_ly_chinh.partner_id:
-            partner_ids.append(self.nguoi_xu_ly_chinh.partner_id.id)
+        partner_ids += [u.partner_id.id for u in self.nguoi_xu_ly_chinh if u.partner_id]
         partner_ids += [u.partner_id.id for u in self.nguoi_dong_xu_ly if u.partner_id]
 
         doc.message_post(
@@ -191,7 +259,7 @@ class OfficeDocumentDetail2(models.Model):
         compute='_compute_nhom_phong_ban',
         store=True  # Nếu muốn lưu giá trị vào DB
     )
-    noi_dung_chi_dao = fields.Char('Nội dung')
+    noi_dung_chi_dao = fields.Char('Trách nhiệm')
     thoi_diem_chi_dao = fields.Datetime('Thời điểm')
     view_time = fields.Datetime('Thời gian xem', readonly=True)
     office_document_id = fields.Many2one('office.document')
@@ -269,16 +337,18 @@ class OfficeDocument(models.Model):
     lanh_dao_xu_ly = fields.Many2one('res.users', string='Lãnh đạo xử lý')
     lanh_dao_theo_doi = fields.Many2one('res.users', string='Lãnh đạo theo dõi')
     ngay_den = fields.Date('Ngày đến')
-    phan_loai_van_ban = fields.Selection([
-        ('outside', 'Công văn'),
-        ('inside', 'Văn bản nội bộ')], string='Phân loại văn bản')
+    phan_loai_van_ban = fields.Many2one('office.document.category', string='Phân loại văn bản', ondelete='set null')
     so_den_tong_hop = fields.Char('Số đến tổng hợp')
     so_di_tong_hop = fields.Char('Số công văn')
     so_hieu = fields.Char('Số hiệu')
     ngay_ban_hanh = fields.Date('Ngày ban hành')
     noi_gui = fields.Char('Nơi gửi')
     nguoi_ky = fields.Many2one('res.users', string='Người ký')
-    do_khan = fields.Char('Độ khẩn')
+    do_khan =  fields.Selection([
+        ('thap', 'Thấp'),
+        ('thuong', 'Thường'),
+        ('trung_binh', 'Trung bình'),
+        ('cao', 'Cao')], string='Độ khẩn', default='thuong')
     vb_nhan = fields.Char('Văn bản nhận')
     tt_vb = fields.Selection([
         ('draft', 'Nháp'),
@@ -286,7 +356,12 @@ class OfficeDocument(models.Model):
         ('da_duyet', 'Đã duyệt'),
         ('da_phan_phat', 'Đã phân phát')
     ], string='Trạng thái văn bản', default='draft', tracking=True)
-    dv_xu_ly_chinh = fields.Many2one('hr.department', string='Đơn vị xử lý chính')
+    dv_xu_ly_chinh = fields.Many2many(
+        'hr.department',
+        'dv_xu_ly_chinh_rel',
+        'document_id',
+        'department_id',
+        string='Đơn vị xử lý chính')
     dv_dong_xu_ly = fields.Many2many(
         'hr.department',
         'office_doc_donvi_rel',
@@ -314,7 +389,12 @@ class OfficeDocument(models.Model):
     ngay_ky = fields.Date('Ngày ký')
     chuc_vu = fields.Char('Chức vụ')
     do_quan_trong = fields.Char('Độ quan trọng')
-    nguoi_xu_ly_chinh = fields.Many2one('res.users', string='Người xử lý chính')
+    nguoi_xu_ly_chinh = fields.Many2many(
+        'res.users',
+        'nguoi_xu_ly_chinh_rel',
+        'document_id',
+        'user_id',
+        string='Người xử lý chính')
     nguoi_dong_xu_ly = fields.Many2many(
         'res.users',
         'office_doc_user_rel',
@@ -341,8 +421,8 @@ class OfficeDocument(models.Model):
     def log(self):
         import pprint
         vals = {
-            'dv_xu_ly_chinh': self.don_vi_xu_ly_chinh.id if self.don_vi_xu_ly_chinh else False,
-            'dv_dong_xu_ly': self.don_vi_dong_xu_ly.id if self.don_vi_dong_xu_ly else False,
+            'dv_xu_ly_chinh': self.dv_xu_ly_chinh.id if self.dv_xu_ly_chinh else False,
+            'dv_dong_xu_ly': self.dv_dong_xu_ly.id if self.dv_dong_xu_ly else False,
             'nguoi_xu_ly_chinh': self.nguoi_xu_ly_chinh.id if self.nguoi_xu_ly_chinh else False,
             'nguoi_dong_xu_ly': self.nguoi_dong_xu_ly.id if self.nguoi_dong_xu_ly else False,
         }

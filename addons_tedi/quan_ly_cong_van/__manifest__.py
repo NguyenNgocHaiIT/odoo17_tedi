@@ -15,6 +15,7 @@
 		'security/ir.model.access.csv',
 		'views/quan_ly_cong_viec.xml',
 		'views/cong_van.xml',
+		'views/cau_hinh.xml',
 		'views/menu.xml',
 		# 'views/menu_crm_agent.xml',
 		# 'views/inherit_sh_medical_health_center_service_views.xml',
