@@ -5,8 +5,7 @@
         <menuitem
                 id="office_document_menu_root"
                 name="Quản lý công văn"
-                sequence="0"
-                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao,quan_ly_cong_van.group_don_vi_xu_ly"/>
+                sequence="0"/>
 
         <!-- Menu Công văn đến -->
         <menuitem
@@ -14,8 +13,7 @@
                 name="Công văn đến"
                 parent="office_document_menu_root"
                 action="action_open_office_document_ingoing"
-                sequence="1"
-                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao,quan_ly_cong_van.group_don_vi_xu_ly"/>
+                sequence="1"/>
 
         <!-- Menu Công văn đi -->
         <menuitem
@@ -23,8 +21,7 @@
                 name="Công văn đi"
                 parent="office_document_menu_root"
                 action="action_open_office_document_outgoing"
-                sequence="12"
-                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao,quan_ly_cong_van.group_don_vi_xu_ly"/>
+                sequence="12"/>
 
         <!-- Menu Quyết định -->
         <menuitem
@@ -58,14 +55,6 @@
                   parent="fleet_management_menu_root"
                   action="action_hr_tedi_vehicle_odometer_report"
                   sequence="50"/>
-                sequence="13"
-                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao,quan_ly_cong_van.group_don_vi_xu_ly"/>
-<!--        <menuitem-->
-<!--                id="bc_so_km_menu"-->
-<!--                name="Báo cáo số km từng xe"-->
-<!--                parent="fleet.menu_root"-->
-<!--                action="action_open_bc_so_km"-->
-<!--                sequence="5"/>-->
 
         <!-- Menu văn bản nội bộ đến -->
         <menuitem
@@ -73,8 +62,7 @@
                 name="Văn bản nội bộ đến"
                 parent="office_document_menu_root"
                 action="action_open_office_document_internal_ingoing"
-                sequence="14"
-                groups="base.group_system,quan_ly_cong_van.group_don_vi_xu_ly"/>
+                sequence="14"/>
 
         <!-- Menu văn bản nội bộ đi -->
         <menuitem
@@ -82,16 +70,14 @@
                 name="Văn bản nội bộ đi"
                 parent="office_document_menu_root"
                 action="action_open_office_document_internal_outgoing"
-                sequence="15"
-                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao"/>
+                sequence="15"/>
 
         <menuitem
                 id="Office_task_menu"
                 name="Công việc"
                 parent="office_document_menu_root"
                 action="action_open_office_task"
-                sequence="16"
-                groups="base.group_system,quan_ly_cong_van.group_don_vi_xu_ly"/>
+                sequence="16"/>
 
         <menuitem
                 id="menu_office_document_setting"
