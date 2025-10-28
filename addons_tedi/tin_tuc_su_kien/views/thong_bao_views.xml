@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_notify_event_tree" model="ir.ui.view">
+        <field name="name">notify.event.tree</field>
+        <field name="model">notify.event</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name" string="Tên sự kiện"/>
+                <field name="type" string="Loại thông báo"/>
+                <field name="create_user" string="Người tạo"/>
+                <field name="create_date" string="Ngày tạo"/>
+                <field name="state" string="Trạng thái"/>
+                <field name="confirm_user" string="Người duyệt"/>
+                <field name="sent" string="Đã gửi thông báo"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_notify_event_form" model="ir.ui.view">
+        <field name="name">notify.event.form</field>
+        <field name="model">notify.event</field>
+        <field name="arch" type="xml">
+            <form delete="false" duplicate="false">
+                <header>
+                    <button name="approve" string="Duyệt" type="object"
+                            groups="base.group_system"/>
+                    <button name="action_submit_leader" string="Trình lãnh đạo" type="object"
+                            class="btn btn-primary"
+                            groups="base.group_system"/>
+                    <button name="action_save_draft" string="Lưu nháp" type="object"
+                            class="btn btn-secondary"
+                            groups="base.group_system"/>
+                    <button name="action_send_notification" string="Gửi thông báo" type="object"
+                            class="btn btn-success"
+                            groups="base.group_system"/>
+                </header>
+
+                <style>
+                    .fixed-label {
+                    display: block;
+                    width: 120px;
+                    margin: 0;
+                    align-self: flex-start;
+                    text-align: left;
+                    padding-right: 8px;
+                    }
+                </style>
+
+                <sheet>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+                        <!-- Cột bên trái -->
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+
+                            <!-- Nội dung cuộc họp -->
+                            <div style="display: flex; align-items: center;">
+                                <label for="name" string="Tiêu đề" class="fixed-label o_form_label"/>
+                                <field name="name"
+                                       style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
+                            </div>
+
+                            <div style="display: flex; align-items: center;">
+                                <label for="type" string="Loại thông báo" class="fixed-label o_form_label"/>
+                                <field name="type"
+                                       style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
+                            </div>
+
+                            <div style="display: flex; align-items: center;">
+                                <label for="create_date" string="Ngày ban hành" class="fixed-label o_form_label"/>
+                                <field name="create_date"
+                                       style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
+                            </div>
+
+                            <div style="display: flex; align-items: center;">
+                                <label for="content" string="Nội dung" class="fixed-label o_form_label"/>
+                                <field name="content"
+                                       style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
+                            </div>
+
+                        </div>
+
+                        <!-- Cột bên phải -->
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <div style="display: flex; align-items: center;">
+                                <label for="send_all" string="Gửi toàn bộ nhân viên" class="fixed-label o_form_label"/>
+                                <field name="send_all"
+                                       style="flex: 1; border: none; padding: 4px;"/>
+                            </div>
+
+                            <div style="display: flex; align-items: center;">
+                                <label for="send_indivisual" string="Gửi cho cá nhân" class="fixed-label o_form_label"/>
+                                <field name="send_indivisual" widget="many2many_tags"
+                                       style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
+                            </div>
+
+                            <div style="display: flex; align-items: center;">
+                                <label for="send_department" string="Gửi cho phòng ban"
+                                       class="fixed-label o_form_label"/>
+                                <field name="send_department" widget="many2many_tags"
+                                       style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
+                            </div>
+
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_open_notify_event" model="ir.actions.act_window">
+        <field name="name">Thông báo</field>
+        <field name="res_model">notify.event</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_notify_event_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_notify_event_form')})]"/>
+    </record>
+
+    <record id="view_office_notify_type_form" model="ir.ui.view">
+        <field name="name">notify.type.form</field>
+        <field name="model">notify.type</field>
+        <field name="arch" type="xml">
+            <form string="Loại thông báo">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tree view -->
+    <record id="view_office_notify_type_tree" model="ir.ui.view">
+        <field name="name">notify.type.tree</field>
+        <field name="model">notify.type</field>
+        <field name="arch" type="xml">
+            <tree string="Loại thông báo">
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_office_notify_type" model="ir.actions.act_window">
+        <field name="name">Loại thông báo</field>
+        <field name="res_model">notify.type</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_office_notify_type_tree"/>
+    </record>
+</odoo>

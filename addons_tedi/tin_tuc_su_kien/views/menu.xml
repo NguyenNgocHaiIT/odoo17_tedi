@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <menuitem
+                id="menu_event_root"
+                name="Quản lý sự kiện"
+                sequence="10"
+        />
+        <menuitem
+                id="menu_event_event"
+                name="Sự kiện"
+                parent="menu_event_root"
+                action="action_open_event_event"
+                sequence="1"
+        />
+
+        <menuitem
+                id="menu_notify_event"
+                name="Thông báo"
+                parent="menu_event_root"
+                action="action_open_notify_event"
+                sequence="10"
+        />
+
+        <menuitem
+                id="menu_website_post"
+                name="Website"
+                parent="menu_event_root"
+                action="action_open_website_post"
+                sequence="11"
+        />
+
+        <menuitem
+                id="menu_setting_event"
+                name="Cấu hình"
+                parent="menu_event_root"
+                sequence="14"
+        />
+
+        <menuitem
+                id="menu_notify_type"
+                name="Loại thông báo"
+                parent="menu_setting_event"
+                action="action_office_notify_type"
+                sequence="1"
+        />
+
+        <menuitem
+                id="menu_post_type"
+                name="Loại tin tức"
+                parent="menu_setting_event"
+                action="action_office_post_type"
+                sequence="2"
+        />
+
+    </data>
+</odoo>

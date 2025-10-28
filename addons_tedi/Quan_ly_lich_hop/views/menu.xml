@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <!-- Menu gốc: Quản lý lịch họp -->
+        <menuitem
+                id="menu_calendar_root"
+                name="Quản lý lịch họp"
+                sequence="10"
+                groups="base.group_user"
+        />
+
+        <!-- Menu con: Lịch họp -->
+        <menuitem
+                id="menu_calendar_event"
+                name="Lịch họp"
+                parent="menu_calendar_root"
+                action="action_open_calendar"
+                sequence="1"
+                groups="base.group_user"
+        />
+
+        <menuitem
+                id="menu_calendar_room_event"
+                name="Lịch phòng họp"
+                parent="menu_calendar_root"
+                action="action_open_calendar_room_event"
+                sequence="2"
+                groups="base.group_user"
+        />
+
+        <menuitem
+                id="menu_calendar_outside_event"
+                name="Lịch công tác"
+                parent="menu_calendar_root"
+                action="action_open_calendar_outside_event"
+                sequence="3"
+                groups="base.group_user"
+        />
+
+        <menuitem
+                id="menu_calendar_setting"
+                name="Cấu hình"
+                parent="menu_calendar_root"
+                sequence="10"
+                groups="base.group_user"
+        />
+
+        <!-- MENU cho RoomMaterials -->
+        <menuitem
+                id="menu_room_materials"
+                name="Vật dụng phòng họp"
+                parent="menu_calendar_setting"
+                action="action_room_materials"
+                sequence="10"
+                groups="base.group_user"
+        />
+
+        <!-- MENU cho RoomRoom -->
+        <menuitem
+                id="menu_room_room"
+                name="Phòng họp"
+                parent="menu_calendar_setting"
+                action="action_room_room"
+                sequence="11"
+                groups="base.group_user"
+        />
+
+        <menuitem
+                id="menu_calendar_location"
+                name="Địa điểm công tác"
+                parent="menu_calendar_setting"
+                action="action_calendar_location"
+                sequence="12"
+                groups="base.group_user"
+        />
+    </data>
+</odoo>
