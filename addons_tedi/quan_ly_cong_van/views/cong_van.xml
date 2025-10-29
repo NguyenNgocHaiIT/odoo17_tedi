@@ -35,7 +35,7 @@
                     <sheet>
                         <group>
                             <group>
-                                <field name="so_den_tong_hop" string="Số công văn"/>
+                                <field name="so_den_tong_hop" string="Số công văn" readonly="1"/>
                                 <field name="so_hieu"/>
                                 <field name="don_vi_ban_hanh"/>
                                 <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách"/>
@@ -192,14 +192,14 @@
                         <field name="trich_yeu"/>
                         <group>
                             <group>
-                                <field name="so_di_tong_hop"/>
+                                <field name="so_di_tong_hop" readonly="1"/>
                                 <field name="don_vi_ban_hanh"/>
                                 <!--                                <field name="don_vi_soan_thao"/>-->
 
                                 <!--                                <field name="ngay_ky"/>-->
                                 <!--                                <field name="nguoi_ky"/>-->
                                 <field name="do_khan"/>
-                                <field name="loai_van_ban"/>
+                                <field name="phan_loai_van_ban"/>
                                 <!--                                <field name="nguoi_soan_thao"/>-->
                                 <!--                                <field name="dv_theo_doi_chinh"/>-->
                                 <!--                                <field name="phoi_hop_xu_ly"/>-->

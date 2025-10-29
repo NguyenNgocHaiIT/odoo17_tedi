@@ -1,6 +1,6 @@
 from datetime import timedelta
 from odoo import models, fields, api
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 import odoo
 import logging
 _logger = logging.getLogger(__name__)
@@ -345,10 +345,9 @@ class OfficeDocument(models.Model):
     noi_gui = fields.Char('Nơi gửi')
     nguoi_ky = fields.Many2one('res.users', string='Người ký')
     do_khan =  fields.Selection([
-        ('thap', 'Thấp'),
-        ('thuong', 'Thường'),
-        ('trung_binh', 'Trung bình'),
-        ('cao', 'Cao')], string='Độ khẩn', default='thuong')
+        ('khan', 'Khẩn'),
+        ('mat', 'Mật'),
+        ('hoa_toc', 'Hỏa tốc')], string='Độ khẩn', default='khan')
     vb_nhan = fields.Char('Văn bản nhận')
     tt_vb = fields.Selection([
         ('draft', 'Nháp'),
@@ -374,7 +373,7 @@ class OfficeDocument(models.Model):
     ca_nhan_dv_nhan = fields.Many2one('res.users', string='Cá nhân')
     nhom_nguoi_dung_dv_nhan = fields.Char('Nhóm người dùng')
     nguoi_theo_doi = fields.Many2one('res.users', string='Người theo dõi')
-    ngay_bat_dau = fields.Date('Ngày bắt đầu')
+    ngay_bat_dau = fields.Date('Ngày bắt đầu', default=fields.Date.context_today)
     ho_so_cong_viec = fields.Char('Hồ sơ công việc')
     attachment = fields.Binary('Tài liệu')
     note = fields.Text('Ghi chú')
@@ -525,7 +524,8 @@ class OfficeDocument(models.Model):
 
     def _update_document_numbers(self, vals, is_write=False):
         """
-        Cập nhật so_den_tong_hop và so_di_tong_hop dựa trên phan_loai_van_ban.code
+        Cập nhật so_den_tong_hop và so_di_tong_hop theo format:
+        <Năm hiện tại>-<Mã loại công văn>-<STT>
         """
         phan_loai_id = vals.get('phan_loai_van_ban')
         if not phan_loai_id:
@@ -536,27 +536,28 @@ class OfficeDocument(models.Model):
             raise UserError("Phân loại văn bản chưa có mã (code)!")
 
         code = phan_loai.code
-        seq_prefix_den = f'office.document.in.{code}'  # Số đến
-        seq_prefix_di = f'office.document.out.{code}'  # Số đi
+        current_year = fields.Date.today().year
 
         # Tạo hoặc lấy sequence cho số đến
+        seq_prefix_den = f'den.{current_year}.{code}'  # Mã sequence
         seq_den = self.env['ir.sequence'].sudo().search([('code', '=', seq_prefix_den)], limit=1)
         if not seq_den:
             seq_den = self.env['ir.sequence'].sudo().create({
-                'name': f'Số đến - {code}',
+                'name': f'Số đến - {current_year} - {code}',
                 'code': seq_prefix_den,
-                'prefix': f'{code}-DEN-',
+                'prefix': f'{current_year}-{code}-',
                 'padding': 3,
                 'company_id': False,
             })
 
         # Tạo hoặc lấy sequence cho số đi
+        seq_prefix_di = f'di.{current_year}.{code}'
         seq_di = self.env['ir.sequence'].sudo().search([('code', '=', seq_prefix_di)], limit=1)
         if not seq_di:
             seq_di = self.env['ir.sequence'].sudo().create({
-                'name': f'Số đi - {code}',
+                'name': f'Số đi - {current_year} - {code}',
                 'code': seq_prefix_di,
-                'prefix': f'{code}-DI-',
+                'prefix': f'{current_year}-{code}-',
                 'padding': 3,
                 'company_id': False,
             })
@@ -569,3 +570,17 @@ class OfficeDocument(models.Model):
             vals['so_di_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_prefix_di)
 
         return vals
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        start_date = res.get('ngay_bat_dau', fields.Date.context_today(self))
+        res['han_ket_thuc'] = start_date + timedelta(days=7)
+        return res
+
+    @api.constrains('ngay_bat_dau', 'han_ket_thuc')
+    def _check_dates(self):
+        for rec in self:
+            if rec.han_ket_thuc and rec.ngay_bat_dau:
+                if rec.han_ket_thuc < rec.ngay_bat_dau:
+                    raise ValidationError("Ngày kết thúc không được sớm hơn ngày bắt đầu!")
