@@ -7,7 +7,7 @@
             <field name="arch" type="xml">
                 <tree>
                     <field name="ngay_den"/>
-                    <field name="so_den_tong_hop_so_den_theo_so"/>
+                    <field name="so_den_tong_hop"/>
                     <field name="so_hieu"/>
                     <field name="trich_yeu"/>
                     <field name="but_phe"/>
@@ -535,6 +535,8 @@
                 </form>
             </field>
         </record>
+
+
         <record id="action_open_office_document_internal_outgoing" model="ir.actions.act_window">
             <field name="name">Văn bản nội bộ đi</field>
             <field name="res_model">office.document</field>

@@ -500,3 +500,72 @@ class OfficeDocument(models.Model):
         self.mapped('detail3').unlink()
         return super().unlink()
 
+    @api.model
+    def create(self, vals):
+        # Xử lý han_ket_thuc
+        if 'ngay_bat_dau' in vals and not vals.get('han_ket_thuc'):
+            vals['han_ket_thuc'] = fields.Date.from_string(vals['ngay_bat_dau']) + timedelta(days=7)
+
+        # Xử lý so_den_tong_hop và so_di_tong_hop khi có phan_loai_van_ban
+        vals = self._update_document_numbers(vals)
+
+        return super(OfficeDocument, self).create(vals)
+
+    def write(self, vals):
+        # Nếu thay đổi phan_loai_van_ban thì cập nhật lại số tổng hợp
+        if 'phan_loai_van_ban' in vals:
+            for record in self:
+                new_vals = vals.copy()
+                new_vals = record._update_document_numbers(new_vals, is_write=True)
+                super(OfficeDocument, record).write(new_vals)
+            return True
+        else:
+            # Nếu không thay đổi phân loại, nhưng có thay đổi số → giữ nguyên logic cũ
+            return super(OfficeDocument, self).write(vals)
+
+    def _update_document_numbers(self, vals, is_write=False):
+        """
+        Cập nhật so_den_tong_hop và so_di_tong_hop dựa trên phan_loai_van_ban.code
+        """
+        phan_loai_id = vals.get('phan_loai_van_ban')
+        if not phan_loai_id:
+            return vals  # Không có phân loại → không sinh số
+
+        phan_loai = self.env['office.document.category'].browse(phan_loai_id)
+        if not phan_loai.exists() or not phan_loai.code:
+            raise UserError("Phân loại văn bản chưa có mã (code)!")
+
+        code = phan_loai.code
+        seq_prefix_den = f'office.document.in.{code}'  # Số đến
+        seq_prefix_di = f'office.document.out.{code}'  # Số đi
+
+        # Tạo hoặc lấy sequence cho số đến
+        seq_den = self.env['ir.sequence'].sudo().search([('code', '=', seq_prefix_den)], limit=1)
+        if not seq_den:
+            seq_den = self.env['ir.sequence'].sudo().create({
+                'name': f'Số đến - {code}',
+                'code': seq_prefix_den,
+                'prefix': f'{code}-DEN-',
+                'padding': 3,
+                'company_id': False,
+            })
+
+        # Tạo hoặc lấy sequence cho số đi
+        seq_di = self.env['ir.sequence'].sudo().search([('code', '=', seq_prefix_di)], limit=1)
+        if not seq_di:
+            seq_di = self.env['ir.sequence'].sudo().create({
+                'name': f'Số đi - {code}',
+                'code': seq_prefix_di,
+                'prefix': f'{code}-DI-',
+                'padding': 3,
+                'company_id': False,
+            })
+
+        # Chỉ sinh số nếu chưa có (tránh ghi đè khi write)
+        if not vals.get('so_den_tong_hop'):
+            vals['so_den_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_prefix_den)
+
+        if not vals.get('so_di_tong_hop'):
+            vals['so_di_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_prefix_di)
+
+        return vals
