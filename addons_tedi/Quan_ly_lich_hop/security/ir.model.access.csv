@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_calendar_event_admin,access_calendar_event_admin,model_calendar_event,base.group_system,1,1,1,1
+access_room_materials_admin,access_room_materials_admin,model_room_materials,base.group_system,1,1,1,1
+access_room_room_admin,access_room_room_admin,model_room_room,base.group_system,1,1,1,1
+access_calendar_dashboard_admin,access_calendar_dashboard_admin,model_calendar_dashboard,base.group_system,1,1,1,1
+access_room_booking_wizard_admin,access_room_booking_wizard_admin,model_room_booking_wizard,base.group_system,1,1,1,1
+access_calendar_outside_admin,access_calendar_outside_admin,model_calendar_outside,base.group_system,1,1,1,1
+access_calendar_location_admin,access_calendar_location_admin,model_calendar_location,base.group_system,1,1,1,1
