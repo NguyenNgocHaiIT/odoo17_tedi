@@ -536,27 +536,5 @@
             </field>
         </record>
 
-
-        <record id="action_open_office_document_internal_outgoing" model="ir.actions.act_window">
-            <field name="name">Văn bản nội bộ đi</field>
-            <field name="res_model">office.document</field>
-            <field name="view_mode">tree,form</field>
-            <field name="domain">[('document_type','=','outgoing')]</field>
-            <field name="context">{'default_document_type': 'outgoing'}</field>
-            <field name="view_ids" eval="[(5, 0, 0),
-                (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_outgoing_tree')}),
-                (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_outgoing_form')})]"/>
-        </record>
-
-        <record id="action_open_office_document_internal_ingoing" model="ir.actions.act_window">
-            <field name="name">Văn bản nội bộ đến</field>
-            <field name="res_model">office.document</field>
-            <field name="view_mode">tree,form</field>
-            <field name="domain">[('document_type','=','incoming')]</field>
-            <field name="context">{'default_document_type': 'incoming'}</field>
-            <field name="view_ids" eval="[(5, 0, 0),
-                (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_ingoing_tree')}),
-                (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_ingoing_form')})]"/>
-        </record>
     </data>
 </odoo>

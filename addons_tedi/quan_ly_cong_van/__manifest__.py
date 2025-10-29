@@ -15,6 +15,7 @@
 		'security/ir.model.access.csv',
 		'views/quan_ly_cong_viec.xml',
 		'views/cong_van.xml',
+		'views/van_ban_noi_bo.xml',
 		'views/cau_hinh.xml',
 		'views/menu.xml',
 		# 'views/menu_crm_agent.xml',
