@@ -88,8 +88,8 @@
                             </div>
 
                             <div style="display: flex; align-items: center;">
-                                <label for="send_indivisual" string="Gửi cho cá nhân" class="fixed-label o_form_label"/>
-                                <field name="send_indivisual" widget="many2many_tags"
+                                <label for="send_individual" string="Gửi cho cá nhân" class="fixed-label o_form_label"/>
+                                <field name="send_individual" widget="many2many_tags"
                                        style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
                             </div>
 
