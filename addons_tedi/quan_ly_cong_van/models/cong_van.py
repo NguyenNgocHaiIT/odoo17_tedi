@@ -327,7 +327,9 @@ class OfficeDocument(models.Model):
     document_type = fields.Selection([
         ('incoming', 'Công văn đến'),
         ('outgoing', 'Công văn đi'),
-        ('resolution', 'Quyết định')
+        ('resolution', 'Quyết định'),
+        ('incoming_internal', 'Văn bản nội bộ đến'),
+        ('outgoing_internal', 'Văn bản nội bộ đi'),
     ], string='Loại công văn', required=True)
     loai_van_ban = fields.Selection([
         ('1', 'Thông báo'),
@@ -415,6 +417,7 @@ class OfficeDocument(models.Model):
     detail1 = fields.One2many('office.document.detail1', 'office_document_id', string='Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ')
     detail2 = fields.One2many('office.document.detail2', 'office_document_id', string='Ý KIẾN CẤP LÃNH ĐẠO')
     detail3 = fields.One2many('office.document.detail3', 'office_document_id', string='XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG')
+    attachment_name = fields.Char('Tên file', default='tai_lieu.pdf')
 
     @api.model
     def log(self):

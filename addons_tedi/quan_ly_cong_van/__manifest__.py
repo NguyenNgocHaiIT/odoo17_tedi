@@ -15,7 +15,6 @@
 		'security/ir.model.access.csv',
 		'views/quan_ly_cong_viec.xml',
 		'views/cong_van.xml',
-		'views/van_ban_noi_bo.xml',
 		'views/cau_hinh.xml',
 		'views/menu.xml',
 		# 'views/menu_crm_agent.xml',
@@ -38,6 +37,7 @@
 		# 'wizard/bao_cao_sale_level_gg_sheet/sale_level_gg_sheet.xml',
 		# 'report/list_customer_waiting.xml'
 	],
+
 
 	'installable': True,
 	'application': True,
