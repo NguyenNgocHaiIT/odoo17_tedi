@@ -5,8 +5,7 @@
         <menuitem
                 id="office_document_menu_root"
                 name="Quản lý công văn"
-                sequence="0"
-                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao,quan_ly_cong_van.group_don_vi_xu_ly"/>
+                sequence="0"/>
 
         <!-- Menu Công văn đến -->
         <menuitem
@@ -14,8 +13,7 @@
                 name="Công văn đến"
                 parent="office_document_menu_root"
                 action="action_open_office_document_ingoing"
-                sequence="1"
-                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao,quan_ly_cong_van.group_don_vi_xu_ly"/>
+                sequence="1"/>
 
         <!-- Menu Công văn đi -->
         <menuitem
@@ -23,8 +21,7 @@
                 name="Công văn đi"
                 parent="office_document_menu_root"
                 action="action_open_office_document_outgoing"
-                sequence="12"
-                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao,quan_ly_cong_van.group_don_vi_xu_ly"/>
+                sequence="12"/>
 
         <!-- Menu Quyết định -->
         <menuitem
@@ -32,14 +29,32 @@
                 name="Quyết định"
                 parent="office_document_menu_root"
                 action="action_open_office_document_resolution"
-                sequence="13"
-                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_lanh_dao,quan_ly_cong_van.group_don_vi_xu_ly"/>
-<!--        <menuitem-->
-<!--                id="bc_so_km_menu"-->
-<!--                name="Báo cáo số km từng xe"-->
-<!--                parent="fleet.menu_root"-->
-<!--                action="action_open_bc_so_km"-->
-<!--                sequence="5"/>-->
+                sequence="30"/>
+        <menuitem id="fleet_management_menu_root"
+                  name="Quản lý đội xe"
+                  parent="office_document_menu_root"
+                  sequence="40"/>
+
+        <menuitem id="menu_hr_tedi_vehicle_record"
+                  name="Màn hình tất cả lý lịch xe"
+                  parent="fleet_management_menu_root"
+                  action="action_hr_tedi_vehicle_record"
+                  sequence="10"/>
+        <menuitem id="menu_hr_tedi_vehicle_registration"
+                  name="Phiếu đăng ký xe"
+                  parent="fleet_management_menu_root"
+                  action="action_hr_tedi_vehicle_registration"
+                  sequence="20"/>
+        <menuitem id="menu_hr_tedi_vehicle_repair"
+                  name="Phiếu sửa chữa xe"
+                  parent="fleet_management_menu_root"
+                  action="action_hr_tedi_vehicle_repair"
+                  sequence="30"/>
+        <menuitem id="menu_hr_tedi_vehicle_odometer_report"
+                  name="Báo cáo số km từng xe"
+                  parent="fleet_management_menu_root"
+                  action="action_hr_tedi_vehicle_odometer_report"
+                  sequence="50"/>
 
         <!-- Menu văn bản nội bộ đến -->
         <menuitem

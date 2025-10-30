@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_employee_education,access.employee.education,model_hr_employee_education,base.group_user,1,1,1,1
+access_employee_certificate,access.employee.certificate,model_hr_employee_certificate,base.group_user,1,1,1,1
+access_employee_trip,access.employee.trip,model_hr_employee_trip,base.group_user,1,1,1,1
+access_employee_work_process_tedi,access.employee.work.process.tedi,model_hr_employee_work_process_tedi,base.group_user,1,1,1,1
+access_employee_work_process_old,access.employee.work.process.old,model_hr_employee_work_process_old,base.group_user,1,1,1,1
+access_employee_experience,access.employee.experience,model_hr_employee_experience,base.group_user,1,1,1,1
+access_hr_employee_reward_discipline,access.hr.employee.reward.discipline,model_hr_employee_reward_discipline,base.group_user,1,1,1,1
+access_hr_party_cell,access.hr.party.cell,model_hr_party_cell,base.group_user,1,1,1,1
+access_hr_party_title,access.hr.party.title,model_hr_party_title,base.group_user,1,1,1,1
+access_hr_employee_training,access.hr.employee.training,model_hr_employee_training,base.group_user,1,1,1,1
+access_hr_decision_user,access.hr.decision.user,model_hr_decision,base.group_user,1,0,0,0
+access_hr_decision_manager,access.hr.decision.manager,model_hr_decision,hr.group_hr_manager,1,1,1,1

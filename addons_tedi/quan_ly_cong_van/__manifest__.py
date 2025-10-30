@@ -1,3 +1,4 @@
+
 {
 	'name': 'TEDI: Quản lý công văn',
 	'version': '1.0',
@@ -5,37 +6,15 @@
 	'author': 'HaiNN',
 	'sequence': '1',
 	'summary': '',
-	'depends': [ 'base', 'mail', 'hr', 'project', 'web'
-	],
+	'depends': [ 'base', 'mail', 'hr', 'project', 'web'],
 	'data': [
-		# 'data/cron.xml',
-		# 'data/ir_config_param.xml',
-		# 'security/group_report.xml',
 		'security/office_document_security.xml',
 		'security/ir.model.access.csv',
 		'views/quan_ly_cong_viec.xml',
 		'views/cong_van.xml',
+		'views/quan_ly_doi_xe.xml',
 		'views/cau_hinh.xml',
 		'views/menu.xml',
-		# 'views/menu_crm_agent.xml',
-		# 'views/inherit_sh_medical_health_center_service_views.xml',
-		# 'wizard/menu_report_mkt.xml',
-		# 'wizard/bao_cao_doanh_thu_ao_theo_sp_dv/report_sale_service.xml',
-		# 'wizard/bao_cao_du_kien_doanh_thu_that_12_thang/bao_cao_doanh_thu_that_12_thang.xml',
-		# 'wizard/bao_cao_khach_hang/bao_cao_khach_hang.xml',
-		# 'wizard/bao_cao_kh_coc_khong_lam_dich_vu/report_customer_deposit__does_not_do_service.xml',
-		# 'wizard/bc_tong_hop_doanh_thu_ngay_cong/report_total_daily_summary.xml',
-		# 'wizard/bao_cao_khach_hang_huy_dich_vu/report_customer_cancel_service.xml',
-		# 'wizard/danh_sach_khach_hang_khieu_nai/danh_sach_khach_hang_khieu_cai.xml',
-		# 'wizard/bao_cao_su_co_khach_hang/report_customer_problem.xml',
-		# 'wizard/bao_cao_khoi_luong_cong_viec/report_amount_job.xml',
-		# 'wizard/qua_trinh_dieu_tri_khach_hang/report_medical_patient.xml',
-		# 'wizard/bao_cao_ho_so_khach_hang/report_information_customer.xml',
-		# 'wizard/bao_cao_cham_soc_khach_hang/report_care_customer.xml',
-		# 'wizard/bao_cao_tong_hop_cham_soc_khach_hang/report_care_customer_total.xml',
-		# 'wizard/bao_cao_chi_tiet_doanh_thu_ca_nhan/report_detail_revenue_personal.xml',
-		# 'wizard/bao_cao_sale_level_gg_sheet/sale_level_gg_sheet.xml',
-		# 'report/list_customer_waiting.xml'
 	],
 
 
