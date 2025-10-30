@@ -77,14 +77,15 @@
                 name="Công việc"
                 parent="office_document_menu_root"
                 action="action_open_office_task"
-                sequence="16"/>
+                sequence="16"
+                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_don_vi_xu_ly"/>
 
         <menuitem
                 id="menu_office_document_setting"
                 name="Cấu hình"
                 parent="office_document_menu_root"
                 sequence="17"
-                groups="base.group_system"/>
+                groups="base.group_system,quan_ly_cong_van.group_van_thu"/>
 
         <menuitem
                 id="menu_office_document_category"
