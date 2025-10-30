@@ -19,7 +19,7 @@ class DocumentDirectory(models.Model):
         comodel_name='directory.tag',
         relation='document_directory_tag_rel', column1='directory_id', column2='tag_id',
         string="Tags")
-    model_id = fields.Many2one('ir.model', 'Related Model', required=False, index=True, ondelete='cascade')
+    model_id = fields.Many2one('ir.model', 'Related Model', required=False, index=True)
     model = fields.Char(string='Model Name', related='model_id.model', store=True, readonly=True)
     active = fields.Boolean('Active', default=True)
     visible_directory = fields.Boolean('Visible Directory', default=False)

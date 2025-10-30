@@ -5,8 +5,7 @@
 	'author': 'Duong',
 	'sequence': '2',
 	'summary': '',
-	'depends': [ 'base', 'mail', 'hr', 'project', 'web'
-	],
+	'depends': [ 'base', 'mail', 'hr', 'project', 'web', 'calendar'],
 	'data': [
 		'security/ir.model.access.csv',
 		'views/lich_hop_views.xml',
