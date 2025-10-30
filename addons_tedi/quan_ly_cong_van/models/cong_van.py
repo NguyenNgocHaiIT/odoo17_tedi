@@ -3,7 +3,9 @@ from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
 import odoo
 import logging
+
 _logger = logging.getLogger(__name__)
+
 
 class PhanPhat(models.TransientModel):
     _name = 'office.document.phan.phat'
@@ -183,7 +185,8 @@ class ButPhe(models.TransientModel):
         })
 
         # Tạo detail1
-        nhom_phong_ban = self.env.user.employee_ids[:1].department_id.name if self.env.user.employee_ids else 'Không xác định'
+        nhom_phong_ban = self.env.user.employee_ids[
+                         :1].department_id.name if self.env.user.employee_ids else 'Không xác định'
         self.env['office.document.detail1'].create({
             'office_document_id': doc.id,
             'nguoi_nhap_y_kien': self.env.user.id,
@@ -346,7 +349,7 @@ class OfficeDocument(models.Model):
     ngay_ban_hanh = fields.Date('Ngày ban hành')
     noi_gui = fields.Char('Nơi gửi')
     nguoi_ky = fields.Many2one('res.users', string='Người ký')
-    do_khan =  fields.Selection([
+    do_khan = fields.Selection([
         ('khan', 'Khẩn'),
         ('mat', 'Mật'),
         ('hoa_toc', 'Hỏa tốc')], string='Độ khẩn', default='khan')
@@ -528,49 +531,68 @@ class OfficeDocument(models.Model):
     def _update_document_numbers(self, vals, is_write=False):
         """
         Cập nhật so_den_tong_hop và so_di_tong_hop theo format:
-        <Năm hiện tại>-<Mã loại công văn>-<STT>
+        - Mặc định: <Năm hiện tại>-<Mã loại công văn>-<STT>
+        - Nếu document_type = 'resolution': QĐ-<STT>
         """
         phan_loai_id = vals.get('phan_loai_van_ban')
-        if not phan_loai_id:
-            return vals  # Không có phân loại → không sinh số
+        document_type = vals.get('document_type') or self._context.get('default_document_type') or (self.document_type if self else None)
 
-        phan_loai = self.env['office.document.category'].browse(phan_loai_id)
-        if not phan_loai.exists() or not phan_loai.code:
-            raise UserError("Phân loại văn bản chưa có mã (code)!")
-
-        code = phan_loai.code
         current_year = fields.Date.today().year
 
-        # Tạo hoặc lấy sequence cho số đến
-        seq_prefix_den = f'den.{current_year}.{code}'  # Mã sequence
-        seq_den = self.env['ir.sequence'].sudo().search([('code', '=', seq_prefix_den)], limit=1)
-        if not seq_den:
-            seq_den = self.env['ir.sequence'].sudo().create({
-                'name': f'Số đến - {current_year} - {code}',
-                'code': seq_prefix_den,
-                'prefix': f'{current_year}-{code}-',
-                'padding': 3,
-                'company_id': False,
-            })
+        # ========== XỬ LÝ SỐ ĐẾN (vẫn như cũ) ==========
+        if phan_loai_id:
+            phan_loai = self.env['office.document.category'].browse(phan_loai_id)
+            if not phan_loai.exists() or not phan_loai.code:
+                raise UserError("Phân loại văn bản chưa có mã (code)!")
 
-        # Tạo hoặc lấy sequence cho số đi
-        seq_prefix_di = f'di.{current_year}.{code}'
-        seq_di = self.env['ir.sequence'].sudo().search([('code', '=', seq_prefix_di)], limit=1)
-        if not seq_di:
-            seq_di = self.env['ir.sequence'].sudo().create({
-                'name': f'Số đi - {current_year} - {code}',
-                'code': seq_prefix_di,
-                'prefix': f'{current_year}-{code}-',
-                'padding': 3,
-                'company_id': False,
-            })
+            code = phan_loai.code
+            seq_prefix_den = f'den.{current_year}.{code}'
+            seq_den = self.env['ir.sequence'].sudo().search([('code', '=', seq_prefix_den)], limit=1)
+            if not seq_den:
+                seq_den = self.env['ir.sequence'].sudo().create({
+                    'name': f'Số đến - {current_year} - {code}',
+                    'code': seq_prefix_den,
+                    'prefix': f'{current_year}-{code}-',
+                    'padding': 3,
+                    'company_id': False,
+                })
 
-        # Chỉ sinh số nếu chưa có (tránh ghi đè khi write)
-        if not vals.get('so_den_tong_hop'):
-            vals['so_den_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_prefix_den)
+            if not vals.get('so_den_tong_hop'):
+                vals['so_den_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_prefix_den)
 
-        if not vals.get('so_di_tong_hop'):
-            vals['so_di_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_prefix_di)
+        # ========== XỬ LÝ SỐ ĐI ==========
+        # Nếu loại văn bản là 'resolution' → dùng QĐ-<STT>
+        if document_type == 'resolution':
+            seq_code_qd = 'di.resolution'
+            seq_qd = self.env['ir.sequence'].sudo().search([('code', '=', seq_code_qd)], limit=1)
+            if not seq_qd:
+                seq_qd = self.env['ir.sequence'].sudo().create({
+                    'name': 'Số đi - Quyết định',
+                    'code': seq_code_qd,
+                    'prefix': 'QĐ-',
+                    'padding': 3,
+                    'company_id': False,
+                })
+            if not vals.get('so_di_tong_hop'):
+                vals['so_di_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_code_qd)
+
+        else:
+            # Các loại khác theo phân loại văn bản
+            if phan_loai_id:
+                code = self.env['office.document.category'].browse(phan_loai_id).code
+                seq_prefix_di = f'di.{current_year}.{code}'
+                seq_di = self.env['ir.sequence'].sudo().search([('code', '=', seq_prefix_di)], limit=1)
+                if not seq_di:
+                    seq_di = self.env['ir.sequence'].sudo().create({
+                        'name': f'Số đi - {current_year} - {code}',
+                        'code': seq_prefix_di,
+                        'prefix': f'{current_year}-{code}-',
+                        'padding': 3,
+                        'company_id': False,
+                    })
+
+                if not vals.get('so_di_tong_hop'):
+                    vals['so_di_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_prefix_di)
 
         return vals
 

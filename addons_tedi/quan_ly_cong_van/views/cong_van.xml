@@ -11,7 +11,7 @@
                     <field name="so_hieu"/>
                     <field name="trich_yeu"/>
                     <field name="but_phe"/>
-                    <field name="dv_xu_ly_chinh"/>
+                    <field name="dv_xu_ly_chinh" widget="many2many_tags"/>
                 </tree>
             </field>
         </record>
@@ -150,7 +150,7 @@
         </record>
 
         <record id="action_open_office_document_ingoing" model="ir.actions.act_window">
-            <field name="name">Văn bản đến</field>
+            <field name="name">Công văn đến</field>
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','incoming')]</field>
@@ -245,7 +245,7 @@
                             <page string="Hồ sơ công việc">
                                 <group>
                                     <group string="Chi tiết">
-                                        <field name="attachment" widget="binary"/>
+                                        <field name="attachment" filename="attachment_name" widget="pdf_viewer"/>
                                     </group>
                                 </group>
                             </page>
@@ -301,7 +301,7 @@
         </record>
 
         <record id="action_open_office_document_outgoing" model="ir.actions.act_window">
-            <field name="name">Văn bản đi</field>
+            <field name="name">Công văn đi</field>
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','outgoing')]</field>
@@ -341,7 +341,7 @@
                         <field name="trich_yeu"/>
                         <group>
                             <group>
-                                <field name="so_di_tong_hop" string="Số quyết định"/>
+                                <field name="so_di_tong_hop" string="Số quyết định" readonly="1"/>
                                 <field name="don_vi_ban_hanh"/>
                                 <!--                                <field name="don_vi_soan_thao"/>-->
 
@@ -392,7 +392,7 @@
                             <page string="Hồ sơ công việc">
                                 <group>
                                     <group string="Chi tiết">
-                                        <field name="attachment" widget="binary"/>
+                                        <field name="attachment" filename="attachment_name" widget="pdf_viewer"/>
                                     </group>
                                 </group>
                             </page>
@@ -538,7 +538,7 @@
         </record>
 
         <record id="action_open_office_document_internal_ingoing" model="ir.actions.act_window">
-            <field name="name">Văn bản nội bộ đến</field>
+            <field name="name">Công văn nội bộ đến</field>
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','incoming_internal')]</field>
@@ -549,7 +549,7 @@
         </record>
 
         <record id="action_open_office_document_internal_outgoing" model="ir.actions.act_window">
-            <field name="name">Văn bản nội bộ đi</field>
+            <field name="name">Công văn nội bộ đi</field>
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','outgoing_internal')]</field>
