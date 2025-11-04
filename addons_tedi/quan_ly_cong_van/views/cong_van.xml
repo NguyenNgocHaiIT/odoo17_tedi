@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <data>
+
         <record id="office_document_ingoing_tree" model='ir.ui.view'>
             <field name="name">office_document_ingoing_tree</field>
             <field name="model">office.document</field>
@@ -22,15 +23,18 @@
             <field name="arch" type="xml">
                 <form delete="false" duplicate="false">
                     <header>
-                        <button name="trinh_lanh_dao" string="Trình lãnh đạo" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu"/>
-                        <button name="approve" string="Duyệt" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_lanh_dao"/>
-                        <button name="but_phe_action" string="Bút phê" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_lanh_dao, quan_ly_cong_van.group_van_thu"/>
-                        <button name="phan_phat" string="Phân phát" type="object"
+                        <button name="trinh_lanh_dao_cong_van_den" string="Trình lãnh đạo" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb != 'da_duyet'"/>
+                        <button name="approve" string="Duyệt" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="tt_vb != 'cho_duyet'"/>
+                        <button name="but_phe_action" string="Bút phê" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
+                                invisible="tt_vb != 'cho_but_phe'"/>
+                        <button name="phan_phat" string="Phân phát" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
                     </header>
                     <sheet>
                         <group>
@@ -67,8 +71,8 @@
                                 <!--                                <field name="nguoi_xu_ly_chinh"/>-->
                                 <field name="so_den_tong_hop_so_den_theo_so" invisible="1"/>
                                 <field name="but_phe" invisible="1"/>
-                                <field name="dv_xu_ly_chinh" widget="many2many_tags" readonly="1" invisible="1"/>
-                                <field name="dv_dong_xu_ly" widget="many2many_tags" readonly="1" invisible="1"/>
+                                <field name="dv_xu_ly_chinh" widget="many2many_tags" readonly="1"/>
+                                <field name="dv_dong_xu_ly" widget="many2many_tags" readonly="1"/>
                             </group>
                         </group>
                         <label for="trich_yeu" string="Trích yếu"/>
@@ -87,7 +91,7 @@
                                         <!-- <field name="nguoi_theo_doi"/> -->
                                         <field name="ngay_bat_dau"/>
                                         <!-- <field name="ho_so_cong_viec"/> -->
-                                        <field name="attachment" filename="attachment_name" widget="pdf_viewer"/>
+                                        <field name="attachment" widget="many2many_binary"/>
 
                                         <field name="note"/>
                                     </group>
@@ -158,6 +162,7 @@
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_ingoing_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_ingoing_form')})]"/>
+
         </record>
 
         <record id="office_document_outgoing_tree" model='ir.ui.view'>
@@ -181,14 +186,27 @@
             <field name="arch" type="xml">
                 <form delete="false" duplicate="false">
                     <header>
+                        <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_don_vi_xu_ly"
+                                invisible="tt_vb != 'cho_duyet'"/>
+                        <button name="approve" string="Duyệt" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_lan_dao"
+                                invisible="tt_vb != 'cho_duyet'"/>
+                        <button name="trinh_lanh_dao_cong_van_den" string="Trình lãnh đạo để bút phê" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="tt_vb != 'cho_duyet'"/>
                         <button name="phan_phat" string="Phát hành" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu, quan_ly_cong_van.group_lanh_dao"/>
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_lanh_dao, quan_ly_cong_van.group_van_thu"/>
+                                groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
+                                invisible="tt_vb != 'cho_but_phe'"/>
                         <button name="phan_phat" string="Phân phát" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu, quan_ly_cong_van.group_lanh_dao"/>
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
                     </header>
                     <sheet>
+                        <field name="tt_vb" invisible="1"/>
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu"/>
                         <group>
@@ -245,7 +263,7 @@
                             <page string="Hồ sơ công việc">
                                 <group>
                                     <group string="Chi tiết">
-                                        <field name="attachment" filename="attachment_name" widget="pdf_viewer"/>
+                                        <field name="attachment" widget="many2many_binary"/>
                                     </group>
                                 </group>
                             </page>
@@ -332,11 +350,27 @@
             <field name="arch" type="xml">
                 <form delete="false" duplicate="false">
                     <header>
-                        <button name="phan_phat" string="Phát hành" type="object"/>
-                        <button name="but_phe_action" string="Bút phê" type="object"/>
-                        <button name="phan_phat" string="Phân phát" type="object"/>
+                        <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_don_vi_xu_ly"
+                                invisible="tt_vb != 'cho_duyet'"/>
+                        <button name="approve" string="Duyệt" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_lan_dao"
+                                invisible="tt_vb != 'cho_duyet'"/>
+                        <button name="trinh_lanh_dao_cong_van_den" string="Trình lãnh đạo để bút phê" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="tt_vb != 'cho_duyet'"/>
+                        <button name="phan_phat" string="Phát hành" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
+                        <button name="but_phe_action" string="Bút phê" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
+                                invisible="tt_vb != 'cho_but_phe'"/>
+                        <button name="phan_phat" string="Phân phát" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
                     </header>
                     <sheet>
+                        <field name="tt_vb" invisible="1"/>
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu"/>
                         <group>
@@ -392,7 +426,7 @@
                             <page string="Hồ sơ công việc">
                                 <group>
                                     <group string="Chi tiết">
-                                        <field name="attachment" filename="attachment_name" widget="pdf_viewer"/>
+                                        <field name="attachment" widget="many2many_binary"/>
                                     </group>
                                 </group>
                             </page>

@@ -17,7 +17,13 @@
 		'views/menu.xml',
 	],
 
-
+	'assets': {
+        'web.assets_backend': [
+            'quan_ly_cong_van/static/src/js/file_viewer_field.js',
+			'quan_ly_cong_van/static/src/js/file_viewer.js',
+			'quan_ly_cong_van/static/src/js/template_file_viewer.xml',
+        ],
+    },
 	'installable': True,
 	'application': True,
 	'auto_install': False,
