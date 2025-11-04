@@ -194,7 +194,7 @@
                                 invisible="tt_vb != 'cho_duyet'"/>
                         <button name="trinh_lanh_dao_cong_van_den" string="Trình lãnh đạo để bút phê" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb != 'cho_duyet'"/>
+                                invisible="tt_vb != 'da_duyet'"/>
                         <button name="phan_phat" string="Phát hành" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
@@ -358,7 +358,7 @@
                                 invisible="tt_vb != 'cho_duyet'"/>
                         <button name="trinh_lanh_dao_cong_van_den" string="Trình lãnh đạo để bút phê" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb != 'cho_duyet'"/>
+                                invisible="tt_vb != 'da_duyet'"/>
                         <button name="phan_phat" string="Phát hành" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
