@@ -29,7 +29,7 @@
                 name="Quyết định"
                 parent="office_document_menu_root"
                 action="action_open_office_document_resolution"
-                sequence="30"/>
+                sequence="13"/>
         <menuitem id="fleet_management_menu_root"
                   name="Quản lý đội xe"
                   parent="office_document_menu_root"
@@ -59,7 +59,7 @@
         <!-- Menu văn bản nội bộ đến -->
         <menuitem
                 id="document_internal_ingoing_menu"
-                name="Văn bản nội bộ đến"
+                name="Công văn nội bộ đến"
                 parent="office_document_menu_root"
                 action="action_open_office_document_internal_ingoing"
                 sequence="14"/>
@@ -67,7 +67,7 @@
         <!-- Menu văn bản nội bộ đi -->
         <menuitem
                 id="document_internal_outgoing_menu"
-                name="Văn bản nội bộ đi"
+                name="Công văn nội bộ đi"
                 parent="office_document_menu_root"
                 action="action_open_office_document_internal_outgoing"
                 sequence="15"/>
