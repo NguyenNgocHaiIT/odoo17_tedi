@@ -46,6 +46,7 @@ class RecruitmentPlan(models.Model):
     recruitment_status = fields.Selection(
         [("draft", "Dự thảo"),
          ("waiting", "Trình duyệt"),
+
          ("complete", "Hoàn thành")],
         string="Trạng thái", default="draft", index=True, required=True,
         tracking=True

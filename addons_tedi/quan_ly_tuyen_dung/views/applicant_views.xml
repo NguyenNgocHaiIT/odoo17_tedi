@@ -71,19 +71,19 @@
               <field name="legend_done" invisible="1"/>
 
 
-                <div class="d-flex align-items-center" style="margin-bottom: 12px;">
-                  <button name="action_makeMeeting"
-                          class="oe_stat_button"
-                          icon="fa-calendar"
-                          type="object"
-                          invisible="not id"
-                          style="margin-left: auto;">
-                    <div class="o_field_widget o_stat_info">
-                      <span class="o_stat_text"><field name="meeting_display_text"/></span>
-                      <span class="o_stat_value"><field name="meeting_display_date" readonly="1"/></span>
-                    </div>
-                  </button>
+             <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+              <button name="action_makeMeeting"
+                      class="oe_stat_button"
+                      icon="fa-calendar"
+                      type="object"
+                      invisible="not id">
+                <div class="o_field_widget o_stat_info">
+                  <span class="o_stat_text"><field name="meeting_display_text"/></span>
+                  <span class="o_stat_value"><field name="meeting_display_date" readonly="1"/></span>
                 </div>
+              </button>
+            </div>
+
 
 
               <!-- Nội dung chính (không còn cột phải/chatter/preview) -->
