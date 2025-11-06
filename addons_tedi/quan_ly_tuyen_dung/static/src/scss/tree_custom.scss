@@ -1,0 +1,106 @@
+/* Chỉ áp dụng trong modal của wizard để không ảnh hưởng chỗ khác */
+.tedi-old-applicant-modal .o_list_view .o_data_row > .o_data_cell {
+  /* chặn click vào ô => không trigger mở form */
+  pointer-events: none;
+}
+
+/* Cho phép click vào các nút (Mở, Xóa) */
+.tedi-old-applicant-modal .o_list_view .o_data_row .o_data_cell button,
+.tedi-old-applicant-modal .o_list_view .o_data_row .o_data_cell .btn,
+.tedi-old-applicant-modal .o_list_view .o_data_row .o_data_cell .o_list_record_delete {
+  pointer-events: auto;
+}
+
+/* Nếu bạn có checkbox/selection hay widget đặc biệt, bật lại ở đây */
+.tedi-old-applicant-modal .o_list_view .o_data_row .o_data_cell .o_checkbox {
+  pointer-events: auto;
+}
+
+
+
+
+/* Giãn cách và cố định độ rộng hai cột cuối */
+.o_list_view table thead th[data-name="total_applicant_request"],
+.o_list_view table tbody td.o_data_cell[data-name="total_applicant_request"] {
+  min-width: 120px;        /* hoặc 140px nếu còn chật */
+  text-align: center;
+}
+
+.o_list_view table thead th[data-name="recruitment_status"],
+.o_list_view table tbody td.o_data_cell[data-name="recruitment_status"] {
+  min-width: 150px;
+  text-align: center;
+}
+
+/* Giữ padding đồng nhất để không lệch */
+.o_list_view table thead th,
+.o_list_view table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+
+
+
+//BẢNG ĐÁNH GIÁ ỨNG VIÊN SAU PHỎNG VẤN
+
+.tedi-eval-form .tedi-eval-card {
+  width: 720px;
+  margin: 0 auto;
+  font-family: "DejaVu Sans", sans-serif;
+}
+
+.tedi-eval-form .tedi-title {
+  background: #0b66c3;
+  color: #fff;
+  text-align: center;
+  font-weight: 700;
+  padding: 8px;
+  border: 1px solid #0b66c3;
+}
+
+.tedi-eval-form .tedi-subtitle {
+  background: #e8f1fb;
+  color: #0b66c3;
+  text-align: center;
+  font-weight: 700;
+  padding: 6px;
+  border: 1px solid #0b66c3;
+  border-top: none;
+}
+
+.tedi-eval-form .tedi-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+}
+
+.tedi-eval-form .tedi-table td,
+.tedi-eval-form .tedi-table th {
+  border: 1px solid #0b66c3;
+  padding: 6px;
+  vertical-align: top;
+}
+
+.tedi-eval-form .tedi-table td:first-child {
+  width: 35%;
+  color: #0b66c3;
+  font-weight: 500;
+}
+
+.tedi-eval-form .tedi-footer {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.tedi-eval-form .btn-primary {
+  background-color: #0b66c3;
+  color: #fff !important;
+  border-radius: 4px;
+  padding: 6px 16px;
+  border: none;
+}
+
+
+
+

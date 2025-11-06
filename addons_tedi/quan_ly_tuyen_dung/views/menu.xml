@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+
+         <!-- Ví dụ: gắn vào menu gốc của hr_recruitment -->
+    <menuitem id="menu_recruitment_plan"
+              name="Kế hoạch"
+              parent="hr_recruitment.menu_hr_recruitment_root"
+              action="action_recruitment_plan"
+              sequence="5"/>
+
+
+    <menuitem
+        id="hr_applicant_experience_request_menu"
+        parent="hr_recruitment.menu_hr_recruitment_config_applications"
+        action="action_experience_request"
+        sequence="50" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--    &lt;!&ndash; Gốc có action riêng &ndash;&gt;-->
+<!--    <menuitem id="menu_recruitment_root"-->
+<!--              name="Tuyển dụng"-->
+<!--              groups="base.group_user"-->
+<!--              sequence="20"/>-->
+<!--&lt;!&ndash;        web_icon="quan_ly_tuyen_dung,static/description/icon.png"&ndash;&gt;-->
+<!--&lt;!&ndash;             action="hr_recruitment.action_hr_job"&ndash;&gt;-->
+<!--    &lt;!&ndash; Kế hoạch có action riêng &ndash;&gt;-->
+<!--    <menuitem id="menu_recruitment_plan"-->
+<!--              name="Kế hoạch tuyển dụng"-->
+<!--              parent="menu_recruitment_root"-->
+<!--              sequence="0"-->
+<!--              action="action_recruitment_plan"/>-->
+
+<!--    &lt;!&ndash; Các menu con khác &ndash;&gt;-->
+<!--    <menuitem id="menu_recruitment_report"-->
+<!--              name="Report"-->
+<!--              parent="menu_recruitment_root"-->
+<!--              sequence="20"/>-->
+
+<!--    <menuitem id="menu_recruitment_configure"-->
+<!--              name="Configure"-->
+<!--              parent="menu_recruitment_root"-->
+<!--              sequence="30"/>-->
+
+<!--    &lt;!&ndash; Nhóm Ứng viên &ndash;&gt;-->
+<!--    <menuitem id="menu_crm_case_categ0_act_job"-->
+<!--              name="Ứng viên"-->
+<!--              parent="menu_recruitment_root"-->
+<!--              sequence="2"/>-->
+
+<!--    <menuitem id="menu_hr_job_position"-->
+<!--              name="Theo vị trí công việc"-->
+<!--              parent="menu_crm_case_categ0_act_job"-->
+<!--              action="hr_recruitment.action_hr_job"-->
+<!--              sequence="1"-->
+<!--              groups="base.group_user,quan_ly_tuyen_dung.group_recruitment_hr_officer,quan_ly_tuyen_dung.group_recruitment_committee,quan_ly_tuyen_dung.group_recruitment_director,quan_ly_tuyen_dung.group_recruitment_board"/>-->
+
+<!--    <menuitem id="menu_crm_case_categ_all_app"-->
+<!--              name="Tất cả đơn ứng tuyển"-->
+<!--              parent="menu_crm_case_categ0_act_job"-->
+<!--              action="hr_recruitment.crm_case_categ0_act_job"-->
+<!--              sequence="2"/>-->
+
+<!--    <menuitem id="menu_hr_recruitment_configuration"-->
+<!--              name="Configuration"-->
+<!--              parent="menu_recruitment_root"-->
+<!--              groups="base.group_user,quan_ly_tuyen_dung.group_recruitment_hr_officer,quan_ly_tuyen_dung.group_recruitment_committee,quan_ly_tuyen_dung.group_recruitment_director,quan_ly_tuyen_dung.group_recruitment_board"-->
+<!--              sequence="100"/>-->
+
+<!--    <menuitem id="menu_hr_recruitment_config_jobs" name="Job Positions" parent="menu_hr_recruitment_configuration" sequence="10" />-->
+
+<!--    <menuitem id="menu_hr_recruitment_config_applications" name="Applications" parent="menu_hr_recruitment_configuration" sequence="20" />-->
+
+<!--    <menuitem id="menu_hr_recruitment_config_employees" name="Employees" parent="menu_hr_recruitment_configuration" sequence="30" />-->
+
+<!--    <menuitem id="menu_hr_recruitment_config_activities" name="Activities" parent="menu_hr_recruitment_configuration" sequence="40" />-->
+
+<!--    <menuitem id="menu_hr_recruitment_global_settings"-->
+<!--              name="Settings"-->
+<!--              parent="menu_hr_recruitment_configuration"-->
+<!--              sequence="0"-->
+<!--              action="hr_recruitment.action_hr_recruitment_configuration"-->
+<!--              groups="quan_ly_tuyen_dung.group_recruitment_board,base.group_user"/>-->
+
+
+
+<!--    <menuitem-->
+<!--        id="menu_hr_recruitment_stage"-->
+<!--        name="Stages"-->
+<!--        parent="menu_hr_recruitment_config_jobs"-->
+<!--        action="hr_recruitment.hr_recruitment_stage_act"-->
+<!--        groups="quan_ly_tuyen_dung.group_recruitment_board,base.group_user"-->
+<!--        sequence="1"/>-->
+
+<!--&lt;!&ndash;    <menuitem&ndash;&gt;-->
+<!--&lt;!&ndash;        id="menu_hr_recruitment_contract_type"&ndash;&gt;-->
+<!--&lt;!&ndash;        action="hr_contract.hr_contract_type_action"&ndash;&gt;-->
+<!--&lt;!&ndash;        parent="menu_hr_recruitment_config_jobs"&ndash;&gt;-->
+<!--&lt;!&ndash;        sequence="2"&ndash;&gt;-->
+<!--&lt;!&ndash;        groups="quan_ly_tuyen_dung.group_recruitment_board,base.group_user"/>&ndash;&gt;-->
+
+<!--    <menuitem-->
+<!--        id="hr_applicant_category_menu"-->
+<!--        parent="menu_hr_recruitment_config_applications"-->
+<!--        action="hr_recruitment.hr_applicant_category_action"-->
+<!--        sequence="20" groups="quan_ly_tuyen_dung.group_recruitment_board,base.group_user"/>-->
+
+<!--    <menuitem-->
+<!--        id="menu_hr_recruitment_degree"-->
+<!--        name="Degrees"-->
+<!--        parent="menu_hr_recruitment_config_applications"-->
+<!--        action="hr_recruitment.hr_recruitment_degree_action"-->
+<!--        sequence="1" groups="quan_ly_tuyen_dung.group_recruitment_board,base.group_user"/>-->
+
+<!--    <menuitem id="menu_hr_department" name="Departments"-->
+<!--            parent="menu_hr_recruitment_config_employees" action="hr_recruitment.action_hr_department"/>-->
+
+<!--    <menuitem id="hr_recruitment_menu_config_activity_type"-->
+<!--        action="hr_recruitment.mail_activity_type_action_config_hr_applicant"-->
+<!--        parent="menu_hr_recruitment_config_activities"/>-->
+
+
+
+  </data>
+</odoo>
+
+
+
+
+
+
+

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <!-- PAPER FORMAT -->
+  <record id="paperformat_tedi_applicant_eval" model="report.paperformat">
+    <field name="name">TEDI Applicant Evaluation (A4)</field>
+    <field name="format">A4</field>
+    <field name="orientation">Portrait</field>
+    <field name="margin_top">60</field>
+    <field name="margin_bottom">15</field>
+    <field name="margin_left">12</field>
+    <field name="margin_right">12</field>
+    <field name="header_spacing">28</field>
+    <field name="dpi">96</field>
+  </record>
+
+  <!-- TEMPLATE REPORT -->
+  <template id="report_applicant_evaluation">
+    <t t-call="web.html_container">
+      <t t-foreach="docs" t-as="doc">
+        <t t-call="web.external_layout">
+          <div class="page">
+            <div class="eval-wrapper">
+              <style>
+                .eval-wrapper { font-family: DejaVu Sans, sans-serif; }
+                .sheet { width:700px; margin:0 auto; border:1px solid #0b66c3; padding:0; }
+                .title { background:#0b66c3; color:#fff; text-align:center; font-weight:700; padding:8px 10px; font-size:14px; border-bottom:1px solid #0b66c3; }
+                .subtitle { background:#e8f1fb; color:#0b66c3; text-align:center; font-weight:700; padding:6px 8px; font-size:12px; border-top:1px solid #0b66c3; border-bottom:1px solid #0b66c3; }
+                .table { width:100%; border-collapse:collapse; }
+                .table td, .table th { border:1px solid #0b66c3; padding:8px; vertical-align:top; page-break-inside:avoid; }
+                .w30 { width:30%; } .w50 { width:50%; }
+                .center { text-align:center; } .muted { color:#3e6ea7; }
+                .row-h-md{height:64px;} .row-h-lg{height:92px;} .row-h-xl{height:120px;}
+                .big-empty{border-left:1px solid #0b66c3;border-right:1px solid #0b66c3;border-bottom:1px solid #0b66c3;height:120px;}
+              </style>
+
+              <div class="sheet">
+                <div class="title">BẢNG ĐÁNH GIÁ MỨC ĐỘ PHÙ HỢP ỨNG VIÊN</div>
+                <div class="subtitle">NỘI DUNG</div>
+
+                <table class="table">
+                  <colgroup><col class="w30"/><col/></colgroup>
+                  <tbody>
+                    <tr><td>Hồ sơ phù hợp với danh sách tuyển</td><td class="row-h-md"><t t-esc="doc.other_check or ''"/></td></tr>
+                    <tr><td>Khả năng chuyên môn, ngoại ngữ, tin học</td><td class="row-h-xl"><t t-esc="doc.professional_skill or ''"/></td></tr>
+                    <tr><td>Kinh nghiệm công tác</td><td class="row-h-md"><t t-esc="doc.work_experience or ''"/></td></tr>
+                    <tr><td>Kiểm tra khác</td><td class="row-h-md"><t t-esc="doc.other_check or ''"/></td></tr>
+                    <tr><td>Ngoại hình</td><td class="row-h-md"><t t-esc="doc.appearance or ''"/></td></tr>
+                    <tr><td>Kỹ năng diễn đạt</td><td class="row-h-md"><t t-esc="doc.expression_skill or ''"/></td></tr>
+                    <tr><td>Kỹ năng giao tiếp</td><td class="row-h-md"><t t-esc="doc.communication_skill or ''"/></td></tr>
+                    <tr><td>Khả năng hội nhập</td><td class="row-h-md"><t t-esc="doc.integration_skill or ''"/></td></tr>
+                    <tr><td>Khả năng hiểu biết về chuyên môn</td><td class="row-h-md"><t t-esc="doc.professional_knowledge or ''"/></td></tr>
+                    <tr><td>Nguyện vọng của ứng viên</td><td class="row-h-xl"><t t-esc="doc.career_objective or ''"/></td></tr>
+                  </tbody>
+                </table>
+
+                <div class="subtitle">ĐỀ XUẤT</div>
+                <table class="table">
+                  <colgroup><col class="w50"/><col class="w50"/></colgroup>
+                  <thead>
+                    <tr><th class="center muted">Đơn vị</th><th class="center muted">Phòng TCCB - LD</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td class="row-h-lg"><t t-esc="doc.proposal_unit or ''"/></td><td class="row-h-lg"><t t-esc="doc.proposal_hr or ''"/></td></tr>
+                  </tbody>
+                </table>
+
+                <div class="big-empty"></div>
+              </div>
+            </div>
+          </div>
+        </t>
+      </t>
+    </t>
+  </template>
+
+  <!-- ACTION REPORT PDF -->
+  <record id="action_report_applicant_evaluation" model="ir.actions.report">
+    <field name="name">Bảng đánh giá ứng viên</field>
+    <field name="model">hr.applicant</field>
+    <field name="report_type">qweb-pdf</field>
+    <field name="report_name">quan_ly_tuyen_dung.report_applicant_evaluation</field>
+    <field name="report_file">quan_ly_tuyen_dung.report_applicant_evaluation</field>
+    <field name="paperformat_id" ref="quan_ly_tuyen_dung.paperformat_tedi_applicant_eval"/>
+    <field name="print_report_name">'Danh_gia_' + (object.partner_name or object.name or 'Ung_vien')</field>
+  </record>
+
+  <!-- (Tuỳ chọn) ACTION HTML -->
+  <record id="action_report_applicant_evaluation_html" model="ir.actions.report">
+    <field name="name">Bảng đánh giá ứng viên (HTML)</field>
+    <field name="model">hr.applicant</field>
+    <field name="report_type">qweb-html</field>
+    <field name="report_name">quan_ly_tuyen_dung.report_applicant_evaluation</field>
+    <field name="paperformat_id" ref="quan_ly_tuyen_dung.paperformat_tedi_applicant_eval"/>
+  </record>
+
+</odoo>
