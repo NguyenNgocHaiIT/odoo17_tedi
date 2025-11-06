@@ -1,0 +1,10 @@
+<odoo noupdate="1">
+  <record id="exp_req_1" model="experience.request">
+    <field name="name">Tối thiểu 1 năm</field>
+    <field name="active">1</field>
+  </record>
+  <record id="exp_req_2" model="experience.request">
+    <field name="name">Tối thiểu 2–3 năm</field>
+    <field name="active">1</field>
+  </record>
+</odoo>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="hr_applicant_eval_form_standalone" model="ir.ui.view">
+    <field name="name">hr.applicant.eval.form.standalone</field>
+    <field name="model">hr.applicant</field>
+    <field name="arch" type="xml">
+      <form string="BẢNG ĐÁNH GIÁ ỨNG VIÊN SAU PHỎNG VẤN"
+            create="false" delete="false" class="tedi-eval-form">
+        <sheet>
+
+          <div class="tedi-eval-card">
+            <div class="tedi-title">BẢNG ĐÁNH GIÁ MỨC ĐỘ PHÙ HỢP ỨNG VIÊN</div>
+            <div class="tedi-subtitle">NỘI DUNG</div>
+
+            <table class="tedi-table">
+              <tbody>
+                <tr>
+                  <td>Hồ sơ phù hợp với danh sách tuyển</td>
+                  <td><field name="other_check"/></td>
+                </tr>
+                <tr>
+                  <td>Khả năng chuyên môn, ngoại ngữ, tin học</td>
+                  <td><field name="professional_skill"/></td>
+                </tr>
+                <tr>
+                  <td>Kinh nghiệm công tác</td>
+                  <td><field name="work_experience"/></td>
+                </tr>
+                <tr>
+                  <td>Kiểm tra khác</td>
+                  <td><field name="other_check"/></td>
+                </tr>
+                <tr>
+                  <td>Ngoại hình</td>
+                  <td><field name="appearance"/></td>
+                </tr>
+                <tr>
+                  <td>Kỹ năng diễn đạt</td>
+                  <td><field name="expression_skill"/></td>
+                </tr>
+                <tr>
+                  <td>Kỹ năng giao tiếp</td>
+                  <td><field name="communication_skill"/></td>
+                </tr>
+                <tr>
+                  <td>Khả năng hội nhập</td>
+                  <td><field name="integration_skill"/></td>
+                </tr>
+                <tr>
+                  <td>Khả năng hiểu biết về chuyên môn</td>
+                  <td><field name="professional_knowledge"/></td>
+                </tr>
+                <tr>
+                  <td>Nguyện vọng của ứng viên</td>
+                  <td><field name="career_objective"/></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="tedi-subtitle">ĐỀ XUẤT</div>
+            <table class="tedi-table">
+              <thead>
+                <tr>
+                  <th>Đơn vị</th>
+                  <th>Phòng TCCB - LD</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><field name="proposal_unit"/></td>
+                  <td><field name="proposal_hr"/></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="tedi-footer">
+              <button name="action_submit_eval" string="Trình duyệt"
+                      type="object" class="btn-primary"/>
+            </div>
+          </div>
+
+        </sheet>
+      </form>
+    </field>
+  </record>
+</odoo>

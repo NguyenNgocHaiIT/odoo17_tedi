@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="0">
+
+    <!-- ==== GROUPS (giữ nguyên như trước, thêm nếu thiếu) ==== -->
+    <record id="group_recruitment_committee" model="res.groups">
+      <field name="name">Recruitment: Committee (Ban tuyển dụng)</field>
+      <field name="category_id" ref="base.module_category_human_resources"/>
+    </record>
+
+    <record id="group_recruitment_director" model="res.groups">
+      <field name="name">Recruitment: Director (Giám đốc)</field>
+      <field name="category_id" ref="base.module_category_human_resources"/>
+    </record>
+
+    <record id="group_recruitment_board" model="res.groups">
+      <field name="name">Recruitment: Board (HĐQT)</field>
+      <field name="category_id" ref="base.module_category_human_resources"/>
+    </record>
+
+    <record id="group_recruitment_hr_officer" model="res.groups">
+      <field name="name">Recruitment: HR Officer (TCCB-LĐ)</field>
+      <field name="category_id" ref="base.module_category_human_resources"/>
+    </record>
+
+<!--    Set quyền stage ứng viên  -->
+    <record id="group_recruitment_stage_editors" model="res.groups">
+    <field name="name">Recruitment: Can Change Stage</field>
+    <field name="category_id" ref="base.module_category_human_resources"/>
+    <!-- ai thuộc các group này sẽ tự động thuộc meta-group -->
+    <field name="implied_ids" eval="[
+        (4, ref('quan_ly_tuyen_dung.group_recruitment_hr_officer')),
+        (4, ref('quan_ly_tuyen_dung.group_recruitment_committee')),
+        (4, ref('quan_ly_tuyen_dung.group_recruitment_director')),
+        (4, ref('quan_ly_tuyen_dung.group_recruitment_board')),
+    ]"/>
+    </record>
+
+
+    <!-- =========================================================
+         KẾ HOẠCH: (giữ nguyên ma trận cũ)
+         - Committee: CRUD FULL (phê duyệt cuối khóa ở button)
+         - Director: CRUD FULL (phê duyệt cuối khóa ở button)
+         - Board: CRUD FULL + approve cuối
+         - HR: READ-ONLY
+         ========================================================= -->
+
+
+    <!-- recruitment.plan -->
+    <record id="rr_plan_committee_all" model="ir.rule">
+      <field name="name">Recruitment Plan - Committee ALL</field>
+      <field name="model_id" ref="model_recruitment_plan"/>
+      <field name="groups" eval="[(4, ref('group_recruitment_committee'))]"/>
+      <field name="domain_force">[(1,'=',1)]</field>
+      <field name="perm_read" eval="1"/><field name="perm_write" eval="1"/>
+      <field name="perm_create" eval="1"/><field name="perm_unlink" eval="1"/>
+    </record>
+    <record id="rr_plan_director_all" model="ir.rule">
+      <field name="name">Recruitment Plan - Director ALL</field>
+      <field name="model_id" ref="model_recruitment_plan"/>
+      <field name="groups" eval="[(4, ref('group_recruitment_director'))]"/>
+      <field name="domain_force">[(1,'=',1)]</field>
+      <field name="perm_read" eval="1"/><field name="perm_write" eval="1"/>
+      <field name="perm_create" eval="1"/><field name="perm_unlink" eval="1"/>
+    </record>
+    <record id="rr_plan_board_all" model="ir.rule">
+      <field name="name">Recruitment Plan - Board ALL</field>
+      <field name="model_id" ref="model_recruitment_plan"/>
+      <field name="groups" eval="[(4, ref('group_recruitment_board'))]"/>
+      <field name="domain_force">[(1,'=',1)]</field>
+      <field name="perm_read" eval="1"/><field name="perm_write" eval="1"/>
+      <field name="perm_create" eval="1"/><field name="perm_unlink" eval="1"/>
+    </record>
+    <record id="rr_plan_hr_ro" model="ir.rule">
+      <field name="name">Recruitment Plan - HR READONLY</field>
+      <field name="model_id" ref="model_recruitment_plan"/>
+      <field name="groups" eval="[(4, ref('group_recruitment_hr_officer'))]"/>
+      <field name="domain_force">[(1,'=',1)]</field>
+      <field name="perm_read" eval="1"/><field name="perm_write" eval="0"/>
+      <field name="perm_create" eval="0"/><field name="perm_unlink" eval="0"/>
+    </record>
+
+    <!-- recruitment.plan.detail -->
+    <record id="rr_plan_detail_committee_all" model="ir.rule">
+      <field name="name">Plan Detail - Committee ALL</field>
+      <field name="model_id" ref="model_recruitment_plan_detail"/>
+      <field name="groups" eval="[(4, ref('group_recruitment_committee'))]"/>
+      <field name="domain_force">[(1,'=',1)]</field>
+      <field name="perm_read" eval="1"/><field name="perm_write" eval="1"/>
+      <field name="perm_create" eval="1"/><field name="perm_unlink" eval="1"/>
+    </record>
+    <record id="rr_plan_detail_director_all" model="ir.rule">
+      <field name="name">Plan Detail - Director ALL</field>
+      <field name="model_id" ref="model_recruitment_plan_detail"/>
+      <field name="groups" eval="[(4, ref('group_recruitment_director'))]"/>
+      <field name="domain_force">[(1,'=',1)]</field>
+      <field name="perm_read" eval="1"/><field name="perm_write" eval="1"/>
+      <field name="perm_create" eval="1"/><field name="perm_unlink" eval="1"/>
+    </record>
+    <record id="rr_plan_detail_board_all" model="ir.rule">
+      <field name="name">Plan Detail - Board ALL</field>
+      <field name="model_id" ref="model_recruitment_plan_detail"/>
+      <field name="groups" eval="[(4, ref('group_recruitment_board'))]"/>
+      <field name="domain_force">[(1,'=',1)]</field>
+      <field name="perm_read" eval="1"/><field name="perm_write" eval="1"/>
+      <field name="perm_create" eval="1"/><field name="perm_unlink" eval="1"/>
+    </record>
+    <record id="rr_plan_detail_hr_ro" model="ir.rule">
+      <field name="name">Plan Detail - HR READONLY</field>
+      <field name="model_id" ref="model_recruitment_plan_detail"/>
+      <field name="groups" eval="[(4, ref('group_recruitment_hr_officer'))]"/>
+      <field name="domain_force">[(1,'=',1)]</field>
+      <field name="perm_read" eval="1"/><field name="perm_write" eval="0"/>
+      <field name="perm_create" eval="0"/><field name="perm_unlink" eval="0"/>
+    </record>
+
+    <!-- =========================================================
+         ỨNG VIÊN: (đã SỬA theo yêu cầu mới)
+         - HR: CRUD FULL
+         - Committee: thêm quyền WRITE/CREATE
+         - Director: thêm quyền WRITE/CREATE
+         - Board:   thêm quyền WRITE/CREATE
+         - (unlink vẫn khóa mặc định để tránh xóa nhầm)
+         ========================================================= -->
+
+    <!-- HR: ALL -->
+    <record id="rr_applicant_hr_all" model="ir.rule">
+      <field name="name">Applicant - HR ALL</field>
+      <field name="model_id" ref="hr_recruitment.model_hr_applicant"/>
+      <field name="groups" eval="[(4, ref('group_recruitment_hr_officer'))]"/>
+      <field name="domain_force">[(1,'=',1)]</field>
+      <field name="perm_read" eval="1"/><field name="perm_write" eval="1"/>
+      <field name="perm_create" eval="1"/><field name="perm_unlink" eval="0"/>
+    </record>
+
+    <!-- Committee/GD/HĐQT: READ + WRITE + CREATE (không unlink) -->
+    <record id="rr_applicant_committee_write" model="ir.rule">
+      <field name="name">Applicant - Committee Write</field>
+      <field name="model_id" ref="hr_recruitment.model_hr_applicant"/>
+      <field name="groups" eval="[(4, ref('group_recruitment_committee'))]"/>
+      <field name="domain_force">[(1,'=',1)]</field>
+      <field name="perm_read" eval="1"/><field name="perm_write" eval="1"/>
+      <field name="perm_create" eval="1"/><field name="perm_unlink" eval="0"/>
+    </record>
+
+    <record id="rr_applicant_director_write" model="ir.rule">
+      <field name="name">Applicant - Director Write</field>
+      <field name="model_id" ref="hr_recruitment.model_hr_applicant"/>
+      <field name="groups" eval="[(4, ref('group_recruitment_director'))]"/>
+      <field name="domain_force">[(1,'=',1)]</field>
+      <field name="perm_read" eval="1"/><field name="perm_write" eval="1"/>
+      <field name="perm_create" eval="1"/><field name="perm_unlink" eval="0"/>
+    </record>
+
+    <record id="rr_applicant_board_write" model="ir.rule">
+      <field name="name">Applicant - Board Write</field>
+      <field name="model_id" ref="hr_recruitment.model_hr_applicant"/>
+      <field name="groups" eval="[(4, ref('group_recruitment_board'))]"/>
+      <field name="domain_force">[(1,'=',1)]</field>
+      <field name="perm_read" eval="1"/><field name="perm_write" eval="1"/>
+      <field name="perm_create" eval="1"/><field name="perm_unlink" eval="0"/>
+    </record>
+
+    <!-- (Giữ nguyên bảng con: HR FULL, 3 nhóm kia READ-ONLY — không đổi ở đây) -->
+
+  </data>
+</odoo>

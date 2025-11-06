@@ -1,0 +1,115 @@
+
+:root {
+
+  --tedi-radius: 10px;
+  --tedi-border-color: #d8dadd;     /* xám nhạt */
+  --tedi-border-focus: #1f6feb;     /* xanh focus */
+  --tedi-bg: #ffffff;
+  --tedi-bg-disabled: #f4f5f7;
+  --tedi-shadow-focus: rgba(31, 111, 235, 0.25);
+}
+
+/* Gộp tất cả các input hay dùng trong form Odoo */
+.o_form_view {
+  /* input text, number, monetary, datepicker input, autocomplete, select, textarea */
+  .o_field_widget {
+
+    /* INPUT cơ bản (trừ checkbox/radio) */
+    input:not([type="checkbox"]):not([type="radio"]),
+    .o_input,
+    .o-autocomplete--input,
+    .o_datepicker_input,
+    select,
+    textarea {
+      border-radius: var(--tedi-radius);
+      border: 1px solid var(--tedi-border-color);
+      background: var(--tedi-bg);
+      padding: 6px 10px;
+      outline: none;
+      box-shadow: none;
+      transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+      min-height: 34px; /* nhìn gọn gàng, đồng đều */
+    }
+
+    /* Focus trạng thái */
+    input:not([type="checkbox"]):not([type="radio"]):focus,
+    .o_input:focus,
+    .o-autocomplete--input:focus,
+    .o_datepicker_input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--tedi-border-focus);
+      box-shadow: 0 0 0 3px var(--tedi-shadow-focus);
+    }
+
+    /* Disabled / Readonly */
+    input[disabled], .o_input[disabled],
+    .o-autocomplete--input[disabled],
+    .o_datepicker_input[disabled],
+    select:disabled, textarea:disabled,
+    input[readonly], .o_input[readonly],
+    .o-autocomplete--input[readonly],
+    .o_datepicker_input[readonly],
+    select[readonly], textarea[readonly] {
+      background: var(--tedi-bg-disabled);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Invalid (Odoo thường set aria-invalid hoặc class invalid) */
+    [aria-invalid="true"],
+    .is-invalid,
+    .o_field_invalid & {
+      border-color: #dc3545;                  /* đỏ */
+      box-shadow: 0 0 0 3px rgba(220, 53, 69, .15);
+    }
+
+    /* Many2one input cũng là .o_input bên trong widget */
+    &.o_field_many2one .o_input {
+      border-radius: var(--tedi-radius);
+    }
+
+    /* Monetary (có symbol/currency) */
+    &.o_field_monetary .o_input {
+      border-radius: var(--tedi-radius);
+    }
+
+    /* Date/datetime widget */
+    &.o_datepicker .o_datepicker_input {
+      border-radius: var(--tedi-radius);
+    }
+  }
+
+  /* Chọn nhanh: ô Select (m2o/m2m x2many) giữ bo tròn */
+  .o_input_dropdown {
+    .o_input, select {
+      border-radius: var(--tedi-radius);
+    }
+  }
+}
+
+/* Tăng bo tròn cho ô tìm kiếm ở dialog/relational popups (tùy chọn) */
+.o_modal .o-autocomplete--input,
+.o_searchview_input_container .o_searchview_input {
+  border-radius: var(--tedi-radius);
+}
+
+/* Giữ bo tròn cho filter ở control panel (tùy chọn) */
+.o_control_panel .o_cp_searchview .o_searchview_input {
+  border-radius: var(--tedi-radius);
+}
+
+/* Nếu muốn placeholder dịu hơn (tùy chọn) */
+.o_form_view .o_field_widget .o_input::placeholder,
+.o_form_view .o_field_widget textarea::placeholder {
+  opacity: .7;
+}
+
+
+.o_form_view .tedi-notebook > .tab-content > .tab-pane {
+    padding: 0 !important;
+}
+
+
+
+

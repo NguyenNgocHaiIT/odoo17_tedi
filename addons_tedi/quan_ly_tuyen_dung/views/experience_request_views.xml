@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <!-- TREE -->
+  <record id="view_hr_experience_request_tree" model="ir.ui.view">
+    <field name="name">experience.request.tree</field>
+    <field name="model">experience.request</field>
+    <field name="arch" type="xml">
+      <tree string="Yêu cầu kinh nghiệm" editable="bottom" class="tedi-subtree">
+        <field name="name" string="Tên" required="1"/>
+        <field name="active" string="Kích hoạt"/>
+      </tree>
+    </field>
+  </record>
+
+  <!-- FORM -->
+  <record id="view_hr_experience_request_form" model="ir.ui.view">
+    <field name="name">experience.request.form</field>
+    <field name="model">experience.request</field>
+    <field name="arch" type="xml">
+        <form string="Yêu cầu kinh nghiệm">
+          <sheet>
+            <group>
+              <field name="name" string="Tên" required="1"/>
+              <field name="active" string="Kích hoạt"/>
+            </group>
+          </sheet>
+          <!-- KHÔNG cần footer -->
+        </form>
+
+    </field>
+  </record>
+
+  <!-- ACTION -->
+  <record id="action_experience_request" model="ir.actions.act_window">
+    <field name="name">Yêu cầu kinh nghiệm</field>
+    <field name="res_model">experience.request</field>
+    <field name="view_mode">tree,form</field>
+    <field name="view_id" ref="view_hr_experience_request_tree"/>
+    <field name="context">{'active_test': False}</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">
+        Tạo yêu cầu kinh nghiệm đầu tiên của bạn
+      </p>
+    </field>
+  </record>
+
+</odoo>
