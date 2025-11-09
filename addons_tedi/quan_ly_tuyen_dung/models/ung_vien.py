@@ -1,12 +1,13 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, AccessError
+import re
 
 # ==== NHÓM ĐƯỢC PHÉP TẠO/SỬA ỨNG VIÊN ====
 HR_OFFICER = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
 COMMITTEE  = "quan_ly_tuyen_dung.group_recruitment_committee"
 DIRECTOR   = "quan_ly_tuyen_dung.group_recruitment_director"
 BOARD      = "quan_ly_tuyen_dung.group_recruitment_board"
-BASE      = 'base.group_user'
+BASE       = "base.group_user"
 
 def _user_is_applicant_editor(env):
     u = env.user
@@ -18,13 +19,48 @@ def _user_is_applicant_editor(env):
         u.has_group(BASE)
     ])
 
+EMAIL_RE = re.compile(
+    r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$"
+)
+# Cho VN: 0xxxxxxxxx (10 số, đầu 03/05/07/08/09) hoặc E.164: +84xxxxxxxxx
+VN_LOCAL_RE = re.compile(r"^(0)(3|5|7|8|9)\d{8}$")
+E164_RE = re.compile(r"^\+[1-9]\d{7,14}$")  # ITU E.164: 8–15 digits, không bắt đầu bằng 0
 
-QUAL_SELECTION = [
-    ("bachelor", "Cử nhân"),
-    ("engineer", "Kỹ sư"),
-    ("master", "Thạc sĩ"),
-    ("PhD", "Tiến sĩ"),
-]
+# ============= ACL THEO STAGE =============
+STAGE_ACL = {
+    "New": [
+        "quan_ly_tuyen_dung.group_recruitment_hr_officer",
+        "quan_ly_tuyen_dung.group_recruitment_committee",
+        "base.group_user",
+    ],
+    "Initial Qualification": [
+        "quan_ly_tuyen_dung.group_recruitment_hr_officer",
+        "quan_ly_tuyen_dung.group_recruitment_committee",
+        "base.group_user",
+    ],
+    "First Interview": [
+        "quan_ly_tuyen_dung.group_recruitment_hr_officer",
+        "quan_ly_tuyen_dung.group_recruitment_committee",
+        "base.group_user",
+    ],
+    "Second Interview": [
+        "quan_ly_tuyen_dung.group_recruitment_hr_officer",
+        "quan_ly_tuyen_dung.group_recruitment_committee",
+        "quan_ly_tuyen_dung.group_recruitment_director",
+        "base.group_user",
+    ],
+    "Contract Proposal": [
+        "quan_ly_tuyen_dung.group_recruitment_director",
+        "quan_ly_tuyen_dung.group_recruitment_board",
+        "base.group_user",
+    ],
+    "Contract Signed": [
+        "quan_ly_tuyen_dung.group_recruitment_director",
+        "quan_ly_tuyen_dung.group_recruitment_board",
+        "base.group_user",
+    ],
+}
+
 
 class Applicant(models.Model):
     _inherit = 'hr.applicant'
@@ -52,41 +88,45 @@ class Applicant(models.Model):
         "ir.attachment",
         "applicant_rate_attachment_rel",
         "applicant_id", "attachment_id",
-        string="Tài liệu đánh giá ứng viên"
+        string="Link hồ sơ"
     )
 
     isEmp = fields.Boolean(string="Is Emp", default=False)
 
     recruitment_plan_id = fields.Many2one("recruitment.plan", string="Đợt tuyển dụng")
 
-    education_level_ids = fields.One2many('education.level', 'applicant_id', string="Trình độ học vấn")
-    old_work_process_ids = fields.One2many('old.work.process', 'applicant_id', string="Quá trình công tác cũ")
-    professor_license_ids = fields.One2many('professor.license', 'applicant_id', string="Chứng chỉ hành nghề")
-    training_process_ids = fields.One2many('training.process', 'applicant_id', string="Quá trình đào tạo")
-
-    highest_professional_qualification = fields.Selection(
-        selection=QUAL_SELECTION,
-        string="Trình độ cao nhất",
-        compute="_compute_highest_professional_qualification",
-        store=True,
-        index=True,
+    # ====== (MỚI) Danh sách job hợp lệ theo Plan/Dept để domain job_id ======
+    available_job_ids = fields.Many2many(
+        'hr.job',
+        string='Jobs in Plan (computed)',
+        compute='_compute_available_job_ids',
+        store=False,
     )
-    education_level_count = fields.Integer(
-        string="Số bậc học",
-        compute="_compute_edu_count",
-        store=True,
+
+    # Các bộ sưu tập trên Applicant (mapping sang Employee)
+    certificate_ids = fields.One2many(
+        "hr.employee.certificate", "applicant_id", string="Chứng chỉ (ứng viên)"
+    )
+    training_ids = fields.One2many(
+        "hr.employee.training", "applicant_id", string="Đào tạo (ứng viên)"
+    )
+    experience_ids = fields.One2many(
+        "hr.employee.work.process.old", "applicant_id", string="Quá trình công tác cũ (ứng viên)"
+    )
+    education_ids = fields.One2many(
+        "hr.employee.education", "applicant_id", string="Trình độ học vấn (ứng viên)"
     )
 
     # Đánh giá sau phỏng vấn
     professional_skill = fields.Char(string="Khả năng chuyên môn")
     work_experience = fields.Char(string="Kinh nghiệm công tác")
-    other_check =fields.Char(string="Kiểm tra khác")
-    appearance = fields.Char(string ="Ngoại hình")
-    expression_skill = fields.Char(string = "Kỹ năng diễn đạt")
-    communication_skill = fields.Char(string ="Kỹ năng giao tiếp")
-    integration_skill = fields.Char(string = "Kỹ năng hội nhập")
+    other_check = fields.Char(string="Kiểm tra khác")
+    appearance = fields.Char(string="Ngoại hình")
+    expression_skill = fields.Char(string="Kỹ năng diễn đạt")
+    communication_skill = fields.Char(string="Kỹ năng giao tiếp")
+    integration_skill = fields.Char(string="Kỹ năng hội nhập")
     professional_knowledge = fields.Char(string="Khả năng hiểu biết về chuyên môn")
-    career_objective= fields.Char(string ="Nguyện vọng của ứng viên")
+    career_objective = fields.Char(string="Nguyện vọng của ứng viên")
 
     proposal_unit = fields.Text(string="Đề xuất (Đơn vị)")
     proposal_hr   = fields.Text(string="Đề xuất (Phòng TCCB - LD)")
@@ -101,13 +141,12 @@ class Applicant(models.Model):
             'res_id': self.id,
             'view_mode': 'form',
             'views': [(view.id, 'form')],
-            'target': 'current',  # hoặc 'new'
+            'target': 'current',
             'context': {'form_view_initial_mode': 'edit'},
         }
 
     def action_submit_eval(self):
         self.ensure_one()
-        # logic xử lý hoặc thông báo
         return self.env.ref(
             'quan_ly_tuyen_dung.action_report_applicant_evaluation'
         ).report_action(self)
@@ -136,37 +175,41 @@ class Applicant(models.Model):
             'context': dict(self.env.context, active_id=self.id),
         }
 
-    # ================== DOMAIN HELPER ==================
-    def _get_job_domain(self):
-        self.ensure_one()
-        domain = [('active', '=', True)]
-        if self.recruitment_plan_id:
-            jobs_in_plan = self.recruitment_plan_id.recruitment_plan_detail_ids.mapped('recruitment_job').ids
-            domain.append(('id', 'in', jobs_in_plan))
-        if self.department_id:
-            domain.append(('department_id', '=', self.department_id.id))
-        return domain
+
+    # ================== (MỚI) COMPUTE available_job_ids ==================
+    @api.depends('recruitment_plan_id')  # <-- bỏ department_id ở đây
+    def _compute_available_job_ids(self):
+        Job = self.env['hr.job']
+        for rec in self:
+            jobs = Job.browse()
+            if rec.recruitment_plan_id:
+                # LẤY HẾT job trong plan, KHÔNG lọc theo department
+                jobs = rec.recruitment_plan_id.recruitment_plan_detail_ids.mapped('recruitment_job')
+            else:
+                # Không có plan: nếu muốn vẫn hỗ trợ chọn theo phòng ban khi KHÔNG có plan
+                if rec.department_id:
+                    jobs = Job.search([('active', '=', True),
+                                       ('department_id', '=', rec.department_id.id)])
+            rec.available_job_ids = jobs
 
     # ================== ONCHANGE / DOMAIN ==================
     @api.onchange('recruitment_plan_id')
     def _onchange_recruitment_plan_id(self):
         for rec in self:
-            domain_plan = [('recruitment_status', '!=', 'complete')]
-            if rec.job_id:
+            if rec.recruitment_plan_id and rec.job_id:
                 jobs_in_plan = rec.recruitment_plan_id.recruitment_plan_detail_ids.mapped('recruitment_job')
-                if rec.recruitment_plan_id and rec.job_id not in jobs_in_plan:
+                if rec.job_id not in jobs_in_plan:
                     rec.job_id = False
-            return {'domain': {
-                'recruitment_plan_id': domain_plan,
-                'job_id': rec._get_job_domain(),
-            }}
+        # chỉ thống nhất domain của PLAN (trùng XML), KHÔNG trả domain job_id để tránh “đua”
+        return {'domain': {'recruitment_plan_id': [('recruitment_status', '=', 'complete')]}}
 
     @api.onchange('department_id')
     def _onchange_department_id(self):
         for rec in self:
-            if rec.job_id and rec.job_id.department_id != rec.department_id:
-                rec.job_id = False
-            return {'domain': {'job_id': rec._get_job_domain()}}
+            if rec.department_id and rec.job_id:
+                # Nếu job đang chọn không thuộc phòng ban mới -> xóa
+                if rec.job_id.department_id != rec.department_id:
+                    rec.job_id = False
 
     @api.onchange('job_id')
     def _onchange_job_id(self):
@@ -213,23 +256,6 @@ class Applicant(models.Model):
             job = self.job_id.name or ''
             partner = self.partner_name or ''
             self.name = f"Ứng tuyển {job} – {partner}" if job and partner else job or partner
-
-    # ================== COMPUTE EDU ==================
-    @api.depends('education_level_ids.professional_qualification')
-    def _compute_highest_professional_qualification(self):
-        rank = {'bachelor': 1, 'engineer': 2, 'master': 3, 'PhD': 4}
-        for rec in self:
-            best_key, best_rank = False, 0
-            for lvl in rec.education_level_ids:
-                key = lvl.professional_qualification
-                if key and rank.get(key, 0) > best_rank:
-                    best_key, best_rank = key, rank[key]
-            rec.highest_professional_qualification = best_key
-
-    @api.depends('education_level_ids')
-    def _compute_edu_count(self):
-        for rec in self:
-            rec.education_level_count = len(rec.education_level_ids)
 
     # ================== ACL CHUYỂN STAGE ==================
     def _user_can_move_to_stage(self, stage_name: str) -> bool:
@@ -302,10 +328,16 @@ class Applicant(models.Model):
     def _apply_hired_side_effects_once(self):
         for app in self:
             if app.hired_counters_done:
+                # ĐÃ chạy counters rồi; nhưng nếu giờ mới có emp_id thì vẫn sync 1 lần
+                if app.emp_id and not app.applicant_sync_done:
+                    app._sync_to_employee_if_any(force=False)
                 continue
             app._reduce_plan_quantity(app)
             app._update_job_counters_when_hired(app)
             app.sudo().write({'hired_counters_done': True})
+            # nếu đã có emp thì sync ngay
+            if app.emp_id:
+                app._sync_to_employee_if_any(False)
 
     # ================== SIDE-EFFECTS: KHI RỜI KHỎI ĐÃ TUYỂN ==================
     def _rollback_hired_side_effects_if_needed(self):
@@ -399,44 +431,117 @@ class Applicant(models.Model):
             job.no_of_hired_employee,
         ))
 
+    _APPLICANT_TO_EMPLOYEE_FIELD_MAP = [
+        # (applicant_field, employee_field)
+        ("email_from", "work_email"),
+        ("partner_mobile", "mobile_phone"),
+        ("address", "household_address"),
+        ("folk", "ethnicity"),
+        ("current_job", "occupation"),
+        ("dob", "birthday"),
+        # ("email_from", "email_personal"),
+    ]
+
+    # ======== Copy các trường đơn (char/date/m2o...) ========
+    def _copy_simple_fields_to_employee(self, employee):
+        write_vals = {}
+        for a_field, e_field in self._APPLICANT_TO_EMPLOYEE_FIELD_MAP:
+            if a_field in self._fields and e_field in employee._fields:
+                write_vals[e_field] = self[a_field]
+        if write_vals:
+            employee.sudo().write(write_vals)
+
+    # ======== Clone các bộ sưu tập O2M (đào tạo/chứng chỉ/kinh nghiệm/trình độ) ========
+    def _copy_collections_to_employee(self, employee):
+        def _copy_lines(o2m_recs):
+            for line in o2m_recs:
+                vals = {}
+                for fname, field in line._fields.items():
+                    if fname in ('id', 'create_uid', 'create_date', 'write_uid', 'write_date', 'employee_id',
+                                 'applicant_id'):
+                        continue
+                    vals[fname] = line[fname]
+                vals['employee_id'] = employee.id
+                vals['applicant_id'] = False
+                new_line = line.copy(default=vals)
+                if 'attachment_ids' in line._fields:
+                    new_line.attachment_ids = [(6, 0, line.attachment_ids.ids)]
+
+        _copy_lines(self.certificate_ids)
+        _copy_lines(self.training_ids)
+        _copy_lines(self.experience_ids)
+        _copy_lines(self.education_ids)
+
+    # ======== Đồng bộ tổng (idempotent nhẹ bằng cờ) ========
+    applicant_sync_done = fields.Boolean(string="Đã đồng bộ sang nhân viên", default=False)
+
+    def _sync_to_employee_if_any(self, force=False):
+        for app in self:
+            employee = app.emp_id
+            if not employee:
+                continue
+            if app.applicant_sync_done and not force:
+                continue
+            app._copy_simple_fields_to_employee(employee)
+            app._copy_collections_to_employee(employee)
+            app.sudo().write({'applicant_sync_done': True})
+            app.message_post(body=_("Đã đồng bộ dữ liệu hồ sơ ứng viên sang nhân viên %s.") % (employee.name,))
+
     # ================== HOOK CHUẨN ODOO: TẠO EMPLOYEE ==================
     def create_employee_from_applicant(self):
         res = super().create_employee_from_applicant()
+        # giữ logic của bạn
         self._apply_hired_side_effects_once()
+
+        # bổ sung đồng bộ Applicant -> Employee
+        self._sync_to_employee_if_any(force=False)
+
+        # cập nhật cờ isEmp (bạn đang dùng ở constraint không cho lùi từ đã tuyển)
+        self.filtered(lambda a: a.emp_id and not a.isEmp).sudo().write({'isEmp': True})
         return res
 
+    # ---- Helpers ----
+    def _norm_phone(self, s):
+        if not s:
+            return s
+        p = re.sub(r"[^\d+]", "", s.strip())
+        if p.startswith('84') and not p.startswith('+'):
+            p = '+' + p
+        if VN_LOCAL_RE.match(p):        # 0xxxxxxxxx -> +84xxxxxxxxx
+            p = '+84' + p[1:]
+        return p
 
-# ============= ACL THEO STAGE =============
-STAGE_ACL = {
-    "New": [
-        "quan_ly_tuyen_dung.group_recruitment_hr_officer",
-        "quan_ly_tuyen_dung.group_recruitment_committee",
-        "base.group_user",
-    ],
-    "Initial Qualification": [
-        "quan_ly_tuyen_dung.group_recruitment_hr_officer",
-        "quan_ly_tuyen_dung.group_recruitment_committee",
-        "base.group_user",
-    ],
-    "First Interview": [
-        "quan_ly_tuyen_dung.group_recruitment_hr_officer",
-        "quan_ly_tuyen_dung.group_recruitment_committee",
-        "base.group_user",
-    ],
-    "Second Interview": [
-        "quan_ly_tuyen_dung.group_recruitment_hr_officer",
-        "quan_ly_tuyen_dung.group_recruitment_committee",
-        "quan_ly_tuyen_dung.group_recruitment_director",
-        "base.group_user",
-    ],
-    "Contract Proposal": [
-        "quan_ly_tuyen_dung.group_recruitment_director",
-        "quan_ly_tuyen_dung.group_recruitment_board",
-        "base.group_user",
-    ],
-    "Contract Signed": [
-        "quan_ly_tuyen_dung.group_recruitment_director",
-        "quan_ly_tuyen_dung.group_recruitment_board",
-        "base.group_user",
-    ],
-}
+    def _is_valid_email(self, s):
+        return bool(s and EMAIL_RE.match(s))
+
+    def _is_valid_phone(self, s):
+        if not s:
+            return False
+        p = self._norm_phone(s)
+        return bool(VN_LOCAL_RE.match(s) or E164_RE.match(p))
+
+    # ====== ONCHANGE: phản hồi ngay khi sửa trường ======
+    @api.onchange('email_from')
+    def _onchange_email_from(self):
+        if self.email_from:
+            self.email_from = self.email_from.strip()
+            if not self._is_valid_email(self.email_from):
+                return {
+                    'warning': {
+                        'title': _('Email không hợp lệ'),
+                        'message': _('Vui lòng nhập đúng định dạng email (vd: ten@domain.com).')
+                    }
+                }
+
+    @api.onchange('partner_mobile')
+    def _onchange_partner_mobile(self):
+        if self.partner_mobile:
+            norm = self._norm_phone(self.partner_mobile)
+            if not self._is_valid_phone(self.partner_mobile):
+                return {
+                    'warning': {
+                        'title': _('Số điện thoại không hợp lệ'),
+                        'message': _('Chấp nhận 0xxxxxxxxx (VN) hoặc E.164 như +84xxxxxxxxx.')
+                    }
+                }
+            self.partner_mobile = norm

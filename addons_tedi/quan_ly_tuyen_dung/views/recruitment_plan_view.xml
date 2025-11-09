@@ -34,7 +34,7 @@
                  context="{'default_active': True}"
                  options="{'no_quick_create': True}"/>
           <field name="professional_qualification" string="Trình độ chuyên môn"/>
-          <field name="attachment_ids" string="Mô tả công việc" widget="many2many_tags"/>
+          <field name="attachment_ids" string="Mô tả công việc" widget="many2many_binary"/>
           <field name="note" string="Ghi chú"/>
 
           <!-- Thay tags bằng button -->
@@ -118,17 +118,21 @@
             <!-- Trình duyệt: chỉ khi draft -->
             <button name="action_submit" type="object" string="Trình duyệt"
                     class="btn-primary"
-                    groups="quan_ly_tuyen_dung.group_recruitment_committee,
-                            base.group_user,
-                            quan_ly_tuyen_dung.group_recruitment_director,
-                            quan_ly_tuyen_dung.group_recruitment_board"
+                    groups="quan_ly_tuyen_dung.group_recruitment_committee"
                     invisible="recruitment_status != 'draft'"/>
 
-            <!-- Hoàn thành: chỉ Board -->
-            <button name="action_complete" type="object" string="Hoàn thành"
+             <!-- Hoàn thành: chỉ Board -->
+            <button name="action_board_approve" type="object" string="Phê duyệt"
                     class="btn-success"
-                    groups="quan_ly_tuyen_dung.group_recruitment_board , base.group_user"
+                    groups="quan_ly_tuyen_dung.group_recruitment_board "
                     invisible="recruitment_status != 'waiting' or is_applied_to_jobs"/>
+
+            <!-- Hoàn thành: chỉ Director -->
+            <button name="action_director_approve" type="object" string="Hoàn Thành"
+                    class="btn-success"
+                    groups="quan_ly_tuyen_dung.group_recruitment_director "
+                    invisible="recruitment_status != 'board_approve' or is_applied_to_jobs"/>
+
           </header>
 
           <sheet>
