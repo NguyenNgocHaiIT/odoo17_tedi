@@ -1,0 +1,16 @@
+{
+    'name': "TEDI: Dự án",
+    'version': "1.0",
+    'summary': "",
+    'description': """""",
+    'category': 'Project',
+    'author': "YourCompany",
+    'depends': ['project'],
+    'data': [
+        'views/project.xml',
+        'views/menu.xml',
+    ],
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+}
