@@ -5,8 +5,9 @@
     'description': """""",
     'category': 'Project',
     'author': "YourCompany",
-    'depends': ['project'],
+    'depends': ['project', 'account'],
     'data': [
+        'security/ir.model.access.csv',
         'views/project.xml',
         'views/menu.xml',
     ],

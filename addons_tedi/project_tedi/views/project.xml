@@ -1,6 +1,38 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <data>
+        <template id="project_section_note_style" inherit_id="web.assets_backend" name="Section and Note Style">
+            <xpath expr="." position="inside">
+                <style>
+                    /* Tree view One2many */
+                    .o_field_tree .o_is_line_section .o_field_char,
+                    .o_field_tree .o_is_line_section .o_field_text {
+                        font-weight: bold;
+                        font-style: italic;
+                        color: #0a6ebd;
+                    }
+                    .o_field_tree .o_is_line_note .o_field_char,
+                    .o_field_tree .o_is_line_note .o_field_text {
+                        color: #6c757d;
+                        font-style: italic;
+                    }
+
+                    /* Form view One2many */
+                    .o_form_view .o_is_line_section .o_field_char,
+                    .o_form_view .o_is_line_section .o_field_text {
+                        font-weight: bold;
+                        font-style: italic;
+                        color: #0a6ebd;
+                    }
+                    .o_form_view .o_is_line_note .o_field_char,
+                    .o_form_view .o_is_line_note .o_field_text {
+                        color: #6c757d;
+                        font-style: italic;
+                    }
+                </style>
+            </xpath>
+        </template>
+
         <record id="view_project_form" model="ir.ui.view">
             <field name="name">view_project_form</field>
             <field name="model">project.project</field>
@@ -9,7 +41,44 @@
                     <header>
                     </header>
                     <sheet>
-
+                        <div class="oe_title">
+                        <h1 class="d-flex flex-row">
+                            <field name="name" widget="text" class="o_text_overflow" placeholder="e.g. Office Party"/>
+                        </h1>
+                    </div>
+                        <group>
+                            <group>
+                                <field name="code"/>
+                                <field name="partner_id"/>
+                                <field name="phan_loai_goi_thau"/>
+                                <field name="phan_loai_cong_trinh"/>
+                            </group>
+                            <group>
+                                <field name="user_id"/>
+                                <field name="giai_doan_du_an"/>
+                                <field name="date" invisible="1"/>
+                                <field name="date_start" string="Planned Date" widget="daterange" options='{"end_date_field": "date", "always_range": "1"}' required="date_start or date" />
+                                <field name="contract_id"/>
+                                <field name="company_id"/>
+                            </group>
+                        </group>
+                        <field name="project_member_ids" widget="section_and_note_one2many" mode="tree,kanban">
+                            <tree editable="bottom">
+                                <control>
+                                    <create name="add_product_control" string="Add a product"/>
+                                    <create name="add_section_control" string="Add a section" context="{'default_display_type': 'line_section'}"/>
+                                    <create name="add_note_control" string="Add a note" context="{'default_display_type': 'line_note'}"/>
+<!--                                    <button name="action_add_from_catalog" string="Catalog" type="object" class="px-4 btn-link" context="{'order_id': parent.id}"/>-->
+                                </control>
+                                <field name="sequence" widget="handle" />
+                                <field name="name" widget="section_and_note_text"/>
+                                <field name="display_type"/>
+                                <field name="employee_id"/>
+                                <field name="job_id"/>
+                                <field name="department_id"/>
+                                <field name="job_tile"/>
+                            </tree>
+                        </field>
 
                     </sheet>
                 </form>
