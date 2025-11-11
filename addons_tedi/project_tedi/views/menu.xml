@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <menuitem id="custom_project_menu_main_pm"
+              name="Dự án"
+              parent="project.menu_main_pm"
+              action="action_custom_project"
+              sequence="10"
+              groups="project.group_project_user"/>
+
+        <menuitem id="custom_task_menu_main_pm"
+              name="Công việc"
+              parent="project.menu_main_pm"
+              action="action_custom_task"
+              sequence="10"
+              groups="project.group_project_user"/>
+    </data>
+</odoo>
