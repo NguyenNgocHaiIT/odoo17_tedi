@@ -1,0 +1,14 @@
+<odoo>
+    <template id="custom_login_logo" inherit_id="web.login">
+        <xpath expr="//form[contains(@class, 'oe_login_form')]/div[1]" position="before">
+            <t t-set="logo"
+               t-value="request.env['ir.config_parameter'].sudo().get_param('web.login_logo')"/>
+            <t t-if="logo">
+                <div class="text-center mb-4">
+                    <img t-att-src="'data:image/png;base64,%s' % logo"
+                         style="max-height: 100px; max-width: 100%; object-fit: contain;"/>
+                </div>
+            </t>
+        </xpath>
+    </template>
+</odoo>

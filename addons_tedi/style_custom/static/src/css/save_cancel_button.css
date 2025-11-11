@@ -1,0 +1,50 @@
+/* ===== NÚT LƯU ===== */
+.o_form_button_save.btn {
+    background-color: #28a745 !important; /* Màu xanh */
+    color: white !important;
+    border: 1px solid #218838 !important;
+    padding: 5px 10px !important;
+    font-size: 13px;
+    margin-right: 8px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.o_form_button_save.btn:hover {
+    background-color: #218838 !important;
+    border-color: #1e7e34 !important;
+}
+
+.o_form_button_save.btn i {
+    margin-right: 5px;
+}
+
+/* Lưu: Có icon, không có text */
+.o_form_button_save.btn:has(> i):not(:has(> :not(i)))::after {
+    content: "Lưu";
+}
+
+/* ===== NÚT HỦY ===== */
+.o_form_button_cancel.btn {
+    background-color: #6c757d !important; /* Màu xám */
+    color: white !important;
+    border: 1px solid #5a6268 !important;
+    padding: 5px 10px !important;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.o_form_button_cancel.btn:hover {
+    background-color: #5a6268 !important;
+    border-color: #4e555b !important;
+}
+
+.o_form_button_cancel.btn i {
+    margin-right: 5px;
+}
+
+/* Hủy: Có icon, không có text */
+.o_form_button_cancel.btn:has(> i):not(:has(> :not(i)))::after {
+    content: "Hủy bỏ";
+}

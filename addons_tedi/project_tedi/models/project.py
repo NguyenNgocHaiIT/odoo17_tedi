@@ -24,6 +24,7 @@ class Project(models.Model):
     contract_id = fields.Char('Hợp đồng')
     giai_doan_du_an = fields.Char("Giai đoạn thực hiện")
     project_member_ids = fields.One2many('project.member', 'project_id')
+    dia_diem = fields.Text('Địa điểm')
 
 
 class ProjectMember(models.Model):

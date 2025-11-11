@@ -1,0 +1,19 @@
+/* Căn giữa tiêu đề trong tree view */
+.o_list_view thead > tr > th {
+    text-align: center !important;
+    vertical-align: middle;
+}
+
+/* Đường viền rõ ràng hơn cho bảng tree view */
+.o_list_view thead > tr > th,
+.o_list_view tbody > tr > td {
+    border: 1px solid #ccc !important;
+}
+
+/* Tăng độ rõ ràng khi hover */
+.o_list_view tbody > tr:hover {
+    background-color: #f5f5f5 !important;
+}
+.o_main_navbar {
+    --o-navbar-height: 60px !important;
+}
