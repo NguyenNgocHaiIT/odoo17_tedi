@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Kế thừa layout để tắt header/footer khi login -->
+    <template id="website_layout_no_header_login" inherit_id="website.layout">
+        <!-- Xóa header -->
+        <xpath expr="//header" position="replace">
+            <t t-if="not 'o_in_login_page' in request.env.context.get('website_page_name', '')">
+                <header t-attf-class="#{header_classes}">
+                    <t t-raw="0"/>
+                </header>
+            </t>
+        </xpath>
+
+        <!-- Xóa footer -->
+        <xpath expr="//footer" position="replace">
+            <t t-if="not 'o_in_login_page' in request.env.context.get('website_page_name', '')">
+                <footer id="footer" class="o_footer">
+                    <t t-raw="0"/>
+                </footer>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="login_label_override" inherit_id="web.login">
+        <xpath expr="//label[@for='login']" position="replace">
+            <label for="login" class="form-label">Tên đăng nhập</label>
+        </xpath>
+    </template>
+
+    <template id="custom_assets" inherit_id="web.layout" name="Custom Assets">
+        <xpath expr="//head" position="inside">
+            <link rel="stylesheet" type="text/css" href="/style_custom/custom_dynamic_styles.css"/>
+        </xpath>
+    </template>
+</odoo>

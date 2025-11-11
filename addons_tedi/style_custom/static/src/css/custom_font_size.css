@@ -1,0 +1,11 @@
+.o_form_view input,
+.o_form_view textarea,
+.o_form_view select,
+.o_form_view .o_input,
+.o_field_widget input,
+.o_field_widget textarea,
+.o_field_widget select {
+    border: 1px solid #ccc !important;
+    border-radius: 4px;
+    box-shadow: none;
+}

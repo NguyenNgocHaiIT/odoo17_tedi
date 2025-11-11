@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <record id="view_task_progress_wizard_form" model="ir.ui.view">
+            <field name="name">task.progress.wizard.form</field>
+            <field name="model">task.progress.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Cập nhật tiến độ">
+                    <sheet>
+                        <group>
+                            <field name="progress" widget="slider" options="{'min':0, 'max':100}"/>
+                            <field name="review"/>
+                        </group>
+                        <footer>
+                            <button string="Lưu" type="object" name="action_save_progress" class="btn-primary"/>
+                            <button string="Hủy" class="btn-secondary" special="cancel"/>
+                        </footer>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>
