@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <record id="bc_tien_kha_thi" model="project.deliverable.type">
+            <field name="name">Báo cáo nghiên cứu tiền khả thi</field>
+        </record>
+        <record id="bc_kha_thi" model="project.deliverable.type">
+            <field name="name">Báo cáo nghiên cứu khả thi</field>
+        </record>
+        <record id="bc_tktc" model="project.deliverable.type">
+            <field name="name">Báo cáo thiết kế thi công</field>
+        </record>
+        <record id="bc_tk_bvtc" model="project.deliverable.type">
+            <field name="name">Báo cáo thiết kế bản vẽ thi công</field>
+        </record>
+        <record id="bc_tktc" model="project.deliverable.type">
+            <field name="name">Báo cáo thiết kế thi công</field>
+        </record>
+        <record id="bc_tkkt" model="project.deliverable.type">
+            <field name="name">Báo cáo thiết kế kỹ thuật (FEED)</field>
+        </record>
+
+    </data>
+</odoo>

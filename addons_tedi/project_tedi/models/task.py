@@ -30,10 +30,29 @@ class ProjectTaskDeliverable(models.Model):
     state = fields.Selection([('draft', 'Đang thực hiện'),
                               ('wait_approve', 'Chờ phê duyệt'),
                               ('approve', 'Đã phê duyệt'),
-                              ('reject', 'Từ chối')], string='Trạng thái', default='draft')
+                              ('reject', 'Từ chối'),
+                              ('done', 'Hoàn thành')], string='Trạng thái', default='draft')
     review_by = fields.Many2one('res.users', 'Người review')
     review_date = fields.Datetime('Thời gian review')
     review_note = fields.Text('Nội dung review')
+
+    def action_waiting_deliverable(self):
+        if self.state == 'draft':
+            # self.state = 'wait_approve'
+            self.state = 'done'
+
+    def action_draft(self):
+        if self.state == 'wait_approve':
+            self.state = 'draft'
+
+    def action_approve(self):
+        if self.state == 'wait_approve':
+            self.state = 'approve'
+
+    def action_reject(self):
+        if self.state == 'wait_approve':
+            self.state = 'reject'
+
 
 
 class ProjectTask(models.Model):
@@ -45,11 +64,12 @@ class ProjectTask(models.Model):
                                   ('4', 'Công việc chung')], string='Phân loại')
     department_id = fields.Many2one('hr.department', 'Đơn vị phụ trách')
     department_ids = fields.Many2many('hr.department', 'project_task_hr_department_rel', string='Đơn vị đồng phụ trách')
-    is_deliverable = fields.Boolean('Đây là task làm hồ sơ')
+    is_deliverable = fields.Boolean('Đây là công việc làm hồ sơ')
     deliverable_type_id = fields.Many2one('project.deliverable.type', string='Loại hồ sơ')
     deliverable_count = fields.Integer('Số tài liệu được chấp nhận')
     child_deliverable_ids = fields.One2many('project.task.deliverable', 'task_id', string='Danh sách tài liệu')
     progress = fields.Float(string="Tiến độ (%)", default=0.0)
+    task_progress_ids = fields.One2many('project.task.progress', 'task_id', string='Tiến độ chi tiết')
     project_code = fields.Char('Mã dự án', related="project_id.code", store=True)
     dia_diem = fields.Text('Địa điểm', related="project_id.dia_diem", store=True)
     partner_id = fields.Many2one('res.partner', related="project_id.partner_id", store=True)
