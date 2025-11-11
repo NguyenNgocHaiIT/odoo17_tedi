@@ -14,3 +14,20 @@
     width: 10% !important;
     text-align: center;
 }
+.custom-task-tree-width th[data-name="progress"],
+.custom-task-tree-width td[data-name="progress"] {
+    width: 10% !important;
+    text-align: center;
+}
+
+.custom-task-tree-width th[data-name="date"],
+.custom-task-tree-width td[data-name="date"] {
+    width: 15% !important;
+    text-align: center;
+}
+
+.custom-task-tree-width th[data-name="user_id"],
+.custom-task-tree-width td[data-name="user_id"] {
+    width: 20% !important;
+    text-align: center;
+}

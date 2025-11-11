@@ -41,16 +41,31 @@
                             </group>
                         </group>
                         <notebook>
-                            <page string="Cập nhật kết quả công việc">
-                                <field name="description" type="html" options="{'collaborative': true, 'resizable': false}" placeholder="Vui lòng cập nhật kết quả công việc tại đây..."/>
+                            <page string="Mô tả công việc">
+                                <field name="description" type="html" options="{'collaborative': true, 'resizable': false}" placeholder="Vui lòng mô tả công việc tại đây..."/>
+                            </page>
+                            <page string="Cập nhật tiến độ công việc">
+                                <field name="task_progress_ids" readonly="True">
+                                    <tree class="custom-task-tree-width">
+                                        <field name="date" required="True"/>
+                                        <field name="progress" required="True"/>
+                                        <field name="review" required="True"/>
+                                        <field name="user_id"/>
+                                    </tree>
+                                </field>
                             </page>
                             <page string="Hồ sơ/tài liệu">
                                 <field name="child_deliverable_ids">
                                     <tree editable="bottom" class="custom-tree-width">
-                                        <field name="name" required="True" width="25%"/>
-                                        <field name="version" width="5%"/>
-                                        <field name="attachment_ids" widget="many2many_binary" width="60%"/>
-                                        <field name="state" width="10%"/>
+                                        <field name="name" required="True" readonly="state != 'draft'"/>
+                                        <field name="version" readonly="state != 'draft'"/>
+                                        <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
+                                        <field name="state" readonly="True"/>
+<!--&lt;!&ndash;                                        <field name="review_note"/>&ndash;&gt;-->
+                                        <button name="action_waiting_deliverable" type="object" string="Hoàn thành" invisible="state != 'draft'" class="btn btn-success"/>
+<!--                                        <button name="action_draft" type="object" string="Đặt lại là Đang thực hiện" invisible="state != 'draft'" class="btn btn-secondary"/>-->
+<!--                                        <button name="action_approve" string="Duyệt" type="object" invisible="state != 'wait_approve'" class="btn btn-success"/>-->
+<!--                                        <button name="action_reject" string="Từ chối" type="object" invisible="state != 'wait_approve'" class="btn btn-danger"/>-->
                                     </tree>
                                 </field>
                             </page>

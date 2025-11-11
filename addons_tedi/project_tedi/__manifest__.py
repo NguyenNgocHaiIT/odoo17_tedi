@@ -9,6 +9,7 @@
     'data': [
         'security/ir.model.access.csv',
         # 'views/asset_inherit.xml',
+        'datas/default_data.xml',
         'views/project.xml',
         'views/task.xml',
         'wizard/task_progress_wizard.xml',
