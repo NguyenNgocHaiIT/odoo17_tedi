@@ -41,3 +41,9 @@ class ProjectMember(models.Model):
     department_id = fields.Many2one('hr.department', string='Đơn vị/Phòng ban', related='employee_id.department_id')
     name = fields.Char(string='Mã nhân viên')
     job_tile = fields.Text(string='Chức danh tổng thể')
+
+    @api.onchange('employee_id')
+    def onchange_employee(self):
+        self.name = False
+        if self.employee_id:
+            self.name = self.employee_id.name

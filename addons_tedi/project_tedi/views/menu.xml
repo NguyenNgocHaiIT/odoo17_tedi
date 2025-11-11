@@ -7,5 +7,12 @@
               action="action_custom_project"
               sequence="10"
               groups="project.group_project_user"/>
+
+        <menuitem id="custom_task_menu_main_pm"
+              name="Công việc"
+              parent="project.menu_main_pm"
+              action="action_custom_task"
+              sequence="10"
+              groups="project.group_project_user"/>
     </data>
 </odoo>
