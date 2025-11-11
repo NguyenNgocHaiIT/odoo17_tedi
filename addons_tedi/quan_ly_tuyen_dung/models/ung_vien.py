@@ -23,7 +23,7 @@ EMAIL_RE = re.compile(
     r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$"
 )
 # Cho VN: 0xxxxxxxxx (10 số, đầu 03/05/07/08/09) hoặc E.164: +84xxxxxxxxx
-VN_LOCAL_RE = re.compile(r"^(0)(3|5|7|8|9)\d{8}$")
+VN_LOCAL_RE = re.compile(r"^(0)(2|3|5|7|8|9)\d{8}$")
 E164_RE = re.compile(r"^\+[1-9]\d{7,14}$")  # ITU E.164: 8–15 digits, không bắt đầu bằng 0
 
 # ============= ACL THEO STAGE =============
@@ -240,6 +240,9 @@ class Applicant(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         # ---- ACL: chỉ 4 nhóm được tạo ----
+
+        self = self.with_context(mail_create_nolog=True,
+                                 mail_auto_subscribe_no_notify=True)
         if not _user_is_applicant_editor(self.env):
             raise AccessError(_("Bạn không có quyền tạo hồ sơ ứng viên."))
         # ---- logic cũ: auto đặt name nếu trống ----
@@ -545,3 +548,56 @@ class Applicant(models.Model):
                     }
                 }
             self.partner_mobile = norm
+    def _safe_write_partner(self, partner, vals):
+        """Chỉ ghi các trường an toàn; tránh đụng Users.
+        Tùy chính sách, có thể sudo() hoặc bỏ qua khi partner gắn user."""
+        # Nếu partner gắn với user nội bộ ⇒ tránh ghi để không kéo theo res.users
+        if partner.user_ids:
+            # CHÍNH SÁCH 1 (an toàn): KHÔNG ghi gì để tránh đụng Users
+            # return
+
+            # CHÍNH SÁCH 2 (ép ghi): ghi bằng sudo, chấp nhận sync sang Users
+            # partner.sudo().write(vals)
+            return
+        partner.write(vals)
+
+    def _inverse_partner_email(self):
+        """Override để tránh gây write vào res.users khi HR chỉ nhập email/điện thoại ứng viên."""
+        for app in self:
+            email = (app.email_from or '').strip()
+            if not email:
+                continue
+
+            # Tạo partner nếu chưa có (hành vi gốc)
+            if not app.partner_id:
+                if not app.partner_name:
+                    # Giữ nguyên thông báo như base
+                    raise UserError(_('You must define a Contact Name for this applicant.'))
+                # find_or_create có thể trả về partner liên kết user -> sẽ xử lý ở dưới
+                app.partner_id = app.env['res.partner'].with_context(default_lang=app.env.lang).find_or_create(email)
+
+            partner = app.partner_id
+
+            # Chỉ khi thực sự khác mới tính chuyện ghi
+            vals = {}
+            if app.partner_name and not partner.name:
+                vals['name'] = app.partner_name
+            # CHÚ Ý: Đừng ép đồng bộ email nếu điều đó kéo theo write Users
+            # So sánh normalize để tránh ghi không cần thiết (giống base)
+            from odoo import tools
+            if tools.email_normalize(email) != tools.email_normalize(partner.email):
+                vals['email'] = email
+
+            # Điện thoại
+            if app.partner_mobile:
+                vals['mobile'] = app.partner_mobile
+            if app.partner_phone:
+                vals['phone'] = app.partner_phone
+
+            if vals:
+                try:
+                    self._safe_write_partner(partner, vals)
+                except AccessError:
+                    # fallback im lặng: không cập nhật partner nếu không đủ quyền
+                    # (tránh nổ khi HR không có quyền Users)
+                    pass

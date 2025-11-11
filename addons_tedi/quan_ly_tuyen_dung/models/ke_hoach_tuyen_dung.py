@@ -38,8 +38,8 @@ class RecruitmentPlan(models.Model):
     # Flow: draft -> waiting -> board_approve -> complete
     recruitment_status = fields.Selection([
         ("draft", "Dự thảo"),
-        ("waiting", "Trình duyệt"),
         ("board_approve", "HĐQT duyệt"),
+        ("director_approve", "GD/PGD duyệt"),
         ("complete", "Hoàn thành"),
     ], string="Trạng thái", default="draft", index=True, required=True, tracking=True)
 
@@ -67,17 +67,21 @@ class RecruitmentPlan(models.Model):
     def _can_edit_plan_in_state(self, state, op, vals=None):
         u = self.env.user
         is_committee = u.has_group(COMMITTEE)
-        is_board     = u.has_group(BOARD)
-        is_director  = u.has_group(DIRECTOR)
-        is_base      = u.has_group(BASE)
+        is_board = u.has_group(BOARD)
+        is_director = u.has_group(DIRECTOR)
+        is_base = u.has_group(BASE)
 
         if state == 'draft':
-            # Cho phép soạn thảo: Ủy ban (và bạn có thể giữ thêm BOARD/DIRECTOR/BASE nếu muốn)
             return is_committee or is_board or is_director or is_base
 
-        # Khi đã trình/duyệt thì khoá sửa/xoá để đảm bảo quy trình
-        if state in ('waiting', 'board_approve', 'complete'):
-            return False
+        if state == 'board_approve':
+            return is_board  # CHỈ BOARD ĐƯỢC SỬA Ở TRẠNG THÁI 'waiting'
+
+        if state == 'director_approve':
+            return is_director  # CHỈ DIRECTOR ĐƯỢC SỬA
+
+        if state == 'complete':
+            return False  # Không ai được sửa
 
         return False
 
@@ -100,17 +104,17 @@ class RecruitmentPlan(models.Model):
         for rec in self:
             if rec.recruitment_status != "draft":
                 raise ValidationError(_("Chỉ có thể trình duyệt từ trạng thái 'Dự thảo'."))
-            rec.recruitment_status = "waiting"
-            rec.message_post(body=_("Ủy ban đã trình duyệt kế hoạch."))
+            rec.recruitment_status = "board_approve"
+            # rec.message_post(body=_("Ủy ban đã trình duyệt kế hoạch."))
 
     def action_board_approve(self):
         """BOARD: waiting -> board_approve"""
         self._check_board()
         for rec in self:
-            if rec.recruitment_status != "waiting":
-                raise ValidationError(_("HĐQT chỉ duyệt được khi trạng thái là 'Trình duyệt'."))
-            rec.recruitment_status = "board_approve"
-            rec.message_post(body=_("HĐQT đã duyệt kế hoạch (Board Approved)."))
+            if rec.recruitment_status != "board_approve":
+                raise ValidationError(_("HĐQT chỉ duyệt được khi trạng thái là 'HĐQT duyệt'."))
+            rec.recruitment_status = "director_approve"
+            # rec.message_post(body=_("HĐQT đã duyệt kế hoạch (Board Approved)."))
 
     def _apply_if_needed(self):
         for rec in self:
@@ -122,11 +126,11 @@ class RecruitmentPlan(models.Model):
         """DIRECTOR: board_approve -> complete (và áp nhu cầu sang Job nếu chưa)"""
         self._check_director()
         for rec in self:
-            if rec.recruitment_status != "board_approve":
+            if rec.recruitment_status != "director_approve":
                 raise ValidationError(_("Giám đốc chỉ phê duyệt được khi trạng thái là 'HĐQT duyệt'."))
             rec._apply_if_needed()
             rec.recruitment_status = "complete"
-            rec.message_post(body=_("Giám đốc đã phê duyệt. Kế hoạch chuyển sang 'Hoàn thành'."))
+            # rec.message_post(body=_("Giám đốc đã phê duyệt. Kế hoạch chuyển sang 'Hoàn thành'."))
 
     # ----------------- Compute / helpers -----------------
     @api.depends("sequence")
@@ -156,8 +160,8 @@ class RecruitmentPlan(models.Model):
         for job in jobs:
             job.no_of_recruitment = totals[job.id]
 
-        self.message_post(body=_("Đã áp dụng nhu cầu sang Job: %s")
-                          % ", ".join(f"{j.display_name}={totals[j.id]}" for j in jobs))
+        # self.message_post(body=_("Đã áp dụng nhu cầu sang Job: %s")
+        #                   % ", ".join(f"{j.display_name}={totals[j.id]}" for j in jobs))
 
     # ----------------- Overrides -----------------
     @api.model
