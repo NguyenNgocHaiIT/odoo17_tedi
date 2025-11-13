@@ -1,0 +1,234 @@
+/* ===== Theme tokens ===== */
+.o_org_chart_container {
+  --oc-gap-y: 18px;
+  --oc-gap-x: 56px;
+  --oc-radius: 12px;
+  --oc-border: #e6e8ec;
+  --oc-surface: #ffffff;
+  --oc-muted: #64748b;
+  --oc-text: #0f172a;
+  --oc-shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+  --oc-shadow-md: 0 4px 16px rgba(2, 6, 23, .08);
+  --oc-primary-bg: #eef2ff;
+  --oc-primary-tx: #4338ca;
+  --oc-success-tx: #047857;
+  --oc-divider: rgba(2, 6, 23, .06);
+}
+.o_org_chart_container.density-compact { --oc-gap-y: 14px; --oc-gap-x: 52px; --oc-radius: 10px; }
+.o_org_chart_container.density-comfy   { --oc-gap-y: 22px; --oc-gap-x: 64px; --oc-radius: 14px; }
+
+@media (prefers-color-scheme: dark) {
+  .o_org_chart_container {
+    --oc-border: #283142;
+    --oc-surface: #0b1220;
+    --oc-text: #e5e7eb;
+    --oc-muted: #9aa4b2;
+    --oc-shadow-sm: 0 1px 2px rgba(0,0,0,.35);
+    --oc-shadow-md: 0 6px 18px rgba(0,0,0,.35);
+    --oc-primary-bg: #171e31;
+    --oc-primary-tx: #94a3ff;
+    --oc-success-tx: #4ade80;
+    --oc-divider: rgba(148, 163, 184, .14);
+  }
+}
+
+/* ===== Chart container ===== */
+.o_org_chart_container .org-chart {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 8px 0 4px;
+}
+.o_org_chart_container .org-root-node {
+  display: inline-block;
+}
+
+/* ===== Toolbar ===== */
+.o_org_chart_container .org-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 8px 0;
+  backdrop-filter: saturate(120%) blur(2px);
+  border-bottom: 1px dashed var(--oc-divider);
+}
+
+.o_org_chart_container .btn-toggle {
+  padding: 6px 10px;
+  border: 1px solid var(--oc-border);
+  border-radius: 10px;
+  background: var(--oc-surface);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: box-shadow .15s ease, transform .05s ease, background .15s ease;
+}
+.o_org_chart_container .btn-toggle:hover {
+  box-shadow: var(--oc-shadow-sm);
+}
+.o_org_chart_container .btn-toggle:active {
+  transform: translateY(1px);
+}
+
+/* ===== Node card ===== */
+.o_org_chart_container .org-node .card {
+  position: relative;
+  display: inline-block;
+  box-sizing: border-box;
+  min-width: 232px;
+  max-width: 360px;
+  background: var(--oc-surface);
+  border: 1px solid var(--oc-border);
+  border-radius: var(--oc-radius);
+  box-shadow: var(--oc-shadow-sm);
+  padding: 10px 12px;
+  line-height: 1.25;
+  transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+}
+.o_org_chart_container .org-node .card:hover {
+  box-shadow: var(--oc-shadow-md);
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--oc-border), var(--oc-primary-tx) 22%);
+}
+
+/* top row */
+.o_org_chart_container .card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+}
+
+/* toggle */
+.o_org_chart_container .toggle {
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid var(--oc-border);
+  background: var(--oc-surface);
+  cursor: pointer;
+  line-height: 1;
+  transition: background .15s ease, border-color .15s ease, transform .05s ease;
+}
+.o_org_chart_container .toggle:hover {
+  background: color-mix(in oklab, var(--oc-surface), #ffffff 6%);
+}
+.o_org_chart_container .toggle:active {
+  transform: translateY(1px);
+}
+
+/* count bubble */
+.o_org_chart_container .count {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--oc-primary-bg);
+  color: var(--oc-primary-tx);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+/* title */
+.o_org_chart_container .task-title {
+  margin: 6px 0 4px;
+  color: var(--oc-text);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: .2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* connectors */
+.o_org_chart_container .org-children {
+  display: block;
+  margin-top: var(--oc-gap-y);
+  margin-left: calc(var(--oc-gap-x) + 14px);
+  padding-left: var(--oc-gap-x);
+  border-left: 2px solid var(--oc-border);
+}
+.o_org_chart_container .org-child-col {
+  display: block;
+  position: relative;
+  margin: var(--oc-gap-y) 0;
+}
+.o_org_chart_container .org-child-col::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--oc-gap-x));
+  top: 19px;
+  width: var(--oc-gap-x);
+  height: 0;
+  border-top: 2px solid var(--oc-border);
+}
+
+/* progress row */
+.o_org_chart_container .progress-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.o_org_chart_container .progress-track {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--oc-surface), #64748b 20%);
+  overflow: hidden;
+}
+
+.o_org_chart_container .progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--oc-success-tx);
+}
+
+.o_org_chart_container .progress-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--oc-muted);
+  min-width: 32px;
+  text-align: right;
+}
+
+/* empty state */
+.o_org_chart_container .org-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px dashed var(--oc-border);
+  color: var(--oc-muted);
+  background: color-mix(in oklab, var(--oc-surface), #64748b 4%);
+  box-shadow: var(--oc-shadow-sm);
+}
+
+/* a11y + print */
+.o_org_chart_container .card { cursor: pointer; }
+.o_org_chart_container .card:focus {
+  outline: none;
+  box-shadow: var(--oc-shadow-md), 0 0 0 3px rgba(34,197,94,.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .o_org_chart_container .card,
+  .o_org_chart_container .toggle,
+  .o_org_chart_container .btn-toggle {
+    transition: none;
+  }
+}
+
+@media print {
+  .o_org_chart_container .card { box-shadow: none; }
+  .o_org_chart_container .org-toolbar { display: none; }
+}
