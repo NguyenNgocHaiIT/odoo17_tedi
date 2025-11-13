@@ -5,7 +5,7 @@
 
          <!-- Ví dụ: gắn vào menu gốc của hr_recruitment -->
     <menuitem id="menu_recruitment_plan"
-              name="Kế hoạch"
+              name="Kế hoạch tuyển dụng"
               parent="hr_recruitment.menu_hr_recruitment_root"
               action="action_recruitment_plan"
               sequence="5"/>
