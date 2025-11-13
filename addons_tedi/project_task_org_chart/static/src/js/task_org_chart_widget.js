@@ -18,8 +18,6 @@ export class OrgChartField extends Component {
     this.density = (this.props?.options?.density || "compact").toLowerCase();
 
     // Trạng thái node thu gọn
-    // - Mặc định: sau khi load lần đầu, chỉ mở root và con trực tiếp,
-    //   các node sâu hơn được add vào collapsed.
     this.collapsed = new Set();
 
     // Lần đầu: load data theo task hiện tại
@@ -62,7 +60,6 @@ export class OrgChartField extends Component {
    * Khởi tạo trạng thái collapsed:
    * - Root: luôn mở
    * - Mọi node (không phải root) có children => collapsed (ẩn con của nó)
-   * => Lần đầu render: chỉ thấy root + con trực tiếp, không thấy cháu.
    */
   _initCollapseState() {
     this.collapsed.clear();
@@ -85,7 +82,7 @@ export class OrgChartField extends Component {
   async loadData(id) {
     try {
       this._data = await this.orm.call("project.task", "get_task_org_chart_data", [id]);
-      // 🔥 Sau khi có data, set trạng thái collapse ban đầu
+      // Sau khi có data, set trạng thái collapse ban đầu
       this._initCollapseState();
     } catch (err) {
       console.error("[OrgChart] ORM error:", err);
@@ -214,6 +211,43 @@ export class OrgChartField extends Component {
     );
   }
 
+  /* ===== Create child task ===== */
+   /* ===== Create child task (open custom form view_task_form) ===== */
+  async _createChild(parentTaskId) {
+    if (!parentTaskId) return;
+
+    const rec = this.props?.record;
+    const evalCtx = rec?.evalContext || {};
+
+    // Lấy context hiện tại của view (giữ các thứ Odoo đang set sẵn)
+    const baseCtx =
+      (rec && typeof rec.getContext === "function" && rec.getContext()) || {};
+
+    const viewXmlId = "project_tedi.view_task_form";
+
+    const context = {
+      ...baseCtx,
+      // giống context của child_ids trong XML
+      default_parent_id: parentTaskId,
+      default_project_id: evalCtx.project_id,
+      default_display_in_project: false,
+      default_user_ids: evalCtx.user_ids,
+      default_partner_id: evalCtx.partner_id,
+      // bắt buộc dùng đúng form này, không dùng form default
+      form_view_ref: viewXmlId,
+    };
+
+    this.action.doAction({
+      type: "ir.actions.act_window",
+      res_model: "project.task",
+      view_mode: "form",
+      views: [[false, "form"]], // view sẽ lấy theo form_view_ref trong context
+      target: "current",
+      context,
+    });
+  }
+
+
   /* ===== Build node DOM =====
    * DÙNG FIELD:
    *  - node.task_id
@@ -242,6 +276,7 @@ export class OrgChartField extends Component {
 
     const toggleHtml = hasChildren
       ? `<button class="toggle"
+                 type="button"
                  aria-label="${isCollapsed ? "Mở node" : "Thu gọn node"}"
                  title="${isCollapsed ? "Mở node" : "Thu gọn node"}">
            ${isCollapsed ? "▸" : "▾"}
@@ -265,19 +300,27 @@ export class OrgChartField extends Component {
       `;
     }
 
+    // ⭐ card-top: toggle + nút + + count
     div.innerHTML = `
       <div class="card"
            role="button"
            tabindex="0"
            aria-label="${this._escape(title)}">
-        <div class="card-top">
-          ${toggleHtml}
-          ${
-            node.direct_subtask_count > 0
-              ? `<div class="count" title="Số công việc con trực tiếp">${node.direct_subtask_count}</div>`
-              : ""
-          }
-        </div>
+            <div class="card-top">
+              ${toggleHtml}
+              ${
+                node.direct_subtask_count > 0
+                  ? `<div class="count" title="Số công việc con trực tiếp">${node.direct_subtask_count}</div>`
+                  : `<div class="count empty-count"></div>`
+              }
+              <button class="add-child"
+                      type="button"
+                      aria-label="Thêm công việc con"
+                      title="Thêm công việc con">
+                +
+              </button>
+            </div>
+
 
         <div class="task-title" title="${this._escape(title)}">
           ${this._escape(title)}
@@ -318,7 +361,25 @@ export class OrgChartField extends Component {
       });
     }
 
-    // 🔑 Quan trọng: chỉ render children nếu KHÔNG collapsed
+    // 🎯 Nút + tạo task con
+    const addBtn = div.querySelector(".add-child");
+    if (addBtn) {
+      addBtn.addEventListener("click", (e) => {
+        e.stopPropagation(); // không mở form của card
+        const id = Number(div.getAttribute("data-task-id"));
+        this._createChild(id);
+      });
+      addBtn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = Number(div.getAttribute("data-task-id"));
+          this._createChild(id);
+        }
+      });
+    }
+
+    // Chỉ render children nếu KHÔNG collapsed
     if (hasChildren && !isCollapsed) {
       const wrap = document.createElement("div");
       wrap.className = "org-children";
