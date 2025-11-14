@@ -1,6 +1,13 @@
 from odoo import models, fields, api
 
 
+class ProjectTaskType(models.Model):
+    _name = "project.task.type"
+    _description = "Phân loại công việc"
+
+    name = fields.Char('Tên')
+
+
 class ProjectDeliverableType(models.Model):
     _name = "project.deliverable.type"
     _description = "Loại hồ sơ"
