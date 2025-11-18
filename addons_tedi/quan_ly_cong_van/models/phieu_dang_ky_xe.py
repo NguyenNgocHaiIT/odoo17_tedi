@@ -9,9 +9,7 @@ class HrTediVehicleRegistration(models.Model):
     # Thông tin xe (không dùng vehicle_id vì có assigned_vehicle_id)
     vehicle_id = fields.Many2one(
         "hr_tedi.vehicle.record",
-        string="Thông tin xe",
-        ondelete='cascade'
-    )
+        string="Thông tin xe")
 
     # Người đề nghị
     requester_id = fields.Many2one(

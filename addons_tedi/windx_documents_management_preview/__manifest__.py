@@ -23,7 +23,7 @@
         'views/ir_attachments_views.xml',
         'views/document_directory.xml',
 
-        # 'menu/menus.xml',
+        'menu/menus.xml',
     ],
     'assets': {
         'web.assets_backend': [

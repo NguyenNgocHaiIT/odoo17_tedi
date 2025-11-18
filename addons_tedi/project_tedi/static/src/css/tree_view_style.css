@@ -1,0 +1,33 @@
+.o_list_view thead > tr > th {
+    text-align: center !important;
+    vertical-align: middle;
+}
+
+/* Đường viền rõ ràng hơn cho bảng tree view */
+.o_list_view thead > tr > th,
+.o_list_view tbody > tr > td {
+    border: 1px solid #ccc !important;
+}
+
+.custom-tree-width th[data-name="version"],
+.custom-tree-width td[data-name="version"] {
+    width: 10% !important;
+    text-align: center;
+}
+.custom-task-tree-width th[data-name="progress"],
+.custom-task-tree-width td[data-name="progress"] {
+    width: 10% !important;
+    text-align: center;
+}
+
+.custom-task-tree-width th[data-name="date"],
+.custom-task-tree-width td[data-name="date"] {
+    width: 15% !important;
+    text-align: center;
+}
+
+.custom-task-tree-width th[data-name="user_id"],
+.custom-task-tree-width td[data-name="user_id"] {
+    width: 20% !important;
+    text-align: center;
+}

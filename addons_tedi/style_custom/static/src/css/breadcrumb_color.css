@@ -1,0 +1,6 @@
+.o_breadcrumb a,
+.o_breadcrumb .breadcrumb-item a,
+.o_back_button a {
+    color: #212529 !important;
+}
+

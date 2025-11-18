@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_notify_event_all,access_notify_event_all,model_notify_event,,1,1,1,1
+access_notify_type_all,access_notify_type_all,model_notify_type,,1,1,1,1
+access_website_post_all,access_website_post_all,model_website_post,,1,1,1,1
+access_post_type_all,access_post_type_all,model_post_type,,1,1,1,1

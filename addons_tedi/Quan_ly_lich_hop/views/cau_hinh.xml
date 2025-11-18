@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <!-- TREE + FORM VIEW cho RoomMaterials -->
+        <record id="view_room_materials_tree" model="ir.ui.view">
+            <field name="name">room.materials.tree</field>
+            <field name="model">room.materials</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name" string="Tên đồ vật"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_room_materials_form" model="ir.ui.view">
+            <field name="name">room.materials.form</field>
+            <field name="model">room.materials</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ACTION cho RoomMaterials -->
+        <record id="action_room_materials" model="ir.actions.act_window">
+            <field name="name">Thông tin vật dụng phòng họp</field>
+            <field name="res_model">room.materials</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_ids" eval="[
+                (5, 0, 0),
+                (0,0,{'view_mode':'tree','view_id':ref('view_room_materials_tree')}),
+                (0,0,{'view_mode':'form','view_id':ref('view_room_materials_form')})
+            ]"/>
+        </record>
+
+        <!-- TREE + FORM VIEW cho RoomRoom -->
+        <record id="view_room_room_tree" model="ir.ui.view">
+            <field name="name">room.room.tree</field>
+            <field name="model">room.room</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name" string="Tên phòng"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_room_room_form" model="ir.ui.view">
+            <field name="name">room.room.form</field>
+            <field name="model">room.room</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ACTION cho RoomRoom -->
+        <record id="action_room_room" model="ir.actions.act_window">
+            <field name="name">Phòng họp</field>
+            <field name="res_model">room.room</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_ids" eval="[
+                (5, 0, 0),
+                (0,0,{'view_mode':'tree','view_id':ref('view_room_room_tree')}),
+                (0,0,{'view_mode':'form','view_id':ref('view_room_room_form')})
+            ]"/>
+        </record>
+
+        <!-- TREE + FORM VIEW cho CalendarLocation -->
+        <record id="view_calendar_location_tree" model="ir.ui.view">
+            <field name="name">calendar.location.tree</field>
+            <field name="model">calendar.location</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name" string="Địa điểm công tác"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_calendar_location_form" model="ir.ui.view">
+            <field name="name">calendar.location.form</field>
+            <field name="model">calendar.location</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ACTION cho RoomMaterials -->
+        <record id="action_calendar_location" model="ir.actions.act_window">
+            <field name="name">Địa điểm công tác</field>
+            <field name="res_model">calendar.location</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_ids" eval="[
+                (5, 0, 0),
+                (0,0,{'view_mode':'tree','view_id':ref('view_calendar_location_tree')}),
+                (0,0,{'view_mode':'form','view_id':ref('view_calendar_location_form')})
+            ]"/>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+
+        <record id="view_task_form" model="ir.ui.view">
+            <field name="name">view_task_form</field>
+            <field name="model">project.task</field>
+            <field name="arch" type="xml">
+                <form delete="false" duplicate="false">
+                    <header>
+                        <button name="action_open_progress_wizard"
+                                type="object"
+                                string="Cập nhật tiến độ"
+                                class="btn-primary"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1 class="d-flex flex-row">
+                                <field name="name" widget="text" class="o_text_overflow"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <field name="progress" widget="progressbar" options="{'max': 100}" />
+                        </group>
+                        <group>
+                            <group string="Thông tin chung">
+                                <field name="company_id" invisible="1"/>
+                                <field name="project_id"/>
+                                <field name="project_code"/>
+                                <field name="partner_id"/>
+                                <field name="dia_diem"/>
+                                <field name="type_task"/>
+                            </group>
+                            <group string="Công việc">
+                                <field name="user_ids" widget="many2many_avatar_user"/>
+                                <field name="date_deadline"/>
+                                <field name="department_id"/>
+                                <field name="department_ids" widget="many2many_tags"/>
+                                <field name="is_deliverable"/>
+                                <field name="deliverable_type_id"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Mô tả công việc">
+                                <field name="description" type="html" options="{'collaborative': true, 'resizable': false}" placeholder="Vui lòng mô tả công việc tại đây..."/>
+                            </page>
+                            <page string="Cập nhật tiến độ công việc">
+                                <field name="task_progress_ids" readonly="True">
+                                    <tree class="custom-task-tree-width">
+                                        <field name="date" required="True"/>
+                                        <field name="progress" required="True"/>
+                                        <field name="review" required="True"/>
+                                        <field name="user_id"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Hồ sơ/tài liệu">
+                                <field name="child_deliverable_ids">
+                                    <tree editable="bottom" class="custom-tree-width">
+                                        <field name="name" required="True" readonly="state != 'draft'"/>
+                                        <field name="version" readonly="state != 'draft'"/>
+                                        <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
+                                        <field name="state" readonly="True"/>
+<!--&lt;!&ndash;                                        <field name="review_note"/>&ndash;&gt;-->
+                                        <button name="action_waiting_deliverable" type="object" string="Hoàn thành" invisible="state != 'draft'" class="btn btn-success"/>
+<!--                                        <button name="action_draft" type="object" string="Đặt lại là Đang thực hiện" invisible="state != 'draft'" class="btn btn-secondary"/>-->
+<!--                                        <button name="action_approve" string="Duyệt" type="object" invisible="state != 'wait_approve'" class="btn btn-success"/>-->
+<!--                                        <button name="action_reject" string="Từ chối" type="object" invisible="state != 'wait_approve'" class="btn btn-danger"/>-->
+                                    </tree>
+                                </field>
+                            </page>
+                            <page name="sub_tasks_page" string="Công việc con" invisible="not project_id">
+                            <field name="child_ids" context="{'default_project_id': project_id, 'default_display_in_project': False, 'default_user_ids': user_ids, 'default_parent_id': id,'default_partner_id': partner_id}" widget="subtasks_one2many">
+                                <tree editable="bottom" decoration-muted="state in ['1_done','1_canceled']" open_form_view="True">
+                                    <field name="allow_milestones" column_invisible="True"/>
+                                    <field name="display_in_project" column_invisible="True" force_save="1"/>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="id" optional="hide"/>
+                                    <field name="parent_id" column_invisible="True"/>
+                                    <field name="priority" widget="priority" nolabel="1" options="{'autosave': False}" width="40px"/>
+                                    <field name="state" widget="project_task_state_selection" nolabel="1" options="{'autosave':  False}" width="40px"/>
+                                    <field name="name" widget="name_with_subtask_count"/>
+                                    <field name="subtask_count" column_invisible="True"/>
+                                    <field name="closed_subtask_count" column_invisible="True"/>
+                                    <field name="project_id" string="Project" optional="hide" options="{'no_open': 1}" widget="project"/>
+<!--                                    <field name="milestone_id" optional="hide" context="{'default_project_id': project_id}" column_invisible="not parent.allow_milestones" invisible="not allow_milestones"/>-->
+                                    <field name="partner_id" optional="hide" widget="res_partner_many2one" invisible="not project_id"/>
+                                    <field name="user_ids" widget="many2many_avatar_user" optional="show"/>
+                                    <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                                    <field name="company_id" column_invisible="True"/>
+                                    <field name="date_deadline" invisible="state in ['1_done', '1_canceled']" optional="hide" decoration-danger="date_deadline and date_deadline &lt; current_date"/>
+                                    <field name="activity_ids" string="Next Activity" widget="list_activity" optional="hide"/>
+                                     <field name="my_activity_date_deadline" string="My Deadline" widget="remaining_days" options="{'allow_order': '1'}" optional="hide"/>
+                                    <field name="rating_last_text" string="Rating" decoration-danger="rating_last_text == 'ko'" decoration-warning="rating_last_text == 'ok'" decoration-success="rating_last_text == 'top'" class="fw-bold" widget="badge" optional="hide" invisible="rating_last_text == 'none'" column_invisible="True" groups="project.group_project_rating"/>
+                                    <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}" optional="hide"/>
+                                    <field name="stage_id" optional="hide" context="{'default_project_id': project_id}"/>
+                                </tree>
+                            </field>
+                        </page>
+                        </notebook>
+
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_custom_task" model="ir.actions.act_window">
+            <field name="name">Công việc</field>
+            <field name="res_model">project.task</field>
+            <field name="view_mode">tree,kanban,form</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('project.open_view_my_tasks_list_view')}),
+                (0, 0, {'view_mode': 'kanban', 'view_id': ref('project.view_task_kanban_inherit_my_task')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_task_form')})]"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Tạo dự án mới
+                </p>
+            </field>
+        </record>
+    </data>
+</odoo>

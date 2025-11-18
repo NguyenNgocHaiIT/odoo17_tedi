@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_project_member,access_project_member,model_project_member,,1,1,1,1
+access_project_deliverable_type,access_project_deliverable_type,model_project_deliverable_type,,1,1,1,1
+access_project_task_progress,access_project_task_progress,model_project_task_progress,,1,1,1,1
+access_project_task_deliverable,access_project_task_deliverable,model_project_task_deliverable,,1,1,1,1
+access_task_progress_wizard,access_task_progress_wizard,model_task_progress_wizard,,1,1,1,1

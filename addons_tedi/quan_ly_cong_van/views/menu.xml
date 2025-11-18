@@ -1,32 +1,35 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <data>
-        <!-- ==== MENU GỐC 1: QUẢN LÝ CÔNG VĂN ==== -->
-        <!-- sequence="0" -> Xuất hiện đầu tiên -->
+        <!-- Menu gốc: Quản lý công văn -->
         <menuitem
                 id="office_document_menu_root"
                 name="Quản lý công văn"
                 sequence="0"/>
 
-        <!-- Các menu con của Quản lý công văn -->
+        <!-- Menu Công văn đến -->
         <menuitem
                 id="document_ingoing_menu"
                 name="Công văn đến"
                 parent="office_document_menu_root"
                 action="action_open_office_document_ingoing"
-                sequence="10"/> <!-- Tăng sequence để dễ chèn menu khác nếu cần -->
+                sequence="1"/>
+
+        <!-- Menu Công văn đi -->
         <menuitem
                 id="document_outgoing_menu"
                 name="Công văn đi"
                 parent="office_document_menu_root"
                 action="action_open_office_document_outgoing"
-                sequence="20"/>
+                sequence="12"/>
+
+        <!-- Menu Quyết định -->
         <menuitem
                 id="document_resolution_menu"
                 name="Quyết định"
                 parent="office_document_menu_root"
                 action="action_open_office_document_resolution"
-                sequence="30"/>
+                sequence="13"/>
         <menuitem id="fleet_management_menu_root"
                   name="Quản lý đội xe"
                   parent="office_document_menu_root"
@@ -52,5 +55,43 @@
                   parent="fleet_management_menu_root"
                   action="action_hr_tedi_vehicle_odometer_report"
                   sequence="50"/>
+
+        <!-- Menu văn bản nội bộ đến -->
+        <menuitem
+                id="document_internal_ingoing_menu"
+                name="Công văn nội bộ đến"
+                parent="office_document_menu_root"
+                action="action_open_office_document_internal_ingoing"
+                sequence="14"/>
+
+        <!-- Menu văn bản nội bộ đi -->
+        <menuitem
+                id="document_internal_outgoing_menu"
+                name="Công văn nội bộ đi"
+                parent="office_document_menu_root"
+                action="action_open_office_document_internal_outgoing"
+                sequence="15"/>
+
+        <menuitem
+                id="Office_task_menu"
+                name="Công việc"
+                parent="office_document_menu_root"
+                action="action_open_office_task"
+                sequence="16"
+                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_don_vi_xu_ly"/>
+
+        <menuitem
+                id="menu_office_document_setting"
+                name="Cấu hình"
+                parent="office_document_menu_root"
+                sequence="17"
+                groups="base.group_system,quan_ly_cong_van.group_van_thu"/>
+
+        <menuitem
+                id="menu_office_document_category"
+                name="Phân loại văn bản"
+                parent="menu_office_document_setting"
+                action="action_office_document_category"
+                sequence="1"/>
     </data>
 </odoo>

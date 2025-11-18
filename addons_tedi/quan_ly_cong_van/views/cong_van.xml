@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <data>
+
         <record id="office_document_ingoing_tree" model='ir.ui.view'>
             <field name="name">office_document_ingoing_tree</field>
             <field name="model">office.document</field>
             <field name="arch" type="xml">
                 <tree>
                     <field name="ngay_den"/>
-                    <field name="so_den_tong_hop_so_den_theo_so"/>
+                    <field name="so_den_tong_hop"/>
                     <field name="so_hieu"/>
                     <field name="trich_yeu"/>
                     <field name="but_phe"/>
-                    <field name="dv_xu_ly_chinh"/>
+                    <field name="dv_xu_ly_chinh" widget="many2many_tags"/>
                 </tree>
             </field>
         </record>
@@ -22,50 +23,56 @@
             <field name="arch" type="xml">
                 <form delete="false" duplicate="false">
                     <header>
-                        <button name="trinh_lanh_dao" string="Trình lãnh đạo" type="object"/>
-                        <button name="but_phe_action" string="Bút phê" type="object"/>
-                        <button name="phan_phat" string="Phân phát" type="object"/>
+                        <button name="trinh_lanh_dao_cong_van_den" string="Trình lãnh đạo" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="tt_vb != 'da_duyet'"/>
+                        <button name="approve" string="Duyệt" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="tt_vb != 'cho_duyet'"/>
+                        <button name="but_phe_action" string="Bút phê" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
+                                invisible="tt_vb != 'cho_but_phe'"/>
+                        <button name="phan_phat" string="Phân phát" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
                     </header>
                     <sheet>
                         <group>
                             <group>
-                                 <field name="so_den_tong_hop" string="Số công văn"/>
+                                <field name="so_den_tong_hop" string="Số công văn" readonly="1"/>
                                 <field name="so_hieu"/>
-                                 <field name="don_vi_ban_hanh"/>
-                                   <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách"/>
-                                 <field name="ngay_den"/>
-                                 <field name="ngay_ban_hanh"/>
+                                <field name="don_vi_ban_hanh"/>
+                                <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách"/>
+                                <field name="ngay_den"/>
+                                <field name="ngay_ban_hanh"/>
                                 <field name="document_type" invisible="1"/>
                                 <field name="phan_loai_van_ban"/>
 
 
-
-
-
-<!--                                <field name="noi_gui"/>-->
-<!--                                <field name="nguoi_ky"/>-->
+                                <!--                                <field name="noi_gui"/>-->
+                                <!--                                <field name="nguoi_ky"/>-->
                                 <field name="do_khan"/>
-<!--                                <field name="vb_nhan"/>-->
+                                <!--                                <field name="vb_nhan"/>-->
 
 
-<!--                                <field name="phoi_hop_xu_ly"/>-->
+                                <!--                                <field name="phoi_hop_xu_ly"/>-->
                             </group>
                             <group>
-                                 <field name="tt_vb"/>
-                                  <field name="lanh_dao_xu_ly"/>
+                                <field name="tt_vb" readonly="1"/>
+                                <field name="lanh_dao_xu_ly"/>
 
 
-<!--                                <field name="so_den_theo_so"/>-->
-<!--                                <field name="so_vb"/>-->
+                                <!--                                <field name="so_den_theo_so"/>-->
+                                <!--                                <field name="so_vb"/>-->
                                 <field name="ngay_hieu_luc"/>
-<!--                                <field name="ngay_ky"/>-->
-<!--                                <field name="chuc_vu"/>-->
-<!--                                <field name="do_quan_trong"/>-->
-<!--                                <field name="nguoi_xu_ly_chinh"/>-->
-                                <field name="so_den_tong_hop_so_den_theo_so"/>
-                                <field name="but_phe"/>
-                                 <field name="dv_xu_ly_chinh"/>
-                                <field name="dv_dong_xu_ly"/>
+                                <!--                                <field name="ngay_ky"/>-->
+                                <!--                                <field name="chuc_vu"/>-->
+                                <!--                                <field name="do_quan_trong"/>-->
+                                <!--                                <field name="nguoi_xu_ly_chinh"/>-->
+                                <field name="so_den_tong_hop_so_den_theo_so" invisible="1"/>
+                                <field name="but_phe" invisible="1"/>
+                                <field name="dv_xu_ly_chinh" widget="many2many_tags" readonly="1"/>
+                                <field name="dv_dong_xu_ly" widget="many2many_tags" readonly="1"/>
                             </group>
                         </group>
                         <label for="trich_yeu" string="Trích yếu"/>
@@ -84,7 +91,8 @@
                                         <!-- <field name="nguoi_theo_doi"/> -->
                                         <field name="ngay_bat_dau"/>
                                         <!-- <field name="ho_so_cong_viec"/> -->
-                                        <field name="attachment" widget="binary"/>
+                                        <field name="attachment" widget="many2many_binary"/>
+
                                         <field name="note"/>
                                     </group>
                                     <group>
@@ -94,51 +102,51 @@
                                 </group>
                             </page>
                             <page string="Ý kiến chỉ đạo">
-                                 <group></group>
-                                             <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
-                                                <field name="detail1">
-                                                <tree editable="bottom">
-                                                    <field name="nguoi_nhap_y_kien"/>
-                                                    <field name="nhom_phong_ban"/>
-                                                    <field name="noi_dung_chi_dao"/>
-                                                    <field name="thoi_diem_chi_dao"/>
-                                                </tree>
-                                                </field>
+                                <group></group>
+                                <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
+                                <field name="detail1" readonly="1">
+                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
+                                        <field name="nguoi_nhap_y_kien"/>
+                                        <field name="nhom_phong_ban"/>
+                                        <field name="noi_dung_chi_dao"/>
+                                        <field name="thoi_diem_chi_dao"/>
+                                    </tree>
+                                </field>
 
-                                            <label for="detail3" string="XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG"/>
-                                            <field name="detail3">
-                                                <tree editable="bottom">
-                                                    <field name="nguoi_nhap_y_kien"/>
-                                                    <field name="nhom_phong_ban"/>
-                                                    <field name="noi_dung_chi_dao"/>
-                                                    <field name="thoi_diem_chi_dao"/>
-                                                </tree>
-                                            </field>
+                                <label for="detail3" string="XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG"/>
+                                <field name="detail3" readonly="1">
+                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
+                                        <field name="nguoi_nhap_y_kien"/>
+                                        <field name="nhom_phong_ban"/>
+                                        <field name="noi_dung_chi_dao"/>
+                                        <field name="thoi_diem_chi_dao"/>
+                                    </tree>
+                                </field>
 
                             </page>
                             <page string="Phân phát">
-                                        <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
-                                        <field name="detail2" >
-                                            <tree editable="bottom">
-                                                <field name="nguoi_nhap_y_kien" string="STT"/>
-                                                <field name="noi_dung_chi_dao" string="Họ tên"/>
-                                                <field name="nhom_phong_ban" string="Phòng ban" />
-                                                <field name="thoi_diem_chi_dao" string="Thời gian đọc văn bản"/>
-                                            </tree>
-                                        </field>
+                                <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
+                                <field name="detail2" readonly="1">
+                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
+                                        <field name="nguoi_nhap_y_kien" string="Họ tên"/>
+                                        <field name="noi_dung_chi_dao" string="Trách nhiệm"/>
+                                        <field name="nhom_phong_ban" string="Phòng ban"/>
+                                        <field name="view_time" string="Thời gian đọc văn bản"/>
+                                    </tree>
+                                </field>
                             </page>
                         </notebook>
 
 
-<!--                        <label for="detail2" string="Ý KIẾN CẤP LÃNH ĐẠO"/>-->
-<!--                        <field name="detail2">-->
-<!--                            <tree editable="bottom">-->
-<!--                                <field name="nguoi_nhap_y_kien"/>-->
-<!--                                <field name="nhom_phong_ban"/>-->
-<!--                                <field name="noi_dung_chi_dao"/>-->
-<!--                                <field name="thoi_diem_chi_dao"/>-->
-<!--                            </tree>-->
-<!--                        </field>-->
+                        <!--                        <label for="detail2" string="Ý KIẾN CẤP LÃNH ĐẠO"/>-->
+                        <!--                        <field name="detail2">-->
+                        <!--                            <tree editable="bottom">-->
+                        <!--                                <field name="nguoi_nhap_y_kien"/>-->
+                        <!--                                <field name="nhom_phong_ban"/>-->
+                        <!--                                <field name="noi_dung_chi_dao"/>-->
+                        <!--                                <field name="thoi_diem_chi_dao"/>-->
+                        <!--                            </tree>-->
+                        <!--                        </field>-->
 
                     </sheet>
                 </form>
@@ -146,7 +154,7 @@
         </record>
 
         <record id="action_open_office_document_ingoing" model="ir.actions.act_window">
-            <field name="name">Văn bản đến</field>
+            <field name="name">Công văn đến</field>
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','incoming')]</field>
@@ -154,6 +162,7 @@
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_ingoing_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_ingoing_form')})]"/>
+
         </record>
 
         <record id="office_document_outgoing_tree" model='ir.ui.view'>
@@ -177,116 +186,132 @@
             <field name="arch" type="xml">
                 <form delete="false" duplicate="false">
                     <header>
-                        <button name="phan_phat" string="Phát hành" type="object"/>
-                        <button name="but_phe_action" string="Bút phê" type="object"/>
-                        <button name="phan_phat" string="Phân phát" type="object"/>
+                        <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_don_vi_xu_ly"
+                                invisible="tt_vb != 'cho_duyet'"/>
+                        <button name="approve" string="Duyệt" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_lan_dao"
+                                invisible="tt_vb != 'cho_duyet'"/>
+                        <button name="trinh_lanh_dao_cong_van_den" string="Trình lãnh đạo để bút phê" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="tt_vb != 'da_duyet'"/>
+                        <button name="phan_phat" string="Phát hành" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
+                        <button name="but_phe_action" string="Bút phê" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
+                                invisible="tt_vb != 'cho_but_phe'"/>
+                        <button name="phan_phat" string="Phân phát" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
                     </header>
                     <sheet>
+                        <field name="tt_vb" invisible="1"/>
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu"/>
                         <group>
                             <group>
-                                  <field name="so_di_tong_hop"/>
+                                <field name="so_di_tong_hop" readonly="1"/>
                                 <field name="don_vi_ban_hanh"/>
-<!--                                <field name="don_vi_soan_thao"/>-->
+                                <!--                                <field name="don_vi_soan_thao"/>-->
 
-<!--                                <field name="ngay_ky"/>-->
-<!--                                <field name="nguoi_ky"/>-->
+                                <!--                                <field name="ngay_ky"/>-->
+                                <!--                                <field name="nguoi_ky"/>-->
                                 <field name="do_khan"/>
-                                <field name="dia_diem_chuyen_ngoai" invisible="not chuyen_ngoai"/>
-                                  <field name="loai_van_ban"/>
-<!--                                <field name="nguoi_soan_thao"/>-->
-<!--                                <field name="dv_theo_doi_chinh"/>-->
-<!--                                <field name="phoi_hop_xu_ly"/>-->
+                                <field name="phan_loai_van_ban"/>
+                                <!--                                <field name="nguoi_soan_thao"/>-->
+                                <!--                                <field name="dv_theo_doi_chinh"/>-->
+                                <!--                                <field name="phoi_hop_xu_ly"/>-->
                             </group>
                             <group>
-                                  <field name="so_hieu"/>
+                                <field name="so_hieu"/>
                                 <field name="ngay_ban_hanh"/>
 
+                                <field name="chuyen_ngoai" string="Chuyển ngoài"/>
                                 <field name="ngay_chuyen_ngoai" invisible="not chuyen_ngoai"/>
-                                 <field name="chuyen_ngoai" string="Chuyển ngoài"/>
-<!--                                <field name="so_di_theo_so"/>-->
-<!--                                <field name="so_vb"/>-->
-<!--                                <field name="ngay_hieu_luc"/>-->
-<!--                                <field name="chuc_vu"/>-->
-<!--                                <field name="do_quan_trong"/>-->
+                                <field name="dia_diem_chuyen_ngoai" invisible="not chuyen_ngoai"/>
+                                <!--                                <field name="so_di_theo_so"/>-->
+                                <!--                                <field name="so_vb"/>-->
+                                <!--                                <field name="ngay_hieu_luc"/>-->
+                                <!--                                <field name="chuc_vu"/>-->
+                                <!--                                <field name="do_quan_trong"/>-->
 
-<!--                                <field name="nguoi_theo_doi_chinh"/>-->
-<!--                                <field name="but_phe"/>-->
-<!--                                <field name="so_di_tong_hop_so_den_theo_so"/>-->
+                                <!--                                <field name="nguoi_theo_doi_chinh"/>-->
+                                <!--                                <field name="but_phe"/>-->
+                                <!--                                <field name="so_di_tong_hop_so_den_theo_so"/>-->
                             </group>
                         </group>
 
-<!--                        <group>-->
-<!--                            <group string="Hồ sơ công việc">-->
-<!--                                <field name="pb_dv_nhan"/>-->
-<!--                                <field name="ca_nhan_dv_nhan"/>-->
-<!--                                <field name="nhom_nguoi_dung_dv_nhan"/>-->
-<!--                            </group>-->
+                        <!--                        <group>-->
+                        <!--                            <group string="Hồ sơ công việc">-->
+                        <!--                                <field name="pb_dv_nhan"/>-->
+                        <!--                                <field name="ca_nhan_dv_nhan"/>-->
+                        <!--                                <field name="nhom_nguoi_dung_dv_nhan"/>-->
+                        <!--                            </group>-->
 
-<!--                            <group>-->
+                        <!--                            <group>-->
 
-<!--                            </group>-->
-<!--                            <group>-->
-<!--                                <field name="noi_luu_tru"/>-->
-<!--                                <field name="ho_so_cong_viec"/>-->
-<!--                                <field name="attachment" widget="binary"/>-->
-<!--                            </group>-->
-<!--                            <group/>-->
-<!--                        </group>-->
+                        <!--                            </group>-->
+                        <!--                            <group>-->
+                        <!--                                <field name="noi_luu_tru"/>-->
+                        <!--                                <field name="ho_so_cong_viec"/>-->
+                        <!--                                <field name="attachment" widget="binary"/>-->
+                        <!--                            </group>-->
+                        <!--                            <group/>-->
+                        <!--                        </group>-->
                         <notebook>
                             <page string="Hồ sơ công việc">
                                 <group>
                                     <group string="Chi tiết">
-                                        <field name="attachment" widget="binary"/>
+                                        <field name="attachment" widget="many2many_binary"/>
                                     </group>
                                 </group>
                             </page>
                             <page string="Ý kiến chỉ đạo">
-                                 <group></group>
-                                        <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
-                                        <field name="detail1">
-                                            <tree editable="bottom">
-                                                <field name="nguoi_nhap_y_kien"/>
-                                                <field name="nhom_phong_ban"/>
-                                                <field name="noi_dung_chi_dao"/>
-                                                <field name="thoi_diem_chi_dao"/>
-                                            </tree>
-                                        </field>
+                                <group></group>
+                                <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
+                                <field name="detail1" readonly="1">
+                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
+                                        <field name="nguoi_nhap_y_kien"/>
+                                        <field name="nhom_phong_ban"/>
+                                        <field name="noi_dung_chi_dao"/>
+                                        <field name="thoi_diem_chi_dao"/>
+                                    </tree>
+                                </field>
 
-                                        <label for="detail3" string="XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG"/>
-                                        <field name="detail3">
-                                            <tree editable="bottom">
-                                                <field name="nguoi_nhap_y_kien"/>
-                                                <field name="nhom_phong_ban"/>
-                                                <field name="noi_dung_chi_dao"/>
-                                                <field name="thoi_diem_chi_dao"/>
-                                            </tree>
-                                        </field>
+                                <label for="detail3" string="XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG"/>
+                                <field name="detail3" readonly="1">
+                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
+                                        <field name="nguoi_nhap_y_kien"/>
+                                        <field name="nhom_phong_ban"/>
+                                        <field name="noi_dung_chi_dao"/>
+                                        <field name="thoi_diem_chi_dao"/>
+                                    </tree>
+                                </field>
 
                             </page>
                             <page string="Phân phát">
-                                        <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
-                                        <field name="detail2" >
-                                            <tree editable="bottom">
-                                                <field name="nguoi_nhap_y_kien" string="STT"/>
-                                                <field name="noi_dung_chi_dao" string="Họ tên"/>
-                                                <field name="nhom_phong_ban" string="Phòng ban" />
-                                                <field name="thoi_diem_chi_dao" string="Thời gian đọc văn bản"/>
-                                            </tree>
-                                        </field>
+                                <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
+                                <field name="detail2" readonly="1">
+                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
+                                        <field name="nguoi_nhap_y_kien" string="Họ tên"/>
+                                        <field name="noi_dung_chi_dao" string="Trách nhiệm"/>
+                                        <field name="nhom_phong_ban" string="Phòng ban"/>
+                                        <field name="view_time" string="Thời gian đọc văn bản"/>
+                                    </tree>
+                                </field>
                             </page>
                         </notebook>
 
-<!--                        <label for="detail2" string="Ý KIẾN CẤP LÃNH ĐẠO"/>-->
-<!--                        <field name="detail2">-->
-<!--                            <tree editable="bottom">-->
-<!--                                <field name="nguoi_nhap_y_kien"/>-->
-<!--                                <field name="nhom_phong_ban"/>-->
-<!--                                <field name="noi_dung_chi_dao"/>-->
-<!--                                <field name="thoi_diem_chi_dao"/>-->
-<!--                            </tree>-->
-<!--                        </field>-->
+                        <!--                        <label for="detail2" string="Ý KIẾN CẤP LÃNH ĐẠO"/>-->
+                        <!--                        <field name="detail2">-->
+                        <!--                            <tree editable="bottom">-->
+                        <!--                                <field name="nguoi_nhap_y_kien"/>-->
+                        <!--                                <field name="nhom_phong_ban"/>-->
+                        <!--                                <field name="noi_dung_chi_dao"/>-->
+                        <!--                                <field name="thoi_diem_chi_dao"/>-->
+                        <!--                            </tree>-->
+                        <!--                        </field>-->
 
                     </sheet>
                 </form>
@@ -294,7 +319,7 @@
         </record>
 
         <record id="action_open_office_document_outgoing" model="ir.actions.act_window">
-            <field name="name">Văn bản đi</field>
+            <field name="name">Công văn đi</field>
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','outgoing')]</field>
@@ -325,115 +350,131 @@
             <field name="arch" type="xml">
                 <form delete="false" duplicate="false">
                     <header>
-                        <button name="phan_phat" string="Phát hành" type="object"/>
-                        <button name="but_phe_action" string="Bút phê" type="object"/>
-                        <button name="phan_phat" string="Phân phát" type="object"/>
+                        <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_don_vi_xu_ly"
+                                invisible="tt_vb != 'cho_duyet'"/>
+                        <button name="approve" string="Duyệt" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_lan_dao"
+                                invisible="tt_vb != 'cho_duyet'"/>
+                        <button name="trinh_lanh_dao_cong_van_den" string="Trình lãnh đạo để bút phê" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="tt_vb != 'da_duyet'"/>
+                        <button name="phan_phat" string="Phát hành" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
+                        <button name="but_phe_action" string="Bút phê" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
+                                invisible="tt_vb != 'cho_but_phe'"/>
+                        <button name="phan_phat" string="Phân phát" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
                     </header>
                     <sheet>
+                        <field name="tt_vb" invisible="1"/>
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu"/>
                         <group>
                             <group>
-                                  <field name="so_di_tong_hop" string="Số quyết định"/>
+                                <field name="so_di_tong_hop" string="Số quyết định" readonly="1"/>
                                 <field name="don_vi_ban_hanh"/>
-<!--                                <field name="don_vi_soan_thao"/>-->
+                                <!--                                <field name="don_vi_soan_thao"/>-->
 
-<!--                                <field name="ngay_ky"/>-->
-<!--                                <field name="nguoi_ky"/>-->
+                                <!--                                <field name="ngay_ky"/>-->
+                                <!--                                <field name="nguoi_ky"/>-->
                                 <field name="do_khan"/>
                                 <field name="dia_diem_chuyen_ngoai" invisible="not chuyen_ngoai"/>
-<!--                                <field name="nguoi_soan_thao"/>-->
-<!--                                <field name="dv_theo_doi_chinh"/>-->
-<!--                                <field name="phoi_hop_xu_ly"/>-->
+                                <!--                                <field name="nguoi_soan_thao"/>-->
+                                <!--                                <field name="dv_theo_doi_chinh"/>-->
+                                <!--                                <field name="phoi_hop_xu_ly"/>-->
                             </group>
                             <group>
-                                  <field name="so_hieu"/>
+                                <field name="so_hieu"/>
                                 <field name="ngay_ban_hanh"/>
 
                                 <field name="ngay_chuyen_ngoai" invisible="not chuyen_ngoai"/>
-                                 <field name="chuyen_ngoai" string="Chuyển ngoài"/>
-<!--                                <field name="so_di_theo_so"/>-->
-<!--                                <field name="so_vb"/>-->
-<!--                                <field name="ngay_hieu_luc"/>-->
-<!--                                <field name="chuc_vu"/>-->
-<!--                                <field name="do_quan_trong"/>-->
+                                <field name="chuyen_ngoai" string="Chuyển ngoài"/>
+                                <!--                                <field name="so_di_theo_so"/>-->
+                                <!--                                <field name="so_vb"/>-->
+                                <!--                                <field name="ngay_hieu_luc"/>-->
+                                <!--                                <field name="chuc_vu"/>-->
+                                <!--                                <field name="do_quan_trong"/>-->
 
-<!--                                <field name="nguoi_theo_doi_chinh"/>-->
-<!--                                <field name="but_phe"/>-->
-<!--                                <field name="so_di_tong_hop_so_den_theo_so"/>-->
+                                <!--                                <field name="nguoi_theo_doi_chinh"/>-->
+                                <!--                                <field name="but_phe"/>-->
+                                <!--                                <field name="so_di_tong_hop_so_den_theo_so"/>-->
                             </group>
                         </group>
 
-<!--                        <group>-->
-<!--                            <group string="Hồ sơ công việc">-->
-<!--                                <field name="pb_dv_nhan"/>-->
-<!--                                <field name="ca_nhan_dv_nhan"/>-->
-<!--                                <field name="nhom_nguoi_dung_dv_nhan"/>-->
-<!--                            </group>-->
+                        <!--                        <group>-->
+                        <!--                            <group string="Hồ sơ công việc">-->
+                        <!--                                <field name="pb_dv_nhan"/>-->
+                        <!--                                <field name="ca_nhan_dv_nhan"/>-->
+                        <!--                                <field name="nhom_nguoi_dung_dv_nhan"/>-->
+                        <!--                            </group>-->
 
-<!--                            <group>-->
+                        <!--                            <group>-->
 
-<!--                            </group>-->
-<!--                            <group>-->
-<!--                                <field name="noi_luu_tru"/>-->
-<!--                                <field name="ho_so_cong_viec"/>-->
-<!--                                <field name="attachment" widget="binary"/>-->
-<!--                            </group>-->
-<!--                            <group/>-->
-<!--                        </group>-->
+                        <!--                            </group>-->
+                        <!--                            <group>-->
+                        <!--                                <field name="noi_luu_tru"/>-->
+                        <!--                                <field name="ho_so_cong_viec"/>-->
+                        <!--                                <field name="attachment" widget="binary"/>-->
+                        <!--                            </group>-->
+                        <!--                            <group/>-->
+                        <!--                        </group>-->
                         <notebook>
                             <page string="Hồ sơ công việc">
                                 <group>
                                     <group string="Chi tiết">
-                                        <field name="attachment" widget="binary"/>
+                                        <field name="attachment" widget="many2many_binary"/>
                                     </group>
                                 </group>
                             </page>
                             <page string="Ý kiến chỉ đạo">
-                                 <group></group>
-                                        <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
-                                        <field name="detail1">
-                                            <tree editable="bottom">
-                                                <field name="nguoi_nhap_y_kien"/>
-                                                <field name="nhom_phong_ban"/>
-                                                <field name="noi_dung_chi_dao"/>
-                                                <field name="thoi_diem_chi_dao"/>
-                                            </tree>
-                                        </field>
+                                <group></group>
+                                <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
+                                <field name="detail1">
+                                    <tree editable="bottom">
+                                        <field name="nguoi_nhap_y_kien"/>
+                                        <field name="nhom_phong_ban"/>
+                                        <field name="noi_dung_chi_dao"/>
+                                        <field name="thoi_diem_chi_dao"/>
+                                    </tree>
+                                </field>
 
-                                        <label for="detail3" string="XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG"/>
-                                        <field name="detail3">
-                                            <tree editable="bottom">
-                                                <field name="nguoi_nhap_y_kien"/>
-                                                <field name="nhom_phong_ban"/>
-                                                <field name="noi_dung_chi_dao"/>
-                                                <field name="thoi_diem_chi_dao"/>
-                                            </tree>
-                                        </field>
+                                <label for="detail3" string="XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG"/>
+                                <field name="detail3">
+                                    <tree editable="bottom">
+                                        <field name="nguoi_nhap_y_kien"/>
+                                        <field name="nhom_phong_ban"/>
+                                        <field name="noi_dung_chi_dao"/>
+                                        <field name="thoi_diem_chi_dao"/>
+                                    </tree>
+                                </field>
 
                             </page>
                             <page string="Phân phát">
-                                        <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
-                                        <field name="detail2" >
-                                            <tree editable="bottom">
-                                                <field name="nguoi_nhap_y_kien" string="STT"/>
-                                                <field name="noi_dung_chi_dao" string="Họ tên"/>
-                                                <field name="nhom_phong_ban" string="Phòng ban" />
-                                                <field name="thoi_diem_chi_dao" string="Thời gian đọc văn bản"/>
-                                            </tree>
-                                        </field>
+                                <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
+                                <field name="detail2">
+                                    <tree editable="bottom">
+                                        <field name="nguoi_nhap_y_kien" string="Họ tên"/>
+                                        <field name="noi_dung_chi_dao" string="Nội dung"/>
+                                        <field name="nhom_phong_ban" string="Phòng ban"/>
+                                        <field name="view_time" string="Thời gian đọc văn bản"/>
+                                    </tree>
+                                </field>
                             </page>
                         </notebook>
 
-<!--                        <label for="detail2" string="Ý KIẾN CẤP LÃNH ĐẠO"/>-->
-<!--                        <field name="detail2">-->
-<!--                            <tree editable="bottom">-->
-<!--                                <field name="nguoi_nhap_y_kien"/>-->
-<!--                                <field name="nhom_phong_ban"/>-->
-<!--                                <field name="noi_dung_chi_dao"/>-->
-<!--                                <field name="thoi_diem_chi_dao"/>-->
-<!--                            </tree>-->
-<!--                        </field>-->
+                        <!--                        <label for="detail2" string="Ý KIẾN CẤP LÃNH ĐẠO"/>-->
+                        <!--                        <field name="detail2">-->
+                        <!--                            <tree editable="bottom">-->
+                        <!--                                <field name="nguoi_nhap_y_kien"/>-->
+                        <!--                                <field name="nhom_phong_ban"/>-->
+                        <!--                                <field name="noi_dung_chi_dao"/>-->
+                        <!--                                <field name="thoi_diem_chi_dao"/>-->
+                        <!--                            </tree>-->
+                        <!--                        </field>-->
 
                     </sheet>
                 </form>
@@ -463,26 +504,26 @@
                     <sheet>
                         <group>
                             <group>
-<!--                                <field name="nhan_van_ban"/>-->
-                                <field name="don_vi_xu_ly_chinh"/>
-                                <field name="don_vi_dong_xu_ly"/>
+                                <!--                                <field name="nhan_van_ban"/>-->
+                                <field name="don_vi_xu_ly_chinh" widget="many2many_tags"/>
+                                <field name="don_vi_dong_xu_ly" widget="many2many_tags"/>
                             </group>
                             <group>
-<!--                                <field name="noi_nhan_ban_goc_luu_tru"/>-->
-                                <field name="nguoi_xu_ly_chinh"/>
-                                <field name="nguoi_dong_xu_ly"/>
+                                <!--                                <field name="noi_nhan_ban_goc_luu_tru"/>-->
+                                <field name="nguoi_xu_ly_chinh" widget="many2many_tags"/>
+                                <field name="nguoi_dong_xu_ly" widget="many2many_tags"/>
                             </group>
-<!--                            <group string="Đơn vị nhận">-->
-<!--                                <field name="pb_dv_nhan"/>-->
-<!--                                <field name="ca_nhan_dv_nhan"/>-->
-<!--                                <field name="nhom_nguoi_dung_dv_nhan"/>-->
-<!--                            </group>-->
+                            <!--                            <group string="Đơn vị nhận">-->
+                            <!--                                <field name="pb_dv_nhan"/>-->
+                            <!--                                <field name="ca_nhan_dv_nhan"/>-->
+                            <!--                                <field name="nhom_nguoi_dung_dv_nhan"/>-->
+                            <!--                            </group>-->
                             <group/>
                         </group>
                     </sheet>
                     <footer>
                         <button name="phan_phat" string="Phát hành" type="object"/>
-                        <button name="phan_phat" string="Hủy" type="object" class="btn-danger"/>
+                        <button name="cancel" string="Hủy" type="object" class="btn-danger"/>
                     </footer>
                 </form>
             </field>
@@ -523,11 +564,34 @@
                         </div>
                     </sheet>
                     <footer>
-                        <button name="phan_phat" string="Ghi ý kiến" type="object"/>
-                        <button name="phan_phat" string="Hủy bỏ" type="object" class="btn-danger"/>
+                        <button name="but_phe" string="Ghi ý kiến" type="object"/>
+                        <button name="cancel" string="Hủy bỏ" type="object" class="btn-danger"/>
                     </footer>
                 </form>
             </field>
         </record>
+
+        <record id="action_open_office_document_internal_ingoing" model="ir.actions.act_window">
+            <field name="name">Công văn nội bộ đến</field>
+            <field name="res_model">office.document</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[('document_type','=','incoming_internal')]</field>
+            <field name="context">{'default_document_type': 'incoming_internal'}</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+        (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_ingoing_tree')}),
+        (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_ingoing_form')})]"/>
+        </record>
+
+        <record id="action_open_office_document_internal_outgoing" model="ir.actions.act_window">
+            <field name="name">Công văn nội bộ đi</field>
+            <field name="res_model">office.document</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[('document_type','=','outgoing_internal')]</field>
+            <field name="context">{'default_document_type': 'outgoing_internal'}</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+        (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_outgoing_tree')}),
+        (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_outgoing_form')})]"/>
+        </record>
+
     </data>
 </odoo>

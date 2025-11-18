@@ -8,7 +8,7 @@ class HrTediVehicleRepairLine(models.Model):
     _order = "sequence"  # Sắp xếp theo STT
 
     # Trường liên kết về phiếu cha
-    repair_id = fields.Many2one('hr_tedi.vehicle.repair', string="Phiếu sửa chữa", ondelete='cascade', required=True)
+    repair_id = fields.Many2one('hr_tedi.vehicle.repair', string="Phiếu sửa chữa", required=True)
 
     # Các trường trên dòng
     sequence = fields.Integer(string='STT', compute='_compute_sequence', store=True, readonly=True)

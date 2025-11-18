@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_website_post_tree" model="ir.ui.view">
+        <field name="name">website.post.tree</field>
+        <field name="model">website.post</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name" string="Tiêu đề"/>
+                <field name="post_type" string="Loại tin tức"/>
+                <field name="create_user" string="Người tạo"/>
+                <field name="create_date" string="Ngày tạo"/>
+                <field name="state" string="Trạng thái"/>
+                <field name="confirm_user" string="Người duyệt"/>
+                <field name="have_post" string="Đã đăng lên web"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_website_post_form" model="ir.ui.view">
+        <field name="name">website.post.form</field>
+        <field name="model">website.post</field>
+        <field name="arch" type="xml">
+            <form delete="false" duplicate="false">
+                <header>
+                    <button name="approve" string="Duyệt" type="object"
+                            groups="base.group_system"/>
+                    <button name="action_submit_leader" string="Trình lãnh đạo" type="object"
+                            class="btn btn-primary"
+                            groups="base.group_system"/>
+                    <button name="action_save_draft" string="Lưu nháp" type="object"
+                            class="btn btn-secondary"
+                            groups="base.group_system"/>
+                </header>
+
+                <style>
+                    .fixed-label {
+                    display: block;
+                    width: 120px;
+                    margin: 0;
+                    align-self: flex-start;
+                    text-align: left;
+                    padding-right: 8px;
+                    }
+                </style>
+
+                <sheet>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+                        <!-- Cột bên trái -->
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+
+                            <!-- Tiêu đề tin tức -->
+                            <div style="display: flex; align-items: center;">
+                                <label for="name" string="Tiêu đề" class="fixed-label o_form_label"/>
+                                <field name="name"
+                                       style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
+                            </div>
+
+                            <div style="display: flex; align-items: center;">
+                                <label for="post_type" string="Loại tin tức" class="fixed-label o_form_label"/>
+                                <field name="post_type"
+                                       style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
+                            </div>
+
+                            <div style="display: flex; align-items: center;">
+                                <label for="create_date" string="Ngày ban hành" class="fixed-label o_form_label"/>
+                                <field name="create_date"
+                                       style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
+                            </div>
+
+                            <div style="display: flex; align-items: center;">
+                                <label for="content" string="Nội dung" class="fixed-label o_form_label"/>
+                                <field name="content"
+                                       style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
+                            </div>
+
+                        </div>
+
+                        <!-- Cột bên phải -->
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <div style="display: flex; align-items: center;">
+                                <label for="image" string="Hình ảnh đính kèm" class="fixed-label o_form_label"/>
+                                <div style="flex: 1; max-width: 300px; max-height: 200px; overflow: hidden;">
+                                    <field name="image"
+                                           widget="image"
+                                           options="{'preview_image': True, 'size': [200, 150]}"
+                                           style="width: 100%; max-height: 150px; object-fit: contain;"/>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_open_website_post" model="ir.actions.act_window">
+        <field name="name">Danh sách yêu cầu</field>
+        <field name="res_model">website.post</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_website_post_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_website_post_form')})]"/>
+    </record>
+
+    <record id="view_office_post_type_form" model="ir.ui.view">
+        <field name="name">post.type.form</field>
+        <field name="model">post.type</field>
+        <field name="arch" type="xml">
+            <form string="Loại tin tức">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tree view -->
+    <record id="view_office_post_type_tree" model="ir.ui.view">
+        <field name="name">post.type.tree</field>
+        <field name="model">post.type</field>
+        <field name="arch" type="xml">
+            <tree string="Loại tin tức">
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_office_post_type" model="ir.actions.act_window">
+        <field name="name">Loại tin tức</field>
+        <field name="res_model">post.type</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_office_post_type_tree"/>
+    </record>
+</odoo>

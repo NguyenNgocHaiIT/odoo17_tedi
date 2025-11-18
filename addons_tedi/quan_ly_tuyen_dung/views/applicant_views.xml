@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <!-- ====================== FORM HR.APPLICANT ĐÃ SỬA ====================== -->
+    <record id="hr_applicant_form_replaced_clean" model="ir.ui.view">
+      <field name="name">hr.applicant.form.replaced.clean</field>
+      <field name="model">hr.applicant</field>
+      <field name="inherit_id" ref="hr_recruitment.hr_applicant_view_form"/>
+      <field name="priority">999</field>
+      <field name="arch" type="xml">
+        <xpath expr="//form" position="replace">
+          <form string="Hồ sơ ứng viên" class="o_xxl_form_view o_form_no_sidebar o_form_narrow">
+
+            <!-- Các field ẩn cần thiết -->
+            <field name="company_id" invisible="1"/>
+            <field name="emp_id" invisible="1"/>
+            <field name="active" invisible="1"/>
+            <field name="date_closed" invisible="1"/>
+
+            <header>
+              <button string="Tạo nhân viên" name="create_employee_from_applicant" type="object"
+                      class="btn-primary" groups="quan_ly_tuyen_dung.group_recruitment_hr_officer,base.group_user"
+                      invisible="emp_id or not active or not date_closed"/>
+              <button string="Từ chối" name="archive_applicant" type="object" invisible="not active"/>
+              <button string="Khôi phục" name="toggle_active" type="object" invisible="active"/>
+              <field name="stage_id" widget="statusbar"
+                     options="{'clickable': 1, 'fold_field': 'fold'}"
+                     groups="quan_ly_tuyen_dung.group_recruitment_stage_editors,base.group_user"/>
+            </header>
+
+            <sheet class="o_form_sheet_full">
+
+              <!-- Button box -->
+              <div class="oe_button_box" name="button_box">
+                <button name="action_open_employee" type="object" class="oe_stat_button" icon="fa-id-card-o"
+                        groups="hr.group_hr_user" invisible="not emp_id">
+                  <field name="employee_name" widget="char" readonly="1" class="o_stat_text"/>
+                </button>
+              </div>
+
+              <!-- Thông tin chính -->
+              <group>
+                <group string="THÔNG TIN CÁ NHÂN">
+                  <field name="partner_name" string="Họ và tên" required="1"/>
+                  <field name="dob" string="Ngày sinh"/>
+                  <field name="country_id" string="Quốc tịch"/>
+                  <field name="folk" string="Dân tộc"/>
+                  <field name="current_job" string="Nghề nghiệp hiện tại"/>
+                  <field name="address" string="Địa chỉ thường trú"/>
+                </group>
+                <group string="THÔNG TIN LIÊN HỆ">
+                  <field name="email_from" widget="email" string="Email"/>
+                  <field name="partner_mobile" widget="phone" string="Điện thoại"/>
+                </group>
+              </group>
+
+              <group>
+                <group string="VỊ TRÍ ỨNG TUYỂN">
+                  <field name="recruitment_plan_id" string="Đợt tuyển dụng"
+                         domain="[('recruitment_status', '=', 'complete')]"/>
+                    <field name="available_job_ids" invisible="1"/>
+                    <field name="job_id" string="Vị trí"
+                           domain="[('id', 'in', available_job_ids)]"/>
+
+                  <field name="department_id" string="Phòng ban"/>
+                  <field name="interviewer_ids" widget="many2many_avatar_user"
+                         options="{'no_create': True, 'no_create_edit': True}"/>
+                  <field name="priority" widget="priority"/>
+                  <field name="source_id"/>
+                  <field name="attachment_ids" string="Hồ sơ đính kèm" widget="many2many_tags"/>
+                </group>
+                <group string="ĐỀ XUẤT LƯƠNG">
+                  <label for="salary_expected"/>
+                  <div class="o_row">
+                    <field name="salary_expected"/>
+                    <span invisible="not salary_expected_extra"> + </span>
+                    <field name="salary_expected_extra" placeholder="Phúc lợi khác..."/>
+                  </div>
+                  <label for="salary_proposed"/>
+                  <div class="o_row">
+                    <field name="salary_proposed"/>
+                    <span invisible="not salary_proposed_extra"> + </span>
+                    <field name="salary_proposed_extra" placeholder="Phúc lợi khác..."/>
+                  </div>
+                  <field name="availability" placeholder="Thời gian có thể bắt đầu"/>
+                </group>
+              </group>
+
+              <separator string="KHẢO SÁT SỰ PHÙ HỢP"/>
+              <div style="display:flex; gap:20px; align-items:center; margin:10px 0;">
+                <field name="suitability_doc_ids" widget="many2many_binary" string="File khảo sát"/>
+                <field name="suitability" widget="radio" options="{'horizontal': true}"/>
+              </div>
+
+              <field name="applicant_properties" columns="2"/>
+
+              <!-- Đánh giá sau phỏng vấn -->
+              <notebook>
+                <page string="Đánh giá sau phỏng vấn">
+                  <field name="description" placeholder="Ghi chú tổng hợp..."/>
+                  <button name="action_open_applicant_evaluation_page"
+                          string="Mở bảng đánh giá chi tiết"
+                          type="object" class="btn-primary"/>
+                </page>
+              </notebook>
+
+
+                <notebook colspan="4">
+                  <!-- 1. TRÌNH ĐỘ HỌC VẤN & CHỨNG CHỈ HÀNH NGHỀ (GỘP) -->
+                  <page string="Trình độ học vấn">
+                    <group>
+                      <!-- === TRÌNH ĐỘ HỌC VẤN === -->
+                      <group string="TRÌNH ĐỘ HỌC VẤN" class="o_group_col_6">
+
+                      </group>
+                        <field name="education_ids" nolabel="1"
+                               context="{'default_applicant_id': active_id}">
+                          <tree editable="bottom">
+                            <field name="stt" string="STT" readonly="1" width="60"/>
+                            <field name="major" string="Chuyên ngành đào tạo"/>
+                            <field name="school" string="Trường đào tạo" required="1"/>
+                            <field name="years" string="Số năm học"/>
+                            <field name="degree" string="Trình độ"/>
+                            <field name="issue_date" string="Ngày cấp"/>
+                            <field name="attachment_ids" widget="many2many_binary" string="File"/>
+                          </tree>
+                        </field>
+
+                      <!-- === CHỨNG CHỈ HÀNH NGHỀ === -->
+                      <group string="CHỨNG CHỈ HÀNH NGHỀ" class="o_group_col_6">
+
+                      </group>
+                        <field name="certificate_ids" nolabel="1"
+                               context="{'default_applicant_id': active_id}">
+                          <tree editable="bottom">
+                            <field name="stt" string="STT" readonly="1" width="60"/>
+                            <field name="cert_type" string="Tên chứng chỉ" required="1"/>
+                            <field name="code" string="Mã chứng chỉ"/>
+                            <field name="issuer" string="Nơi cấp"/>
+                            <field name="practice_field" string="Lĩnh vực"/>
+                            <field name="rank" string="Thứ hạng"/>
+                            <field name="date_from" string="Từ ngày"/>
+                            <field name="date_to" string="Đến ngày"/>
+                            <field name="attachment_ids" widget="many2many_binary" string="File"/>
+                          </tree>
+                        </field>
+                    </group>
+                  </page>
+
+                  <!-- 2. Quá trình đào tạo -->
+                  <page string="Quá trình đào tạo">
+                    <field name="training_ids" nolabel="1"
+                           context="{'default_applicant_id': active_id}">
+                      <tree editable="bottom">
+                        <field name="stt" string="STT" readonly="1" width="60"/>
+                        <field name="name" string="Tên khóa đào tạo" required="1"/>
+                        <field name="training_type" string="Loại đào tạo"/>
+                        <field name="facility" string="Cơ sở đào tạo"/>
+                        <field name="date_from" string="Từ ngày"/>
+                        <field name="date_to" string="Đến ngày"/>
+                        <field name="training_form" string="Hình thức"/>
+                        <field name="status" string="Trạng thái"/>
+                      </tree>
+                    </field>
+                  </page>
+
+                  <!-- 3. Quá trình công tác cũ -->
+                  <page string="Quá trình công tác cũ">
+                    <field name="experience_ids" nolabel="1"
+                           context="{'default_applicant_id': active_id}">
+                      <tree editable="bottom">
+                        <field name="stt" string="STT" readonly="1" width="60"/>
+                        <field name="company_name" string="Tên công ty"/>
+                        <field name="work_address" string="Địa chỉ làm việc"/>
+                        <field name="date_from" string="Từ ngày"/>
+                        <field name="date_to" string="Đến ngày"/>
+                        <field name="position" string="Chức danh"/>
+                      </tree>
+                    </field>
+                  </page>
+
+                </notebook>
+            </sheet>
+          </form>
+        </xpath>
+      </field>
+    </record>
+
+  </data>
+</odoo>
