@@ -1,112 +1,109 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <data>
-        <record id="cong_tac_khao_sat" model="project.task.type">
+<!--        Bước thực hiện-->
+        <record id="pre_fs" model="project.state">
+            <field name="name">Lập báo cáo nghiên cứu Tiền khả thi</field>
+        </record>
+        <record id="fs" model="project.state">
+            <field name="name">Lập báo cáo nghiên cứu Khả thi</field>
+        </record>
+        <record id="tkkt_bvtc2b" model="project.state">
+            <field name="name">Lập báo cáo Thiết kế kỹ thuật và Bản vẽ thi công 2 bước</field>
+        </record>
+        <record id="bvtc" model="project.state">
+            <field name="name">Lập báo cáo Bản vẽ thi công</field>
+        </record>
+        <record id="feed" model="project.state">
+            <field name="name">Lập báo cáo Thiết kế FEED</field>
+        </record>
+
+<!--        Phân loại công việc-->
+        <record id="cong_tac_khao_sat" model="project.task.categorize">
             <field name="name">Công tác khảo sát</field>
         </record>
-        <record id="cong_tac_thiet_ke" model="project.task.type">
+        <record id="cong_tac_thiet_ke" model="project.task.categorize">
             <field name="name">Công tác thiết kế</field>
         </record>
-        <record id="cong_tac_tvgs" model="project.task.type">
+        <record id="cong_tac_tvgs" model="project.task.categorize">
             <field name="name">Công tác tư vấn giám sát</field>
         </record>
-        <record id="cong_tac_thiet_ke_bim" model="project.task.type">
+        <record id="cong_tac_thiet_ke_bim" model="project.task.categorize">
             <field name="name">Công tác thiết kế BIM</field>
         </record>
-        <record id="cong_viec_chung" model="project.task.type">
+        <record id="cong_viec_chung" model="project.task.categorize">
             <field name="name">Công việc chung</field>
         </record>
 
+<!--        Phân loại hồ sơ-->
         <record id="ks_dia_hinh" model="project.deliverable.type">
             <field name="name">Tập I: Báo cáo khảo sát địa hình </field>
             <field name="task_type_id" ref="cong_tac_khao_sat"/>
         </record>
-
         <record id="ks_thuy_van" model="project.deliverable.type">
             <field name="name">Tập II: Báo cáo khảo sát thủy văn </field>
             <field name="task_type_id" ref="cong_tac_khao_sat"/>
         </record>
-
         <record id="ks_mat_duong_cu" model="project.deliverable.type">
             <field name="name">Tập III: Báo cáo khảo sát mặt đường cũ </field>
             <field name="task_type_id" ref="cong_tac_khao_sat"/>
         </record>
-
         <record id="ks_mat_dia_chat_cong_trinh" model="project.deliverable.type">
             <field name="name">Tập IV: Báo cáo khảo sát địa chất công trình </field>
             <field name="task_type_id" ref="cong_tac_khao_sat"/>
         </record>
-
         <record id="ks_vlxd" model="project.deliverable.type">
             <field name="name">Tập V: Báo cáo khảo sát vật liệu xây dựng, bãi đổ thải, thí nghiệm và thiết kế hỗn hợp bê tông nhựa </field>
             <field name="task_type_id" ref="cong_tac_khao_sat"/>
         </record>
-
-        <record id="tk_thuyet_minh_chung" model="project.deliverable.type">
-            <field name="name">Thiết kế thuyết minh chung</field>
-            <field name="task_type_id" ref="cong_tac_thiet_ke"/>
-        </record>
-
         <record id="tk_t1" model="project.deliverable.type">
             <field name="name">Tập I: Thuyết minh chung </field>
             <field name="task_type_id" ref="cong_tac_thiet_ke"/>
         </record>
-
         <record id="tk_t2" model="project.deliverable.type">
             <field name="name">Tập II: Các bản vẽ tuyến </field>
             <field name="task_type_id" ref="cong_tac_thiet_ke"/>
         </record>
-
         <record id="tk_t3" model="project.deliverable.type">
             <field name="name">Tập III: Các bản vẽ cầu </field>
             <field name="task_type_id" ref="cong_tac_thiet_ke"/>
         </record>
-
         <record id="tk_t4" model="project.deliverable.type">
             <field name="name">Tập IV: Các bản vẽ hầm </field>
             <field name="task_type_id" ref="cong_tac_thiet_ke"/>
         </record>
-
         <record id="tk_t5" model="project.deliverable.type">
             <field name="name">Tập V: Dự toán chi phí xây dựng </field>
             <field name="task_type_id" ref="cong_tac_thiet_ke"/>
         </record>
-
         <record id="tk_t6" model="project.deliverable.type">
             <field name="name">Tập VI: Tính toán thủy văn </field>
             <field name="task_type_id" ref="cong_tac_thiet_ke"/>
         </record>
-
         <record id="tk_t7" model="project.deliverable.type">
             <field name="name">Tập VII: Thiết kế xử lý nền đất yếu </field>
             <field name="task_type_id" ref="cong_tac_thiet_ke"/>
         </record>
-
         <record id="tk_t8" model="project.deliverable.type">
             <field name="name">Tập VIII: Tính toán kết cấu cầu, công trình, cống </field>
             <field name="task_type_id" ref="cong_tac_thiet_ke"/>
         </record>
-
         <record id="tk_t9" model="project.deliverable.type">
             <field name="name">Tập IX: Tính toán khối lượng </field>
             <field name="task_type_id" ref="cong_tac_thiet_ke"/>
         </record>
-
         <record id="tk_t10" model="project.deliverable.type">
             <field name="name">Tập X: Thiết kế tổ chức xây dựng </field>
             <field name="task_type_id" ref="cong_tac_thiet_ke"/>
         </record>
-
         <record id="tk_t11" model="project.deliverable.type">
             <field name="name">Tập XI: Chỉ dẫn kỹ thuật </field>
             <field name="task_type_id" ref="cong_tac_thiet_ke"/>
         </record>
-
         <record id="tk_t12" model="project.deliverable.type">
             <field name="name">Tập XII: Quy trình bảo trì </field>
             <field name="task_type_id" ref="cong_tac_thiet_ke"/>
         </record>
-
         <record id="tk_t12" model="project.deliverable.type">
             <field name="name">Tập XII: Quy trình bảo trì </field>
             <field name="task_type_id" ref="cong_tac_thiet_ke"/>

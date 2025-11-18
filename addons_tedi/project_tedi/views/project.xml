@@ -24,7 +24,7 @@
                                 <field name="phan_loai_cong_trinh"/>
                             </group>
                             <group>
-                                <field name="user_id"/>
+                                <field name="user_id" string="Giám đốc điều hành dự án"/>
                                 <field name="giai_doan_du_an"/>
                                 <field name="date" invisible="1"/>
                                 <field name="date_start" string="Thời gian kế hoạch" widget="daterange"
@@ -35,7 +35,18 @@
                             </group>
                         </group>
                         <notebook>
-                            <page name="member" string="Nhân sự dự án">
+                            <page name="phan_cong_giao_nhiem_vu" string="Bảng phân công, giao nhiệm vụ">
+                                <label for="giao_nhiem_vu_attachment_id" string="Phân công giao nhiệm vụ:"/>
+                                <field name="giao_nhiem_vu_attachment_id" widget="many2many_binary"/>
+                                <field name="giao_nhiem_vu" mode="tree">
+                                    <tree editable="bottom">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="department_id"/>
+                                        <field name="nhiem_vu"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page name="member" string="Danh sách tổng thể">
                                 <field name="project_member_ids" widget="section_and_note_one2many" mode="tree,kanban">
                                     <tree editable="bottom">
                                         <control>

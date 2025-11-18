@@ -1,6 +1,13 @@
 from odoo import models, fields, api
 
 
+class ProjectState(models.Model):
+    _name = 'project.state'
+    _description = 'Bước thực hiện'
+
+    name = fields.Char('Tên bước thực hiện')
+
+
 class Project(models.Model):
     _inherit = 'project.project'
 
@@ -15,16 +22,19 @@ class Project(models.Model):
             self.employee_user_id = employee_id.id
     phan_loai_goi_thau = fields.Selection([('1', 'Khảo sát thiết kế'),
                                            ('2', 'Tư vấn giám sát'),
-                                           ('3', 'Khảo sát thiết kế & Tư vấn giám sát')], string='Phân loại gói thầu')
-    phan_loai_cong_trinh = fields.Selection([('1', 'Cầu, Đường, Hầm'),
-                                             ('2', 'Cầu đặc biệt'),
-                                             ('3', 'Đường sắt'),
-                                             ('4', 'Hàng không'),
-                                             ('5', 'Lập báo cáo đánh giá tác động môi trường')], string="Phân loại công trình")
+                                           ('3', 'Kiểm định')], string='Phân loại gói thầu')
+    phan_loai_cong_trinh = fields.Selection([('1', 'Đường bộ'),
+                                             ('2', 'Đường sắt'),
+                                             ('3', 'Hàng không'),
+                                             ('4', 'Cảng, đường thủy'),
+                                             ('5', 'Cầu đặc biệt'),
+                                             ('6', 'Hầm đặc biệt')], string="Phân loại công trình")
     contract_id = fields.Char('Hợp đồng')
     giai_doan_du_an = fields.Char("Giai đoạn thực hiện")
     project_member_ids = fields.One2many('project.member', 'project_id')
     dia_diem = fields.Text('Địa điểm')
+    giao_nhiem_vu = fields.One2many('project.giao.nhiem.vu', 'project_id', 'Phân công giao nhiệm vụ')
+    giao_nhiem_vu_attachment_id = fields.Many2many('ir.attachment', string='Thông báo giao nhiệm vụ')
 
 
 class ProjectMember(models.Model):
@@ -48,3 +58,12 @@ class ProjectMember(models.Model):
         self.name = False
         if self.employee_id:
             self.name = self.employee_id.name
+
+
+class ProjectGiaoNhiemVu(models.Model):
+    _name = 'project.giao.nhiem.vu'
+
+    sequence = fields.Integer(string="Sequence", default=10)
+    project_id = fields.Many2one('project.project')
+    department_id = fields.Many2one('hr.department', string='Phòng ban/Đơn vị')
+    nhiem_vu = fields.Text(string='Nhiệm vụ')
