@@ -5,7 +5,7 @@
             <field name="name">calendar.event.calendar</field>
             <field name="model">calendar.event</field>
             <field name="arch" type="xml">
-                <calendar string="Lịch họp" date_start="start" date_stop="stop" color="color" >
+                <calendar string="Lịch họp" date_start="start" date_stop="stop" color="color">
                     <!-- Hiển thị giờ bắt đầu và nội dung -->
                     <field name="name" string="Nội dung"/>
                     <field name="user_id" string="Người chủ trì"/>
@@ -44,6 +44,10 @@
                                 groups="base.group_system"/>
                         <button name="open_room_booking_wizard"
                                 string="Đăng ký phòng họp"
+                                type="object"
+                                class="btn-primary"/>
+                        <button name="action_add_participants"
+                                string="Thêm người tham gia"
                                 type="object"
                                 class="btn-primary"/>
                     </header>
@@ -116,7 +120,8 @@
                                 <div style="display: flex; align-items: center;">
                                     <label for="partner_ids" string="Người tham gia" class="fixed-label o_form_label"/>
                                     <field name="partner_ids" widget="many2many_tags"
-                                           style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
+                                           style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"
+                                           readonly="1"/>
                                 </div>
                             </div>
                         </div>
@@ -152,6 +157,54 @@
                     <footer>
                         <button string="Đăng ký" type="object" name="action_confirm" class="btn-primary"/>
                         <button string="Hủy" type="object" name="action_cancel" class="btn-secondary"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- VIEW phải được định nghĩa trước -->
+        <record id="view_meeting_invitation_wizard_form" model="ir.ui.view">
+            <field name="name">meeting.invitation.wizard.form</field>
+            <field name="model">meeting.invitation.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Lời mời họp">
+                    <sheet>
+                        <group>
+                            <field name="event_id" readonly="1"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="action_type" widget="radio"/>
+                            <field name="note"/>
+                        </group>
+                        <footer>
+                            <button string="Xác nhận" type="object" name="action_confirm" class="btn-primary"/>
+                            <button string="Hủy" class="btn-secondary" special="cancel"/>
+                        </footer>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ACTION tham chiếu tới view -->
+        <record id="action_meeting_invitation_popup" model="ir.actions.act_window">
+            <field name="name">Lời mời họp</field>
+            <field name="res_model">meeting.invitation.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="view_meeting_invitation_wizard_form"/>
+            <field name="target">new</field>
+            <field name="context">{}</field>
+        </record>
+
+        <record id="view_calendar_add_participants_wizard_form" model="ir.ui.view">
+            <field name="name">calendar.add.participants.wizard.form</field>
+            <field name="model">calendar.add.participants.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Thêm người tham gia">
+                    <sheet>
+                        <field name="partner_ids" widget="many2many_tags"/>
+                    </sheet>
+                    <footer>
+                        <button string="Xác nhận" type="object" name="action_confirm" class="btn-primary"/>
+                        <button string="Hủy" class="btn-secondary" special="cancel"/>
                     </footer>
                 </form>
             </field>

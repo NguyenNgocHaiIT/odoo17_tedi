@@ -23,51 +23,37 @@
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
         </record>
 
-        <!-- Rule cho đơn vị xử lý -->
-        <record id="office_document_rule_don_vi_xu_ly" model="ir.rule">
-            <field name="name">Office Document - Don Vi Xu Ly</field>
+
+        <!-- Văn thư: xem tất cả -->
+        <record id="office_document_rule_van_thu" model="ir.rule">
+            <field name="name">Office Document - Van Thu</field>
             <field name="model_id" ref="model_office_document"/>
-            <field name="domain_force">
-                ["|",
-                    ("create_uid", "=", user.id),
-                    "&amp;",
-                        ("tt_vb", "=", "Đã phân phát"),
-                        "|",
-                            ("nguoi_xu_ly_chinh", "=", user.id),
-                            ("nguoi_dong_xu_ly", "in", [user.id])
-                ]
-            </field>
-            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_don_vi_xu_ly'))]"/>
+            <field name="domain_force">[(1,'=',1)]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu'))]"/>
         </record>
 
-        <!-- Rule cho lãnh đạo -->
+        <!-- Lãnh đạo: xem công văn mình tạo, được phân phát hoặc là lãnh đạo xử lý -->
         <record id="office_document_rule_lanh_dao" model="ir.rule">
             <field name="name">Office Document - Lanh Dao</field>
             <field name="model_id" ref="model_office_document"/>
             <field name="domain_force">
-                ["|",
-                    ("create_uid", "=", user.id),
-                    "&amp;",
-                        "|",
-                            "|",
-                                ("tt_vb", "=", "Đang trình lãnh đạo"),
-                                ("tt_vb", "=", "Đã duyệt"),
-                            ("tt_vb", "=", "Đã phân phát"),
-                        "|",
-                            ("lanh_dao_xu_ly", "=", user.id),
-                            ("lanh_dao_theo_doi", "=", user.id)
+                ['|', '|',
+                    ('create_uid', '=', user.id),
+                    ('detail2.nguoi_nhap_y_kien', '=', user.id),
+                    ('lanh_dao_xu_ly', '=', user.id)
                 ]
             </field>
             <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_lanh_dao'))]"/>
         </record>
 
 
-        <!-- Rule cho văn thư -->
-        <record id="office_document_rule_van_thu" model="ir.rule">
-            <field name="name">Office Document - Van Thu</field>
+
+        <!-- Nhân viên: xem tạo bởi mình hoặc được phân phát -->
+        <record id="office_document_rule_nhan_vien" model="ir.rule">
+            <field name="name">Office Document - Nhan Vien</field>
             <field name="model_id" ref="model_office_document"/>
-             <field name="domain_force">[(1,'=',1)]</field>
-            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu'))]"/>
+            <field name="domain_force">['|', ('create_uid','=',user.id), ('detail2.nguoi_nhap_y_kien','=',user.id)]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_don_vi_xu_ly'))]"/>
         </record>
 
     </data>

@@ -1,4 +1,6 @@
 from datetime import timedelta
+from operator import index
+
 from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
 import odoo
@@ -52,11 +54,9 @@ class PhanPhat(models.TransientModel):
     def _compute_nguoi_xu_ly_chinh(self):
         for rec in self:
             if rec.don_vi_xu_ly_chinh:
-                employees = self.env['hr.employee'].search([
-                    ('department_id', 'in', rec.don_vi_xu_ly_chinh.ids),
-                    ('user_id', '!=', False)
-                ])
-                rec.nguoi_xu_ly_chinh = employees.mapped('user_id')
+                # Lấy manager_id của các phòng ban
+                managers = rec.don_vi_xu_ly_chinh.mapped('manager_id.user_id')
+                rec.nguoi_xu_ly_chinh = managers if managers else False
             else:
                 rec.nguoi_xu_ly_chinh = False
 
@@ -64,11 +64,8 @@ class PhanPhat(models.TransientModel):
     def _compute_nguoi_dong_xu_ly(self):
         for rec in self:
             if rec.don_vi_dong_xu_ly:
-                employees = self.env['hr.employee'].search([
-                    ('department_id', 'in', rec.don_vi_dong_xu_ly.ids),
-                    ('user_id', '!=', False)
-                ])
-                rec.nguoi_dong_xu_ly = employees.mapped('user_id')
+                managers = rec.don_vi_dong_xu_ly.mapped('manager_id.user_id')
+                rec.nguoi_dong_xu_ly = managers if managers else False
             else:
                 rec.nguoi_dong_xu_ly = False
 
@@ -81,7 +78,7 @@ class PhanPhat(models.TransientModel):
         if not doc.exists():
             return
 
-        # Ghi các Many2many vào văn bản
+        # --- 1. Cập nhật Many2many vào văn bản ---
         doc.write({
             'dv_xu_ly_chinh': [(6, 0, self.don_vi_xu_ly_chinh.ids)],
             'dv_dong_xu_ly': [(6, 0, self.don_vi_dong_xu_ly.ids)],
@@ -90,68 +87,43 @@ class PhanPhat(models.TransientModel):
             'tt_vb': 'cho_xu_ly',
         })
 
-        # Tạo detail2
+        # --- 2. Tạo detail2 cho từng người ---
         lines_to_create = []
-
-        for user in self.nguoi_xu_ly_chinh:
+        for user, role in [(u, 'Xử lý chính') for u in self.nguoi_xu_ly_chinh] + \
+                          [(u, 'Đồng xử lý') for u in self.nguoi_dong_xu_ly]:
             if not doc.detail2.filtered(lambda l: l.nguoi_nhap_y_kien == user):
                 lines_to_create.append({
                     'office_document_id': doc.id,
                     'nguoi_nhap_y_kien': user.id,
                     'nhom_phong_ban': user.employee_ids[
                                       :1].department_id.name if user.employee_ids else 'Không xác định',
-                    'noi_dung_chi_dao': 'Xử lý chính',
+                    'noi_dung_chi_dao': role,
                     'thoi_diem_chi_dao': fields.Datetime.now(),
+                    'chuc_vu': 'quan_ly',
                 })
-
-        for user in self.nguoi_dong_xu_ly:
-            if not doc.detail2.filtered(lambda l: l.nguoi_nhap_y_kien == user):
-                lines_to_create.append({
-                    'office_document_id': doc.id,
-                    'nguoi_nhap_y_kien': user.id,
-                    'nhom_phong_ban': user.employee_ids[
-                                      :1].department_id.name if user.employee_ids else 'Không xác định',
-                    'noi_dung_chi_dao': 'Đồng xử lý',
-                    'thoi_diem_chi_dao': fields.Datetime.now(),
-                })
-
         if lines_to_create:
             self.env['office.document.detail2'].create(lines_to_create)
 
-        # --- 3. Gửi thông báo popup + chat ---
+        # --- 3. Chuẩn bị thông tin gửi popup, chat, email ---
         odoobot = self.env.ref('base.user_root')
         odoobot_partner = odoobot.partner_id
-        partner_ids = []
 
-        # Lấy tất cả partner người xử lý
-        partner_ids += [u.partner_id.id for u in self.nguoi_xu_ly_chinh if u.partner_id]
-        partner_ids += [u.partner_id.id for u in self.nguoi_dong_xu_ly if u.partner_id]
-        partners = self.env['res.partner'].browse(partner_ids)
+        users_to_notify = (self.nguoi_xu_ly_chinh + self.nguoi_dong_xu_ly).filtered(lambda u: u.partner_id)
+        partners = users_to_notify.mapped('partner_id')
 
-        # Link chi tiết công văn
         web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
         detail_url = f"{web_url}/web#id={doc.id}&model=office.document&view_type=form"
 
-        # Nội dung chat HTML với link xem chi tiết
         body_chat = f"""
         <p>📄 Bạn vừa được giao xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
         <p>
-            <a href="{detail_url}"
-               style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
-               Xem chi tiết
+            <a href="{detail_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                Xem chi tiết
             </a>
         </p>
         """
 
-        # Gửi thông báo trong chatter của document
-        doc.message_post(
-            body=f"📄 Văn bản <b>{doc.trich_yeu}</b> đã được phân phát đến người xử lý. <a href='{detail_url}'>Xem chi tiết</a>",
-            partner_ids=partner_ids,
-            message_type='notification',
-            subtype_xmlid='mail.mt_comment',
-        )
-
-        # Hàm tạo kênh chat 1-1
+        # --- 4. Hàm tạo kênh chat 1-1 ---
         def get_or_create_direct_chat(partner1, partner2):
             domain = [
                 ('channel_type', '=', 'chat'),
@@ -171,9 +143,11 @@ class PhanPhat(models.TransientModel):
                 ]
             })
 
-        # Gửi popup và tin nhắn chat đến từng người
-        for partner in partners:
-            # Gửi popup real-time
+        # --- 5. Gửi popup, chat, email ---
+        for user in users_to_notify:
+            partner = user.partner_id
+
+            # Popup real-time
             self.env['bus.bus']._sendone(
                 partner,
                 'simple_notification',
@@ -185,30 +159,51 @@ class PhanPhat(models.TransientModel):
                 }
             )
 
-            # Gửi tin nhắn chat qua Discuss
+            # Chat Discuss
             try:
                 channel = get_or_create_direct_chat(odoobot_partner, partner)
-                if channel:
-                    channel.sudo().message_post(
-                        body=body_chat,
-                        message_type='comment',
-                        subtype_xmlid='mail.mt_comment',
-                        author_id=odoobot_partner.id,
-                        body_is_html=True,
-                    )
+                channel.sudo().message_post(
+                    body=body_chat,
+                    message_type='comment',
+                    subtype_xmlid='mail.mt_comment',
+                    author_id=odoobot_partner.id,
+                    body_is_html=True,
+                )
             except Exception as e:
                 _logger.error(f"Lỗi gửi chat cho {partner.name}: {str(e)}")
 
-        # --- 4. Hoàn tất và đóng wizard ---
+            # Email
+            try:
+                subject = f"[Văn bản mới] {doc.trich_yeu}"
+                body_html = f"""
+                    <p>Xin chào {user.name},</p>
+                    <p>Bạn vừa được phân công xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
+                    <p>
+                        <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                            Xem chi tiết văn bản
+                        </a>
+                    </p>
+                    <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
+                """
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject,
+                    'email_to': user.email,
+                    'email_from': self.env.user.email or 'odoobot@example.com',
+                    'body_html': body_html,
+                }).send()
+            except Exception as e:
+                _logger.warning(f"Gửi mail thất bại cho {user.email}: {str(e)}")
+
+        # --- 6. Thông báo thành công ---
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': 'Thành công',
-                'message': 'Đã phân phát văn bản và gửi thông báo đến người nhận.',
+                'message': 'Đã phân phát văn bản và gửi email đến người nhận.',
                 'type': 'success',
                 'sticky': False,
-                'next': {'type': 'ir.actions.act_window_close'},  # Đóng wizard form
+                'next': {'type': 'ir.actions.act_window_close'},
             }
         }
 
@@ -326,6 +321,43 @@ class OfficeDocumentDetail2(models.Model):
     view_time = fields.Datetime('Thời gian xem', readonly=True)
     office_document_id = fields.Many2one('office.document')
 
+    chuc_vu = fields.Selection([
+        ('quan_ly', 'QUản lý'),
+        ('nhan_vien', 'Nhân viên'),
+    ], string='Chức vụ')
+    nguoi_quan_ly = fields.Many2one('res.users', string='Người quản lý')
+    cong_viec = fields.Text(string='Nội dung công việc')
+
+    # 2 trường quan trọng nhất
+    is_section = fields.Boolean(string="Là Section", compute='_compute_is_section')
+    sequence = fields.Integer(string="Thứ tự", default=10)
+
+    def action_open_assign_wizard(self):
+        """Mở wizard Giao việc dưới dạng POPUP"""
+        self.ensure_one()
+
+        if self.chuc_vu != 'quan_ly':
+            raise UserError("Chỉ quản lý mới được giao việc!")
+
+        return {
+            'name': 'Giao việc',  # Tiêu đề popup
+            'type': 'ir.actions.act_window',
+            'res_model': 'assign.task.wizard',
+            'view_mode': 'form',
+            'view_id': self.env.ref('quan_ly_cong_van.view_assign_task_wizard_form').id,
+            'target': 'new',  # BẮT BUỘC: mở popup
+            'flags': {'modal': True},  # Đảm bảo là modal
+            'context': {
+                'default_detail_id': self.id,
+                'default_office_document_id': self.office_document_id.id,
+            },
+        }
+
+    @api.depends('chuc_vu')
+    def _compute_is_section(self):
+        for rec in self:
+            rec.is_section = (rec.chuc_vu == 'quan_ly')
+
     def action_open_document(self):
         self.ensure_one()
         user = self.env.user
@@ -352,6 +384,13 @@ class OfficeDocumentDetail2(models.Model):
                         rec.nhom_phong_ban = employee[0].department_id.name
             except Exception:
                 rec.nhom_phong_ban = 'Không xác định'
+
+    allow_assign = fields.Boolean(compute='_compute_allow_assign')
+
+    @api.depends('nguoi_nhap_y_kien')
+    def _compute_allow_assign(self):
+        for rec in self:
+            rec.allow_assign = (rec.nguoi_nhap_y_kien.id == self.env.user.id)
 
 
 class OfficeDocumentDetail3(models.Model):
@@ -482,6 +521,12 @@ class OfficeDocument(models.Model):
     detail1 = fields.One2many('office.document.detail1', 'office_document_id', string='Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ')
     detail2 = fields.One2many('office.document.detail2', 'office_document_id', string='Ý KIẾN CẤP LÃNH ĐẠO')
     detail3 = fields.One2many('office.document.detail3', 'office_document_id', string='XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG')
+    outgoing_internal_id = fields.Many2one(
+        'office.document',
+        string="Công văn nội bộ đi liên quan",
+        domain="[('document_type','in',['outgoing_internal'])]"
+    )
+    can_duyet = fields.Boolean(string='Văn bản có cần duyệt không ?')
 
     @api.model
     def log(self):
@@ -572,11 +617,12 @@ class OfficeDocument(models.Model):
         if 'ngay_bat_dau' in vals and not vals.get('han_ket_thuc'):
             vals['han_ket_thuc'] = fields.Date.from_string(vals['ngay_bat_dau']) + timedelta(days=7)
 
+        can_duyet_val = vals.get('can_duyet')
         user = self.env.user
         # Nếu chưa set tt_vb từ form, thì set lại khi lưu
         if user.has_group('quan_ly_cong_van.group_van_thu'):
             vals['tt_vb'] = 'da_duyet'
-        elif user.has_group('quan_ly_cong_van.group_lanh_dao'):
+        elif can_duyet_val is False:
             vals['tt_vb'] = 'da_duyet'
         elif user.has_group('quan_ly_cong_van.group_don_vi_xu_ly'):
             vals['tt_vb'] = 'cho_duyet'
@@ -602,70 +648,64 @@ class OfficeDocument(models.Model):
 
     def _update_document_numbers(self, vals, is_write=False):
         """
-        Cập nhật so_den_tong_hop và so_di_tong_hop theo format:
-        - Mặc định: <Năm hiện tại>-<Mã loại công văn>-<STT>
-        - Nếu document_type = 'resolution': QĐ-<STT>
+        Cập nhật so_den_tong_hop và so_di_tong_hop:
+        - Loại bình thường: <YYYYMMDD>-<Mã loại>-<STT> (STT 4 chữ số)
+        - Quyết định: <YYYYMMDD>-QĐ-<STT> (STT 4 chữ số)
         """
         phan_loai_id = vals.get('phan_loai_van_ban')
         document_type = vals.get('document_type') or self._context.get('default_document_type') or (
             self.document_type if self else None)
 
-        current_year = fields.Date.today().year
+        current_date_str = fields.Date.today().strftime('%Y%m%d')  # YYYYMMDD
 
-        # ========== XỬ LÝ SỐ ĐẾN (vẫn như cũ) ==========
+        def get_or_create_sequence(code, name, prefix):
+            seq = self.env['ir.sequence'].sudo().search([('code', '=', code)], limit=1)
+            if not seq:
+                seq = self.env['ir.sequence'].sudo().create({
+                    'name': name,
+                    'code': code,
+                    'prefix': prefix,
+                    'padding': 4,
+                    'company_id': False,
+                })
+            return seq
+
+        # ========== SỐ ĐẾN ==========
         if phan_loai_id:
             phan_loai = self.env['office.document.category'].browse(phan_loai_id)
             if not phan_loai.exists() or not phan_loai.code:
                 raise UserError("Phân loại văn bản chưa có mã (code)!")
-
             code = phan_loai.code
-            seq_prefix_den = f'den.{current_year}.{code}'
-            seq_den = self.env['ir.sequence'].sudo().search([('code', '=', seq_prefix_den)], limit=1)
-            if not seq_den:
-                seq_den = self.env['ir.sequence'].sudo().create({
-                    'name': f'Số đến - {current_year} - {code}',
-                    'code': seq_prefix_den,
-                    'prefix': f'{current_year}-{code}-',
-                    'padding': 3,
-                    'company_id': False,
-                })
-
+            seq_code_den = f'den.{code}'
+            seq_den = get_or_create_sequence(
+                seq_code_den,
+                f'Số đến - {code}',
+                f'{current_date_str}-{code}-'
+            )
             if not vals.get('so_den_tong_hop'):
-                vals['so_den_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_prefix_den)
+                vals['so_den_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_code_den)
 
-        # ========== XỬ LÝ SỐ ĐI ==========
-        # Nếu loại văn bản là 'resolution' → dùng QĐ-<STT>
+        # ========== SỐ ĐI ==========
         if document_type == 'resolution':
             seq_code_qd = 'di.resolution'
-            seq_qd = self.env['ir.sequence'].sudo().search([('code', '=', seq_code_qd)], limit=1)
-            if not seq_qd:
-                seq_qd = self.env['ir.sequence'].sudo().create({
-                    'name': 'Số đi - Quyết định',
-                    'code': seq_code_qd,
-                    'prefix': 'QĐ-',
-                    'padding': 3,
-                    'company_id': False,
-                })
+            seq_qd = get_or_create_sequence(
+                seq_code_qd,
+                'Số đi - Quyết định',
+                f'{current_date_str}-QĐ-'
+            )
             if not vals.get('so_di_tong_hop'):
                 vals['so_di_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_code_qd)
-
         else:
-            # Các loại khác theo phân loại văn bản
             if phan_loai_id:
                 code = self.env['office.document.category'].browse(phan_loai_id).code
-                seq_prefix_di = f'di.{current_year}.{code}'
-                seq_di = self.env['ir.sequence'].sudo().search([('code', '=', seq_prefix_di)], limit=1)
-                if not seq_di:
-                    seq_di = self.env['ir.sequence'].sudo().create({
-                        'name': f'Số đi - {current_year} - {code}',
-                        'code': seq_prefix_di,
-                        'prefix': f'{current_year}-{code}-',
-                        'padding': 3,
-                        'company_id': False,
-                    })
-
+                seq_code_di = f'di.{code}'
+                seq_di = get_or_create_sequence(
+                    seq_code_di,
+                    f'Số đi - {code}',
+                    f'{current_date_str}-{code}-'
+                )
                 if not vals.get('so_di_tong_hop'):
-                    vals['so_di_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_prefix_di)
+                    vals['so_di_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_code_di)
 
         return vals
 
@@ -689,3 +729,169 @@ class OfficeDocument(models.Model):
             raise UserError("Vui lòng chọn lãnh đạo xử lý trước khi trình.")
         self.tt_vb = 'cho_duyet'
         return True
+
+    def get_form_url(self):
+        self.ensure_one()
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        return f"{base_url}/web#id={self.id}&model=office.document&view_type=form"
+
+    def phat_hanh(self):
+        self.ensure_one()
+        self.tt_vb = 'da_xu_ly'
+        return True
+
+class AssignTaskWizard(models.TransientModel):
+    _name = 'assign.task.wizard'
+    _description = 'Giao việc - Danh sách từng người'
+
+    detail_id = fields.Many2one('office.document.detail2', required=True, readonly=True)
+    office_document_id = fields.Many2one('office.document', readonly=True)
+
+    # Dòng giao việc (tree view)
+    line_ids = fields.One2many(
+        'assign.task.wizard.line',
+        'wizard_id',
+        string='Danh sách giao việc',
+    )
+
+    def action_assign(self):
+        self.ensure_one()
+        manager = self.detail_id
+        current_user = self.env.user  # người đang bấm nút
+        vals_list = []
+
+        for line in self.line_ids.filtered('cong_viec'):
+            vals = {
+                'office_document_id': self.office_document_id.id,
+                'nguoi_nhap_y_kien': line.nguoi_nhap_y_kien.id,
+                'nhom_phong_ban': manager.nhom_phong_ban,
+                'noi_dung_chi_dao': manager.noi_dung_chi_dao,
+                'cong_viec': line.cong_viec,
+                'thoi_diem_chi_dao': fields.Datetime.now(),
+                'chuc_vu': 'nhan_vien',
+                'nguoi_quan_ly': current_user.id,
+                'sequence': manager.sequence + 1,
+            }
+            vals_list.append(vals)
+
+        if vals_list:
+            created_lines = self.env['office.document.detail2'].create(vals_list)
+
+            # --- Gửi email trực tiếp ---
+            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            detail_url = f"{web_url}/web#id={self.office_document_id.id}&model=office.document&view_type=form"
+
+            for line in created_lines:
+                user = line.nguoi_nhap_y_kien
+                if user.email:
+                    try:
+                        subject = f"[Văn bản mới] {self.office_document_id.trich_yeu}"
+                        body_html = f"""
+                                    <p>Xin chào {user.name},</p>
+                                    <p>Bạn vừa được giao xử lý văn bản: <b>{self.office_document_id.trich_yeu}</b>.</p>
+                                    <p>
+                                        <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                                            Xem chi tiết văn bản
+                                        </a>
+                                    </p>
+                                    <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
+                                """
+                        mail_values = {
+                            'subject': subject,
+                            'email_to': user.email,
+                            'email_from': self.env.user.email or 'odoobot@example.com',
+                            'body_html': body_html,
+                        }
+                        self.env['mail.mail'].sudo().create(mail_values).send()
+                    except Exception as e:
+                        _logger.error(f"Lỗi gửi email cho {user.name}: {str(e)}")
+
+            # --- Gửi thông báo popup + chat ---
+            odoobot = self.env.ref('base.user_root')
+            odoobot_partner = odoobot.partner_id
+            partners = created_lines.mapped('nguoi_nhap_y_kien.partner_id')
+
+            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            detail_url = f"{web_url}/web#id={self.office_document_id.id}&model=office.document&view_type=form"
+
+            body_chat = f"""
+            <p>📄 Bạn vừa được giao xử lý văn bản: <b>{self.office_document_id.trich_yeu}</b>.</p>
+            <p>
+                <a href="{detail_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                    Xem chi tiết
+                </a>
+            </p>
+            """
+
+            for partner in partners:
+                # popup real-time
+                self.env['bus.bus']._sendone(
+                    partner,
+                    'simple_notification',
+                    {
+                        'title': 'Văn bản mới được giao',
+                        'message': f"Bạn vừa được giao xử lý văn bản: {self.office_document_id.trich_yeu}",
+                        'sticky': False,
+                        'type': 'info',
+                    }
+                )
+
+                # chat qua Discuss
+                try:
+                    domain = [
+                        ('channel_type', '=', 'chat'),
+                        ('channel_member_ids.partner_id', 'in', [partner.id, odoobot_partner.id])
+                    ]
+                    channels = self.env['discuss.channel'].sudo().search(domain)
+                    channel = channels.filtered(
+                        lambda c: set(c.channel_member_ids.mapped('partner_id').ids) == {partner.id,
+                                                                                         odoobot_partner.id})
+                    if not channel:
+                        channel = self.env['discuss.channel'].sudo().create({
+                            'name': f"Giao việc: {partner.name}",
+                            'channel_type': 'chat',
+                            'channel_member_ids': [(0, 0, {'partner_id': partner.id}),
+                                                   (0, 0, {'partner_id': odoobot_partner.id})]
+                        })
+                    channel.sudo().message_post(
+                        body=body_chat,
+                        message_type='comment',
+                        subtype_xmlid='mail.mt_comment',
+                        author_id=odoobot_partner.id,
+                        body_is_html=True,
+                    )
+                except Exception as e:
+                    _logger.error(f"Lỗi gửi chat cho {partner.name}: {str(e)}")
+
+        return {'type': 'ir.actions.act_window_close'}
+
+
+class AssignTaskWizardLine(models.TransientModel):
+    _name = 'assign.task.wizard.line'
+    _description = 'Dòng giao việc'
+
+    wizard_id = fields.Many2one('assign.task.wizard', required=True, ondelete='cascade')
+    employee_id = fields.Many2one('office.document.detail2')
+    cong_viec = fields.Text(string="Công việc", required=False)
+
+    nguoi_nhap_y_kien = fields.Many2one(
+        'res.users',
+        string="Nhân viên",
+    )
+
+    @api.onchange('wizard_id')
+    def _onchange_wizard_id(self):
+        """Set domain cho field 'nguoi_nhap_y_kien' theo phòng ban của document"""
+        if not self.wizard_id or not self.wizard_id.detail_id or not self.wizard_id.detail_id.nhom_phong_ban:
+            return {'domain': {'nguoi_nhap_y_kien': [('id', '=', False)]}}
+
+        department_name = self.wizard_id.detail_id.nhom_phong_ban
+
+        # Lấy nhân viên theo phòng ban và đã có user_id
+        employees = self.env['hr.employee'].search([
+            ('department_id.name', '=', department_name),
+            ('user_id', '!=', False)
+        ])
+        user_ids = employees.mapped('user_id').ids
+
+        return {'domain': {'nguoi_nhap_y_kien': [('id', 'in', user_ids)] if user_ids else [('id', '=', False)]}}
