@@ -141,6 +141,17 @@
             </field>
         </record>
 
+        <data noupdate="1">
+            <record id="seq_hr_tedi_vehicle_repair" model="ir.sequence">
+                <field name="name">Mã phiếu sửa chữa xe</field>
+                <field name="code">hr_tedi.vehicle.repair</field>
+                <field name="prefix">SC</field>
+                <field name="padding">3</field>
+                <!-- Nếu muốn có dấu "/", hoặc năm: prefix="SC/%(year)s/" -->
+                <!-- Để reset theo năm, cần dùng date ranges (advanced) -->
+            </record>
+        </data>
+
         <record id="view_hr_tedi_vehicle_repair_tree" model="ir.ui.view">
             <field name="name">hr.tedi.vehicle.repair.tree</field>
             <field name="model">hr_tedi.vehicle.repair</field>

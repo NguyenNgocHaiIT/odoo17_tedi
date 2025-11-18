@@ -5,7 +5,7 @@ class HRDecision(models.Model):
     _name = "hr.decision"
     _description = "Quản lý Quyết định (Khen thưởng/Kỷ luật)"
     _order = "decision_date desc, id desc"
-    _rec_name = 'display_name'  
+    _rec_name = 'display_name'
 
     decision_no = fields.Char(string="Số quyết định", required=True)
     decision_date = fields.Date(string="Ngày quyết định", required=True)

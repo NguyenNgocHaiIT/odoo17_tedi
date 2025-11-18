@@ -26,7 +26,13 @@ class HrTediVehicleRegistration(models.Model):
     end_date = fields.Datetime(string="Thời gian kết thúc", required=True)
 
     # Loại công tác
-    trip_type = fields.Char(string="Loại công tác")
+    trip_type = fields.Selection(
+        selection=[
+            ('noi_thanh', 'Nội thành'),
+            ('ngoai_thanh', 'Ngoại thành'),
+        ],
+        string="Loại công tác"
+    )
 
     # Địa điểm
     destination = fields.Selection([
