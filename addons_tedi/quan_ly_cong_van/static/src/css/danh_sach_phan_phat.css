@@ -1,0 +1,11 @@
+/* CSS cho tree view phân phát văn bản */
+.o_office_document_detail2_tree .o_tree_bf {
+    font-weight: bold !important;      /* in đậm */
+    font-style: italic !important;     /* in nghiêng */
+    background-color: #d1c4e9 !important; /* background đậm hơn, tím nhạt */
+}
+
+/* Nếu muốn highlight cả khi hover */
+.o_office_document_detail2_tree .o_tree_bf:hover {
+    background-color: #b39ddb !important; /* tím đậm hơn khi hover */
+}
