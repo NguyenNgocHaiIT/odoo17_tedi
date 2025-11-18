@@ -16,6 +16,11 @@
 		'views/cau_hinh.xml',
 		'views/menu.xml',
 	],
+	'assets': {
+        'web.assets_backend': [
+            'quan_ly_cong_van/static/src/css/danh_sach_phan_phat.css',
+        ],
+    },
 
 	'installable': True,
 	'application': True,
