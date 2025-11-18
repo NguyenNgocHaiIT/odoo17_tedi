@@ -191,6 +191,15 @@
                     </header>
                     <sheet>
                         <field name="state" invisible="1"/>
+                        <group>
+                            <div style="display:flex; align-items:center; gap:12px; white-space:nowrap; padding:6px 0;">
+                                <span style="font-size:20px; font-weight:700; color:#2b3b4a; line-height:24px;">Mã phiếu:
+                                </span>
+                                <field name="name" readonly="1"
+                                       style="font-size:20px; font-weight:700; color:#2b3b4a; line-height:24px; padding:0; margin:0; height:24px; display:inline-block; vertical-align:middle;"/>
+                            </div>
+                        </group>
+
 
                         <group>
                             <group>

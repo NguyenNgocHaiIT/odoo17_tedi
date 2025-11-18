@@ -5,6 +5,7 @@ from odoo import models, fields, api
 class HrTediVehicleRegistration(models.Model):
     _name = "hr_tedi.vehicle.registration"
     _description = "Phiếu đăng ký xe"
+    _rec_name = "assigned_vehicle_id"
 
     # Thông tin xe (không dùng vehicle_id vì có assigned_vehicle_id)
     vehicle_id = fields.Many2one(
@@ -55,7 +56,6 @@ class HrTediVehicleRegistration(models.Model):
         readonly=True,
         store=True
     )
-
     # Nội dung công việc
     work_content = fields.Text(string="Nội dung công việc")
 
