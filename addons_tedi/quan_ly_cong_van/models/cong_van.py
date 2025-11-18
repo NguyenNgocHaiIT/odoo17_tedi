@@ -582,12 +582,27 @@ class OfficeDocument(models.Model):
         self.ensure_one()
         if not self.lanh_dao_xu_ly:
             raise UserError("Vui lòng chọn lãnh đạo xử lý trước khi trình.")
+
+        # Cập nhật trạng thái
         self.tt_vb = 'cho_but_phe'
-        partner_ids = self.lanh_dao_xu_ly.partner_id.ids if self.lanh_dao_xu_ly and self.lanh_dao_xu_ly.partner_id else []
-        self.message_post(
-            body=f"Văn bản '{self.trich_yeu}' đã được trình lãnh đạo {self.lanh_dao_xu_ly.name if self.lanh_dao_xu_ly else 'Không xác định'}.",
-            partner_ids=partner_ids
-        )
+
+        # Lấy partner của lãnh đạo
+        partner = self.lanh_dao_xu_ly.partner_id
+        if not partner or not partner.email:
+            raise UserError("Lãnh đạo xử lý chưa có địa chỉ email.")
+
+        # Nội dung thông báo
+        subject = f"Văn bản '{self.trich_yeu}' cần xử lý"
+        body = f"Văn bản '{self.trich_yeu}' đã được trình lãnh đạo {self.lanh_dao_xu_ly.name}."
+
+        # Gửi email
+        self.env['mail.mail'].sudo().create({
+            'subject': subject,
+            'body_html': body,
+            'email_to': partner.email,
+            'auto_delete': True,  # Xóa mail sau khi gửi
+        }).send()
+
         return True
 
     def approve(self):
@@ -622,8 +637,8 @@ class OfficeDocument(models.Model):
         # Nếu chưa set tt_vb từ form, thì set lại khi lưu
         if user.has_group('quan_ly_cong_van.group_van_thu'):
             vals['tt_vb'] = 'da_duyet'
-        elif can_duyet_val is False:
-            vals['tt_vb'] = 'da_duyet'
+        elif can_duyet_val is True:
+            vals['tt_vb'] = 'draft'
         elif user.has_group('quan_ly_cong_van.group_don_vi_xu_ly'):
             vals['tt_vb'] = 'cho_duyet'
         else:
@@ -725,9 +740,30 @@ class OfficeDocument(models.Model):
 
     def trinh_lanh_dao_cong_van_di(self):
         self.ensure_one()
+
         if not self.lanh_dao_xu_ly:
             raise UserError("Vui lòng chọn lãnh đạo xử lý trước khi trình.")
+
+        # Cập nhật trạng thái
         self.tt_vb = 'cho_duyet'
+
+        # Lấy partner của lãnh đạo
+        partner = self.lanh_dao_xu_ly.partner_id
+        if not partner or not partner.email:
+            raise UserError("Lãnh đạo xử lý chưa có địa chỉ email.")
+
+        # Nội dung mail
+        subject = f"Văn bản '{self.trich_yeu}' cần duyệt"
+        body = f"Văn bản '{self.trich_yeu}' đã được trình lãnh đạo {self.lanh_dao_xu_ly.name} để duyệt."
+
+        # Gửi email
+        self.env['mail.mail'].sudo().create({
+            'subject': subject,
+            'body_html': body,
+            'email_to': partner.email,
+            'auto_delete': True,  # Xóa mail sau khi gửi
+        }).send()
+
         return True
 
     def get_form_url(self):

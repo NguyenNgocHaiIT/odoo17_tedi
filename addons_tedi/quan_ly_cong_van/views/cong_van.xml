@@ -207,7 +207,7 @@
                     <header>
                         <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_don_vi_xu_ly"
-                                invisible="tt_vb != 'cho_duyet'"/>
+                                invisible="tt_vb != 'draft'"/>
                         <button name="approve" string="Duyệt" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
                                 invisible="tt_vb != 'cho_duyet'"/>
@@ -390,7 +390,7 @@
                     <header>
                         <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_don_vi_xu_ly"
-                                invisible="tt_vb != 'cho_duyet'"/>
+                                invisible="tt_vb != 'draft'"/>
                         <button name="approve" string="Duyệt" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
                                 invisible="tt_vb != 'cho_duyet'"/>
