@@ -5,7 +5,7 @@
     'description': """""",
     'category': 'TEDI/Project',
     'author': "YourCompany",
-    'depends': ['project', 'account', 'web', 'windx_documents_management_preview', 'project_task_org_chart'],
+    'depends': ['project', 'account', 'web', 'windx_documents_management_preview'],
     'data': [
         'security/ir.model.access.csv',
         # 'views/asset_inherit.xml',

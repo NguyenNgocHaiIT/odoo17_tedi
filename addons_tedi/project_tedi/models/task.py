@@ -1,8 +1,8 @@
 from odoo import models, fields, api
 
 
-class ProjectTaskType(models.Model):
-    _name = "project.task.type"
+class ProjectTaskCategorize(models.Model):
+    _name = "project.task.categorize"
     _description = "Phân loại công việc"
 
     name = fields.Char('Tên')
@@ -13,6 +13,7 @@ class ProjectDeliverableType(models.Model):
     _description = "Loại hồ sơ"
 
     name = fields.Char('Tên')
+    task_type_id = fields.Many2one('project.task.categorize', string='Phân loại công việc')
 
 
 class ProjectTaskProgress(models.Model):
@@ -61,7 +62,6 @@ class ProjectTaskDeliverable(models.Model):
             self.state = 'reject'
 
 
-
 class ProjectTask(models.Model):
     _inherit = "project.task"
 
@@ -69,6 +69,7 @@ class ProjectTask(models.Model):
                                   ('2', 'Công tác thiết kế'),
                                   ('3', 'Công tác tư vấn giám sát'),
                                   ('4', 'Công việc chung')], string='Phân loại')
+    task_categorize = fields.Many2one('project.task.categorize', string='Phân loại công việc')
     department_id = fields.Many2one('hr.department', 'Đơn vị phụ trách')
     department_ids = fields.Many2many('hr.department', 'project_task_hr_department_rel', string='Đơn vị đồng phụ trách')
     is_deliverable = fields.Boolean('Đây là công việc làm hồ sơ')
