@@ -5,6 +5,7 @@ from odoo import models, fields, api
 class HrTediVehicleRegistration(models.Model):
     _name = "hr_tedi.vehicle.registration"
     _description = "Phiếu đăng ký xe"
+    _rec_name = "assigned_vehicle_id"
 
     # Thông tin xe (không dùng vehicle_id vì có assigned_vehicle_id)
     vehicle_id = fields.Many2one(
@@ -24,7 +25,13 @@ class HrTediVehicleRegistration(models.Model):
     end_date = fields.Datetime(string="Thời gian kết thúc", required=True)
 
     # Loại công tác
-    trip_type = fields.Char(string="Loại công tác")
+    trip_type = fields.Selection(
+        selection=[
+            ('noi_thanh', 'Nội thành'),
+            ('ngoai_thanh', 'Ngoại thành'),
+        ],
+        string="Loại công tác"
+    )
 
     # Địa điểm
     destination = fields.Selection([
@@ -49,7 +56,6 @@ class HrTediVehicleRegistration(models.Model):
         readonly=True,
         store=True
     )
-
     # Nội dung công việc
     work_content = fields.Text(string="Nội dung công việc")
 

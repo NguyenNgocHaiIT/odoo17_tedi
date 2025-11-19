@@ -108,8 +108,15 @@
             <field name="arch" type="xml">
                 <form string="Phiếu đăng ký xe">
                     <header>
-                        <button name="action_approve" string="Duyệt" type="object" class="oe_highlight"/>
+                        <button name="action_approve"
+                                string="Duyệt"
+                                type="object"
+                                class="oe_highlight"/>
+
+                        <field name="work_content" readonly="1"
+                               style="font-weight:bold; font-size:16px; margin-left:20px;"/>
                     </header>
+
 
                     <sheet>
                         <group col="2">
@@ -140,6 +147,15 @@
                 </form>
             </field>
         </record>
+
+        <data noupdate="1">
+            <record id="seq_hr_tedi_vehicle_repair" model="ir.sequence">
+                <field name="name">Mã phiếu sửa chữa xe</field>
+                <field name="code">hr_tedi.vehicle.repair</field>
+                <field name="prefix">SC</field>
+                <field name="padding">3</field>
+            </record>
+        </data>
 
         <record id="view_hr_tedi_vehicle_repair_tree" model="ir.ui.view">
             <field name="name">hr.tedi.vehicle.repair.tree</field>
@@ -175,6 +191,15 @@
                     </header>
                     <sheet>
                         <field name="state" invisible="1"/>
+                        <group>
+                            <div style="display:flex; align-items:center; gap:12px; white-space:nowrap; padding:6px 0;">
+                                <span style="font-size:20px; font-weight:700; color:#2b3b4a; line-height:24px;">Mã phiếu:
+                                </span>
+                                <field name="name" readonly="1"
+                                       style="font-size:20px; font-weight:700; color:#2b3b4a; line-height:24px; padding:0; margin:0; height:24px; display:inline-block; vertical-align:middle;"/>
+                            </div>
+                        </group>
+
 
                         <group>
                             <group>
@@ -221,12 +246,11 @@
             <field name="model">hr_tedi.vehicle.odometer.report</field>
             <field name="arch" type="xml">
                 <tree string="Báo cáo số km từng xe" editable="bottom">
-
                     <field name="vehicle_id"/>
                     <field name="month"/>
-                    <field name="year"/>
-                    <field name="odometer_total"/>
+                    <field name="year" widget="char"/>
                     <field name="odometer_start"/>
+                    <field name="odometer_total"/>
                     <field name="odometer_end"/>
                 </tree>
             </field>
