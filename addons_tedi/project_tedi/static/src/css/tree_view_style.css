@@ -3,12 +3,6 @@
     vertical-align: middle;
 }
 
-/* Đường viền rõ ràng hơn cho bảng tree view */
-.o_list_view thead > tr > th,
-.o_list_view tbody > tr > td {
-    border: 1px solid #ccc !important;
-}
-
 .custom-tree-width th[data-name="version"],
 .custom-tree-width td[data-name="version"] {
     width: 10% !important;
