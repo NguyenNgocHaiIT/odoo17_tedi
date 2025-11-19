@@ -17,7 +17,7 @@
     ],
     'assets': {
         'web.assets_backend': [
-            '/project_tedi/static/src/css/tree_view_style.css',
+            # '/project_tedi/static/src/css/tree_view_style.css',
             # '/style_custom/static/src/css/custom_dynamic_styles.css',
             # '/style_custom/static/src/css/custom_font_size.css',
             # '/style_custom/static/src/js/load_dynamic_css.js',
