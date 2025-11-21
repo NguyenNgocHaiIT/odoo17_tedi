@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data>
+
+    <!-- TREE: Kế hoạch đào tạo -->
+    <record id="view_training_plan_tree" model="ir.ui.view">
+        <field name="name">training.plan.tree</field>
+        <field name="model">training.plan</field>
+        <field name="arch" type="xml">
+            <tree string="Kế hoạch đào tạo">
+                <field name="name" class="text-center"/>
+                <field name="survey_id" class="text-center"/>
+                <!-- Dùng open_date làm Ngày tạo -->
+                <field name="open_date" string="Ngày tạo" readonly="1" class="text-center"/>
+                <field name="student_count" class="text-center"/>
+                <field name="total_fee" class="text-center"/>
+                <field name="state"
+                       widget="badge"
+                       decoration-warning="state == 'pending'"
+                       decoration-success="state == 'approved'"
+                       class="text-center"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- FORM: Kế hoạch đào tạo -->
+    <record id="view_training_plan_form" model="ir.ui.view">
+      <field name="name">training.plan.form</field>
+      <field name="model">training.plan</field>
+      <field name="arch" type="xml">
+        <form string="Kế hoạch đào tạo">
+
+            <!-- Field state ẩn để dùng statusbar -->
+            <field name="state" invisible="1"/>
+
+            <header>
+                <!-- Statusbar -->
+                <field name="state"
+                       widget="statusbar"
+                       statusbar_visible="draft,pending,approved"/>
+
+                <!-- Đăng ký: draft -> pending -->
+                <button name="action_submit"
+                        type="object"
+                        string="Đăng ký"
+                        class="btn-primary"
+                        groups="quan_ly_tuyen_dung.group_recruitment_hr_officer"
+                        invisible="state != 'draft'"/>
+
+                <!-- Duyệt: pending -> approved -->
+                <button name="action_approve"
+                        type="object"
+                        string="Duyệt"
+                        class="btn-success"
+                        groups="hr_training_tedi.group_training_general_director"
+                        invisible="state != 'pending'"/>
+
+                <!-- Từ chối: pending -> draft -->
+                <button name="action_reject"
+                        type="object"
+                        string="Từ chối"
+                        class="btn-danger"
+                        groups="hr_training_tedi.group_training_general_director"
+                        invisible="state != 'pending'"/>
+
+                <!-- Tổng hợp từ đợt khảo sát -->
+<!--                <button name="action_generate_from_survey"-->
+<!--                        type="object"-->
+<!--                        string="Tổng hợp từ đợt khảo sát"-->
+<!--                        class="btn-secondary"-->
+<!--                        invisible="(not survey_id) or (state not in ('draft','approved'))"/>-->
+            </header>
+
+            <sheet>
+              <!-- Thông tin chung -->
+              <group>
+                  <group  >
+                      <!-- KHÔNG dùng attrs nữa, chỉ field bình thường -->
+                      <field name="name" readonly="state == 'approved'"/>
+
+                      <field name="survey_id"
+                             domain="[('state','in',('in_process','end'))]" readonly="state == 'approved'"/>
+<!--                      <field name="survey_id"-->
+<!--                             domain="[('state','=','end')]"/>-->
+                  </group>
+
+                  <group>
+                      <!-- Ngày tạo: readonly cứng -->
+                      <field name="open_date" string="Ngày tạo" readonly="1"/>
+                  </group>
+              </group>
+
+              <!-- Thống kê -->
+              <group>
+                  <group>
+                      <field name="student_count" readonly="1"/>
+                      <field name="total_fee" readonly="1"/>
+                  </group>
+              </group>
+
+              <notebook>
+                <!-- Tab: Chi tiết kế hoạch -->
+                <page string="Chi tiết kế hoạch">
+                  <!-- BỎ attrs, để Python chặn sửa -->
+                 <field name="detail_ids" readonly="state == 'approved'">
+                    <tree editable="bottom" string="Chi tiết kế hoạch">
+                        <button name="open_participants"
+                                type="object"
+                                string="Học viên"
+                                class="btn-link"
+                                icon="fa-users"/>
+
+                        <field name="course_id" class="text-center"/>
+                        <field name="training_center" class="text-center"/>
+                        <field name="training_type" class="text-center"/>
+                        <field name="time_of_execution" class="text-center"/>
+                        <field name="start_date" class="text-center"/>
+                        <field name="end_date" class="text-center"/>
+                        <field name="training_location" class="text-center"/>
+                        <field name="training_fee_per_person" class="text-center"/>
+                        <field name="training_total_fee" readonly="1" class="text-center"/>
+                        <field name="training_fee_source" class="text-center"/>
+                        <field name="note" class="text-center"/>
+                    </tree>
+
+
+                    <form string="Chi tiết kế hoạch">
+                      <group>
+                        <field name="course_id" class="text-center"/>
+                        <field name="training_center" class="text-center"/>
+                        <field name="training_type" class="text-center"/>
+                        <field name="time_of_execution" class="text-center"/>
+                        <field name="start_date" class="text-center"/>
+                        <field name="end_date" class="text-center"/>
+                        <field name="training_location" class="text-center"/>
+                      </group>
+                      <group>
+                        <field name="training_fee_per_person" class="text-center"/>
+                        <field name="training_total_fee" readonly="1" class="text-center"/>
+                        <field name="training_fee_source" class="text-center"/>
+                        <field name="note" class="text-center"/>
+                      </group>
+                    </form>
+
+                  </field>
+                </page>
+
+              </notebook>
+            </sheet>
+        </form>
+      </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_training_plan" model="ir.actions.act_window">
+      <field name="name">Kế hoạch đào tạo</field>
+      <field name="res_model">training.plan</field>
+      <field name="view_mode">tree,form</field>
+      <field name="view_ids" eval="[
+                (5, 0, 0),
+                (0, 0, {'view_id': ref('view_training_plan_tree'), 'view_mode': 'tree'}),
+                (0, 0, {'view_id': ref('view_training_plan_form'), 'view_mode': 'form'})
+            ]"/>
+    </record>
+
+  </data>
+</odoo>

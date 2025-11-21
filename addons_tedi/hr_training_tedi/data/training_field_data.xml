@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- ========================= -->
+    <!--     LĨNH VỰC ĐÀO TẠO      -->
+    <!-- ========================= -->
+    <record id="training_field_cau_duong" model="training.field">
+        <field name="name">Cầu đường</field>
+    </record>
+
+    <record id="training_field_duong_sat" model="training.field">
+        <field name="name">Đường sắt</field>
+    </record>
+
+    <record id="training_field_dien" model="training.field">
+        <field name="name">Điện</field>
+    </record>
+
+    <record id="training_field_bim" model="training.field">
+        <field name="name">BIM</field>
+    </record>
+
+    <!-- ========================= -->
+    <!--     KHOÁ ĐÀO TẠO MẪU     -->
+    <!-- ========================= -->
+
+    <!-- Khoá BIM -->
+    <record id="training_course_bim" model="training.course">
+        <field name="name">BIM Cơ bản</field>
+        <field name="type">short-term</field>
+        <field name="training_field_ids" eval="[(6, 0, [ref('training_field_bim')])]"/>
+    </record>
+
+    <!-- Khoá Cầu đường nâng cao -->
+    <record id="training_course_cau_duong_nang_cao" model="training.course">
+        <field name="name">Cầu đường nâng cao</field>
+        <field name="type">long-term</field>
+        <field name="training_field_ids" eval="[(6, 0, [ref('training_field_cau_duong')])]"/>
+    </record>
+
+    <!-- Khoá Đường sắt căn bản -->
+    <record id="training_course_duong_sat" model="training.course">
+        <field name="name">Đường sắt căn bản</field>
+        <field name="type">short-term</field>
+        <field name="training_field_ids" eval="[(6, 0, [ref('training_field_duong_sat')])]"/>
+    </record>
+
+    <!-- Khoá An toàn điện -->
+    <record id="training_course_an_toan_dien" model="training.course">
+        <field name="name">An toàn điện</field>
+        <field name="type">short-term</field>
+        <field name="training_field_ids" eval="[(6, 0, [ref('training_field_dien')])]"/>
+    </record>
+
+</odoo>

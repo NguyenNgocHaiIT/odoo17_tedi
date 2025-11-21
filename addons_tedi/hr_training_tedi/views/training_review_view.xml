@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- TREE: danh sách đánh giá -->
+    <record id="view_training_review_tree" model="ir.ui.view">
+        <field name="name">training.review.tree</field>
+        <field name="model">training.review</field>
+        <field name="arch" type="xml">
+            <tree string="Đánh giá khoá đào tạo">
+                <field name="training_plan_id"/>
+                <field name="training_plan_detail_id"/>
+                <field name="training_center"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <!-- 👇 thêm cột người đánh giá -->
+                <field name="user_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- FORM: 1 trang chứa luôn chi tiết đánh giá -->
+    <record id="view_training_review_form" model="ir.ui.view">
+        <field name="name">training.review.form</field>
+        <field name="model">training.review</field>
+        <field name="arch" type="xml">
+            <form string="Đánh giá khoá đào tạo">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="training_plan_id" required="1"/>
+                            <field name="training_plan_detail_id" required="1"/>
+                            <field name="training_center" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                            <!-- 👇 người đánh giá (readonly) -->
+                            <field name="user_id" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Nội dung đánh giá">
+                            <field name="review_detail_ids">
+                                <tree editable="bottom" string="Đánh giá chi tiết">
+                                    <field name="review_content"/>
+                                    <field name="training_rating"/>
+                                    <field name="note"/>
+                                </tree>
+
+                                <form string="Đánh giá chi tiết">
+                                    <group>
+                                        <field name="review_content"/>
+                                        <field name="training_rating"/>
+                                        <field name="note"/>
+                                    </group>
+                                </form>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action mở màn hình đánh giá -->
+    <record id="action_training_review" model="ir.actions.act_window">
+        <field name="name">Đánh giá khoá đào tạo</field>
+        <field name="res_model">training.review</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_id': ref('view_training_review_tree'), 'view_mode': 'tree'}),
+            (0, 0, {'view_id': ref('view_training_review_form'), 'view_mode': 'form'}),
+        ]"/>
+        <!-- 👇 tuỳ chọn: chỉ xem đánh giá của chính mình -->
+        <!-- <field name="domain">[('user_id', '=', uid)]</field> -->
+    </record>
+
+</odoo>
