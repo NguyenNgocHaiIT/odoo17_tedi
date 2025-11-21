@@ -1,0 +1,82 @@
+<odoo>
+    <data>
+        <record id="view_tedi_holiday_search" model="ir.ui.view">
+            <field name="name">tedi.holiday.config.search</field>
+            <field name="model">tedi.holiday.config</field>
+            <field name="arch" type="xml">
+                <search string="Tìm kiếm ngày nghỉ">
+                    <field name="name"/>
+                    <field name="create_uid"/>
+                    <field name="date"/>
+                    <filter string="Đang hoạt động" name="active_true" domain="[('active', '=', True)]"/>
+                    <filter string="Đã lưu trữ" name="active_false" domain="[('active', '=', False)]"/>
+                    <group expand="0" string="Nhóm theo">
+                        <filter string="Người lập" name="group_by_creator" context="{'group_by': 'create_uid'}"/>
+                        <filter string="Năm" name="group_by_year" context="{'group_by': 'date:year'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="view_tedi_holiday_tree" model="ir.ui.view">
+            <field name="name">tedi.holiday.config.tree</field>
+            <field name="model">tedi.holiday.config</field>
+            <field name="arch" type="xml">
+                <tree string="Cấu hình ngày nghỉ" editable="bottom">
+                    <field name="name"/>
+
+                    <field name="create_uid" string="Người lập" widget="many2one_avatar_user"/>
+
+                    <field name="date"/>
+
+                    <field name="active" widget="boolean_toggle"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_tedi_holiday_form" model="ir.ui.view">
+            <field name="name">tedi.holiday.config.form</field>
+            <field name="model">tedi.holiday.config</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <widget name="web_ribbon" title="Đã lưu trữ" bg_color="bg-danger" invisible="active == True"/>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="date"/>
+                            </group>
+                            <group>
+                                <field name="active" widget="boolean_toggle"/>
+                                <field name="create_uid" readonly="1" string="Người tạo"/>
+                                <field name="create_date" readonly="1" string="Ngày tạo"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_tedi_holiday_config" model="ir.actions.act_window">
+            <field name="name">Cấu hình ngày nghỉ</field>
+            <field name="res_model">tedi.holiday.config</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Tạo mới danh sách ngày nghỉ lễ
+                </p>
+            </field>
+        </record>
+
+        <menuitem id="menu_tedi_attendance_config"
+                  name="Cấu hình"
+                  parent="hr_attendance.menu_hr_attendance_root"
+                  sequence="100"/>
+
+        <menuitem id="menu_tedi_holiday_config"
+                  name="Ngày nghỉ"
+                  parent="menu_tedi_attendance_config"
+                  action="action_tedi_holiday_config"
+                  sequence="1"/>
+    </data>
+</odoo>
