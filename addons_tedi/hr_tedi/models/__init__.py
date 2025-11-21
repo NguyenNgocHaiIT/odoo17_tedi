@@ -10,5 +10,3 @@ from . import hr_party_cell
 from . import hr_party_title
 from . import hr_employee_training
 from . import file
-from . import attendance
-from . import holiday_config
