@@ -29,7 +29,7 @@
                                 <field name="project_code"/>
                                 <field name="partner_id"/>
                                 <field name="dia_diem"/>
-                                <field name="type_task"/>
+                                <field name="task_categorize"/>
                             </group>
                             <group string="Công việc">
                                 <field name="user_ids" widget="many2many_avatar_user"/>
@@ -37,7 +37,7 @@
                                 <field name="department_id"/>
                                 <field name="department_ids" widget="many2many_tags"/>
                                 <field name="is_deliverable"/>
-                                <field name="deliverable_type_id"/>
+                                <field name="deliverable_type_id" domain="[('task_type_id', '=',task_categorize)]"/>
                             </group>
                         </group>
                         <notebook>
