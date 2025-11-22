@@ -1,0 +1,13 @@
+<odoo>
+    <data noupdate="1">
+        <record id="seq_tedi_request" model="ir.sequence">
+            <field name="name">Tedi Request Sequence</field>
+            <field name="code">tedi.request</field>
+            <field name="prefix">NV</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="implementation">standard</field>
+        </record>
+    </data>
+</odoo>
+

@@ -1,5 +1,13 @@
 <odoo>
     <data>
+        <record id="seq_tedi_request" model="ir.sequence">
+            <field name="name">Mã đơn báo</field>
+            <field name="code">tedi.request.seq</field>
+            <field name="prefix">NV</field>
+            <field name="padding">3</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
         <record id="view_tedi_attendance_search" model="ir.ui.view">
             <field name="name">tedi.attendance.search</field>
             <field name="model">tedi.attendance</field>
@@ -82,7 +90,7 @@
         </record>
 
         <menuitem id="menu_tedi_attendance_category"
-                  name="Danh sách chấm công"
+                  name="Chấm công"
                   parent="hr_attendance.menu_hr_attendance_root"
                   sequence="1"/>
 
