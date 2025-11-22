@@ -5,7 +5,7 @@
     'author': 'Thưởng',
     'sequence': 1,
     'summary': '',
-    'depends': ['base','web', 'hr' , 'hr_recruitment', 'hr_contract' , 'hr_tedi'],
+    'depends': ['base','web', 'hr' , 'hr_recruitment', 'hr_contract'],
     'data': [
         "security/recruitment_security.xml",
         "security/ir.model.access.csv",
@@ -32,7 +32,7 @@
     },
 
     'installable': True,
-    'application': True,
+    'application': False,
     'auto_install': False,
     'qweb': [],
 }

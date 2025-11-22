@@ -67,6 +67,15 @@
             </field>
         </record>
 
+        <menuitem id="menu_tedi_attendance_config"
+                  name="Cấu hình"
+                  parent="hr_attendance.menu_hr_attendance_root"
+                  sequence="100"/>
 
+        <menuitem id="menu_tedi_holiday_config"
+                  name="Ngày nghỉ"
+                  parent="menu_tedi_attendance_config"
+                  action="action_tedi_holiday_config"
+                  sequence="1"/>
     </data>
 </odoo>
