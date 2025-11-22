@@ -1,5 +1,5 @@
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError, AccessError
+from odoo.exceptions import ValidationError, AccessError, UserError
 import re
 
 # ==== NHÓM ĐƯỢC PHÉP TẠO/SỬA ỨNG VIÊN ====

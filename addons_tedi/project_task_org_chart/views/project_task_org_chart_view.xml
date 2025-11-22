@@ -7,7 +7,7 @@
       <field name="arch" type="xml">
         <xpath expr="//page[@name='sub_tasks_page']" position="after">
           <page string="Cấu trúc cây công việc">
-            <field name="org_chart"
+            <field name="child_ids"
                    widget="org_chart"
                    nolabel="1"
                    options="{'density': 'compact'}"/>
