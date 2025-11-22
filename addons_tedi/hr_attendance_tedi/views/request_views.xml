@@ -135,10 +135,5 @@
             </field>
         </record>
 
-        <menuitem id="menu_tedi_request_root"
-                  name="Đơn báo"
-                  parent="hr_attendance.menu_hr_attendance_root"
-                  action="action_tedi_request"
-                  sequence="10"/>
     </data>
 </odoo>

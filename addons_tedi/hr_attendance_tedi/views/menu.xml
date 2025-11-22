@@ -28,6 +28,10 @@
                   parent="menu_tedi_attendance_category"
                   action="action_tedi_attendance_my"
                   sequence="2"/>
-
+        <menuitem id="menu_tedi_request_root"
+                  name="Đơn báo"
+                  parent="hr_attendance.menu_hr_attendance_root"
+                  action="action_tedi_request"
+                  sequence="10"/>
     </data>
 </odoo>
