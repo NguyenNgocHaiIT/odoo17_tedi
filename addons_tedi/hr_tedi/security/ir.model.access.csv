@@ -11,6 +11,3 @@ access_hr_party_title,access.hr.party.title,model_hr_party_title,base.group_user
 access_hr_employee_training,access.hr.employee.training,model_hr_employee_training,base.group_user,1,1,1,1
 access_hr_decision_user,access.hr.decision.user,model_hr_decision,base.group_user,1,0,0,0
 access_hr_decision_manager,access.hr.decision.manager,model_hr_decision,hr.group_hr_manager,1,1,1,1
-access_tedi_attendance,access.tedi.attendance,model_tedi_attendance,base.group_user,1,1,1,1
-access_tedi_holiday_config,access.tedi.holiday.config,model_tedi_holiday_config,base.group_user,1,1,1,1
-access_tedi_request,access.tedi.request,model_tedi_request,base.group_user,1,1,1,1

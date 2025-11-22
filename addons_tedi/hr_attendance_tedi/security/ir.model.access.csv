@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_tedi_attendance,access.tedi.attendance,model_tedi_attendance,base.group_user,1,1,1,1
+access_tedi_holiday_config,access.tedi.holiday.config,model_tedi_holiday_config,base.group_user,1,1,1,1
+access_tedi_request,access.tedi.request,model_tedi_request,base.group_user,1,1,1,1
