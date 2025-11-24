@@ -653,7 +653,7 @@ class OfficeDocument(models.Model):
         # 1. Kiểm tra trạng thái draft
         for doc in self:
             if doc.tt_vb != 'draft':
-                raise UserError("Chỉ có thể chỉnh sửa khi trạng thái là Draft!")
+                raise UserError("Chỉ có thể chỉnh sửa khi trạng thái là nhập văn bản!")
 
         # 2. Nếu thay đổi phan_loai_van_ban thì cập nhật số tổng hợp
         if 'phan_loai_van_ban' in vals:
