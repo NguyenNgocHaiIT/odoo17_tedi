@@ -50,7 +50,7 @@
                     <group readonly="state == 'end'">
                         <group>
                             <field name="name" required="1" readonly="state == 'end'"/>
-                            <field name="user_id" required="1" readonly="state == 'end'"/>
+                            <field name="user_id" required="1" readonly="1"/>
                         </group>
 
                         <group>
