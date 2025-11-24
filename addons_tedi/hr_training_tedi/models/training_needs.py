@@ -115,11 +115,11 @@ class TrainingNeeds(models.Model):
                 raise UserError(_("Chỉ được từ chối khi phiếu đang ở trạng thái 'Chờ duyệt'."))
             rec.state = "draft"
 
-    def unlink(self):
-        for rec in self:
-            if rec.state == 'approved':
-                raise ValidationError(_("Không thể xoá yêu cầu đào tạo đã được duyệt."))
-        return super().unlink()
+    # def unlink(self):
+    #     for rec in self:
+    #         if rec.state == 'approved':
+    #             raise ValidationError(_("Không thể xoá yêu cầu đào tạo đã được duyệt."))
+    #     return super().unlink()
 
     # =========================
     #  ACTION: ĐÁNH GIÁ KHÓA HỌC
@@ -166,38 +166,3 @@ class TrainingNeedsLine(models.Model):
     )
     note = fields.Char(string="Ghi chú")
 
-    @api.onchange('course_id')
-    def _onchange_course_id_block(self):
-        if not self.training_needs_id or not self.course_id:
-            return
-
-        other_courses = self.training_needs_id.line_ids.filtered(
-            lambda l: l.id != self.id
-        ).mapped('course_id')
-
-        if self.course_id in other_courses:
-            self.course_id = False
-            return {
-                'warning': {
-                    'title': "Khóa học đã có",
-                    'message': "Khoá học này đã tồn tại trong phiếu, không thể chọn trùng.",
-                }
-            }
-
-    @api.onchange('course_id')
-    def _onchange_course_id_block(self):
-        if not self.training_needs_id or not self.course_id:
-            return
-
-        other_courses = self.training_needs_id.line_ids.filtered(
-            lambda l: l.id != self.id
-        ).mapped('course_id')
-
-        if self.course_id in other_courses:
-            self.course_id = False
-            return {
-                'warning': {
-                    'title': "Khóa học đã có",
-                    'message': "Khoá học này đã tồn tại trong phiếu, không thể chọn trùng.",
-                }
-            }

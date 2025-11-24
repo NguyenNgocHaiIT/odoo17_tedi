@@ -33,5 +33,27 @@
                   parent="hr_attendance.menu_hr_attendance_root"
                   action="action_tedi_request"
                   sequence="10"/>
+
+        <menuitem id="menu_tedi_attendance_import"
+                  name="Import Excel"
+                  parent="hr_attendance.menu_hr_attendance_root"
+                  action="action_tedi_attendance_import"
+                  sequence="3"/>
+
+        <record id="group_tedi_hidden_menus" model="res.groups">
+            <field name="name">Hidden Menus (Do not use)</field>
+        </record>
+        <record id="hr_attendance.menu_hr_attendance_kiosk_no_user_mode" model="ir.ui.menu">
+            <field name="groups_id" eval="[(6, 0, [ref('group_tedi_hidden_menus')])]"/>
+        </record>
+        <record id="hr_attendance.menu_hr_attendance_view_attendances" model="ir.ui.menu">
+            <field name="groups_id" eval="[(6, 0, [ref('group_tedi_hidden_menus')])]"/>
+        </record>
+        <record id="hr_attendance.menu_hr_attendance_reporting" model="ir.ui.menu">
+            <field name="groups_id" eval="[(6, 0, [ref('group_tedi_hidden_menus')])]"/>
+        </record>
+        <record id="hr_attendance.menu_hr_attendance_settings" model="ir.ui.menu">
+            <field name="groups_id" eval="[(6, 0, [ref('group_tedi_hidden_menus')])]"/>
+        </record>
     </data>
 </odoo>

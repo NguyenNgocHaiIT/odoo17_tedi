@@ -1,54 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data>
+
+        <!-- ========== SEARCH VIEW ========== -->
         <record id="view_tedi_attendance_search" model="ir.ui.view">
             <field name="name">tedi.attendance.search</field>
             <field name="model">tedi.attendance</field>
             <field name="arch" type="xml">
                 <search string="Tìm kiếm chấm công">
-                    <field name="employee_id" string="Nhân viên"/>
-                    <field name="employee_code" string="Mã NV"/>
-                    <field name="department_id" string="Phòng ban"/>
+
+                    <field name="employee_id"/>
+                    <field name="employee_code"/>
+                    <field name="department_id"/>
+
                     <separator/>
-                    <filter string="Hôm nay" name="today"
-                            domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"/>
-                    <separator/>
-                    <filter string="Đúng giờ" name="filter_ontime" domain="[('status', '=', 'ontime')]"/>
-                    <filter string="Đi muộn" name="filter_late" domain="[('status', '=', 'late')]"/>
-                    <filter string="Về sớm" name="filter_early" domain="[('status', '=', 'early')]"/>
-                    <filter string="Nghỉ làm" name="filter_absent" domain="[('status', '=', 'absent')]"/>
+
+                    <filter name="today" string="Hôm nay"
+                            domain="[('date','=',context_today())]"/>
+
+                    <filter name="ontime" string="Đúng giờ"
+                            domain="[('status','=','ontime')]"/>
+
+                    <filter name="late" string="Đi muộn"
+                            domain="[('status','=','late')]"/>
+
+                    <filter name="early" string="Về sớm"
+                            domain="[('status','=','early')]"/>
+
+                    <filter name="absent" string="Nghỉ làm"
+                            domain="[('status','=','absent')]"/>
+
                     <group expand="0" string="Nhóm theo">
-                        <filter string="Phòng ban" name="group_by_dept" context="{'group_by': 'department_id'}"/>
-                        <filter string="Nhân viên" name="group_by_emp" context="{'group_by': 'employee_id'}"/>
-                        <filter string="Trạng thái" name="group_by_status" context="{'group_by': 'status'}"/>
-                        <filter string="Ngày" name="group_by_date" context="{'group_by': 'date'}"/>
+                        <filter name="grp_dept" string="Phòng ban"
+                                context="{'group_by':'department_id'}"/>
+                        <filter name="grp_emp" string="Nhân viên"
+                                context="{'group_by':'employee_id'}"/>
+                        <filter name="grp_status" string="Trạng thái"
+                                context="{'group_by':'status'}"/>
+                        <filter name="grp_date" string="Ngày"
+                                context="{'group_by':'date'}"/>
                     </group>
+
                 </search>
             </field>
         </record>
 
-        <record id="view_tedi_attendance_tree" model="ir.ui.view">
-            <field name="name">tedi.attendance.tree</field>
-            <field name="model">tedi.attendance</field>
-            <field name="arch" type="xml">
-                <tree string="Danh sách chấm công" default_order="date desc" decoration-danger="status == 'absent'"
-                      limit="20" create="1" edit="0" delete="0">
-                    <field name="employee_code"/>
-                    <field name="employee_id" widget="many2one_avatar_user"/>
-                    <field name="department_id"/>
-                    <field name="check_in"/>
-                    <field name="check_out"/>
-                    <field name="date"/>
-                    <field name="status" widget="badge" decoration-success="status == 'ontime'"
-                           decoration-warning="status in ('late', 'early')" decoration-danger="status == 'absent'"/>
-                </tree>
-            </field>
-        </record>
+        <!-- ========== TREE VIEW ========== -->
+      <record id="view_tedi_attendance_tree" model="ir.ui.view">
+        <field name="name">tedi.attendance.tree</field>
+        <field name="model">tedi.attendance</field>
+        <field name="arch" type="xml">
+            <tree js_class="tedi_attendance_list" string="Danh sách chấm công"
+                  default_order="date desc"
+                  decoration-danger="status == 'absent'"
+                  limit="20" create="1" edit="0" delete="0">
 
+
+                <field name="employee_code"/>
+                <field name="employee_id" widget="many2one_avatar_user"/>
+                <field name="department_id"/>
+                <field name="check_in"/>
+                <field name="check_out"/>
+                <field name="date"/>
+                <field name="status" widget="badge"
+                       decoration-success="status == 'ontime'"
+                       decoration-warning="status in ('late','early')"
+                       decoration-danger="status == 'absent'"/>
+            </tree>
+        </field>
+    </record>
+
+
+
+        <!-- ========== FORM VIEW ========== -->
         <record id="view_tedi_attendance_form" model="ir.ui.view">
             <field name="name">tedi.attendance.form</field>
             <field name="model">tedi.attendance</field>
             <field name="arch" type="xml">
-                <form create="1" edit="1" delete="0">
+                <form>
                     <sheet>
                         <group>
                             <group>
@@ -66,13 +95,22 @@
             </field>
         </record>
 
-        <record id="action_tedi_attendance_all" model="ir.actions.act_window">
-            <field name="name">Danh sách chấm công</field>
-            <field name="res_model">tedi.attendance</field>
-            <field name="view_mode">tree,form</field>
-            <field name="context">{'search_default_today': 1}</field>
-        </record>
+        <!-- ========== ACTION: ALL ATTENDANCE ========== -->
+    <record id="action_tedi_attendance_all" model="ir.actions.act_window">
+        <field name="name">Danh sách chấm công</field>
+        <field name="res_model">tedi.attendance</field>
+        <field name="view_mode">tree,form</field>
+        <field name="views">
+            [(5,0,0),
+            (ref('view_tedi_attendance_tree'), 'tree'),
+             (ref('view_tedi_attendance_form'), 'form')]
+        </field>
+<!--        <field name="context">{'search_default_today': 1}</field>-->
+    </record>
 
+
+
+        <!-- ========== ACTION: MY ATTENDANCE ========== -->
         <record id="action_tedi_attendance_my" model="ir.actions.act_window">
             <field name="name">Chấm công của tôi</field>
             <field name="res_model">tedi.attendance</field>
@@ -81,22 +119,5 @@
             <field name="context">{'search_default_today': 1}</field>
         </record>
 
-
-
-        <record id="group_tedi_hidden_menus" model="res.groups">
-            <field name="name">Hidden Menus (Do not use)</field>
-        </record>
-        <record id="hr_attendance.menu_hr_attendance_kiosk_no_user_mode" model="ir.ui.menu">
-            <field name="groups_id" eval="[(6, 0, [ref('group_tedi_hidden_menus')])]"/>
-        </record>
-        <record id="hr_attendance.menu_hr_attendance_view_attendances" model="ir.ui.menu">
-            <field name="groups_id" eval="[(6, 0, [ref('group_tedi_hidden_menus')])]"/>
-        </record>
-        <record id="hr_attendance.menu_hr_attendance_reporting" model="ir.ui.menu">
-            <field name="groups_id" eval="[(6, 0, [ref('group_tedi_hidden_menus')])]"/>
-        </record>
-        <record id="hr_attendance.menu_hr_attendance_settings" model="ir.ui.menu">
-            <field name="groups_id" eval="[(6, 0, [ref('group_tedi_hidden_menus')])]"/>
-        </record>
     </data>
 </odoo>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="tedi_list_import_button_fix" inherit_id="web.ControlPanel">
+        <xpath expr="//div[contains(@class,'o_control_panel_main_buttons')]//div[contains(@class,'d-none d-xl-inline-flex')]" position="inside">
+            <button type="button"
+                    class="btn btn-secondary"
+                    t-on-click="openImport">
+                <i class="fa fa-upload"></i>
+                Import Excel
+            </button>
+        </xpath>
+    </template>
+</odoo>
