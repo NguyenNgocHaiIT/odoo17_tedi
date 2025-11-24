@@ -651,11 +651,6 @@ class OfficeDocument(models.Model):
         return super(OfficeDocument, self).create(vals)
 
     def write(self, vals):
-        # 1. Kiểm tra trạng thái draft
-        for doc in self:
-            if doc.tt_vb != 'draft':
-                raise UserError("Chỉ có thể chỉnh sửa khi trạng thái là nhập văn bản!")
-
         # 2. Nếu thay đổi phan_loai_van_ban thì cập nhật số tổng hợp
         if 'phan_loai_van_ban' in vals:
             new_vals_list = []
