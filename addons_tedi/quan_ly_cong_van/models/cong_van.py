@@ -483,6 +483,7 @@ class OfficeDocument(models.Model):
     ho_so_cong_viec = fields.Char('Hồ sơ công việc')
     attachment = fields.Many2many('ir.attachment', string='Tài liệu')
     note = fields.Text('Ghi chú')
+    don_vi_ban_hanh_ngoai = fields.Many2one('res.partner', string='Đơn vị ban hành')
     don_vi_ban_hanh = fields.Many2one('hr.department', string='Đơn vị ban hành')
     don_vi_soan_thao = fields.Many2one('hr.department', string='Đơn vị soạn thảo')
     don_vi_nhan_ben_ngoai = fields.Char('Đơn vị nhận bên ngoài')
