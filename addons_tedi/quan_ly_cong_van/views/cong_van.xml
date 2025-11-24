@@ -563,7 +563,7 @@
                         </group>
                     </sheet>
                     <footer>
-                        <button name="phan_phat" string="Phát hành" type="object"/>
+                        <button name="phan_phat" string="Phân phát" type="object"/>
                         <button name="cancel" string="Hủy" type="object" class="btn-danger"/>
                     </footer>
                 </form>

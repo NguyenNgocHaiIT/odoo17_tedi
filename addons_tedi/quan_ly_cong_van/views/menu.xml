@@ -20,6 +20,12 @@
                 id="document_outgoing_menu"
                 name="Công văn đi"
                 parent="office_document_menu_root"
+                sequence="12"/>
+
+        <menuitem
+                id="document_outgoing_menu_item"
+                name="Công văn đi"
+                parent="document_outgoing_menu"
                 action="action_open_office_document_outgoing"
                 sequence="12"/>
 
@@ -74,8 +80,8 @@
 
         <menuitem
                 id="Office_task_menu"
-                name="Công việc"
-                parent="office_document_menu_root"
+                name="Giao việc"
+                parent="document_outgoing_menu"
                 action="action_open_office_task"
                 sequence="16"
                 groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_don_vi_xu_ly"/>

@@ -46,6 +46,7 @@ class OfficeTask(models.Model):
                 'default_document_type': 'outgoing',
                 'default_phan_loai_van_ban': 'outside',
                 'default_task_id': self.id,
+                'default_trich_yeu': self.noi_dung,
             },
         }
 

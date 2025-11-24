@@ -650,28 +650,38 @@ class OfficeDocument(models.Model):
         return super(OfficeDocument, self).create(vals)
 
     def write(self, vals):
-        # Nếu thay đổi phan_loai_van_ban thì cập nhật lại số tổng hợp
+        # 1. Kiểm tra trạng thái draft
+        for doc in self:
+            if doc.tt_vb != 'draft':
+                raise UserError("Chỉ có thể chỉnh sửa khi trạng thái là Draft!")
+
+        # 2. Nếu thay đổi phan_loai_van_ban thì cập nhật số tổng hợp
         if 'phan_loai_van_ban' in vals:
+            new_vals_list = []
             for record in self:
                 new_vals = vals.copy()
                 new_vals = record._update_document_numbers(new_vals, is_write=True)
-                super(OfficeDocument, record).write(new_vals)
+                new_vals_list.append((record.id, new_vals))
+
+            # Gọi super.write cho từng record (không còn gọi lại write cho toàn bộ recordset)
+            for record_id, new_vals in new_vals_list:
+                super(OfficeDocument, self.browse(record_id)).write(new_vals)
             return True
         else:
-            # Nếu không thay đổi phân loại, nhưng có thay đổi số → giữ nguyên logic cũ
+            # Nếu không thay đổi phân loại → write bình thường
             return super(OfficeDocument, self).write(vals)
 
     def _update_document_numbers(self, vals, is_write=False):
         """
         Cập nhật so_den_tong_hop và so_di_tong_hop:
-        - Loại bình thường: <YYYYMMDD>-<Mã loại>-<STT> (STT 4 chữ số)
-        - Quyết định: <YYYYMMDD>-QĐ-<STT> (STT 4 chữ số)
+        - Loại bình thường: <YYMMDD>-<Mã loại>-<STT> (STT 4 chữ số)
+        - Quyết định: <YYMMDD>-QĐ-<STT> (STT 4 chữ số)
         """
         phan_loai_id = vals.get('phan_loai_van_ban')
         document_type = vals.get('document_type') or self._context.get('default_document_type') or (
             self.document_type if self else None)
 
-        current_date_str = fields.Date.today().strftime('%Y%m%d')  # YYYYMMDD
+        current_date_str = fields.Date.today().strftime('%y%m%d')  # YYMMDD
 
         def get_or_create_sequence(code, name, prefix):
             seq = self.env['ir.sequence'].sudo().search([('code', '=', code)], limit=1)
