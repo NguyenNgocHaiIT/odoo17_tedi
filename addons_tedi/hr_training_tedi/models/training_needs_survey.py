@@ -1,6 +1,14 @@
-from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from pygments.lexer import default
 
+from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError , AccessError
+
+
+HR_OFFICER          = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
+PARTICIPANT         = "hr_training_tedi.group_training_participant"
+UNIT_MANAGER        = "hr_training_tedi.group_training_unit_manager"
+GENERAL_DIRECTOR    = "hr_training_tedi.group_training_general_director"
+BASE                = "base.group_user"
 
 class TrainingNeedsSurvey(models.Model):
     _name = 'training.needs.survey'
@@ -20,7 +28,12 @@ class TrainingNeedsSurvey(models.Model):
 
     create_date = fields.Date(string="Ngày tạo")
 
-    start_date = fields.Date(string="Ngày bắt đầu")
+    start_date = fields.Date(
+        string="Ngày bắt đầu",
+        required=True,
+        default=fields.Date.context_today
+    )
+
     end_date = fields.Date(string="Ngày kết thúc")
 
     state = fields.Selection([
@@ -30,12 +43,45 @@ class TrainingNeedsSurvey(models.Model):
         ("end", "Kết thúc"),
     ], string="Trạng thái", default="draft")
 
+
+    def _check_participant(self):
+        if self.env.user.has_group(PARTICIPANT):
+            raise AccessError(_("Participant không được thực hiện thao tác này"))
+
     # ----------------------------------------------------
     #   BUTTON: SUBMIT (draft → confirmed)
     # ----------------------------------------------------
-    def action_submit(self):
+    def _check_and_update_state_on_date_change(self):
+        """Kiểm tra và cập nhật trạng thái cho bản ghi hiện tại."""
+        today = fields.Date.context_today(self)
+
         for rec in self:
+            # Điều kiện 1: confirmed → in_process (Chuyển ngay nếu hôm nay là ngày bắt đầu)
+            if rec.state == 'confirmed' and rec.start_date and rec.start_date <= today:
+                rec.state = 'in_process'
+
+            # Điều kiện 2: in_process → end
+            elif rec.state == 'in_process' and rec.end_date and rec.end_date < today:
+                rec.state = 'end'
+
+    def action_submit(self):
+        today = fields.Date.context_today(self)
+        for rec in self:
+            # Kiểm tra ngày tháng trước khi chuyển trạng thái: Nếu đã quá hạn thì báo lỗi
+            if rec.start_date and rec.end_date and rec.end_date < today:
+                raise ValidationError(_(
+                    "Không thể xác nhận khảo sát vì Ngày kết thúc (%s) đã qua." % rec.end_date
+                ))
+
+            # Chuyển trạng thái sang Confirmed
             rec.state = "confirmed"
+
+            # TỰ ĐỘNG CHUYỂN SANG IN_PROCESS nếu đã đến hoặc quá ngày bắt đầu
+            if rec.start_date and rec.start_date <= today:
+                rec.state = 'in_process'
+
+        # Sau khi submit, cần kiểm tra lại cả trạng thái end (đề phòng trường hợp end_date = today)
+        self._check_and_update_state_on_date_change()
 
     # ----------------------------------------------------
     #   VALIDATION: start_date < end_date
@@ -48,6 +94,11 @@ class TrainingNeedsSurvey(models.Model):
                     "Ngày kết thúc (%s) không được nhỏ hơn ngày bắt đầu (%s)." %
                     (rec.end_date, rec.start_date)
                 ))
+    @api.model
+    def create(self, vals):
+        self._check_participant()
+        return super().create(vals)
+
 
     # ----------------------------------------------------
     #   CRON: auto update trạng thái

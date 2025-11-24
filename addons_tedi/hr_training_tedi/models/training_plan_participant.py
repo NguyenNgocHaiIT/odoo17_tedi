@@ -1,5 +1,10 @@
-from odoo import models, api, fields, exceptions
-
+from odoo import models, api, fields, _
+from odoo.exceptions import AccessError
+HR_OFFICER          = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
+PARTICIPANT         = "hr_training_tedi.group_training_participant"
+UNIT_MANAGER        = "hr_training_tedi.group_training_unit_manager"
+GENERAL_DIRECTOR    = "hr_training_tedi.group_training_general_director"
+BASE                = "base.group_user"
 
 class TrainingPlanParticipation(models.Model):
     _name = 'training.plan.participation'
@@ -29,6 +34,15 @@ class TrainingPlanParticipation(models.Model):
         "participation_id",
         string="Danh sách đăng ký",
     )
+    def _check_participant(self):
+        if self.env.user.has_group(PARTICIPANT):
+            raise AccessError(_("Participant không được thực hiện thao tác này"))
+
+    @api.model
+    def create(self, vals):
+        self._check_participant()
+        return super().create(vals)
+
 
 class TrainingPlanParticipationDetail(models.Model):
     _name = 'training.plan.participation.detail'
@@ -98,3 +112,12 @@ class TrainingPlanParticipationDetail(models.Model):
         readonly=True,
     )
     note = fields.Char(string="Ghi chú")
+
+    def _check_participant(self):
+        if self.env.user.has_group(PARTICIPANT):
+            raise AccessError(_("Participant không được thực hiện thao tác này"))
+
+    @api.model
+    def create(self, vals):
+        self._check_participant()
+        return super().create(vals)

@@ -145,34 +145,30 @@ class TrainingPlan(models.Model):
                         })
                         line.participation_detail_id = part_detail.id
 
-    # =========================================
-    #      ====== ONCHANGE SURVEY ======
-    # =========================================
 
-    # @api.onchange('survey_id')
-    # def _onchange_survey_id(self):
-    #     """
-    #     Khi chọn khảo sát → tự tổng hợp ngay.
-    #     Không raise lỗi để không làm phiền người dùng.
-    #     """
-    #     if self.survey_id:
-    #         self._generate_from_survey()
+
 
     # =========================================
     #      ====== CREATE - WRITE ======
     # =========================================
 
+    def _check_participant(self):
+        if self.env.user.has_group(PARTICIPANT):
+            raise AccessError(_("Participant không được thực hiện thao tác này"))
+
+
     def create(self, vals):
+        self._check_participant()
         rec = super().create(vals)
         if vals.get('survey_id'):
             rec._generate_from_survey()
         return rec
 
-    def unlink(self):
-        for rec in self:
-            if rec.state == 'approved':
-                raise ValidationError(_("Không thể xoá kế hoạch đã được duyệt."))
-        return super().unlink()
+    # def unlink(self):
+    #     for rec in self:
+    #         if rec.state == 'approved':
+    #             raise ValidationError(_("Không thể xoá kế hoạch đã được duyệt."))
+    #     return super().unlink()
 
     def write(self, vals):
         res = super().write(vals)
@@ -338,3 +334,12 @@ class TrainingPlanDetail(models.Model):
             count = len(detail.participation_detail_ids)
             detail.student_count = count
             detail.training_total_fee = (detail.training_fee_per_person or 0.0) * count
+
+    def _check_participant(self):
+        if self.env.user.has_group(PARTICIPANT):
+            raise AccessError(_("Participant không được thực hiện thao tác này"))
+
+    @api.model
+    def create(self, vals):
+        self._check_participant()
+        return super().create(vals)

@@ -35,6 +35,13 @@
                   action="action_training_participation"
                   sequence="40"/>
 
+        <menuitem id="menu_training_course"
+                  name="Khoá đào tạo"
+                  parent="hr_training_tedi.training_tedi_root"
+                  action="action_training_course"
+                  groups="quan_ly_tuyen_dung.group_recruitment_hr_officer"
+                  sequence="50"/>
+
 
 
     </data>

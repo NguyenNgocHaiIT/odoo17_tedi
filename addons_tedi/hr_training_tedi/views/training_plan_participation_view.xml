@@ -49,11 +49,11 @@
                                         <field name="note"/>
                                     </group>
                                     <group string="Thông tin từ kế hoạch">
-                                        <field name="training_plan_detail_id" readonly="1"/>
-                                        <field name="training_center" readonly="1"/>
-                                        <field name="training_type" readonly="1"/>
-                                        <field name="training_fee_per_person" readonly="1"/>
-                                        <field name="currency_id" readonly="1"/>
+                                        <field name="training_plan_detail_id" readonly="1" class="text-center"/>
+                                        <field name="training_center" readonly="1" class="text-center"/>
+                                        <field name="training_type" readonly="1" class="text-center"/>
+                                        <field name="training_fee_per_person" readonly="1" class="text-center"/>
+                                        <field name="currency_id" readonly="1" class="text-center"/>
                                     </group>
                                 </form>
                             </field>
