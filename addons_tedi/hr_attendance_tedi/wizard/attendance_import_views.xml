@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <record id="view_tedi_attendance_import_wizard" model="ir.ui.view">
+            <field name="name">tedi.attendance.import.wizard.form</field>
+            <field name="model">tedi.attendance.import.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Import chấm công từ Excel">
+                    <group>
+                        <field name="file" filename="filename"/>
+                        <field name="filename"/>
+                    </group>
+                    <footer>
+                        <button name="action_import"
+                                type="object"
+                                string="Import"
+                                class="btn-primary"/>
+                        <button string="Hủy" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_tedi_attendance_import" model="ir.actions.act_window">
+            <field name="name">Import Chấm công</field>
+            <field name="res_model">tedi.attendance.import.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo>

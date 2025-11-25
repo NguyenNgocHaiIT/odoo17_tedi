@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <!-- Menu root -->
+        <menuitem
+            id="training_tedi_root"
+            name="Đào tạo"
+            web_icon="hr_training_tedi,static/description/icon.png"
+            sequence="0"
+        />
+
+        <menuitem id="menu_training_plan"
+              name="Kế hoạch đào tạo"
+              parent="hr_training_tedi.training_tedi_root"
+              action="action_training_plan"
+              sequence="10"  />
+
+
+        <menuitem id="training_needs_tedi"
+                  name="Khảo sát nhu cầu đào tạo"
+                  parent="hr_training_tedi.training_tedi_root"
+                  action="action_training_needs_survey"
+                  sequence="20"/>
+
+        <menuitem id="menu_trainings_needs"
+              name="Nhu cầu đào tạo"
+              parent="hr_training_tedi.training_tedi_root"
+              action="action_trainings_needs"
+              sequence="30"  />
+
+
+        <menuitem id="menu_training_participation"
+                  name="Danh sách học viên"
+                  parent="hr_training_tedi.training_tedi_root"
+                  action="action_training_participation"
+                  sequence="40"/>
+
+        <menuitem id="menu_training_course"
+                  name="Khoá đào tạo"
+                  parent="hr_training_tedi.training_tedi_root"
+                  action="action_training_course"
+                  groups="quan_ly_tuyen_dung.group_recruitment_hr_officer"
+                  sequence="50"/>
+
+
+
+    </data>
+</odoo>

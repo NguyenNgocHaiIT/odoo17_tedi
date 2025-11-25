@@ -5,7 +5,7 @@
     'author': 'Thưởng',
     'sequence': 1,
     'summary': '',
-    'depends': ['base','web', 'hr' , 'hr_recruitment', 'hr_contract'],
+    'depends': ['base','web', 'hr' , 'hr_recruitment', 'hr_contract' , 'hr_tedi'],
     'data': [
         "security/recruitment_security.xml",
         "security/ir.model.access.csv",
@@ -22,6 +22,9 @@
         "views/wizard_old_applicant.xml",
         'views/experience_request_views.xml',
 
+        "views/recruitment_needs_view.xml",
+        "views/recruitment_survey.xml",
+
         "views/menu.xml",
     ],
     "assets": {
@@ -32,7 +35,7 @@
     },
 
     'installable': True,
-    'application': False,
+    'application': True,
     'auto_install': False,
     'qweb': [],
 }

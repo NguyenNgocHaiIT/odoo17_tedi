@@ -10,6 +10,18 @@
               action="action_recruitment_plan"
               sequence="5"/>
 
+    <menuitem id="menu_recruitment_survey"
+              name="Khảo sát tuyển dụng"
+              parent="hr_recruitment.menu_hr_recruitment_root"
+              action="action_recruitment_survey"
+              sequence="7"/>
+
+    <menuitem id="menu_recruitment_needs"
+              name="Nhu cầu tuyển dụng"
+              parent="hr_recruitment.menu_hr_recruitment_root"
+              action="action_recruitment_needs"
+              sequence="8"/>
+
 
     <menuitem
         id="hr_applicant_experience_request_menu"

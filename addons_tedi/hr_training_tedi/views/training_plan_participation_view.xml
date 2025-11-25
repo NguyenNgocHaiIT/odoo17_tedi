@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- TREE: Đợt đăng ký -->
+    <record id="view_training_participation_tree" model="ir.ui.view">
+        <field name="name">training.plan.participation.tree</field>
+        <field name="model">training.plan.participation</field>
+        <field name="arch" type="xml">
+            <tree string="Đợt đăng ký đào tạo">
+                <field name="training_plan_id" class="text-center"/>
+                <field name="training_plan_detail_id" class="text-center"/>
+                <field name="open_date" class="text-center"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- FORM: Đợt đăng ký (1 trang, chứa luôn detail) -->
+    <record id="view_training_participation_form" model="ir.ui.view">
+        <field name="name">training.plan.participation.form</field>
+        <field name="model">training.plan.participation</field>
+        <field name="arch" type="xml">
+            <form string="Đợt đăng ký đào tạo">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="training_plan_id" required="1"/>
+                        </group>
+                        <group>
+                            <field name="training_plan_detail_id" required="1"/>
+                            <field name="open_date" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Danh sách đăng ký">
+                            <field name="participation_detail_ids">
+                                <tree editable="bottom" string="Đăng ký tham gia">
+                                    <field name="user_id" class="text-center"/>
+                                    <field name="training_time" class="text-center"/>
+                                    <field name="training_center" readonly="1" class="text-center"/>
+                                    <field name="training_type" readonly="1" class="text-center"/>
+                                    <field name="training_fee_per_person" readonly="1" class="text-center" string="Chi phí/Người"/>
+                                    <field name="note"/>
+                                </tree>
+
+                                <form string="Đăng ký tham gia">
+                                    <group>
+                                        <field name="user_id"/>
+                                        <field name="training_time"/>
+                                        <field name="note"/>
+                                    </group>
+                                    <group string="Thông tin từ kế hoạch">
+                                        <field name="training_plan_detail_id" readonly="1" class="text-center"/>
+                                        <field name="training_center" readonly="1" class="text-center"/>
+                                        <field name="training_type" readonly="1" class="text-center"/>
+                                        <field name="training_fee_per_person" readonly="1" class="text-center"/>
+                                        <field name="currency_id" readonly="1" class="text-center"/>
+                                    </group>
+                                </form>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_training_participation" model="ir.actions.act_window">
+        <field name="name">Đợt đăng ký đào tạo</field>
+        <field name="res_model">training.plan.participation</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_ids" eval="[
+                (5, 0, 0),
+                (0, 0, {'view_id': ref('view_training_participation_tree'), 'view_mode': 'tree'}),
+                (0, 0, {'view_id': ref('view_training_participation_form'), 'view_mode': 'form'}),
+            ]"/>
+    </record>
+
+
+    <!-- Menu -->
+
+</odoo>

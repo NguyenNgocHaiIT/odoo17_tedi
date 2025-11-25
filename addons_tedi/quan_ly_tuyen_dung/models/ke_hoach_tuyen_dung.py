@@ -1,10 +1,14 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, AccessError
 
+HR_OFFICER = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
 COMMITTEE = 'quan_ly_tuyen_dung.group_recruitment_committee'
-DIRECTOR  = 'quan_ly_tuyen_dung.group_recruitment_director'
-BOARD     = 'quan_ly_tuyen_dung.group_recruitment_board'
-BASE      = 'base.group_user'
+DIRECTOR = 'quan_ly_tuyen_dung.group_recruitment_director'
+BOARD = 'quan_ly_tuyen_dung.group_recruitment_board'
+BASE = 'base.group_user'
+
+COMPLETE_EDITORS = {HR_OFFICER, COMMITTEE, DIRECTOR, BOARD}
+
 
 class RecruitmentPlan(models.Model):
     _name = "recruitment.plan"
@@ -25,6 +29,14 @@ class RecruitmentPlan(models.Model):
     people_suggestion = fields.Many2one("hr.employee", string="Người đề nghị", ondelete="set null")
     plan_purpose = fields.Char(string="Mục đích")
 
+    # --- FIELD MỚI: CHỌN ĐỢT KHẢO SÁT ---
+    survey_id = fields.Many2one(
+        'recruitment.survey',
+        string="Đợt khảo sát",
+        domain="[('state', 'in', ['in_process', 'end'])]",
+        tracking=True
+    )
+
     total_applicant_request = fields.Integer(
         string="Tổng số lượng cần tuyển",
         compute="_compute_total_applicant_request",
@@ -33,9 +45,8 @@ class RecruitmentPlan(models.Model):
 
     plan_fund = fields.Monetary(string="Kinh phí", currency_field="currency_id")
     currency_id = fields.Many2one("res.currency", string="Tiền tệ",
-        default=lambda self: self.env.ref("base.VND"), readonly=True)
+                                  default=lambda self: self.env.ref("base.VND"), readonly=True)
 
-    # Flow: draft -> waiting -> board_approve -> complete
     recruitment_status = fields.Selection([
         ("draft", "Dự thảo"),
         ("board_approve", "HĐQT duyệt"),
@@ -49,6 +60,74 @@ class RecruitmentPlan(models.Model):
     recruitment_plan_detail_ids = fields.One2many(
         "recruitment.plan.detail", "plan_id", string="Thông tin chi tiết"
     )
+
+    # ----------------- TỔNG HỢP NHU CẦU (LOGIC CHÍNH) -----------------
+    @api.onchange('survey_id')
+    def _onchange_survey_id(self):
+        """
+        Khi chọn Đợt khảo sát:
+        1. Tìm các phiếu Nhu cầu (recruitment.needs) thuộc đợt này & đã Confirmed.
+        2. Gom nhóm theo (Phòng ban, Vị trí).
+        3. Cộng dồn số lượng.
+        4. Đẩy vào recruitment_plan_detail_ids.
+        """
+        if not self.survey_id:
+            return
+
+        # 1. Tìm các phiếu nhu cầu hợp lệ
+        # Lưu ý: Trong recruitment.needs, field 'name' là Many2one trỏ tới recruitment.survey
+        needs = self.env['recruitment.needs'].search([
+            ('name', '=', self.survey_id.id),
+            ('state', '=', 'confirmed')
+        ])
+
+        if not needs:
+            # Nếu không có phiếu nào, có thể cảnh báo hoặc xóa dòng cũ
+            self.recruitment_plan_detail_ids = [(5, 0, 0)]
+            return
+
+        # 2. Dictionary để gom nhóm: Key = (department_id, job_id)
+        grouped_data = {}
+
+        for need in needs:
+            # Lấy phòng ban từ header của phiếu nhu cầu (theo code bạn cung cấp trước đó)
+            dept = need.department_id
+            if not dept:
+                continue
+
+            for line in need.line_ids:
+                if not line.job_id:
+                    continue
+
+                # Key duy nhất để gom nhóm
+                key = (dept.id, line.job_id.id)
+
+                if key not in grouped_data:
+                    # Nếu chưa có thì tạo mới
+                    grouped_data[key] = {
+                        'department_request': dept.id,
+                        'recruitment_job': line.job_id.id,
+                        'requested_quantity': 0,
+                        # Lấy thông tin phụ từ dòng đầu tiên tìm thấy
+                        'experient_request_id': line.experience_id.id,
+                        'professional_qualification': line.professional_qualification,
+                        'note': line.note or '',
+                    }
+
+                # Cộng dồn số lượng
+                grouped_data[key]['requested_quantity'] += (line.amount or 0)
+
+                # (Tuỳ chọn) Gộp ghi chú nếu cần
+                # if line.note and line.note not in grouped_data[key]['note']:
+                #     grouped_data[key]['note'] += f"; {line.note}"
+
+        # 3. Chuyển đổi sang format One2many để cập nhật giao diện
+        new_lines = []
+        for val in grouped_data.values():
+            new_lines.append((0, 0, val))
+
+        # Xóa hết dòng cũ (5,0,0) và thêm dòng mới
+        self.recruitment_plan_detail_ids = [(5, 0, 0)] + new_lines
 
     # ----------------- Quyền cơ bản -----------------
     def _check_committee(self):
@@ -75,13 +154,13 @@ class RecruitmentPlan(models.Model):
             return is_committee or is_board or is_director or is_base
 
         if state == 'board_approve':
-            return is_board  # CHỈ BOARD ĐƯỢC SỬA Ở TRẠNG THÁI 'waiting'
+            return is_board
 
         if state == 'director_approve':
-            return is_director  # CHỈ DIRECTOR ĐƯỢC SỬA
+            return is_director
 
         if state == 'complete':
-            return False  # Không ai được sửa
+            return False
 
         return False
 
@@ -105,7 +184,6 @@ class RecruitmentPlan(models.Model):
             if rec.recruitment_status != "draft":
                 raise ValidationError(_("Chỉ có thể trình duyệt từ trạng thái 'Dự thảo'."))
             rec.recruitment_status = "board_approve"
-            # rec.message_post(body=_("Ủy ban đã trình duyệt kế hoạch."))
 
     def action_board_approve(self):
         """BOARD: waiting -> board_approve"""
@@ -114,7 +192,6 @@ class RecruitmentPlan(models.Model):
             if rec.recruitment_status != "board_approve":
                 raise ValidationError(_("HĐQT chỉ duyệt được khi trạng thái là 'HĐQT duyệt'."))
             rec.recruitment_status = "director_approve"
-            # rec.message_post(body=_("HĐQT đã duyệt kế hoạch (Board Approved)."))
 
     def _apply_if_needed(self):
         for rec in self:
@@ -123,14 +200,13 @@ class RecruitmentPlan(models.Model):
                 rec.is_applied_to_jobs = True
 
     def action_director_approve(self):
-        """DIRECTOR: board_approve -> complete (và áp nhu cầu sang Job nếu chưa)"""
+        """DIRECTOR: board_approve -> complete"""
         self._check_director()
         for rec in self:
             if rec.recruitment_status != "director_approve":
                 raise ValidationError(_("Giám đốc chỉ phê duyệt được khi trạng thái là 'HĐQT duyệt'."))
             rec._apply_if_needed()
             rec.recruitment_status = "complete"
-            # rec.message_post(body=_("Giám đốc đã phê duyệt. Kế hoạch chuyển sang 'Hoàn thành'."))
 
     # ----------------- Compute / helpers -----------------
     @api.depends("sequence")
@@ -146,7 +222,7 @@ class RecruitmentPlan(models.Model):
             plan.total_applicant_request = sum(plan.recruitment_plan_detail_ids.mapped("requested_quantity"))
 
     def _apply_recruitment_to_jobs(self):
-        """Gộp theo job và GHI ĐÈ nhu cầu = tổng requested_quantity của chính kế hoạch này."""
+        """Gộp theo job và GHI ĐÈ nhu cầu."""
         self.ensure_one()
         lines = self.recruitment_plan_detail_ids.filtered(lambda l: l.recruitment_job and l.requested_quantity > 0)
         if not lines:
@@ -159,9 +235,6 @@ class RecruitmentPlan(models.Model):
         jobs = self.env['hr.job'].browse(list(totals.keys()))
         for job in jobs:
             job.no_of_recruitment = totals[job.id]
-
-        # self.message_post(body=_("Đã áp dụng nhu cầu sang Job: %s")
-        #                   % ", ".join(f"{j.display_name}={totals[j.id]}" for j in jobs))
 
     # ----------------- Overrides -----------------
     @api.model

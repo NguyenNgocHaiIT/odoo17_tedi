@@ -16,7 +16,6 @@ class RecruitmentPlanDetail(models.Model):
     _description = "Recruitment Plan Detail"
     _order = "sequence, id"
 
-    # === GIỮ NGUYÊN 100% FIELD CỦA BẠN ===
     sequence = fields.Integer(string="STT", default=10)
     stt = fields.Integer(string="STT hiển thị", compute="_compute_stt", store=False, readonly=True)
 
@@ -57,10 +56,6 @@ class RecruitmentPlanDetail(models.Model):
         "detail_id", "attachment_id",
         string="Tài liệu mô tả công việc"
     )
-
-    # ==================================================================
-    # GIỮ NGUYÊN TẤT CẢ ONCHANGE & COMPUTE CỦA BẠN
-    # ==================================================================
 
     @api.constrains('nomination_ids')
     def _check_nomination_ids_refused_or_archived(self):
@@ -125,19 +120,13 @@ class RecruitmentPlanDetail(models.Model):
             'context': {'default_detail_id': self.id, 'active_test': False},
         }
 
-    # ==================================================================
-    # CHỈ SỬA PHẦN NÀY: ACL THEO YÊU CẦU
-    # ==================================================================
-    #
-    # def _user_is_complete_editor(self):
-    #     """Chỉ 4 nhóm được sửa 2 field ở complete"""
-    #     return self.env.user.has_group_any(COMPLETE_EDITORS)
+    # ACL - CHECK EDIT
+    def _user_is_complete_editor(self):
+        return self.env.user.has_group_any(COMPLETE_EDITORS)
 
     def _can_edit_in_state(self, state, op, vals=None):
-        # 1) Bỏ qua hoàn toàn khi đang sudo (để logic Applicant giảm/tăng qty chạy được)
         if self.env.su:
             return True
-
         is_committee = self.env.user.has_group(COMMITTEE)
         is_director = self.env.user.has_group(DIRECTOR)
         is_board = self.env.user.has_group(BOARD)
@@ -145,22 +134,16 @@ class RecruitmentPlanDetail(models.Model):
 
         if state == 'draft':
             return is_committee or is_director or is_board or is_base
-
         if state == 'board_approve':
             return is_board
-
         if state == 'director_approve':
             return is_director
-
         if state == 'complete':
             if op == 'write' and vals:
                 allowed = {'nomination_ids', 'requested_quantity'}
                 if set(vals.keys()).issubset(allowed):
-                    # 2) Thực sự cho phép
                     return self._user_is_complete_editor()
-            # create/unlink hoặc sửa field khác -> cấm
             return False
-
         return False
 
     def _check_edit_permission(self, op, vals=None):
@@ -175,12 +158,6 @@ class RecruitmentPlanDetail(models.Model):
                 if not self._can_edit_in_state(state, op, vals):
                     vn = {'create': 'tạo', 'write': 'sửa', 'unlink': 'xóa'}
                     raise AccessError(_("Không được %s dòng khi Kế hoạch ở trạng thái '%s'.") % (vn[op], state))
-
-        # Riêng nomination_ids ở complete: đã kiểm tra trong _can_edit_in_state
-
-    # ==================================================================
-    # OVERRIDES – GIỮ NGUYÊN CẤU TRÚC, CHỈ GỌI _check_edit_permission
-    # ==================================================================
 
     @api.model
     def create(self, vals):
