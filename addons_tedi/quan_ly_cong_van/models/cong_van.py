@@ -509,13 +509,13 @@ class OfficeDocument(models.Model):
     do_quan_trong = fields.Char('Độ quan trọng')
     nguoi_xu_ly_chinh = fields.Many2many(
         'hr.employee',
-        'nguoi_xu_ly_chinh_employee_rel',
+        'office_document_detail_nguoi_xu_ly_chinh_employee_rel',
         'document_id',
         'employee_id',
         string='Người xử lý chính')
     nguoi_dong_xu_ly = fields.Many2many(
         'hr.employee',
-        'nguoi_dong_xu_ly_employee_rel',
+        'office_document_detail_nguoi_dong_xu_ly_employee_rel',
         'document_id',
         'employee_id',
         string='Người đồng xử lý'
