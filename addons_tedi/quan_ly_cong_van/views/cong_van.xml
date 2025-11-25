@@ -43,7 +43,10 @@
                                        invisible="document_type != 'incoming_internal'"/>
                                 <field name="so_den_tong_hop" string="Số công văn" readonly="1"/>
                                 <field name="so_hieu"/>
-                                <field name="don_vi_ban_hanh"/>
+                                <field name="don_vi_ban_hanh"
+                                       invisible="not (document_type in ('incoming_internal','outgoing_internal','resolution'))"/>
+                                <field name="don_vi_ban_hanh_ngoai"
+                                       invisible="not (document_type in ('incoming','outgoing'))"/>
                                 <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách"/>
                                 <field name="ngay_den"/>
                                 <field name="ngay_ban_hanh"/>
@@ -207,7 +210,7 @@
                     <header>
                         <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_don_vi_xu_ly"
-                                invisible="tt_vb != 'cho_duyet'"/>
+                                invisible="tt_vb != 'draft'"/>
                         <button name="approve" string="Duyệt" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
                                 invisible="tt_vb != 'cho_duyet'"/>
@@ -229,8 +232,12 @@
                         <field name="trich_yeu"/>
                         <group>
                             <group>
+                                <field name="document_type" invisible="1"/>
                                 <field name="so_di_tong_hop" readonly="1"/>
-                                <field name="don_vi_ban_hanh"/>
+                                <field name="don_vi_ban_hanh"
+                                       invisible="not (document_type in ('incoming_internal','outgoing_internal','resolution'))"/>
+                                <field name="don_vi_ban_hanh_ngoai"
+                                       invisible="not (document_type in ('incoming','outgoing'))"/>
                                 <field name="lanh_dao_xu_ly"/>
                                 <!--                                <field name="don_vi_soan_thao"/>-->
 
@@ -390,7 +397,7 @@
                     <header>
                         <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_don_vi_xu_ly"
-                                invisible="tt_vb != 'cho_duyet'"/>
+                                invisible="tt_vb != 'draft'"/>
                         <button name="approve" string="Duyệt" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
                                 invisible="tt_vb != 'cho_duyet'"/>
@@ -563,7 +570,7 @@
                         </group>
                     </sheet>
                     <footer>
-                        <button name="phan_phat" string="Phát hành" type="object"/>
+                        <button name="phan_phat" string="Phân phát" type="object"/>
                         <button name="cancel" string="Hủy" type="object" class="btn-danger"/>
                     </footer>
                 </form>

@@ -40,7 +40,7 @@
     </record>
 
     <record id="action_open_office_task" model="ir.actions.act_window">
-        <field name="name">Công việc</field>
+        <field name="name">Giao việc</field>
         <field name="res_model">project.task</field>
         <field name="view_mode">tree,form</field>
         <field name="view_ids" eval="[(5, 0, 0),
