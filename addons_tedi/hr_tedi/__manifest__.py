@@ -2,10 +2,10 @@
     'name': 'HR Tedi',
     'version': '1.0',
     'summary': 'Quản lý nhân viên Tedi',
-    'category': 'Human Resources',
+    'category': 'TEDI/Quản lý nhân viên',
     'author': 'Phạm Hải Huy',
     'website': 'https://yourcompany.com',
-    'depends': ['hr', 'base','hr_attendance','hr_skills','hr_attendance'],  # thêm 'base' cho chắc chắn khi có model/attachment
+    'depends': ['hr', 'base','hr_skills'],  # thêm 'base' cho chắc chắn khi có model/attachment
     'data': [
         "security/ir.model.access.csv",
         "views/employee_education_views.xml",
