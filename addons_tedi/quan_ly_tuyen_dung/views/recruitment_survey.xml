@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <!-- TREE GIỮ NGUYÊN -->
-    <record id="training_needs_survey_tree" model="ir.ui.view">
-        <field name="name">training_needs_survey_tree</field>
-        <field name="model">training.needs.survey</field>
+    <record id="recruitment_survey_tree" model="ir.ui.view">
+        <field name="name">recruitment_survey_tree</field>
+        <field name="model">recruitment.survey</field>
         <field name="arch" type="xml">
             <tree string="Khảo sát nhu cầu đào tạo">
                 <field name="name" string="Tên đợt khảo sát" class="text-center"/>
@@ -23,9 +23,9 @@
     </record>
 
     <!-- FORM -->
-    <record id="training_needs_survey_form" model="ir.ui.view">
-        <field name="name">training_needs_survey_form</field>
-        <field name="model">training.needs.survey</field>
+    <record id="recruitment_survey_form" model="ir.ui.view">
+        <field name="name">recruitment_survey_form</field>
+        <field name="model">recruitment.survey</field>
         <field name="arch" type="xml">
             <form string="Khảo sát nhu cầu đào tạo">
                 <!-- state ẩn để dùng cho statusbar -->
@@ -41,7 +41,7 @@
                             type="object"
                             string="Xác nhận"
                             class="btn-primary"
-                            groups="quan_ly_tuyen_dung.group_recruitment_hr_officer"
+                            groups="quan_ly_tuyen_dung.group_recruitment_committee"
                             invisible="state != 'draft'"/>
 
                     <button name="action_end"
@@ -49,6 +49,7 @@
                         type="object"
                         class="btn-secondary"
                         confirm="Bạn có chắc chắn muốn kết thúc khảo sát này ngay lập tức?"
+                        groups="quan_ly_tuyen_dung.group_recruitment_committee"
                         invisible="state != 'in_process'"/>
 
                     <button name="action_start_survey"
@@ -56,6 +57,7 @@
                         type="object"
                         class="btn-primary"
                         confirm="Bạn có chắc chắn muốn bắt đầu khảo sát này ngay lập tức?"
+                        groups="quan_ly_tuyen_dung.group_recruitment_committee"
                         invisible="state != 'confirmed'"/>
                 </header>
 
@@ -84,15 +86,15 @@
     </record>
 
     <!-- ACTION: GẮN SẴN TREE + FORM -->
-    <record id="action_training_needs_survey" model="ir.actions.act_window">
+    <record id="action_recruitment_survey" model="ir.actions.act_window">
         <field name="name">Khảo sát nhu cầu đào tạo</field>
         <field name="type">ir.actions.act_window</field>
-        <field name="res_model">training.needs.survey</field>
+        <field name="res_model">recruitment.survey</field>
         <field name="view_mode">tree,form</field>
         <field name="view_ids" eval="[
             (5, 0, 0),
-            (0, 0, {'view_id': ref('training_needs_survey_tree'), 'view_mode': 'tree'}),
-            (0, 0, {'view_id': ref('training_needs_survey_form'), 'view_mode': 'form'})
+            (0, 0, {'view_id': ref('recruitment_survey_tree'), 'view_mode': 'tree'}),
+            (0, 0, {'view_id': ref('recruitment_survey_form'), 'view_mode': 'form'})
         ]"/>
     </record>
 

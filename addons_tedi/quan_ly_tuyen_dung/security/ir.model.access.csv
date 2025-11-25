@@ -45,3 +45,7 @@ access_recruitment_plan_detail_hr_ro,Recruitment Plan Detail HR RO,model_recruit
 
 access_old_applicant_suggest_wizard,access_old_applicant_suggest_wizard,model_old_applicant_suggest_wizard,base.group_user,1,1,1,1
 access_hr_applicant_admin,hr.applicant.admin,model_hr_applicant,base.group_user,1,1,1,1
+
+access_recruitment_survey,access_recruitment_survey,model_recruitment_survey,base.group_user,1,1,1,1
+access_recruitment_needs,access_recruitment_needs,model_recruitment_needs,base.group_user,1,1,1,1
+access_recruitment_needs_line,access_recruitment_needs_line,model_recruitment_needs_line,base.group_user,1,1,1,1

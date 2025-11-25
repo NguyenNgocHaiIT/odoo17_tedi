@@ -1,59 +1,45 @@
-from pygments.lexer import default
+from odoo import api, fields, models, tools, _
+from odoo.exceptions import ValidationError, AccessError
 
-from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError , AccessError
+HR_OFFICER = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
+COMMITTEE = 'quan_ly_tuyen_dung.group_recruitment_committee'
+DIRECTOR = 'quan_ly_tuyen_dung.group_recruitment_director'
+BOARD = 'quan_ly_tuyen_dung.group_recruitment_board'
+BASE = 'base.group_user'
 
+class RecruitmentSurvey(models.Model):
+    _name = 'recruitment.survey'
+    _description = 'Recruitment Survey'
 
-HR_OFFICER          = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
-PARTICIPANT         = "hr_training_tedi.group_training_participant"
-UNIT_MANAGER        = "hr_training_tedi.group_training_unit_manager"
-GENERAL_DIRECTOR    = "hr_training_tedi.group_training_general_director"
-BASE                = "base.group_user"
-
-class TrainingNeedsSurvey(models.Model):
-    _name = 'training.needs.survey'
-    _description = 'Training Needs Survey'
-    _order = "id desc"
-
-    # ----------------------------------------------------
-    #   FIELDS
-    # ----------------------------------------------------
-    name = fields.Char(string='Name')
-
+    name = fields.Char(string ="Tên đợt khảo sát")
     user_id = fields.Many2one(
-        'res.users',
-        string='Người tạo',
-        default=lambda self: self.env.user
+        "res.users",
+        string ="Người tạo",
+        default=lambda self: self.env.user,
     )
 
     create_date = fields.Date(
         string="Ngày tạo",
         default=fields.Date.context_today
     )
-
     start_date = fields.Date(
         string="Ngày bắt đầu",
         required=True,
         default=fields.Date.context_today
     )
-
     end_date = fields.Date(string="Ngày kết thúc")
 
     state = fields.Selection([
         ("draft", "Dự thảo"),
-        ("confirmed", "Đã xác nhận"),
-        ("in_process", "Đang khảo sát"),
-        ("end", "Kết thúc"),
-    ], string="Trạng thái", default="draft")
+        ("confirmed", "Xác nhận"),
+        ("in_process","Đang khảo sát"),
+        ("end","Kết thúc")
+    ], string ="Trạng thái", default="draft")
 
+    def _check_committee(self):
+        if not self.env.user.has_group(COMMITTEE):
+            raise AccessError(_("Chỉ Ủy ban mới được thực hiện thao tác này."))
 
-    def _check_participant(self):
-        if self.env.user.has_group(PARTICIPANT):
-            raise AccessError(_("Participant không được thực hiện thao tác này"))
-
-    # ----------------------------------------------------
-    #   BUTTON: SUBMIT (draft → confirmed)
-    # ----------------------------------------------------
     def _check_and_update_state_on_date_change(self):
         """Kiểm tra và cập nhật trạng thái cho bản ghi hiện tại."""
         today = fields.Date.context_today(self)
@@ -67,10 +53,9 @@ class TrainingNeedsSurvey(models.Model):
             elif rec.state == 'in_process' and rec.end_date and rec.end_date < today:
                 rec.state = 'end'
 
-
     def action_start_survey(self):
         # 1. Kiểm tra quyền
-        self._check_participant()
+        self._check_committee()
 
         today = fields.Date.context_today(self)
 
@@ -87,9 +72,8 @@ class TrainingNeedsSurvey(models.Model):
             rec.start_date = today
             rec.state = 'in_process'
 
-
     def action_end(self):
-        self._check_participant()
+        self._check_committee()
 
         # Lấy ngày hiện tại
         today = fields.Date.context_today(self)
@@ -120,9 +104,10 @@ class TrainingNeedsSurvey(models.Model):
         # Sau khi submit, cần kiểm tra lại cả trạng thái end (đề phòng trường hợp end_date = today)
         self._check_and_update_state_on_date_change()
 
-    # ----------------------------------------------------
-    #   VALIDATION: start_date < end_date
-    # ----------------------------------------------------
+        # ----------------------------------------------------
+        #   VALIDATION: start_date < end_date
+        # ----------------------------------------------------
+
     @api.constrains('start_date', 'end_date')
     def _check_dates(self):
         for rec in self:
@@ -131,11 +116,11 @@ class TrainingNeedsSurvey(models.Model):
                     "Ngày kết thúc (%s) không được nhỏ hơn ngày bắt đầu (%s)." %
                     (rec.end_date, rec.start_date)
                 ))
+
     @api.model
     def create(self, vals):
-        self._check_participant()
+        self._check_committee()
         return super().create(vals)
-
 
     # ----------------------------------------------------
     #   CRON: auto update trạng thái
@@ -171,5 +156,3 @@ class TrainingNeedsSurvey(models.Model):
         #     if rec.state == 'end':
         #         raise ValidationError(_("Không thể xoá khảo sát đã kết thúc."))
         return super().unlink()
-
-

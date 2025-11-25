@@ -139,15 +139,16 @@
             <group>
               <group>
                 <field name="plan_code" required="1" readonly="1"/>
-                <field name="plan_execute_date" required="1" readonly="recruitment_status == 'complete'"/>
-                <field name="plan_name" required="1" readonly="recruitment_status == 'complete'"/>
-                <field name="people_suggestion" readonly="recruitment_status == 'complete'"/>
+                <field name="plan_execute_date" required="1" readonly="recruitment_status != 'draft'"/>
+                <field name="plan_name" required="1" readonly="recruitment_status != 'draft'"/>
+                <field name="survey_id"   readonly="recruitment_status != 'draft'"/>
               </group>
               <group>
-                <field name="plan_purpose" readonly="recruitment_status == 'complete'"/>
+                <field name="plan_purpose" readonly="recruitment_status != 'draft'"/>
                 <field name="plan_fund" widget="monetary" options="{'currency_field': 'currency_id'}"
-                       readonly="recruitment_status == 'complete'"/>
-                <field name="department_responsible" readonly="recruitment_status == 'complete'"/>
+                       readonly="recruitment_status != 'draft'"/>
+                <field name="department_responsible" readonly="recruitment_status != 'draft'"/>
+                <field name="people_suggestion" readonly="recruitment_status != 'draft'"/>
               </group>
             </group>
 
@@ -160,7 +161,7 @@
                            nolabel="1"
                            context="{'default_plan_id': id}"
                            mode="tree,form"
-                           readonly="recruitment_status == 'complete'">
+                           readonly="recruitment_status != 'draft'">
                       <tree ref="view_recruitment_plan_detail_tree"/>
                       <form ref="view_recruitment_plan_detail_form"/>
                     </field>

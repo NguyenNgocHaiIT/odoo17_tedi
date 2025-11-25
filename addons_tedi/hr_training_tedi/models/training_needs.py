@@ -1,3 +1,5 @@
+from email.policy import default
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 
@@ -21,8 +23,13 @@ class TrainingNeeds(models.Model):
     create_date = fields.Date(
         string="Ngày đăng ký",
         readonly=True,
+        default= fields.Date.context_today,
     )
-    user_id = fields.Many2one('res.users', string='Người đăng ký')
+    user_id = fields.Many2one(
+        'res.users',
+        string='Người đăng ký',
+        default=lambda self: self.env.user
+    )
     approver_id = fields.Many2one('res.users', string='Người phê duyệt')
     state = fields.Selection([
         ('draft', 'Dự thảo'),

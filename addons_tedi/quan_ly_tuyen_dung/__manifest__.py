@@ -22,6 +22,9 @@
         "views/wizard_old_applicant.xml",
         'views/experience_request_views.xml',
 
+        "views/recruitment_needs_view.xml",
+        "views/recruitment_survey.xml",
+
         "views/menu.xml",
     ],
     "assets": {

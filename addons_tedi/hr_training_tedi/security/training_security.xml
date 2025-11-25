@@ -2,43 +2,42 @@
 <odoo>
   <data noupdate="0">
 
-    <!-- ==== GROUPS ĐÀO TẠO ==== -->
+    <record id="module_category_training" model="ir.module.category">
+        <field name="name">Training (Đào tạo)</field>
+        <field name="description">Quản lý đào tạo nội bộ TEDI</field>
+        <field name="sequence">10</field>
+        <field name="parent_id" ref="base.module_category_human_resources"/>
+    </record>
 
-    <!-- Cán bộ tham gia đào tạo -->
     <record id="group_training_participant" model="res.groups">
-      <field name="name">Training: Participant (Cán bộ tham gia đào tạo)</field>
-      <field name="category_id" ref="base.module_category_human_resources"/>
+      <field name="name">Participant (Cán bộ tham gia)</field>
+      <field name="category_id" ref="module_category_training"/>
+      <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
     </record>
 
-    <!-- Trưởng đơn vị -->
     <record id="group_training_unit_manager" model="res.groups">
-      <field name="name">Training: Unit Manager (Trưởng đơn vị)</field>
-      <field name="category_id" ref="base.module_category_human_resources"/>
+      <field name="name">Unit Manager (Trưởng đơn vị)</field>
+      <field name="category_id" ref="module_category_training"/>
+      <field name="implied_ids" eval="[(4, ref('group_training_participant'))]"/>
     </record>
 
-    <!-- Tổng giám đốc -->
     <record id="group_training_general_director" model="res.groups">
-      <field name="name">Training: General Director (Tổng giám đốc)</field>
-      <field name="category_id" ref="base.module_category_human_resources"/>
+      <field name="name">General Director (Tổng giám đốc)</field>
+      <field name="category_id" ref="module_category_training"/>
+      <field name="implied_ids" eval="[(4, ref('group_training_unit_manager'))]"/>
     </record>
 
-    <!-- HR (TCCB-LĐ) dùng lại group hr_recruitment.group_recruitment_hr_officer -->
-
-    <!-- ==== RULES CHO KẾ HOẠCH ĐÀO TẠO ==== -->
-
-    <!-- HR (TCCB-LĐ): xem + sửa toàn bộ kế hoạch đào tạo -->
     <record id="rr_training_plan_hr_all" model="ir.rule">
       <field name="name">Training Plan - HR ALL</field>
       <field name="model_id" ref="model_training_plan"/>
-      <field name="groups" eval="[(4, ref('quan_ly_tuyen_dung.group_recruitment_hr_officer'))]"/>
+      <field name="groups" eval="[(4, ref('hr_recruitment.group_hr_recruitment_user'))]"/>
       <field name="domain_force">[(1, '=', 1)]</field>
       <field name="perm_read" eval="1"/>
       <field name="perm_write" eval="1"/>
       <field name="perm_create" eval="1"/>
-      <field name="perm_unlink" eval="0"/>
+      <field name="perm_unlink" eval="1"/>
     </record>
 
-    <!-- Tổng giám đốc: chỉ xem tất cả kế hoạch đào tạo -->
     <record id="rr_training_plan_general_director" model="ir.rule">
       <field name="name">Training Plan - General Director</field>
       <field name="model_id" ref="model_training_plan"/>
@@ -50,10 +49,8 @@
       <field name="perm_unlink" eval="0"/>
     </record>
 
-<!-- Cán bộ tham gia đào tạo: chỉ xem dòng đăng ký của chính mình -->
     <record id="rr_training_plan_participation_detail_employee" model="ir.rule">
-      <field name="name">Training Participation Detail - Participant</field>
-      <!-- CHỈNH model_id SANG DETAIL -->
+      <field name="name">Training Participation Detail - Participant Own</field>
       <field name="model_id" ref="model_training_plan_participation_detail"/>
       <field name="groups" eval="[(4, ref('hr_training_tedi.group_training_participant'))]"/>
       <field name="domain_force">[('user_id', '=', user.id)]</field>
@@ -63,13 +60,10 @@
       <field name="perm_unlink" eval="0"/>
     </record>
 
-
-    <!-- Trưởng đơn vị: xem/duyệt đăng ký trong đơn vị mình -->
     <record id="rr_training_plan_participation_unit_manager" model="ir.rule">
       <field name="name">Training Participation - Unit Manager</field>
       <field name="model_id" ref="model_training_plan_participation"/>
       <field name="groups" eval="[(4, ref('hr_training_tedi.group_training_unit_manager'))]"/>
-      <!-- Tạm thời để 1=1, sau này nếu có field department_id thì sửa domain -->
       <field name="domain_force">[(1, '=', 1)]</field>
       <field name="perm_read" eval="1"/>
       <field name="perm_write" eval="1"/>
@@ -77,13 +71,10 @@
       <field name="perm_unlink" eval="0"/>
     </record>
 
-
-       <!-- Participant: chỉ xem / sửa / tạo phiếu của chính mình -->
     <record id="rr_trainings_needs_participant_own" model="ir.rule">
-      <field name="name">Training Needs - Participant own</field>
+      <field name="name">Training Needs - Participant Own</field>
       <field name="model_id" ref="model_trainings_needs"/>
       <field name="groups" eval="[(4, ref('hr_training_tedi.group_training_participant'))]"/>
-      <!-- Chỉ thấy các phiếu mà user_id = user đang đăng nhập -->
       <field name="domain_force">[('user_id', '=', user.id)]</field>
       <field name="perm_read" eval="1"/>
       <field name="perm_write" eval="1"/>
@@ -91,11 +82,10 @@
       <field name="perm_unlink" eval="0"/>
     </record>
 
-    <!-- HR: xem/sửa tất cả phiếu nhu cầu -->
     <record id="rr_trainings_needs_hr_all" model="ir.rule">
       <field name="name">Training Needs - HR ALL</field>
       <field name="model_id" ref="model_trainings_needs"/>
-      <field name="groups" eval="[(4, ref('quan_ly_tuyen_dung.group_recruitment_hr_officer'))]"/>
+      <field name="groups" eval="[(4, ref('hr_recruitment.group_hr_recruitment_user'))]"/>
       <field name="domain_force">[(1, '=', 1)]</field>
       <field name="perm_read" eval="1"/>
       <field name="perm_write" eval="1"/>
@@ -103,7 +93,6 @@
       <field name="perm_unlink" eval="1"/>
     </record>
 
-    <!-- Giám đốc: chỉ đọc tất cả phiếu nhu cầu -->
     <record id="rr_trainings_needs_general_director" model="ir.rule">
       <field name="name">Training Needs - General Director</field>
       <field name="model_id" ref="model_trainings_needs"/>
@@ -115,7 +104,6 @@
       <field name="perm_unlink" eval="0"/>
     </record>
 
-    <!-- Trưởng đơn vị: tạm cho xem/duyệt tất cả, sau này có department_id thì siết lại -->
     <record id="rr_trainings_needs_unit_manager" model="ir.rule">
       <field name="name">Training Needs - Unit Manager</field>
       <field name="model_id" ref="model_trainings_needs"/>
@@ -126,23 +114,6 @@
       <field name="perm_create" eval="0"/>
       <field name="perm_unlink" eval="0"/>
     </record>
-
-
-   <record id="rr_trainings_needs_line_participant_own" model="ir.rule">
-      <field name="name">Training Needs Line - Participant own</field>
-      <field name="model_id" ref="model_trainings_needs_line"/>
-      <field name="groups" eval="[(4, ref('hr_training_tedi.group_training_participant'))]"/>
-      <!-- Chỉ thấy dòng chi tiết thuộc phiếu mà user_id = user.current -->
-      <field name="domain_force">
-        [('training_needs_id.user_id', '=', user.id)]
-      </field>
-      <field name="perm_read" eval="1"/>
-      <field name="perm_write" eval="1"/>
-      <field name="perm_create" eval="1"/>
-      <field name="perm_unlink" eval="0"/>
-    </record>
-
-
 
   </data>
 </odoo>

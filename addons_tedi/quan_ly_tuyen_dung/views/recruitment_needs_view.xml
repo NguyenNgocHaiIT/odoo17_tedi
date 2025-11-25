@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <!-- TREE: Nhu cầu đào tạo (header ngoài list) -->
+        <record id="view_recruitment_needs_tree" model="ir.ui.view">
+            <field name="name">recruitment.needs.tree</field>
+            <field name="model">recruitment.needs</field>
+            <field name="arch" type="xml">
+                <tree string="Nhu cầu đào tạo">
+                    <field name="name" string="Đợt khảo sát" class="text-center"/>
+                    <field name="create_date" string="Ngày đăng ký" class="text-center"/>
+                    <field name="department_id" string="Phòng ban đăng ký" class="text-center"/>
+                    <field name="state" string="Trạng thái"
+                           widget="badge"
+                           decoration-warning="state == 'draft'"
+                           decoration-success="state == 'confirmed'"
+                           class="text-center"/>
+                </tree>
+            </field>
+        </record>
+
+
+        <!-- TREE: dòng chi tiết nhu cầu đào tạo -->
+       <record id="view_recruitment_needs_form" model="ir.ui.view">
+        <field name="name">recruitment.needs.form</field>
+        <field name="model">recruitment.needs</field>
+        <field name="arch" type="xml">
+            <form string="Nhu cầu đào tạo">
+                <header>
+                    <!-- ĐĂNG KÝ (draft -> pending) -->
+                    <button name="action_approve"
+                            string="Xác nhận"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+
+                    <!-- Thanh trạng thái -->
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,pending,approved"/>
+                </header>
+
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" string="Đợt khảo sát"/>
+                            <!-- Người đăng ký: readonly, luôn hiển thị -->
+                            <field name="department_id" string="Phòng ban đăng ký" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="create_date" string="Ngày đăng ký" readonly="1"/>
+
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Nhu cầu đào tạo">
+                            <field name="line_ids"
+                                   options="{'no_open': True}"
+                                   readonly="state == 'confirmed'">
+
+                                <tree string="Nhu cầu đào tạo"
+                                      editable="bottom"
+                                      readonly="parent.state == 'confirmed'">
+
+                                    <field name="job_id" class="text-center"/>
+                                    <field name="experience_id" class="text-center"/>
+                                    <field name="amount"/>
+                                    <field name="professional_qualification"/>
+                                    <field name="note" class="text-center"/>
+
+                                </tree>
+                            </field>
+
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+
+        <!-- ACTION -->
+        <record id="action_recruitment_needs" model="ir.actions.act_window">
+            <field name="name">Nhu cầu đào tạo</field>
+            <field name="res_model">recruitment.needs</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_ids" eval="[
+                (5, 0, 0),
+                (0, 0, {'view_id': ref('view_recruitment_needs_tree'), 'view_mode': 'tree'}),
+                (0, 0, {'view_id': ref('view_recruitment_needs_form'), 'view_mode': 'form'}),
+            ]"/>
+        </record>
+
+
+    </data>
+</odoo>
