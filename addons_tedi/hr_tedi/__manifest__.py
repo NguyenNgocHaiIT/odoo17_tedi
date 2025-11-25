@@ -2,7 +2,7 @@
     'name': 'HR Tedi',
     'version': '1.0',
     'summary': 'Quản lý nhân viên Tedi',
-    'category': 'Human Resources',
+    'category': 'TEDI/Quản lý nhân viên',
     'author': 'Phạm Hải Huy',
     'website': 'https://yourcompany.com',
     'depends': ['hr', 'base','hr_skills'],  # thêm 'base' cho chắc chắn khi có model/attachment
