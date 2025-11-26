@@ -38,7 +38,6 @@
                 sequence="13"/>
         <menuitem id="fleet_management_menu_root"
                   name="Quản lý đội xe"
-                  parent="office_document_menu_root"
                   sequence="40"/>
 
         <menuitem id="menu_hr_tedi_vehicle_record"
