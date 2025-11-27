@@ -10,28 +10,26 @@ class OfficeTask(models.Model):
     _inherit = 'project.task'
 
     don_vi = fields.Many2one('hr.department', string='Đơn vị')
-    thoi_han = fields.Date(string='Thời hạn')
-    noi_dung = fields.Text(string='Nội dung công việc')
+
     trang_thai = fields.Selection([
         ('draft', 'Nháp'),
         ('da_giao', 'Đã giao')
     ], string='trạng thái', default='draft')
 
+    task_type = fields.Selection([
+        ('cong_van_di', 'Công việc của công văn đi'),
+        ('quyet_dinh', 'công việc của quyết định'),
+        ('cong_van_di_noi_bo', 'công việc của công văn đi nội bộ'),
+    ], string='Loại công việc')
+
     @api.model
     def create(self, vals):
-        if vals.get('noi_dung') and not vals.get('name'):
-            vals['name'] = vals['noi_dung']
+        vals['project_id'] = False
         return super().create(vals)
 
-    def write(self, vals):
-        if 'noi_dung' in vals:
-            vals['name'] = vals['noi_dung']
-        return super().write(vals)
 
-    @api.onchange('noi_dung')
-    def _onchange_noi_dung_set_name(self):
-        if self.noi_dung:
-            self.name = self.noi_dung
+    def write(self, vals):
+        return super().write(vals)
 
     def action_create_document(self):
         outgoing_form_id = self.env.ref('quan_ly_cong_van.office_document_outgoing_form').id
@@ -44,9 +42,40 @@ class OfficeTask(models.Model):
             'target': 'new',
             'context': {
                 'default_document_type': 'outgoing',
-                'default_phan_loai_van_ban': 'outside',
                 'default_task_id': self.id,
-                'default_trich_yeu': self.noi_dung,
+                'default_trich_yeu': self.name,
+            },
+        }
+
+    def action_create_resolution(self):
+        resolution_form_id = self.env.ref('quan_ly_cong_van.office_document_resolution_form').id
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Tạo quyết định',
+            'res_model': 'office.document',
+            'view_mode': 'form',
+            'view_id': resolution_form_id,
+            'target': 'new',
+            'context': {
+                'default_document_type': 'resolution',
+                'default_task_id': self.id,
+                'default_trich_yeu': self.name,
+            },
+        }
+
+    def action_create_internal_document(self):
+        outgoing_form_id = self.env.ref('quan_ly_cong_van.office_document_outgoing_form').id
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Tạo công văn đi',
+            'res_model': 'office.document',
+            'view_mode': 'form',
+            'view_id': outgoing_form_id,
+            'target': 'new',
+            'context': {
+                'default_document_type': 'outgoing_internal',
+                'default_task_id': self.id,
+                'default_trich_yeu': self.name,
             },
         }
 
@@ -70,3 +99,10 @@ class OfficeTask(models.Model):
             ],
             'target': 'main',
         }
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        if 'task_type' in fields_list and self._context.get('task_type'):
+            res['task_type'] = self._context.get('task_type')
+        return res
