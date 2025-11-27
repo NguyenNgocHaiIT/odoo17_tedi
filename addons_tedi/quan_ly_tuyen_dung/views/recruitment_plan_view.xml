@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- LIST -->
+    <record id="view_recruitment_plan_tree" model="ir.ui.view">
+      <field name="name">recruitment.plan.tree</field>
+      <field name="model">recruitment.plan</field>
+      <field name="arch" type="xml">
+        <tree string="Kế hoạch tuyển dụng" >
+          <field name="stt" string="STT" width="80"/>
+          <field name="plan_code" string="Số kế hoạch"/>
+          <field name="plan_execute_date" string="Ngày thực hiện"/>
+          <field name="plan_name" string="Tên kế hoạch"/>
+          <field name="plan_purpose" string="Mục đích"/>
+          <field name="total_applicant_request" string="Số lượng"/>
+          <field name="recruitment_status"  widget="badge"  decoration-success="recruitment_status == 'complete'" decoration-warning="recruitment_status == 'waiting'" decoration-danger="recruitment_status == 'draft'" string="Trạng thái" class="text-center"/>
+        </tree>
+      </field>
+    </record>
+
+    <!-- DETAIL: TREE (o2m) -->
+    <record id="view_recruitment_plan_detail_tree" model="ir.ui.view">
+      <field name="name">recruitment.plan.detail.tree</field>
+      <field name="model">recruitment.plan.detail</field>
+      <field name="arch" type="xml">
+        <tree string="Thông tin chi tiết" editable="bottom">
+          <field name="stt" string="STT" readonly="1" width="60"/>
+          <field name="department_request" string="Phòng ban yêu cầu"/>
+          <field name="recruitment_job" string="Vị trí tuyển dụng" required="1"/>
+          <field name="requested_quantity" string="Số lượng cần tuyển" required="1"/>
+          <field name="experient_request_id"
+                 string="Yêu cầu kinh nghiệm"
+                 domain="[]"
+                 context="{'default_active': True}"
+                 options="{'no_quick_create': True}"/>
+          <field name="professional_qualification" string="Trình độ chuyên môn"/>
+          <field name="attachment_ids" string="Mô tả công việc" widget="many2many_binary"/>
+          <field name="note" string="Ghi chú"/>
+
+          <!-- Thay tags bằng button -->
+          <button name="action_open_old_applicant_wizard"
+                  type="object"
+                  string="Thêm ứng viên"
+                  class="btn btn-primary"/>
+        </tree>
+      </field>
+    </record>
+
+
+
+
+    <!-- DETAIL: FORM (popup) -->
+    <record id="view_recruitment_plan_detail_form" model="ir.ui.view">
+      <field name="name">recruitment.plan.detail.form</field>
+      <field name="model">recruitment.plan.detail</field>
+      <field name="arch" type="xml">
+        <form string="Dòng kế hoạch">
+          <header>
+            <!-- Stat button hiển thị số ứng viên đã chọn -->
+            <button type="object"
+                    name="action_open_old_applicant_wizard"
+                    class="oe_stat_button"
+                    icon="fa-users">
+              <field name="nomination_ids" widget="statinfo" string="Ứng viên cũ"/>
+            </button>
+          </header>
+
+          <group>
+            <group>
+              <field name="stt" readonly="1" string="STT"/>
+              <field name="department_request" string="Phòng ban yêu cầu"/>
+              <field name="recruitment_job" string="Vị trí tuyển dụng" required="1"/>
+              <field name="requested_quantity" string="Số lượng cần tuyển" required="1"/>
+            </group>
+            <group>
+              <field name="experient_request_id"
+                     string="Yêu cầu kinh nghiệm"
+                     domain="[]"
+                     context="{'default_active': True}"
+                     options="{'no_quick_create': True}"/>
+              <field name="professional_qualification" string="Trình độ chuyên môn"/>
+              <field name="note" string="Ghi chú"/>
+            </group>
+          </group>
+
+          <separator string="Tài liệu mô tả công việc"/>
+          <field name="attachment_ids" widget="many2many_binary"/>
+
+          <!-- BỎ field nomination_ids ở FORM, thay bằng nút ở header -->
+          <!-- <field name="nomination_ids" .../> -->
+
+            <footer>
+              <button string="Chọn ứng viên cũ"
+                      name="action_open_old_applicant_wizard"
+                      type="object"
+                      class="btn-secondary"/>
+              <button string="Lưu" class="btn-primary" special="save"/>
+              <button string="Đóng" class="btn-secondary" special="cancel"/>
+            </footer>
+
+        </form>
+      </field>
+    </record>
+
+    <!-- PLAN: FORM -->
+    <record id="view_recruitment_plan_form" model="ir.ui.view">
+      <field name="name">recruitment.plan.form</field>
+      <field name="model">recruitment.plan</field>
+      <field name="arch" type="xml">
+        <form string="KẾ HOẠCH" class="tedi-plan-form" create="true" edit="true">
+          <!-- Các field dùng trong modifier phải có mặt trong view -->
+          <field name="recruitment_status" invisible="1"/>
+          <field name="is_applied_to_jobs" invisible="1"/>
+
+          <header>
+            <field name="recruitment_status" widget="statusbar" statusbar_visible="draft,board_approve,director_approve,complete"/>
+
+            <!-- Trình duyệt: chỉ khi draft -->
+            <button name="action_submit" type="object" string="Trình duyệt"
+                    class="btn-primary"
+                    groups="quan_ly_tuyen_dung.group_recruitment_committee"
+                    invisible="recruitment_status != 'draft'"/>
+
+             <!-- Hoàn thành: chỉ Board -->
+            <button name="action_board_approve" type="object" string="Phê duyệt"
+                    class="btn-success"
+                    groups="quan_ly_tuyen_dung.group_recruitment_board "
+                    invisible="recruitment_status != 'board_approve' or is_applied_to_jobs"/>
+
+            <!-- Hoàn thành: chỉ Director -->
+            <button name="action_director_approve" type="object" string="Hoàn Thành"
+                    class="btn-success"
+                    groups="quan_ly_tuyen_dung.group_recruitment_director "
+                    invisible="recruitment_status != 'director_approve' or is_applied_to_jobs"/>
+
+          </header>
+
+          <sheet>
+            <group>
+              <group>
+                <field name="plan_code" required="1" readonly="1"/>
+                <field name="plan_execute_date" required="1" readonly="recruitment_status != 'draft'"/>
+                <field name="plan_name" required="1" readonly="recruitment_status != 'draft'"/>
+                <field name="survey_id"   readonly="recruitment_status != 'draft'"/>
+              </group>
+              <group>
+                <field name="plan_purpose" readonly="recruitment_status != 'draft'"/>
+                <field name="plan_fund" widget="monetary" options="{'currency_field': 'currency_id'}"
+                       readonly="recruitment_status != 'draft'"/>
+                <field name="department_responsible" readonly="recruitment_status != 'draft'"/>
+                <field name="people_suggestion" readonly="recruitment_status != 'draft'"/>
+              </group>
+            </group>
+
+<!--            <separator string="THÔNG TIN CHI TIẾT" colspan="2"/>-->
+            <notebook class ="tedi-notebook">
+                <page string = "THÔNG TIN CHI TIẾT">
+                    <div style="width:100%;border-top:2px dashed #ccc;margin:0px 0;"/>
+
+                    <field name="recruitment_plan_detail_ids"
+                           nolabel="1"
+                           context="{'default_plan_id': id}"
+                           mode="tree,form"
+                           readonly="recruitment_status != 'draft'">
+                      <tree ref="view_recruitment_plan_detail_tree"/>
+                      <form ref="view_recruitment_plan_detail_form"/>
+                    </field>
+                </page>
+            </notebook>
+            <!-- O2M: khoá khi complete -->
+
+
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_recruitment_plan" model="ir.actions.act_window">
+      <field name="name">Kế hoạch tuyển dụng</field>
+      <field name="res_model">recruitment.plan</field>
+      <field name="view_mode">tree,form</field>
+      <field name="context">{'active_test': False}</field>
+      <field name="help" type="html">
+        <p class="o_view_nocontent_smiling_face">
+          Tạo kế hoạch tuyển dụng đầu tiên của bạn
+        </p>
+      </field>
+    </record>
+
+    <!-- MENU (tùy bạn đã có root hay chưa, mình chỉ tạo action nếu cần) -->
+<!--    <menuitem id="menu_recruitment_plan_root" name="Kế hoạch tuyển dụng"-->
+<!--              parent="hr_recruitment.menu_hr_recruitment_root"-->
+<!--              action="action_recruitment_plan" sequence="5"/>-->
+
+</odoo>
+
+
+
+

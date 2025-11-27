@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit the backend assets template. Use <template inherit_id="web.assets_backend"> -->
+    <template id="assets_backend_section_note_style" inherit_id="web.assets_backend">
+        <xpath expr="." position="inside">
+            <style type="text/css">
+                /* Tree view One2many */
+                .o_field_tree .o_is_line_section .o_field_char,
+                .o_field_tree .o_is_line_section .o_field_text {
+                    font-weight: bold;
+                    font-style: italic;
+                    color: #0a6ebd;
+                }
+                .o_field_tree .o_is_line_note .o_field_char,
+                .o_field_tree .o_is_line_note .o_field_text {
+                    color: #6c757d;
+                    font-style: italic;
+                }
+
+                /* Form view One2many */
+                .o_form_view .o_is_line_section .o_field_char,
+                .o_form_view .o_is_line_section .o_field_text {
+                    font-weight: bold;
+                    font-style: italic;
+                    color: #0a6ebd;
+                }
+                .o_form_view .o_is_line_note .o_field_char,
+                .o_form_view .o_is_line_note .o_field_text {
+                    color: #6c757d;
+                    font-style: italic;
+                }
+            </style>
+        </xpath>
+    </template>
+</odoo>

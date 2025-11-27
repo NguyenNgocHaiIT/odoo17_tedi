@@ -2,7 +2,7 @@
     'name': 'TEDI: Hide menu',
     'version': '1.0',
     'summary': '',
-    'category': '',
+    'category': 'TEDI/Hide Menu',
     'author': 'HaiNN',
     'website': 'https://yourcompany.com',
     'depends': ['hr', 'base'],  # thêm 'base' cho chắc chắn khi có model/attachment

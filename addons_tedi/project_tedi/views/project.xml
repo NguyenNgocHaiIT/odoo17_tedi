@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+
+        <record id="view_project_form" model="ir.ui.view">
+            <field name="name">view_project_form</field>
+            <field name="model">project.project</field>
+            <field name="arch" type="xml">
+                <form delete="false" duplicate="false">
+                    <header>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1 class="d-flex flex-row">
+                                <field name="name" widget="text" class="o_text_overflow"
+                                       placeholder="e.g. Office Party"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="code"/>
+                                <field name="partner_id"/>
+                                <field name="phan_loai_goi_thau"/>
+                                <field name="phan_loai_cong_trinh"/>
+                            </group>
+                            <group>
+                                <field name="user_id" string="Giám đốc điều hành dự án"/>
+                                <field name="project_state_ids" widget="many2many_tags"/>
+                                <field name="date" invisible="1"/>
+                                <field name="date_start" string="Thời gian kế hoạch" widget="daterange"
+                                       options='{"end_date_field": "date", "always_range": "1"}'
+                                       required="date_start or date"/>
+                                <field name="contract_id"/>
+                                <field name="company_id"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page name="phan_cong_giao_nhiem_vu" string="Bảng phân công, giao nhiệm vụ">
+                                <label for="giao_nhiem_vu_attachment_id" string="Phân công giao nhiệm vụ:"/>
+                                <field name="giao_nhiem_vu_attachment_id" widget="many2many_binary"/>
+                                <field name="giao_nhiem_vu" mode="tree">
+                                    <tree editable="bottom">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="department_id"/>
+                                        <field name="nhiem_vu"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page name="member" string="Danh sách tổng thể">
+                                <field name="project_member_ids" widget="section_and_note_one2many" mode="tree,kanban">
+                                    <tree editable="bottom">
+                                        <control>
+                                            <create name="add_section_control" string="Thêm khối nhân sự"
+                                                    context="{'default_display_type': 'line_section'}"/>
+                                            <create name="add_product_control" string="Thêm nhân sự dự án"/>
+                                            <create name="add_note_control" string="Thêm ghi chú"
+                                                    context="{'default_display_type': 'line_note'}"/>
+                                            <!--                                    <button name="action_add_from_catalog" string="Catalog" type="object" class="px-4 btn-link" context="{'order_id': parent.id}"/>-->
+                                        </control>
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="name" widget="section_and_note_text"/>
+                                        <field name="display_type" column_invisible="True"/>
+                                        <field name="employee_id"/>
+                                        <field name="job_id"/>
+                                        <field name="department_id"/>
+                                        <field name="job_tile"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page name="Khảo sát">
+
+                            </page>
+                            <page name="Thiết kế">
+
+                            </page>
+                            <page name="Tư vấn giám sát">
+
+                            </page>
+                            <page name="Thông tin, xử lý khiếu nại khách hàng">
+
+                            </page>
+                            <page name="Nghiệm thu; thanh, quyết toán">
+
+                            </page>
+                        </notebook>
+
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_custom_project" model="ir.actions.act_window">
+            <field name="name">Dự án</field>
+            <field name="res_model">project.project</field>
+            <field name="view_mode">tree,kanban,form</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('project.view_project')}),
+                (0, 0, {'view_mode': 'kanban', 'view_id': ref('project.view_project_config_kanban')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_project_form')})]"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Tạo dự án mới
+                </p>
+            </field>
+        </record>
+    </data>
+</odoo>

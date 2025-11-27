@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <record id="view_hr_job_form_tedi" model="ir.ui.view">
+    <field name="name">hr.job.form.tedi</field>
+    <field name="model">hr.job</field>
+    <!-- ✅ Kế thừa form gốc của module hr -->
+    <field name="inherit_id" ref="hr.view_hr_job_form"/>
+    <!-- Ưu tiên cao, để chạy sau các view khác (kể cả hr_recruitment) -->
+    <field name="priority">200</field>
+    <field name="arch" type="xml">
+
+      <!-- ✅ Thay nguyên tab chứa no_of_recruitment bằng tab "Tuyển dụng" của bạn -->
+      <xpath expr="//field[@name='no_of_recruitment']/ancestor::page[1]" position="replace">
+        <page string="Tuyển dụng" name="recruitment_page">
+          <group>
+            <group>
+              <field name="department_id" string="Bộ phận"/>
+              <field name="work_location_id" string="Nơi làm việc"/>
+              <!-- Tránh trùng label với alias khác -->
+              <field name="email_alias" string="Bí danh email"/>
+              <field name="contract_type_id" string="Loại việc làm"/>
+            </group>
+            <group>
+              <field name="no_of_recruitment" string="Số lượng"/>
+              <!-- domain interviewer_ids cần allowed_user_ids (ẩn) -->
+              <field name="allowed_user_ids" invisible="1"/>
+              <field name="user_id" string="Người tuyển dụng" widget="many2one_avatar_user"/>
+              <field name="interviewer_ids" string="Người phỏng vấn"
+                     widget="many2many_tags_avatar"
+                     options="{'no_create': True, 'no_create_edit': True}"/>
+            </group>
+          </group>
+        </page>
+
+      </xpath>
+
+      <!-- ✅ Đổi tiêu đề tab mô tả (bắt neo theo field trong tab đó) -->
+      <xpath expr="//field[@name='description']/ancestor::page[1]" position="attributes">
+        <attribute name="string">Tóm tắt công việc</attribute>
+      </xpath>
+
+      <!-- ✅ Ẩn chatter (dùng hasclass theo khuyến nghị) -->
+      <xpath expr="//div[hasclass('oe_chatter') or hasclass('o_ChatterContainer')]" position="attributes">
+        <attribute name="style">visibility:hidden; min-width:420px;</attribute>
+      </xpath>
+
+    </field>
+  </record>
+
+  <!-- Action mở form full-page -->
+  <record id="action_open_job_form_tedi" model="ir.actions.act_window">
+    <field name="name">Create Job (Tedi)</field>
+    <field name="res_model">hr.job</field>
+    <field name="view_mode">form</field>
+    <field name="view_id" ref="view_hr_job_form_tedi"/>
+    <field name="target">current</field>
+    <field name="context">
+      {
+        'form_view_ref': 'quan_ly_tuyen_dung.view_hr_job_form_tedi',
+        'default_active': True
+      }
+    </field>
+  </record>
+
+  <!-- Kế thừa kanban: bỏ modal on_create, click mở form full-page -->
+  <record id="view_hr_job_kanban_inherit_tedi" model="ir.ui.view">
+    <field name="name">hr.job.kanban.inherit.tedi</field>
+    <field name="model">hr.job</field>
+    <field name="inherit_id" ref="hr_recruitment.view_hr_job_kanban"/>
+    <field name="priority">200</field>
+    <field name="arch" type="xml">
+      <xpath expr="//kanban" position="attributes">
+        <attribute name="action">%(action_open_job_form_tedi)d</attribute>
+        <attribute name="on_create"/>
+      </xpath>
+    </field>
+  </record>
+
+</odoo>

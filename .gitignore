@@ -51,3 +51,6 @@ package.json
 /share/
 /src/
 /filedata/
+/odoo/__pycache__
+/odoo/tools/_vendor/__pycache__
+*.pyc

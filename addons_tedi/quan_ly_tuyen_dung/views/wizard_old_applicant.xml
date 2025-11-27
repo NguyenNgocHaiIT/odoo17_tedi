@@ -1,0 +1,54 @@
+<!-- views/wizard_old_applicant.xml -->
+<odoo>
+  <record id="view_old_applicant_suggest_wizard_form" model="ir.ui.view">
+    <field name="name">old.applicant.suggest.wizard.form</field>
+    <field name="model">old.applicant.suggest.wizard</field>
+    <field name="arch" type="xml">
+    <form string="DANH SÁCH ỨNG VIÊN CŨ" class="tedi-old-applicant-modal">
+      <sheet>
+        <field name="detail_id" invisible="1"/>
+         <field name="applicant_ids"
+               nolabel="1"
+               mode="tree"
+               domain="['|', ('refuse_reason_id','!=',False), ('active','=',False)]"
+               context="{'active_test': False, 'open_tree_edit': False}"
+               options="{'no_open': True, 'no_create': True, 'no_edit': True, 'no_create_edit': True}">
+          <tree class="o_list_no_open" create="false" edit="false" delete="true">
+            <field name="partner_name" readonly="1"/>
+            <field name="job_id" readonly="1"/>
+<!--            <field name="stage_id" readonly="1"/>-->
+            <field name="priority" readonly="1"/>
+
+            <button name="action_open_applicant_from_wizard"
+                    type="object"
+                    string="Mở"
+                    class="oe_highlight"
+                    context="{'form_view_ref': 'hr_recruitment.hr_applicant_view_form'}"/>
+          </tree>
+        </field>
+
+
+
+
+
+
+
+      </sheet>
+      <footer>
+        <button string="Xác nhận" name="action_confirm" type="object" class="btn-primary"/>
+        <button string="Hủy" special="cancel" class="btn-secondary"/>
+      </footer>
+    </form>
+
+
+    </field>
+  </record>
+
+  <record id="action_old_applicant_suggest_wizard" model="ir.actions.act_window">
+    <field name="name">Chọn ứng viên cũ</field>
+    <field name="res_model">old.applicant.suggest.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+    <field name="context">{'active_test': False}</field>
+  </record>
+</odoo>
