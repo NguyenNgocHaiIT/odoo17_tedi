@@ -470,8 +470,8 @@ class OfficeDocument(models.Model):
         ('da_duyet', 'Đã duyệt'),
         ('cho_but_phe', 'Chờ bút phê'),
         ('cho_phan_phat', 'Chờ phân phát'),
-        ('cho_xu_ly', 'Chờ xử lý'),
-        ('da_xu_ly', 'Đã xử lý')
+        ('cho_xu_ly', 'Đã phân phát'),
+        ('phat_hanh', 'Phát hành'),
     ], string='Trạng thái văn bản', default='draft', tracking=True)
     dv_xu_ly_chinh = fields.Many2many(
         'hr.department',
@@ -643,14 +643,29 @@ class OfficeDocument(models.Model):
         if 'ngay_bat_dau' in vals and not vals.get('han_ket_thuc'):
             vals['han_ket_thuc'] = fields.Date.from_string(vals['ngay_bat_dau']) + timedelta(days=7)
 
-        can_duyet_val = vals.get('can_duyet')
+        can_duyet_val = vals.get('can_duyet', self._fields['can_duyet'].default(self))
+        document_type_val = vals.get('document_type')
         user = self.env.user
         # Nếu chưa set tt_vb từ form, thì set lại khi lưu
-        if user.has_group('quan_ly_cong_van.group_van_thu'):
+        if (
+                user.has_group('quan_ly_cong_van.group_van_thu')
+                and document_type_val in ('incoming', 'incoming_internal')
+        ):
             vals['tt_vb'] = 'da_duyet'
-        elif can_duyet_val is True:
+        elif (
+                can_duyet_val is True
+                and document_type_val in ('outgoing', 'outgoing_internal','resolution')
+        ):
             vals['tt_vb'] = 'draft'
-        elif user.has_group('quan_ly_cong_van.group_don_vi_xu_ly'):
+        elif (
+                can_duyet_val is False
+                and document_type_val in ('outgoing', 'outgoing_internal','resolution')
+        ):
+            vals['tt_vb'] = 'da_duyet'
+        elif (
+                user.has_group('quan_ly_cong_van.group_don_vi_xu_ly')
+                and document_type_val in ('incoming', 'incoming_internal')
+        ):
             vals['tt_vb'] = 'cho_duyet'
         else:
             vals['tt_vb'] = 'cho_duyet'
@@ -817,7 +832,7 @@ class OfficeDocument(models.Model):
 
     def phat_hanh(self):
         self.ensure_one()
-        self.tt_vb = 'da_xu_ly'
+        self.tt_vb = 'phat_hanh'
         return True
 
 class AssignTaskWizard(models.TransientModel):

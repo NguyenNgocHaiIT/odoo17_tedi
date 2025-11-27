@@ -29,13 +29,35 @@
                 action="action_open_office_document_outgoing"
                 sequence="12"/>
 
+        <menuitem
+                id="Office_task_menu_outgoing"
+                name="Giao việc"
+                parent="document_outgoing_menu"
+                action="action_open_office_document_task"
+                sequence="16"/>
+
         <!-- Menu Quyết định -->
         <menuitem
                 id="document_resolution_menu"
                 name="Quyết định"
                 parent="office_document_menu_root"
+                sequence="13"/>
+
+        <menuitem
+                id="document_resolution_menu_item"
+                name="Quyết định"
+                parent="document_resolution_menu"
                 action="action_open_office_document_resolution"
                 sequence="13"/>
+
+        <menuitem
+                id="Office_task_menu_resolution"
+                name="Giao việc"
+                parent="document_resolution_menu"
+                action="action_open_office_resolution_task"
+                sequence="16"/>
+
+        <!--Menu quản lý đội xe-->
         <menuitem id="fleet_management_menu_root"
                   name="Quản lý đội xe"
                   sequence="40"/>
@@ -74,16 +96,23 @@
                 id="document_internal_outgoing_menu"
                 name="Công văn nội bộ đi"
                 parent="office_document_menu_root"
+                sequence="15"/>
+
+        <menuitem
+                id="document_internal_outgoing_menu_item"
+                name="Công văn nội bộ đi"
+                parent="document_internal_outgoing_menu"
                 action="action_open_office_document_internal_outgoing"
                 sequence="15"/>
 
         <menuitem
-                id="Office_task_menu"
+                id="Office_task_menu_iternal_document"
                 name="Giao việc"
-                parent="document_outgoing_menu"
-                action="action_open_office_task"
+                parent="document_internal_outgoing_menu"
+                action="action_open_office_internal_document_task"
                 sequence="16"/>
 
+        <!--Menu cấu hình-->
         <menuitem
                 id="menu_office_document_setting"
                 name="Cấu hình"
