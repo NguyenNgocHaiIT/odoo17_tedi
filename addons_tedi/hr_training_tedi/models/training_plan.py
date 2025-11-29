@@ -152,13 +152,13 @@ class TrainingPlan(models.Model):
     #      ====== CREATE - WRITE ======
     # =========================================
 
-    def _check_participant(self):
-        if self.env.user.has_group(PARTICIPANT):
-            raise AccessError(_("Participant không được thực hiện thao tác này"))
+    # def _check_participant(self):
+    #     if self.env.user.has_group(PARTICIPANT):
+    #         raise AccessError(_("Participant không được thực hiện thao tác này"))
 
 
     def create(self, vals):
-        self._check_participant()
+        # self._check_participant()
         rec = super().create(vals)
         if vals.get('survey_id'):
             rec._generate_from_survey()
@@ -335,11 +335,11 @@ class TrainingPlanDetail(models.Model):
             detail.student_count = count
             detail.training_total_fee = (detail.training_fee_per_person or 0.0) * count
 
-    def _check_participant(self):
-        if self.env.user.has_group(PARTICIPANT):
-            raise AccessError(_("Participant không được thực hiện thao tác này"))
+    # def _check_participant(self):
+    #     if self.env.user.has_group(PARTICIPANT):
+    #         raise AccessError(_("Participant không được thực hiện thao tác này"))
 
     @api.model
     def create(self, vals):
-        self._check_participant()
+        # self._check_participant()
         return super().create(vals)
