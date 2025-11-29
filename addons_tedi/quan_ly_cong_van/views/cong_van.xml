@@ -34,7 +34,7 @@
                                 invisible="tt_vb != 'cho_but_phe'"/>
                         <button name="phan_phat" string="Phân phát" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
+                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly'))"/>
                     </header>
                     <sheet>
                         <group>
@@ -219,13 +219,13 @@
                                 invisible="tt_vb != 'da_duyet'"/>
                         <button name="phat_hanh" string="Phát hành" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
+                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly'))"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
                                 invisible="tt_vb != 'cho_but_phe'"/>
                         <button name="phan_phat" string="Phân phát" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
+                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly'))"/>
                     </header>
                     <sheet>
                         <label for="trich_yeu" string="Trích yếu"/>
@@ -406,13 +406,13 @@
                                 invisible="tt_vb != 'da_duyet'"/>
                         <button name="phat_hanh" string="Phát hành" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
+                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly'))"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
                                 invisible="tt_vb != 'cho_but_phe'"/>
                         <button name="phan_phat" string="Phân phát" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'da_xu_ly', 'cho_xu_ly'))"/>
+                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly'))"/>
                     </header>
                     <sheet>
                         <field name="tt_vb" invisible="1"/>
