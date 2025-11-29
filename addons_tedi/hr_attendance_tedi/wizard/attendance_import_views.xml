@@ -7,23 +7,35 @@
             <field name="model">tedi.attendance.import.wizard</field>
             <field name="arch" type="xml">
                 <form string="Import chấm công từ Excel">
+                    <div class="alert alert-info" role="alert">
+                        <strong>Lưu ý định dạng Excel:</strong><br/>
+                        - Cột A: Mã nhân viên (Bắt buộc)<br/>
+                        - Cột B: Giờ vào (Check In) - Định dạng: yyyy-mm-dd HH:MM<br/>
+                        - Cột C: Giờ ra (Check Out) - Định dạng: yyyy-mm-dd HH:MM<br/>
+                        <i>Hệ thống sẽ tự động tính toán Trạng thái (Đi muộn/Về sớm) sau khi import.</i>
+                    </div>
                     <group>
-                        <field name="file" filename="filename"/>
-                        <field name="filename"/>
+                        <group>
+                            <field name="file" filename="filename"/>
+                            <field name="filename" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="timezone"/>
+                        </group>
                     </group>
                     <footer>
                         <button name="action_import"
                                 type="object"
-                                string="Import"
+                                string="Import dữ liệu"
                                 class="btn-primary"/>
-                        <button string="Hủy" class="btn-secondary" special="cancel"/>
+                        <button string="Đóng" class="btn-secondary" special="cancel"/>
                     </footer>
                 </form>
             </field>
         </record>
 
         <record id="action_tedi_attendance_import" model="ir.actions.act_window">
-            <field name="name">Import Chấm công</field>
+            <field name="name">Import Chấm công Excel</field>
             <field name="res_model">tedi.attendance.import.wizard</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>

@@ -6,6 +6,7 @@ UNIT_MANAGER        = "hr_training_tedi.group_training_unit_manager"
 GENERAL_DIRECTOR    = "hr_training_tedi.group_training_general_director"
 BASE                = "base.group_user"
 
+
 class TrainingPlanParticipation(models.Model):
     _name = 'training.plan.participation'
     _description = 'Training Plan Participation'
@@ -13,7 +14,7 @@ class TrainingPlanParticipation(models.Model):
     training_plan_id = fields.Many2one(
         "training.plan",
         string="Tên kế hoạch",
-        ondelete="cascade",  # ← thêm dòng này
+        ondelete="cascade",
     )
 
     training_plan_detail_id = fields.Many2one(
@@ -29,18 +30,58 @@ class TrainingPlanParticipation(models.Model):
         readonly=True,
     )
 
+    # --- CÁC TRƯỜNG BỔ SUNG (Lấy từ Detail) ---
+
+    start_date = fields.Date(
+        string="Từ ngày",
+        related='training_plan_detail_id.start_date',
+        readonly=True
+    )
+
+    end_date = fields.Date(
+        string="Đến ngày",
+        related='training_plan_detail_id.end_date',
+        readonly=True
+    )
+
+    training_location = fields.Char(
+        string="Địa điểm đào tạo",
+        related='training_plan_detail_id.training_location',
+        readonly=True
+    )
+
+    # Cần trường này để hiển thị đơn vị tiền tệ (VND/USD)
+    currency_id = fields.Many2one(
+        'res.currency',
+        related='training_plan_detail_id.currency_id',
+        string="Tiền tệ",
+        readonly=True
+    )
+
+    training_fee_per_person = fields.Monetary(
+        string="Chi phí/người",
+        related='training_plan_detail_id.training_fee_per_person',
+        currency_field='currency_id',
+        readonly=True
+    )
+
+    training_total_fee = fields.Monetary(
+        string="Tổng chi phí",
+        related='training_plan_detail_id.training_total_fee',
+        currency_field='currency_id',
+        readonly=True
+    )
+
+    # -------------------------------------------
+
     participation_detail_ids = fields.One2many(
         "training.plan.participation.detail",
         "participation_id",
         string="Danh sách đăng ký",
     )
-    def _check_participant(self):
-        if self.env.user.has_group(PARTICIPANT):
-            raise AccessError(_("Participant không được thực hiện thao tác này"))
 
     @api.model
     def create(self, vals):
-        self._check_participant()
         return super().create(vals)
 
 
@@ -54,8 +95,6 @@ class TrainingPlanParticipationDetail(models.Model):
         ondelete="cascade",
     )
 
-    # Nếu mỗi đợt participation chỉ chọn 1 khóa đào tạo,
-    # thì detail cứ related thẳng theo participation_id.training_plan_detail_id
     training_plan_detail_id = fields.Many2one(
         'training.plan.detail',
         string="Khoá đào tạo",
@@ -66,17 +105,16 @@ class TrainingPlanParticipationDetail(models.Model):
 
     user_id = fields.Many2one('res.users', string="Họ và tên")
 
-    # ===== Cơ sở đào tạo lấy từ plan_detail =====
-    training_center = fields.Selection(
-        related='training_plan_detail_id.training_center',
-        string="Cơ sở đào tạo",
+    # --- 1. ĐƠN VỊ (Lấy từ phòng ban của User/Nhân viên) ---
+    department_id = fields.Many2one(
+        'hr.department',
+        string="Đơn vị",
+        related='user_id.employee_id.department_id',
         store=True,
         readonly=True,
     )
 
-
-
-    # ===== Hình thức đào tạo lấy từ plan_detail =====
+    # --- 2. HÌNH THỨC ĐÀO TẠO (Lấy từ Plan Detail) ---
     training_type = fields.Selection(
         [
             ("direct", "Trực tiếp"),
@@ -88,7 +126,20 @@ class TrainingPlanParticipationDetail(models.Model):
         readonly=True,
     )
 
-    # ===== Tiền tệ & Chi phí/người lấy từ plan_detail =====
+    # --- 3. THỜI GIAN (Lấy từ Plan Detail) ---
+    # Lấy text thời gian thực hiện
+    training_time = fields.Char(
+        string="Thời gian",
+        related='training_plan_detail_id.time_of_execution',
+        store=True,
+        readonly=True,
+    )
+
+    # Nếu muốn hiển thị rõ Từ ngày - Đến ngày thì dùng 2 field dưới (Tuỳ chọn)
+    start_date = fields.Date(related='training_plan_detail_id.start_date', string="Từ ngày", readonly=True)
+    end_date = fields.Date(related='training_plan_detail_id.end_date', string="Đến ngày", readonly=True)
+
+    # --- 4. KINH PHÍ (Lấy từ Plan Detail) ---
     currency_id = fields.Many2one(
         'res.currency',
         related='training_plan_detail_id.currency_id',
@@ -105,19 +156,14 @@ class TrainingPlanParticipationDetail(models.Model):
         readonly=True,
     )
 
-    training_time = fields.Char(
-        string="Thời gian" ,
-        related='training_plan_detail_id.time_of_execution',
+    # --- 5. GHI CHÚ (Lấy từ Plan Detail theo yêu cầu) ---
+    note = fields.Char(
+        string="Ghi chú",
+        related='training_plan_detail_id.note',
         store=True,
-        readonly=True,
+        readonly=True
     )
-    note = fields.Char(string="Ghi chú")
-
-    def _check_participant(self):
-        if self.env.user.has_group(PARTICIPANT):
-            raise AccessError(_("Participant không được thực hiện thao tác này"))
 
     @api.model
     def create(self, vals):
-        self._check_participant()
         return super().create(vals)

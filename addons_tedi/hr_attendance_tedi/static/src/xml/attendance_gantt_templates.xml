@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_attendance_tedi.AttendanceGantt">
+      <Layout display="{'controlPanel': true}" className="'h-100 d-flex flex-column overflow-hidden bg-white'">
+
+        <div class="o_tedi_attendance_gantt d-flex flex-column h-100 w-100 bg-white">
+
+          <div class="o_tedi_ag_header d-flex align-items-center p-2 border-bottom gap-3 flex-shrink-0 bg-white">
+              <div class="d-flex align-items-center gap-2">
+                  <div class="btn-group">
+                      <button type="button" class="btn btn-outline-secondary" t-on-click="goPrev"><i class="fa fa-chevron-left"/></button>
+                      <button type="button" class="btn btn-outline-secondary" t-on-click="goToToday">Hôm nay</button>
+                      <button type="button" class="btn btn-outline-secondary" t-on-click="goNext"><i class="fa fa-chevron-right"/></button>
+                  </div>
+                  <h4 class="m-0 text-primary fw-bold ms-2"><t t-esc="state.viewLabel"/></h4>
+              </div>
+
+              <div class="ms-auto d-flex align-items-center gap-2">
+                  <div class="d-flex align-items-center gap-1 bg-light p-1 rounded border">
+                      <input type="date"
+                             class="form-control form-control-sm border-0 bg-transparent"
+                             style="width: 130px;"
+                             t-att-value="state.inputStart"
+                             t-on-change="onDateChange"/>
+                  </div>
+
+                  <div class="btn-group" role="group">
+                      <button type="button" class="btn"
+                          t-att-class="state.mode == 'day' ? 'btn-primary' : 'btn-outline-primary'"
+                          t-on-click="() => this.setViewMode('day')">Ngày</button>
+
+                      <button type="button" class="btn"
+                          t-att-class="state.mode == 'week' ? 'btn-primary' : 'btn-outline-primary'"
+                          t-on-click="() => this.setViewMode('week')">Tuần</button>
+
+                      <button type="button" class="btn"
+                          t-att-class="state.mode == 'month' ? 'btn-primary' : 'btn-outline-primary'"
+                          t-on-click="() => this.setViewMode('month')">Tháng</button>
+                  </div>
+              </div>
+          </div>
+
+          <div class="o_tedi_ag_table_wrapper overflow-auto bg-white"
+               style="flex: 1 1 0; min-height: 0; width: 100%; position: relative;">
+
+            <table class="o_tedi_ag_table table table-sm table-bordered text-center table-hover mb-0"
+                   style="width: max-content; min-width: 100%; table-layout: fixed;">
+
+              <thead class="table-light sticky-top" style="top: 0; z-index: 20;">
+                <tr>
+                  <th class="o_tedi_ag_col_employee text-start align-middle shadow-sm"
+                      style="width: 170px; min-width: 170px; max-width: 170px; position: sticky; left: 0; z-index: 30; background-color: #f8f9fa;">
+                    Nhân viên
+                  </th>
+
+                  <t t-if="state.mode == 'day'">
+                      <t t-foreach="state.hours" t-as="hour" t-key="hour">
+                          <th class="align-middle text-muted small" style="min-width: 45px;">
+                              <t t-esc="hour"/>h
+                          </th>
+                      </t>
+                  </t>
+
+                  <t t-else="">
+                      <t t-foreach="state.days" t-as="dayInfo" t-key="dayInfo.keyStr">
+                        <th class="o_tedi_ag_col_day align-middle p-0"
+                            t-att-style="state.mode === 'month'
+                                              ? 'width: 40px; min-width: 40px; max-width: 40px; box-sizing: border-box;'
+                                              : 'width: 150px; min-width: 150px; max-width: 150px; box-sizing: border-box;'">
+
+                          <div class="d-flex flex-column justify-content-center w-100 h-100 overflow-hidden">
+                              <div class="small fw-bold text-truncate"><t t-esc="dayInfo.label"/></div>
+                              <div class="small text-muted text-truncate" style="font-size: 0.7rem;" t-if="state.mode == 'week'">
+                                  <t t-esc="dayInfo.fullDate"/>
+                              </div>
+                          </div>
+                        </th>
+                      </t>
+                  </t>
+                </tr>
+              </thead>
+
+              <tbody>
+                  <t t-foreach="state.rowsData" t-as="row" t-key="row.id">
+                    <tr>
+
+                      <td class="o_tedi_ag_employee_cell text-start fw-bold align-middle bg-white"
+                          t-att-class="row.isEditable ? 'cursor-pointer' : 'text-muted'"
+                          t-attf-style="position: sticky; left: 0; z-index: 10; border-right: 2px solid #dee2e6;"
+                          t-on-click="state.mode == 'day' ? () => onCreateFromEmployee(row.id) : null">
+                          <t t-esc="row.name"/>
+                      </td>
+
+                      <t t-if="state.mode == 'day'">
+                        <td colspan="24"
+                            class="p-1 align-middle"
+                            t-att-class="row.isEditable ? 'cursor-pointer' : ''"
+                            t-att-style="row.isEditable ? 'background-color: #fcfcfc;' : 'background-color: #f2f2f2; cursor: not-allowed;'"
+                            t-on-click="() => onCreateFromEmployee(row.id)">
+
+                            <t t-set="currentDaySegs" t-value="row.segmentsByDate[state.inputStart] || []"/>
+                            <div class="d-flex flex-column gap-1">
+                                <t t-if="currentDaySegs.length">
+                                    <t t-foreach="currentDaySegs" t-as="bar" t-key="bar.id + '_' + bar.dateKey + '_' + bar.type">
+                                        <div class="position-relative w-100" style="height: 40px;">
+                                            <div class="d-flex w-100 h-100 position-absolute top-0 start-0" style="z-index:0;">
+                                                <t t-foreach="state.hours" t-as="h" t-key="h">
+                                                    <div class="flex-fill border-end" style="border-color:#eee;"></div>
+                                                </t>
+                                            </div>
+                                            <div t-on-click="(ev) => { ev.stopPropagation(); openDocument(bar.id, bar.resModel); }"
+                                                 class="position-absolute rounded shadow-sm d-flex align-items-center justify-content-center cursor-pointer text-white text-truncate"
+                                                 t-att-class="bar.colorClass"
+                                                 t-att-style="bar.style + ' top:50%; transform:translateY(-50%); height:70%; z-index:5; font-size:0.75rem; opacity:0.9; cursor: pointer;'"
+                                                 t-att-title="bar.label">
+                                                <span class="px-1"><t t-esc="bar.label"/></span>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                                <t t-else="">
+                                    <div class="position-relative w-100" style="height:40px;">
+                                        <div class="d-flex w-100 h-100 position-absolute top-0 start-0">
+                                            <t t-foreach="state.hours" t-as="h" t-key="h">
+                                                <div class="flex-fill border-end" style="border-color:#eee;"></div>
+                                            </t>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </td>
+                      </t>
+
+                      <t t-else="">
+                        <td t-att-colspan="state.days.length"
+                            class="p-1 align-middle"
+                            t-att-class="row.isEditable ? 'cursor-pointer' : ''"
+                            t-att-style="row.isEditable ? 'background-color: #fcfcfc; height: auto;' : 'background-color: #f2f2f2; height: auto; cursor: not-allowed;'"
+                            t-on-click="(ev) => onWeekCellClick(ev, row.id)">
+
+                            <t t-set="bars" t-value="state.weekBars[row.id] || []"/>
+
+                            <t t-set="maxLvl" t-value="bars.length > 0 ? bars[0].maxLevels : 1"/>
+                            <t t-set="rowHeight" t-value="maxLvl * 30"/>
+                            <t t-if="rowHeight &lt; 40" t-set="rowHeight" t-value="40"/>
+
+                            <div class="position-relative w-100" t-att-style="'height:' + rowHeight + 'px;'">
+                                <div class="d-flex w-100 h-100 position-absolute top-0 start-0" style="z-index:0;">
+                                    <t t-foreach="state.days" t-as="d" t-key="d.keyStr">
+                                        <div class="flex-fill border-end" style="border-color:#eee;"></div>
+                                    </t>
+                                </div>
+
+                                <t t-foreach="bars" t-as="wb" t-key="wb.id + '_' + wb.left + '_' + wb.type">
+                                    <div t-on-click="(ev) => { ev.stopPropagation(); openDocument(wb.id, wb.resModel); }"
+                                         class="position-absolute rounded shadow-sm d-flex align-items-center justify-content-center text-white cursor-pointer"
+                                         t-att-class="wb.colorClass"
+                                         t-att-style="'left:' + wb.left + '%; width:' + wb.width + '%; ' +
+                                                      'top:' + (wb.level * 30 + 4) + 'px; ' +
+                                                      'height: 24px; ' +
+                                                      'z-index:5; font-size:0.7rem; opacity:0.9; cursor: pointer;'"
+                                         t-att-title="wb.label">
+                                        <span class="text-truncate w-100 text-center px-0">
+                                            <t t-esc="wb.label"/>
+                                        </span>
+                                    </div>
+                                </t>
+                            </div>
+                        </td>
+                      </t>
+
+                    </tr>
+                  </t>
+              </tbody>
+
+            </table>
+          </div>
+
+        </div>
+      </Layout>
+    </t>
+</templates>
