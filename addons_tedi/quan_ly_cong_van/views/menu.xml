@@ -20,41 +20,43 @@
                 id="document_outgoing_menu"
                 name="Công văn đi"
                 parent="office_document_menu_root"
+                sequence="12"/>
+
+        <menuitem
+                id="document_outgoing_menu_item"
+                name="Công văn đi"
+                parent="document_outgoing_menu"
                 action="action_open_office_document_outgoing"
                 sequence="12"/>
+
+        <menuitem
+                id="Office_task_menu_outgoing"
+                name="Giao việc"
+                parent="document_outgoing_menu"
+                action="action_open_office_document_task"
+                sequence="16"/>
 
         <!-- Menu Quyết định -->
         <menuitem
                 id="document_resolution_menu"
                 name="Quyết định"
                 parent="office_document_menu_root"
+                sequence="13"/>
+
+        <menuitem
+                id="document_resolution_menu_item"
+                name="Quyết định"
+                parent="document_resolution_menu"
                 action="action_open_office_document_resolution"
                 sequence="13"/>
-        <menuitem id="fleet_management_menu_root"
-                  name="Quản lý đội xe"
-                  parent="office_document_menu_root"
-                  sequence="40"/>
 
-        <menuitem id="menu_hr_tedi_vehicle_record"
-                  name="Màn hình tất cả lý lịch xe"
-                  parent="fleet_management_menu_root"
-                  action="action_hr_tedi_vehicle_record"
-                  sequence="10"/>
-        <menuitem id="menu_hr_tedi_vehicle_registration"
-                  name="Phiếu đăng ký xe"
-                  parent="fleet_management_menu_root"
-                  action="action_hr_tedi_vehicle_registration"
-                  sequence="20"/>
-        <menuitem id="menu_hr_tedi_vehicle_repair"
-                  name="Phiếu sửa chữa xe"
-                  parent="fleet_management_menu_root"
-                  action="action_hr_tedi_vehicle_repair"
-                  sequence="30"/>
-        <menuitem id="menu_hr_tedi_vehicle_odometer_report"
-                  name="Báo cáo số km từng xe"
-                  parent="fleet_management_menu_root"
-                  action="action_hr_tedi_vehicle_odometer_report"
-                  sequence="50"/>
+        <menuitem
+                id="Office_task_menu_resolution"
+                name="Giao việc"
+                parent="document_resolution_menu"
+                action="action_open_office_resolution_task"
+                sequence="16"/>
+
 
         <!-- Menu văn bản nội bộ đến -->
         <menuitem
@@ -69,17 +71,23 @@
                 id="document_internal_outgoing_menu"
                 name="Công văn nội bộ đi"
                 parent="office_document_menu_root"
+                sequence="15"/>
+
+        <menuitem
+                id="document_internal_outgoing_menu_item"
+                name="Công văn nội bộ đi"
+                parent="document_internal_outgoing_menu"
                 action="action_open_office_document_internal_outgoing"
                 sequence="15"/>
 
         <menuitem
-                id="Office_task_menu"
-                name="Công việc"
-                parent="office_document_menu_root"
-                action="action_open_office_task"
-                sequence="16"
-                groups="base.group_system,quan_ly_cong_van.group_van_thu,quan_ly_cong_van.group_don_vi_xu_ly"/>
+                id="Office_task_menu_iternal_document"
+                name="Giao việc"
+                parent="document_internal_outgoing_menu"
+                action="action_open_office_internal_document_task"
+                sequence="16"/>
 
+        <!--Menu cấu hình-->
         <menuitem
                 id="menu_office_document_setting"
                 name="Cấu hình"

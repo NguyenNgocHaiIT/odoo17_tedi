@@ -14,6 +14,7 @@ class Project(models.Model):
     code = fields.Char('Mã dự án')
     user_id = fields.Many2one('res.users', string="Giám đốc điều hành dự án")
     employee_user_id = fields.Many2one('hr.employee', string="Giám đốc điều hành dự án")
+    project_state_ids = fields.Many2many('project.state', 'project_project_state', string='Bước thực hiện')
 
     @api.onchange('user_id')
     def onchange_user_id(self):

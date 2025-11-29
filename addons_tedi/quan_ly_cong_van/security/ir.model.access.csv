@@ -6,12 +6,6 @@ access_office_document_category,access_office_document_category,model_office_doc
 access_office_document_detail1,access_office_document_detail1,model_office_document_detail1,,1,1,1,1
 access_office_document_detail2,access_office_document_detail2,model_office_document_detail2,,1,1,1,1
 access_office_document_detail3,access_office_document_detail3,model_office_document_detail3,,1,1,1,1
-access_hr_tedi_vehicle_record_user,access.hr_tedi_vehicle_record.user,model_hr_tedi_vehicle_record,,1,1,1,1
-access_hr_tedi_vehicle_registration_user,access.hr.tedi.vehicle.registration.user,model_hr_tedi_vehicle_registration,,1,1,1,1
-access_hr_tedi_vehicle_repair_user,access.hr.tedi.vehicle.repair.user,model_hr_tedi_vehicle_repair,,1,1,1,1
-access_hr_tedi_vehicle_repair_line_user,access.hr.tedi.vehicle.repair.line.user,model_hr_tedi_vehicle_repair_line,,1,1,1,1
-access_hr_employee_base_user,access.hr.employee.base.user,hr.model_hr_employee,,1,1,1,1
-access_hr_tedi_odometer_report_user,access.hr.tedi.odometer.report.user,model_hr_tedi_vehicle_odometer_report,,1,1,1,1
 access_office_document_admin,access_office_document_admin,model_office_document,,1,1,1,1
 access_office_document_van_thu,access_office_document_van_thu,model_office_document,,1,1,1,1
 access_office_document_lanh_dao,access_office_document_lanh_dao,model_office_document,,1,1,1,1
