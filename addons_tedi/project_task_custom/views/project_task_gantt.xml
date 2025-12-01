@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Gantt view (standalone) -->
+    <record id="view_project_task_gantt_custom" model="ir.ui.view">
+        <field name="name">project.task.gantt.custom</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <gantt date_start="planned_date_begin"
+                   date_stop="date_deadline"
+                   default_scale="month"
+                   scales="day,week,month,year"
+                   color="project_id"
+                   string="Gantt Only"
+                   js_class="project_task_gantt_custom"
+                   default_group_by="project_id"
+                   progress_bar="user_ids"
+                   pill_label="True"
+                   dependency_field="depend_on_ids"
+                   dependency_inverted_field="dependent_ids">
+
+                <!-- Fields available inside gantt (for popover rendering) -->
+                <field name="project_id"/>
+                <field name="milestone_id"/>
+                <field name="user_ids"/>
+                <field name="user_names"/>
+                <field name="partner_id"/>
+                <field name="planning_overlap"/>
+
+                <templates>
+                    <div t-name="gantt-popover">
+                        <div name="project_id">
+                            <strong>Project — </strong>
+                            <t t-if="project_id" t-esc="project_id[1]"/>
+                            <t t-else=""><span class="fst-italic text-muted"><i class="fa fa-lock"></i> Private</span></t>
+                        </div>
+                        <div t-if="allow_milestones and milestone_id" groups="project.group_project_milestone">
+                            <strong>Milestone — </strong> <t t-esc="milestone_id[1]"/>
+                        </div>
+                        <div t-if="user_names"><strong>Assignees — </strong> <t t-esc="user_names"/></div>
+                        <div t-if="partner_id"><strong>Customer — </strong> <t t-esc="partner_id[1]"/></div>
+                        <div t-if="project_id">
+                            <t t-esc="planned_date_begin.toFormat('f ')"/>
+                            <i class="fa fa-long-arrow-right" title="Arrow"/>
+                            <t t-esc="date_deadline.toFormat(' f')"/>
+                        </div>
+                        <div class="text-danger mt-2" t-if="planning_overlap">
+                            <t t-out="planningOverlapHtml"/>
+                        </div>
+                    </div>
+                </templates>
+
+            </gantt>
+        </field>
+    </record>
+
+    <!-- Action that opens only the Gantt view -->
+    <record id="action_project_task_gantt_only" model="ir.actions.act_window">
+        <field name="name">Tasks – Gantt</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">gantt</field>
+        <field name="views" eval="[(ref('project_task_custom.view_project_task_gantt_custom'), 'gantt')]"/>
+        <field name="target">current</field>
+        <!-- optional context: auto group by project -->
+        <field name="context">{'default_group_by':'project_id'}</field>
+    </record>
+
+    <!-- Top-level menu for the Gantt-only area -->
+    <menuitem id="menu_project_gantt_only_root"
+              name="Gantt Only"
+              sequence="0"/>
+
+    <!-- Menu that opens the action -->
+    <menuitem id="menu_project_gantt_only"
+              name="Tasks Gantt"
+              parent="menu_project_gantt_only_root"
+              action="action_project_task_gantt_only"
+              sequence="1"/>
+
+</odoo>
