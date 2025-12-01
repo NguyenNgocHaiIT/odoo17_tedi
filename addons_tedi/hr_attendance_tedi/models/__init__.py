@@ -1,4 +1,4 @@
 from . import attendance
 from . import holiday_config
 from . import tedi_attendance_import_wizard
-from . import request
+from . import attendance_report
