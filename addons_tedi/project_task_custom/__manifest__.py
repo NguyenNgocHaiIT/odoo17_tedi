@@ -13,6 +13,7 @@ Bridge module for project and enterprise
     'data': [
 
         'views/project_task_gantt.xml',
+        'views/project_portal_project_task_templates.xml',
     ],
     'assets': {
         'web.assets_backend': [

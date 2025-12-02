@@ -262,17 +262,23 @@ export class GanttModel extends Model {
      * @param {boolean} [params.withDefault]
      * @returns {Record<string, any>}
      */
-    getDialogContext(params) {
-        /** @type {Record<string, any>} */
-        const context = { ...this.getSchedule(params) };
+    getDialogContext(params = {}) {
+        const context = {};
 
-        if (params.withDefault) {
-            for (const k in context) {
-                context[sprintf("default_%s", k)] = context[k];
+        // Copy all params
+        for (const key in params) {
+            const value = params[key];
+
+            if (value && typeof value === 'object' && value.isLuxonDateTime) {
+                context[key] = value.toISO();
+            } else if (value instanceof DateTime) {
+                context[key] = value.toISO();
+            } else {
+                context[key] = value;
             }
         }
 
-        return Object.assign({}, this.searchParams.context, context);
+        return context;
     }
 
     /**
@@ -282,33 +288,29 @@ export class GanttModel extends Model {
      * @param {DateTime} [params.stop]
      * @returns {Record<string, any>}
      */
-    getSchedule({ rowId, start, stop } = {}) {
-        const { dateStartField, dateStopField, fields, groupedBy } = this.metaData;
+    getSchedule(params = {}) {
+        console.log('getSchedule params:', params);
 
-        /** @type {Record<string, any>} */
+        // Create a clean schedule object
         const schedule = {};
 
-        if (start) {
-            schedule[dateStartField] = serializeDateTime(start);
-        }
-        if (stop && dateStartField !== dateStopField) {
-            schedule[dateStopField] = serializeDateTime(stop);
-        }
-        if (rowId) {
-            const group = Object.assign({}, ...JSON.parse(rowId));
-            for (const fieldName of groupedBy) {
-                if (fieldName in group) {
-                    const value = group[fieldName];
-                    if (Array.isArray(value)) {
-                        const { type } = fields[fieldName];
-                        schedule[fieldName] = type === "many2many" ? [value[0]] : value[0];
-                    } else {
-                        schedule[fieldName] = value;
-                    }
-                }
+        // Copy all params but serialize Luxon DateTime objects
+        for (const key in params) {
+            const value = params[key];
+
+            if (value && typeof value === 'object' && value.isLuxonDateTime) {
+                // Luxon DateTime object
+                schedule[key] = value.toISO();
+            } else if (value instanceof DateTime) {
+                // Another way to check for DateTime
+                schedule[key] = value.toISO();
+            } else {
+                // Pass through other values
+                schedule[key] = value;
             }
         }
 
+        console.log('getSchedule cleaned:', schedule);
         return schedule;
     }
 
