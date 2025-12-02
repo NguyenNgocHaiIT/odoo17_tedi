@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="hr_attendance_tedi.AttendanceGantt">
-      <Layout display="{'controlPanel': true}" className="'h-100 d-flex flex-column overflow-hidden bg-white'">
+      <Layout display="display" className="'h-100 d-flex flex-column overflow-hidden bg-white'">
 
         <div class="o_tedi_attendance_gantt d-flex flex-column h-100 w-100 bg-white">
 
@@ -84,12 +84,11 @@
                   <t t-foreach="state.rowsData" t-as="row" t-key="row.id">
                     <tr>
 
-                      <td class="o_tedi_ag_employee_cell text-start fw-bold align-middle bg-white"
-                          t-att-class="row.isEditable ? 'cursor-pointer' : 'text-muted'"
-                          t-attf-style="position: sticky; left: 0; z-index: 10; border-right: 2px solid #dee2e6;"
-                          t-on-click="state.mode == 'day' ? () => onCreateFromEmployee(row.id) : null">
-                          <t t-esc="row.name"/>
-                      </td>
+                        <td class="o_tedi_ag_employee_cell text-start fw-bold align-middle bg-white"
+                            t-att-class="row.isEditable ? 'cursor-pointer' : 'text-muted'"
+                            t-attf-style="position: sticky; left: 0; z-index: 10; border-right: 2px solid #dee2e6;"
+                            t-on-click="() => onCreateFromEmployee(row.id)"> <t t-esc="row.name"/>
+                        </td>
 
                       <t t-if="state.mode == 'day'">
                         <td colspan="24"

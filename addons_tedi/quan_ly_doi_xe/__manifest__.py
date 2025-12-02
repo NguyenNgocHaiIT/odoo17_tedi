@@ -1,20 +1,28 @@
-
 {
-	'name': 'TEDI: Quản lý đội xe',
-	'version': '1.0',
-	'category': 'TEDI/Quản lý đội xe',
-	'author': 'HaiNN',
-	'sequence': '1',
-	'summary': '',
-	'depends': [ 'base', 'mail', 'hr', 'project', 'web'],
-	'data': [
-		'security/ir.model.access.csv',
-		'views/quan_ly_doi_xe.xml',
-		'views/menu.xml',
-	],
+    'name': 'TEDI: Quản lý đội xe',
+    'version': '1.0',
+    'category': 'TEDI/Quản lý đội xe',
+    'author': 'HaiNN',
+    'sequence': 1,  # Số nguyên (Interger) chuẩn hơn là String '1'
+    'summary': 'Quản lý phương tiện, lịch sử công tác và sửa chữa',
 
-	'installable': True,
-	'application': True,
-	'auto_install': False,
-	'qweb': [],
+
+    'depends': ['base', 'mail', 'hr', 'project', 'web', 'fleet'],
+
+    'data': [
+        'data/ir_sequence_data.xml',
+        'security/ir.model.access.csv',
+
+
+        'views/vehicle_view.xml',
+        'views/vehicle_register.xml',
+        'views/vehicle_fix.xml',
+        'views/vehicle_odometer.xml',
+        'views/menu.xml',
+    ],
+
+    'installable': True,
+    'application': True,
+    'auto_install': False,
+    'license': 'LGPL-3',  # Nên thêm license để tránh cảnh báo
 }
