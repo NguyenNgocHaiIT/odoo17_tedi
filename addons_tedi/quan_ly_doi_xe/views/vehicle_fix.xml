@@ -1,0 +1,113 @@
+<odoo>
+    <data>
+        <record id="seq_fleet_repair" model="ir.sequence">
+            <field name="name">Mã phiếu sửa chữa xe</field>
+            <field name="code">fleet.vehicle.log.services.repair</field>
+            <field name="prefix">SC</field>
+            <field name="padding">3</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <record id="fleet_vehicle_log_services_view_tree_inherit_repair" model="ir.ui.view">
+            <field name="name">fleet.vehicle.log.services.tree.inherit.repair</field>
+            <field name="model">fleet.vehicle.log.services</field>
+            <field name="inherit_id" ref="fleet.fleet_vehicle_log_services_view_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//tree" position="attributes">
+                    <attribute name="decoration-info">state == 'new'</attribute>
+                    <attribute name="decoration-success">state == 'done'</attribute>
+                    <attribute name="decoration-muted">state == 'cancelled'</attribute>
+                </xpath>
+
+                <xpath expr="//tree" position="replace">
+                    <tree string="Phiếu sửa chữa xe" sample="1">
+                        <field name="code" string="Mã phiếu"/>
+                        <field name="date" string="Ngày đề nghị"/>
+                        <field name="vehicle_id" widget="many2one_avatar"/>
+                        <field name="requester_id" widget="many2one_avatar_user"/>
+                        <field name="service_type_id" optional="hide"/>
+                        <field name="amount" sum="Tổng cộng" string="Chi phí" decoration-bf="1"/>
+                        <field name="state" widget="badge"
+                               decoration-success="state == 'done'"
+                               decoration-muted="state == 'cancelled'"
+                               decoration-info="state == 'new'"/>
+                    </tree>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="fleet_vehicle_log_services_view_form_inherit_repair" model="ir.ui.view">
+            <field name="name">fleet.vehicle.log.services.form.inherit.repair</field>
+            <field name="model">fleet.vehicle.log.services</field>
+            <field name="inherit_id" ref="fleet.fleet_vehicle_log_services_view_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//header" position="replace">
+                    <header>
+                        <button name="action_approve"
+                                string="Hoàn thành / Duyệt"
+                                type="object"
+                                class="oe_highlight"
+                                invisible="state != 'new'"/>
+
+                        <button name="action_reopen"
+                                string="Mở lại"
+                                type="object"
+                                invisible="state != 'cancelled'"/>
+
+                        <button name="action_cancel"
+                                string="Hủy phiếu"
+                                type="object"
+                                invisible="state not in ['new']"/>
+
+                        <field name="state" widget="statusbar" statusbar_visible="new,done"/>
+                    </header>
+                </xpath>
+
+                <xpath expr="//sheet" position="replace">
+                    <sheet>
+
+                        <group>
+                            <group>
+                                <field name="code" readonly="1" placeholder="New"/>
+                                <field name="vehicle_id" string="Xe sửa chữa" readonly="state != 'new'"/>
+                                <field name="odometer" string="Số km hiện tại" readonly="state != 'new'"/>
+                                <field name="amount" force_save="1" string="Tổng chi phí" decoration-bf="1" readonly="1"/>
+                            </group>
+
+                            <group>
+                                <field name="requester_id" string="Người đề nghị" readonly="state != 'new'"/>
+                                <field name="date" string="Ngày đề nghị" readonly="state != 'new'"/>
+                                <field name="vendor_id" string="Garage / Nhà cung cấp" readonly="state != 'new'"/>
+                                <field name="attachment_ids" widget="many2many_binary" string="Tệp đính kèm"/>
+                                <field name="service_type_id" invisible="1"/>
+                            </group>
+                        </group>
+
+                        <label for="notes" string="Ghi chú thêm" />
+                        <field name="notes" placeholder="Mô tả nguyên nhân hỏng hóc..." nolabel="1"/>
+
+                        <notebook>
+                            <page string="Nội dung sửa chữa">
+                                <field name="repair_line_ids" readonly="state != 'new'" widget="section_and_note_one2many">
+                                    <tree editable="bottom">
+                                        <field name="sequence" widget="handle"/>
+
+                                        <field name="service_type_id"
+                                               string="Hạng mục / Loại"
+                                               options="{'no_create': True, 'no_open': True}"
+                                               width="30%"/>
+
+                                        <field name="price_unit" string="Chi phí" sum="Tổng cộng"/>
+                                        <field name="note" string="Ghi chú"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </xpath>
+
+            </field>
+        </record>
+    </data>
+</odoo>

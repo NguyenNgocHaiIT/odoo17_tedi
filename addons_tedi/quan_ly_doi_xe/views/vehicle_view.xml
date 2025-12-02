@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <record id="view_fleet_vehicle_tree_inherit_tedi" model="ir.ui.view">
+            <field name="name">fleet.vehicle.tree.inherit.tedi</field>
+            <field name="model">fleet.vehicle</field>
+            <field name="inherit_id" ref="fleet.fleet_vehicle_view_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//tree" position="replace">
+                    <tree string="Lý lịch xe">
+                        <field name="model_id" string="Model xe"/>
+                        <field name="description"/>
+                        <field name="country_of_manufacture"/>
+                        <field name="license_plate"/>
+
+                        <field name="driver_id" string="Tài xế"/>
+                    </tree>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_fleet_vehicle_form_inherit_tedi" model="ir.ui.view">
+            <field name="name">fleet.vehicle.form.inherit.tedi</field>
+            <field name="model">fleet.vehicle</field>
+            <field name="inherit_id" ref="fleet.fleet_vehicle_view_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//sheet" position="replace">
+                    <sheet>
+                        <field name="id" invisible="1"/>
+                        <field name="company_id" invisible="1"/>
+                        <field name="future_driver_id" invisible="1"/>
+                        <field name="currency_id" invisible="1"/>
+
+                        <div class="oe_button_box" name="button_box">
+                            <button name="return_action_to_open"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-book"
+                                context="{'xml_id':'fleet_vehicle_log_contract_action'}"
+                                help="Hợp đồng">
+                                <field name="contract_count" widget="statinfo" string="Hợp đồng"/>
+                            </button>
+                            <button name="return_action_to_open"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-wrench"
+                                context="{'xml_id':'fleet_vehicle_log_services_action'}"
+                                help="Dịch vụ">
+                                <field name="service_count" widget="statinfo" string="Dịch vụ"/>
+                            </button>
+                        </div>
+
+                        <group>
+                            <group>
+                                <field name="driver_id" string="Tài xế"/>
+                                <field name="future_driver_id" string="Tài xế tiếp theo"/>
+
+                                <field name="country_of_manufacture"/>
+                                <field name="model_id"/>
+                                <field name="license_plate"/>
+                                <field name="year_manufacture"/>
+                                <field name="year_in_use"/>
+                                <field name="vin_sn" string="Số khung (VIN)"/>
+                                <field name="engine_no"/>
+                                <field name="color"/>
+                            </group>
+                            <group>
+                                <field name="cylinder_capacity"/>
+                                <field name="original_cost"/>
+                                <field name="purchase_value"/>
+                                <field name="registration_fee"/>
+                                <field name="fuel_rate"/>
+                                <field name="oil_change_rate"/>
+                                <field name="description"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Lịch sử công tác">
+                                <field name="trip_history_ids" readonly="1">
+                                    <tree>
+                                        <field name="start_date"/>
+                                        <field name="end_date"/>
+                                        <field name="trip_type"/>
+                                        <field name="destination"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

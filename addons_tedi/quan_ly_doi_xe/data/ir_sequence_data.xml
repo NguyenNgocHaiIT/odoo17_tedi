@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Định nghĩa bộ đếm cho Phiếu đăng ký xe -->
+        <record id="seq_hr_tedi_vehicle_registration" model="ir.sequence">
+            <field name="name">Mã phiếu đăng ký xe</field>
+            <field name="code">hr_tedi.vehicle.registration</field> <!-- Phải khớp y hệt chuỗi trong file Python -->
+            <field name="prefix">DX/%(year)s/</field> <!-- Tiền tố: DX/2025/... -->
+            <field name="padding">4</field> <!-- Độ dài số: 0001 -->
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>
