@@ -1172,15 +1172,143 @@ class Task(models.Model):
 
         return progress_bars
 
-    @api.model
-    def get_gantt_data(self, domain=None, groupby=None, read_specification=None, **kwargs):
-        if domain is None:
-            domain = []
+    @api.model_create_multi
+    def create(self, vals_list):
+        new_context = dict(self.env.context)
+        default_personal_stage = new_context.pop('default_personal_stage_type_ids', False)
+        self = self.with_context(new_context)
 
-        # Gọi super để giữ nguyên logic grouping, progress bar, v.v.
-        return super().get_gantt_data(
-            domain=domain,
-            groupby=groupby,
-            read_specification=read_specification,
-            **kwargs
-        )
+        is_portal_user = self.env.user.has_group('base.group_portal')
+        if is_portal_user:
+            self.check_access_rights('create')
+        default_stage = dict()
+        for vals in vals_list:
+            project_id = vals.get('project_id')
+            if vals.get('user_ids'):
+                vals['date_assign'] = fields.Datetime.now()
+                if not (vals.get('parent_id') or project_id or self._context.get('default_project_id')):
+                    user_ids = self._fields['user_ids'].convert_to_cache(vals.get('user_ids', []), self)
+                    if self.env.user.id not in list(user_ids):
+                        vals['user_ids'] = [Command.set(list(user_ids) + [self.env.user.id])]
+
+            if default_personal_stage and 'personal_stage_type_id' not in vals:
+                vals['personal_stage_type_id'] = default_personal_stage[0]
+            if not vals.get('name') and vals.get('display_name'):
+                vals['name'] = vals['display_name']
+            if is_portal_user:
+                self._ensure_fields_are_accessible(vals.keys(), operation='write', check_group_user=False)
+
+            if project_id:
+                # set the project => "I want to display the task in the project"
+                #                 => => set `display_in_project` to True
+                vals['display_in_project'] = vals.get('display_in_project', True)
+            elif vals.get('parent_id'):
+                # QUAN TRỌNG: SỬA Ở ĐÂY - Luôn hiển thị subtask trong project
+                # Lấy project_id từ parent task
+                parent_task = self.browse(vals['parent_id'])
+                project_id = parent_task.project_id.id
+                vals.update({
+                    'project_id': project_id,
+                    'display_in_project': True,  # QUAN TRỌNG: Set thành True thay vì False
+                })
+
+            if project_id and not "company_id" in vals:
+                vals["company_id"] = self.env["project.project"].browse(
+                    project_id
+                ).company_id.id
+            if not project_id and ("stage_id" in vals or self.env.context.get('default_stage_id')):
+                vals["stage_id"] = False
+
+            if project_id and "stage_id" not in vals:
+                # 1) Allows keeping the batch creation of tasks
+                # 2) Ensure the defaults are correct (and computed once by project),
+                # by using default get (instead of _get_default_stage_id or _stage_find),
+                if project_id not in default_stage:
+                    default_stage[project_id] = self.with_context(
+                        default_project_id=project_id
+                    ).default_get(['stage_id']).get('stage_id')
+                vals["stage_id"] = default_stage[project_id]
+            # user_ids change: update date_assign
+            # Stage change: Update date_end if folded stage and date_last_stage_update
+            if vals.get('stage_id'):
+                vals.update(self.update_date_end(vals['stage_id']))
+                vals['date_last_stage_update'] = fields.Datetime.now()
+            # recurrence
+            rec_fields = vals.keys() & self._get_recurrence_fields()
+            if rec_fields and vals.get('recurring_task') is True:
+                rec_values = {rec_field: vals[rec_field] for rec_field in rec_fields}
+                recurrence = self.env['project.task.recurrence'].create(rec_values)
+                vals['recurrence_id'] = recurrence.id
+        # The sudo is required for a portal user as the record creation
+        # requires the read access on other models, as mail.template
+        # in order to compute the field tracking
+        was_in_sudo = self.env.su
+        if is_portal_user:
+            vals_list_no_sudo, vals_list = zip(*(self._get_portal_sudo_vals(vals, defaults=True) for vals in vals_list))
+            self_no_sudo, self = self, self.sudo().with_context(self._get_portal_sudo_context())
+        tasks = super(Task, self.with_context(mail_create_nosubscribe=True)).create(vals_list)
+        if is_portal_user:
+            for task, vals in zip(tasks.with_env(self_no_sudo.env), vals_list_no_sudo):
+                task.write(vals)
+        tasks._populate_missing_personal_stages()
+        self._task_message_auto_subscribe_notify({task: task.user_ids - self.env.user for task in tasks})
+
+        # in case we were already in sudo, we don't check the rights.
+        if is_portal_user and not was_in_sudo:
+            # since we use sudo to create tasks, we need to check
+            # if the portal user could really create the tasks based on the ir rule.
+            tasks.with_user(self.env.user).check_access_rule('create')
+        current_partner = self.env.user.partner_id
+        if tasks.project_id:
+            tasks._set_stage_on_project_from_task()
+        for task in tasks:
+            if task.project_id.privacy_visibility == 'portal':
+                task._portal_ensure_token()
+            for follower in task.parent_id.message_follower_ids:
+                task.message_subscribe(follower.partner_id.ids, follower.subtype_ids.ids)
+            if current_partner not in task.message_partner_ids:
+                task.message_subscribe(current_partner.ids)
+        return tasks
+
+    def write(self, vals):
+        # Nếu đang set parent_id cho task đã tồn tại
+        if 'parent_id' in vals:
+            for task in self:
+                parent_id = vals['parent_id']
+                if parent_id:
+                    # Lấy parent task
+                    parent_task = self.env['project.task'].browse(parent_id)
+                    # Đồng bộ project_id và set display_in_project = True
+                    if not vals.get('project_id'):
+                        vals['project_id'] = parent_task.project_id.id
+                    if 'display_in_project' not in vals:
+                        vals['display_in_project'] = True
+
+        # Gọi super
+        result = super().write(vals)
+
+        # Cập nhật display_in_project cho subtask con nếu cần
+        if 'display_in_project' in vals:
+            # Nếu parent task thay đổi display_in_project, cập nhật cho tất cả subtask
+            for task in self:
+                if task.child_ids:
+                    task.child_ids.write({'display_in_project': vals['display_in_project']})
+
+        return result
+
+    def fix_existing_subtasks_display(self):
+        """
+        Phương thức để fix tất cả subtask hiện có, set display_in_project = True
+        """
+        # Tìm tất cả subtask có parent_id và display_in_project = False
+        subtasks = self.search([
+            ('parent_id', '!=', False),
+            ('display_in_project', '=', False)
+        ])
+
+        if subtasks:
+            print(f"Fixing {len(subtasks)} subtasks...")
+            subtasks.write({'display_in_project': True})
+            print(f"Fixed {len(subtasks)} subtasks")
+
+        return True

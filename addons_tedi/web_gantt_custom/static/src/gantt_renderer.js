@@ -197,7 +197,6 @@ export class GanttRenderer extends Component {
         // Ghi đè luôn method để chắc chắn không bị gọi từ nơi khác
         this.onSelectStart = () => {};
         this.onSelectStop = () => {};
-        this.loadSubtasks();
 
         // Debug chi tiết cấu trúc dữ liệu
         console.log('=== DETAILED DATA STRUCTURE ANALYSIS ===');
@@ -213,10 +212,20 @@ export class GanttRenderer extends Component {
 
         this._userNameCache = {};
 
+        // QUAN TRỌNG: Khởi tạo các object trước
         this.parentChildMapping = {};
+        this.pills = {};
+        this.connectors = reactive({});
+        this.mappingConnectorToPills = {};
+        this.mappingPillToConnectors = {};
+        this.mappingRecordToPillsByRow = {};
+        this.mappingRowToPillsByRecord = {};
+
+        // ĐỢI SAU: KHÔNG gọi forceUpdateConnectors() ở đây
 
         this.forceSingleRowPerTask = true;
         this.nextPillId = 1;
+        this.nextConnectorId = 1;
 
         this.getTaskStartDate = this.getTaskStartDate.bind(this);
         this.getTaskEndDate = this.getTaskEndDate.bind(this);
@@ -446,6 +455,12 @@ export class GanttRenderer extends Component {
         });
 
         this.computeDerivedParams();
+
+        // CHỈ GỌI forceUpdateConnectors SAU KHI computeDerivedParams()
+        setTimeout(() => {
+            console.log('=== DELAYED FORCE UPDATE CONNECTORS ===');
+            this.forceUpdateConnectors();
+        }, 100);
     }
 
     //-------------------------------------------------------------------------
@@ -798,20 +813,36 @@ export class GanttRenderer extends Component {
         const { cellTime, time } = scale;
         const { record } = this.pills[pill.dataset.pillId];
 
-        const start =
-            diff && dateAddFixedOffset(record[dateStartField], { [time]: cellTime * diff });
-        const stop = diff && dateAddFixedOffset(record[dateStopField], { [time]: cellTime * diff });
-        const schedule = this.model.getSchedule({ rowId, start, stop });
+        try {
+            // Serialize dates immediately
+            const start = diff ? dateAddFixedOffset(record[dateStartField], { [time]: cellTime * diff }) : null;
+            const stop = diff ? dateAddFixedOffset(record[dateStopField], { [time]: cellTime * diff }) : null;
 
-        if (this.interaction.dragAction === "copy") {
-            await this.model.copy(record.id, schedule, this.openPlanDialogCallback);
-        } else {
-            await this.model.reschedule(record.id, schedule, this.openPlanDialogCallback);
-        }
+            const schedule = {
+                rowId,
+                start: start ? start.toISO() : undefined,
+                stop: stop ? stop.toISO() : undefined
+            };
 
-        // If the pill lands on a closed group -> open it
-        if (cell.classList.contains("o_gantt_group") && this.model.isClosed(rowId)) {
-            this.model.toggleRow(rowId);
+            console.log('dragPillDrop schedule:', schedule);
+
+            if (this.interaction.dragAction === "copy") {
+                await this.model.copy(record.id, schedule, this.openPlanDialogCallback);
+            } else {
+                await this.model.reschedule(record.id, schedule, this.openPlanDialogCallback);
+            }
+
+            // If the pill lands on a closed group -> open it
+            if (cell.classList.contains("o_gantt_group") && this.model.isClosed(rowId)) {
+                this.model.toggleRow(rowId);
+            }
+        } catch (error) {
+            console.error('Error in dragPillDrop:', error);
+            // Show error to user
+            this.dialogService.add("Error", {
+                title: _t("Error"),
+                body: _t("An error occurred while moving the task."),
+            });
         }
     }
 
@@ -868,20 +899,32 @@ export class GanttRenderer extends Component {
     }
 
     generateConnectors() {
+        // Khởi tạo nextConnectorId
         this.nextConnectorId = 1;
-        this.setConnector({
-            id: NEW_CONNECTOR_ID,
-            highlighted: true,
-            sourcePoint: null,
-            targetPoint: null,
-        });
+
+        // Chỉ tạo new connector nếu chưa có
+        if (!this.connectors[NEW_CONNECTOR_ID]) {
+            this.setConnector({
+                id: NEW_CONNECTOR_ID,
+                highlighted: true,
+                sourcePoint: null,
+                targetPoint: null,
+            });
+        }
+
+        console.log('Generating connectors...');
+        console.log('Mapping records to pills:', this.mappingRecordToPillsByRow);
+
         for (const slaveId in this.mappingRecordToPillsByRow) {
             const { masterIds, pills: slavePills } = this.mappingRecordToPillsByRow[slaveId];
+            if (!masterIds) continue;
+
             for (const masterId of masterIds) {
                 if (!(masterId in this.mappingRecordToPillsByRow)) {
                     continue;
                 }
                 const { pills: masterPills } = this.mappingRecordToPillsByRow[masterId];
+
                 for (const [slaveRowId, targetPill] of Object.entries(slavePills)) {
                     for (const [masterRowId, sourcePill] of Object.entries(masterPills)) {
                         if (
@@ -1205,16 +1248,37 @@ export class GanttRenderer extends Component {
         const { records } = this.model.data;
         const { dateStartField } = this.model.metaData;
         const pills = [];
+
+        console.log('=== GET PILLS DEBUG ===');
+        console.log('Total records:', records.length);
+
+        // Debug: tìm subtasks
+        const subtasks = records.filter(r => r.parent_id);
+        console.log('Subtasks in records:', subtasks.length);
+        subtasks.forEach((st, idx) => {
+            console.log(`  ${idx+1}. ${st.display_name} (ID: ${st.id}, Parent: ${st.parent_id})`);
+        });
+
         for (const record of records) {
             const pill = this.getPill(record);
-            pills.push(this.enrichPill(pill));
+            const enrichedPill = this.enrichPill(pill);
+            pills.push(enrichedPill);
+
+            // Debug thông tin pill
+            if (record.parent_id) {
+                console.log(`Created pill for subtask: ${record.display_name} (Parent: ${record.parent_id})`);
+            }
         }
+
         // sorting cannot be done when fetching data --> the snapping of pills breaks order
-        return pills.sort(
+        const sortedPills = pills.sort(
             (p1, p2) =>
                 p1.grid.column[0] - p2.grid.column[0] ||
                 p1.record[dateStartField] - p2.record[dateStartField]
         );
+
+        console.log('Total pills created:', sortedPills.length);
+        return sortedPills;
     }
 
     /**
@@ -1372,17 +1436,18 @@ export class GanttRenderer extends Component {
     getSelectCreateDialogProps(params) {
         const domain = this.getPlanDialogDomain();
 
-        // BƯỚC 1: Lấy raw schedule từ model (có thể chứa DateTime)
-        const raw = this.model.getDialogContext(params);
+        // BƯỚC 1: Lấy schedule và serial hóa ngay lập tức
+        const rawSchedule = this.model.getDialogContext(params);
 
-        // BƯỚC 2: Serialize SẠCH 100% – không để sót DateTime nào
+        // BƯỚC 2: Serialize SẠCH 100%
         const schedule = {};
-        for (const key in raw) {
-            const val = raw[key];
+        for (const key in rawSchedule) {
+            const val = rawSchedule[key];
+
             if (val === undefined || val === null) {
                 schedule[key] = false;
             } else if (val && typeof val.isLuxonDateTime !== "undefined" && val.isLuxonDateTime) {
-                schedule[key] = val.toISO();               // luxon DateTime
+                schedule[key] = val.toISO();               // Luxon DateTime
             } else if (val instanceof DateTime) {
                 schedule[key] = val.toISO();
             } else if (typeof val === "object") {
@@ -1392,17 +1457,19 @@ export class GanttRenderer extends Component {
                 } else if (val && val.id !== undefined) {
                     schedule[key] = val.id;
                 } else {
-                    schedule[key] = false;                 // bỏ hết object phức tạp
+                    schedule[key] = JSON.stringify(val);   // Serialize các object phức tạp
                 }
             } else {
                 schedule[key] = val;
             }
         }
 
+        console.log('SelectCreateDialog context (cleaned):', schedule);
+
         return {
             title: _t("Plan"),
             resModel: this.model.metaData.resModel,
-            context: schedule,        // ĐÃ SẠCH HOÀN TOÀN → không còn DateTime
+            context: schedule,
             domain,
             noCreate: !this.model.metaData.canCellCreate,
             onSelected: (resIds) => {
@@ -1412,7 +1479,6 @@ export class GanttRenderer extends Component {
             },
         };
     }
-
     /**
      * @param {Pill[]} pills
      */
@@ -1455,8 +1521,38 @@ export class GanttRenderer extends Component {
     }
 
     initializeConnectors() {
-        for (const connectorId in this.connectors) {
-            this.deleteConnector(connectorId);
+        console.log('=== INITIALIZE CONNECTORS ===');
+
+        try {
+            // Khởi tạo connectors object nếu chưa có
+            if (!this.connectors) {
+                this.connectors = reactive({});
+            }
+
+            // Xóa tất cả connectors cũ
+            for (const connectorId in this.connectors) {
+                delete this.connectors[connectorId];
+            }
+
+            // Reset mapping
+            if (this.mappingConnectorToPills) {
+                this.mappingConnectorToPills = {};
+            }
+
+            // Reset parent-child mapping (không xóa vì cần cho connectors)
+            // this.parentChildMapping = {}; // KHÔNG xóa dòng này
+
+            // QUAN TRỌNG: Khởi tạo connector mới với ID đúng
+            this.setConnector({
+                id: NEW_CONNECTOR_ID,
+                highlighted: true,
+                sourcePoint: null,
+                targetPoint: null,
+            });
+
+            console.log('Connectors initialized');
+        } catch (error) {
+            console.error('Error initializing connectors:', error);
         }
     }
 
@@ -1518,8 +1614,6 @@ export class GanttRenderer extends Component {
 
         console.log('=== ON WILL RENDER DEBUG ===');
         console.log('Visible rows:', this.visibleRows.length);
-        console.log('Virtual rows:', this.virtualRows.length);
-        console.log('Extra rows:', this.extraRows.length);
 
         // 1. Collect connectors từ pills được display
         for (const row of this.visibleRows) {
@@ -1534,42 +1628,43 @@ export class GanttRenderer extends Component {
             }
         }
 
-        // 2. QUAN TRỌNG: Thêm TẤT CẢ parent-child connectors vào visible
-        console.log('Parent-child mapping:', Object.keys(this.parentChildMapping));
-        for (const connectorId in this.parentChildMapping) {
-            if (this.connectors[connectorId]) {
+        // 2. QUAN TRỌNG: Thêm TẤT CẢ parent-child connectors
+        console.log('Checking parent-child connectors...');
+        for (const connectorId in this.connectors) {
+            if (connectorId.startsWith('__parent_child__')) {
                 visibleConnectorIds.add(connectorId);
-                console.log('✓ Adding parent-child connector to visible:', connectorId);
+                console.log(`✓ Adding parent-child connector: ${connectorId}`);
+
+                // Debug chi tiết
+                const connector = this.connectors[connectorId];
+                console.log(`  Connector details:`, {
+                    sourcePoint: connector.sourcePoint ? 'function' : 'null',
+                    targetPoint: connector.targetPoint ? 'function' : 'null'
+                });
             }
         }
 
-        // 3. THÊM: Include tất cả connectors có source và target points hợp lệ
+        // 3. Thêm connectors có source và target points hợp lệ
         for (const connectorId in this.connectors) {
             const connector = this.connectors[connectorId];
             // Nếu connector có source và target points, thêm vào visible
-            if (connector.sourcePoint && connector.targetPoint &&
-                !visibleConnectorIds.has(connectorId) &&
-                connectorId !== NEW_CONNECTOR_ID) {
+            if (connector.sourcePoint && connector.targetPoint) {
                 visibleConnectorIds.add(connectorId);
-                console.log('✓ Adding connector with valid points:', connectorId);
             }
         }
 
         console.log('Displayed pills:', displayedPills.size);
         console.log('Visible connector IDs:', Array.from(visibleConnectorIds));
-        console.log('All connectors in memory:', Object.keys(this.connectors));
 
         this.visibleConnectors = [];
         const extraPillIds = new Set();
 
         for (const connectorId in this.connectors) {
             if (!visibleConnectorIds.has(connectorId)) {
-                console.log('✗ Skipping connector:', connectorId);
                 continue;
             }
 
             this.visibleConnectors.push(this.connectors[connectorId]);
-            console.log('✓ Visible connector:', connectorId, this.connectors[connectorId]);
 
             const { sourcePillId, targetPillId } = this.mappingConnectorToPills[connectorId] || {};
             if (sourcePillId && !displayedPills.has(sourcePillId)) {
@@ -1581,7 +1676,6 @@ export class GanttRenderer extends Component {
         }
 
         console.log('Total visible connectors:', this.visibleConnectors.length);
-        console.log('Extra pill IDs:', Array.from(extraPillIds));
 
         this.extraPills = [];
         for (const id of extraPillIds) {
@@ -1603,6 +1697,7 @@ export class GanttRenderer extends Component {
             hasRecord: !!row.record,
             recordId: row.record?.id,
             recordName: row.record?.display_name,
+            recordParentId: row.record?.parent_id,
             hasRecordIds: !!row.recordIds,
             recordIdsCount: row.recordIds?.length || 0,
             hasRows: row.rows?.length > 0,
@@ -1616,7 +1711,7 @@ export class GanttRenderer extends Component {
             fromServer,
             groupedBy,
             groupField,
-            groupLevel,
+            groupLevel = 0,
             id,
             isGroup,
             name,
@@ -1625,35 +1720,30 @@ export class GanttRenderer extends Component {
             rows: subRows,
             unavailabilities,
             recordIds,
-            record, // QUAN TRỌNG: Lấy record từ row
+            record,
         } = row;
 
-        // TRƯỜNG HỢP ĐẶC BIỆT: Row có record và có parent_id -> ĐÂY LÀ SUBTASK
-        // NHƯNG cần kiểm tra xem có nên tạo row riêng không
-        if (record && record.parent_id) {
-            console.log(`📌 FOUND SUBTASK: ${record.display_name} (Parent: ${record.parent_id})`);
-            // Có 2 khả năng:
-            // 1. Parent và subtask đều có trong cùng một group -> giữ nguyên
-            // 2. Parent ở group khác -> cần tạo row riêng
-            // Tạm thời cứ tạo row riêng cho subtask
-            return this.createSubtaskRow(row, pills);
+        // =================== TRƯỜNG HỢP ĐẶC BIỆT: SUBTASK ===================
+        // Nếu đây là một task (KHÔNG phải group) và có parent_id
+        if (record && record.parent_id && !isGroup) {
+            console.log(`📌 PROCESSING SUBTASK: ${record.display_name} (Parent: ${record.parent_id})`);
+            return this.processSubtaskRow(row, pills);
         }
 
+        // =================== TRƯỜNG HỢP 1: Multi-level grouping từ server ===================
         const currentGroupField = groupField || (groupedBy && groupedBy[groupLevel]);
-
-        // TRƯỜNG HỢP 1: Group node từ server (có groupedBy và recordIds)
         if (currentGroupField && recordIds && recordIds.length > 0) {
             console.log(`Processing as SERVER GROUP: ${currentGroupField} at level ${groupLevel}`);
             return this.processMultiLevelGroup(row, pills, groupLevel, currentGroupField);
         }
 
-        // TRƯỜNG HỢP 2: Group node thông thường (có rows)
+        // =================== TRƯỜNG HỢP 2: Group node thông thường (có rows) ===================
         if (isGroup || (subRows && subRows.length > 0)) {
             console.log('Processing as REGULAR GROUP with sub-rows');
             return this.processGroupRow(row, pills);
         }
 
-        // TRƯỜNG HỢP 3: Task node thông thường (không có rows, không phải group)
+        // =================== TRƯỜNG HỢP 3: Task node thông thường ===================
         console.log('Processing as REGULAR TASK NODE');
         console.log('Record:', record);
         console.log('Record IDs in row:', recordIds);
@@ -1663,7 +1753,7 @@ export class GanttRenderer extends Component {
         const rowPills = [];
         const remainingPills = [];
 
-        // QUAN TRỌNG: Sửa logic tìm pills
+        // Tìm pills thuộc về row này
         if (recordIds && recordIds.length > 0) {
             // Trường hợp row có recordIds (từ server grouping)
             console.log('Row has recordIds, finding pills for these IDs');
@@ -1687,10 +1777,8 @@ export class GanttRenderer extends Component {
                 }
             }
         } else {
-            // Không có recordIds và không có record -> đây là lỗi
+            // Không có recordIds và không có record
             console.error('❌ Row has no recordIds and no record! Row:', row);
-            console.log('Available pills:', pills.length);
-            // Fallback: giữ nguyên tất cả pills để xử lý sau
             result.pillsToProcess = pills;
             return result;
         }
@@ -1708,10 +1796,10 @@ export class GanttRenderer extends Component {
         result.pillsToProcess = remainingPills;
 
         console.log('=== PROCESS ROW DEBUG END ===');
-        console.log(`Created ${result.rows.length} rows, ${result.pillsToProcess.length} pills remaining`);
+    console.log(`Created ${result.rows.length} rows, ${result.pillsToProcess.length} pills remaining`);
 
-        return result;
-    }
+    return result;
+}
 
     /**
      * Tạo row riêng cho subtask
@@ -1775,16 +1863,28 @@ export class GanttRenderer extends Component {
         const { dateStartField, dateStopField, scale } = this.model.metaData;
         const { cellTime, time } = scale;
         const { record } = this.pills[pill.dataset.pillId];
-        const params = {};
 
-        if (direction === "start") {
-            params.start = dateAddFixedOffset(record[dateStartField], { [time]: cellTime * diff });
-        } else {
-            params.stop = dateAddFixedOffset(record[dateStopField], { [time]: cellTime * diff });
+        try {
+            const params = {};
+
+            if (direction === "start") {
+                const newStart = dateAddFixedOffset(record[dateStartField], { [time]: cellTime * diff });
+                params.start = newStart.toISO();
+            } else {
+                const newStop = dateAddFixedOffset(record[dateStopField], { [time]: cellTime * diff });
+                params.stop = newStop.toISO();
+            }
+
+            console.log('resizePillDrop params:', params);
+            await this.model.reschedule(record.id, params, this.openPlanDialogCallback);
+        } catch (error) {
+            console.error('Error in resizePillDrop:', error);
+            // Show error to user
+            this.dialogService.add("Error", {
+                title: _t("Error"),
+                body: _t("An error occurred while resizing the task."),
+            });
         }
-        const schedule = this.model.getSchedule(params);
-
-        await this.model.reschedule(record.id, schedule, this.openPlanDialogCallback);
     }
 
     /**
@@ -1796,6 +1896,25 @@ export class GanttRenderer extends Component {
         const connectorParams = { ...params };
         const connectorId = params.id || `__connector__${this.nextConnectorId++}`;
 
+        // Đảm bảo mappingConnectorToPills tồn tại
+        if (!this.mappingConnectorToPills) {
+            this.mappingConnectorToPills = {};
+        }
+
+        // QUAN TRỌNG: Luôn tạo/update mapping khi có sourceId hoặc targetId
+        if (sourceId || targetId) {
+            if (!this.mappingConnectorToPills[connectorId]) {
+                this.mappingConnectorToPills[connectorId] = {
+                    sourcePillId: sourceId,
+                    targetPillId: targetId,
+                };
+            } else {
+                // Update existing mapping
+                if (sourceId) this.mappingConnectorToPills[connectorId].sourcePillId = sourceId;
+                if (targetId) this.mappingConnectorToPills[connectorId].targetPillId = targetId;
+            }
+        }
+
         // Thêm style đặc biệt cho parent-child connectors
         if (connectorId.startsWith('__parent_child__')) {
             connectorParams.className = 'o_parent_child_connector';
@@ -1803,7 +1922,10 @@ export class GanttRenderer extends Component {
             connectorParams.displayButtons = false; // Ẩn buttons
         }
 
+        // QUAN TRỌNG: Đảm bảo sourcePoint và targetPoint là functions
         if (sourceId) {
+            this.mappingConnectorToPills[connectorId] = this.mappingConnectorToPills[connectorId] || {};
+            this.mappingConnectorToPills[connectorId].sourcePillId = sourceId;
             connectorParams.sourcePoint = () => this.getPoint(sourceId, true);
         }
 
@@ -1820,25 +1942,38 @@ export class GanttRenderer extends Component {
                 displayButtons: false,
                 ...connectorParams,
             };
-            this.mappingConnectorToPills[connectorId] = {
-                sourcePillId: sourceId,
-                targetPillId: targetId,
-            };
         }
 
+        // Cập nhật mapping pill-to-connectors
         if (sourceId) {
+            if (!this.mappingPillToConnectors) {
+                this.mappingPillToConnectors = {};
+            }
             if (!this.mappingPillToConnectors[sourceId]) {
                 this.mappingPillToConnectors[sourceId] = [];
             }
-            this.mappingPillToConnectors[sourceId].push(connectorId);
+            if (!this.mappingPillToConnectors[sourceId].includes(connectorId)) {
+                this.mappingPillToConnectors[sourceId].push(connectorId);
+            }
         }
 
         if (targetId) {
+            if (!this.mappingPillToConnectors) {
+                this.mappingPillToConnectors = {};
+            }
             if (!this.mappingPillToConnectors[targetId]) {
                 this.mappingPillToConnectors[targetId] = [];
             }
-            this.mappingPillToConnectors[targetId].push(connectorId);
+            if (!this.mappingPillToConnectors[targetId].includes(connectorId)) {
+                this.mappingPillToConnectors[targetId].push(connectorId);
+            }
         }
+
+        console.log(`✓ Connector ${connectorId} set with:`, {
+            sourceId,
+            targetId,
+            inMapping: !!this.mappingConnectorToPills[connectorId]
+        });
     }
 
     /**
@@ -1878,7 +2013,7 @@ export class GanttRenderer extends Component {
     shouldRenderConnectors() {
         return (
             this.model.metaData.dependencyField ||
-            this.hasParentChildRelationships() || // THÊM ĐIỀU KIỆN NÀY
+            this.hasParentChildRelationships() ||
             (!this.model.useSampleModel &&
              !this.env.isSmall &&
              this.model.metaData.groupedBy.length <= 1)
@@ -1901,15 +2036,31 @@ export class GanttRenderer extends Component {
      * @param {boolean} highlighted
      */
     toggleConnectorHighlighting(connectorId, highlighted) {
+        // QUAN TRỌNG: Kiểm tra connectorId hợp lệ
+        if (!connectorId || !this.connectors[connectorId]) {
+            return;
+        }
+
         const connector = this.connectors[connectorId];
         if (!connector || (!connector.highlighted && !highlighted)) {
             return;
         }
 
+        // QUAN TRỌNG: Kiểm tra mapping tồn tại
+        const mapping = this.mappingConnectorToPills?.[connectorId];
+        if (!mapping) {
+            return;
+        }
+
+        const { sourcePillId, targetPillId } = mapping;
+
+        // QUAN TRỌNG: Kiểm tra pillIds hợp lệ
+        if (!sourcePillId || !targetPillId) {
+            return;
+        }
+
         connector.highlighted = highlighted;
         connector.displayButtons = highlighted;
-
-        const { sourcePillId, targetPillId } = this.mappingConnectorToPills[connectorId];
 
         this.highlightPill(sourcePillId, highlighted);
         this.highlightPill(targetPillId, highlighted);
@@ -2087,10 +2238,35 @@ export class GanttRenderer extends Component {
     }
 
     getRecordIds(connectorId) {
+        // THÊM KIỂM TRA QUAN TRỌNG
+        if (!connectorId || !this.mappingConnectorToPills || !this.mappingConnectorToPills[connectorId]) {
+            return { masterId: null, slaveId: null };
+        }
+
         const { sourcePillId, targetPillId } = this.mappingConnectorToPills[connectorId];
+
+        // Kiểm tra thêm nếu sourcePillId hoặc targetPillId không tồn tại
+        if (!sourcePillId || !targetPillId) {
+            console.warn(`Connector ${connectorId} has invalid source/target pills:`,
+                { sourcePillId, targetPillId });
+            return { masterId: null, slaveId: null };
+        }
+
+        // QUAN TRỌNG: Kiểm tra pills tồn tại
+        const sourcePill = this.pills[sourcePillId];
+        const targetPill = this.pills[targetPillId];
+
+        if (!sourcePill || !targetPill) {
+            console.warn(`Missing pills for connector ${connectorId}:`, {
+                sourcePillExists: !!sourcePill,
+                targetPillExists: !!targetPill
+            });
+            return { masterId: null, slaveId: null };
+        }
+
         return {
-            masterId: this.pills[sourcePillId]?.record.id,
-            slaveId: this.pills[targetPillId]?.record.id,
+            masterId: sourcePill.record?.id || null,
+            slaveId: targetPill.record?.id || null,
         };
     }
 
@@ -2546,11 +2722,13 @@ export class GanttRenderer extends Component {
         const {
             fromServer,
             groupedByField,
-            groupLevel,
+            groupLevel = 0,
             id,
             progressBar,
             resId,
             unavailabilities,
+            parentTaskId,
+            isSubtask = false,
         } = parentRow;
 
         const baseSpan = ROW_SPAN;
@@ -2559,7 +2737,7 @@ export class GanttRenderer extends Component {
         // Tạo pill mới cho task
         const taskPill = {
             id: `__pill__${this.nextPillId++}`,
-            record: pill.record,  // giữ nguyên record (cần cho popover)
+            record: pill.record,
             startDate: pill.startDate,
             stopDate: pill.stopDate,
             level: 0,
@@ -2568,7 +2746,6 @@ export class GanttRenderer extends Component {
                 column: pill.grid.column,
                 row: [this.topOffset + 1, baseSpan],
             },
-            // Chỉ copy những field cần thiết, không copy hết pill
             displayName: pill.displayName,
             className: pill.className || '',
             _color: pill._color,
@@ -2598,20 +2775,46 @@ export class GanttRenderer extends Component {
             this.mappingRowToPillsByRecord[taskPill.id][record.id] = taskPill;
         }
 
+        // QUAN TRỌNG: Cập nhật parent-child mapping cho connectors
+        const currentParentTaskId = parentTaskId || (record.parent_id ? this.parseParentId(record.parent_id) : null);
+
+        if (currentParentTaskId) {
+            console.log(`Setting parent-child mapping: ${currentParentTaskId} -> ${record.id}`);
+
+            // ĐẢM BẢO parentChildMapping được khởi tạo
+            if (!this.parentChildMapping) {
+                this.parentChildMapping = {};
+            }
+
+            if (!this.parentChildMapping[currentParentTaskId]) {
+                this.parentChildMapping[currentParentTaskId] = [];
+            }
+
+            // Chỉ thêm nếu chưa có
+            if (!this.parentChildMapping[currentParentTaskId].includes(record.id)) {
+                this.parentChildMapping[currentParentTaskId].push(record.id);
+                console.log(`✓ Added child ${record.id} to parent ${currentParentTaskId}`);
+            }
+
+            console.log(`Parent-child mapping after update:`, this.parentChildMapping);
+        } else {
+            console.log(`No parent task ID for record ${record.id}`);
+        }
+
         if (progressBar && this.isTouchDevice) {
             span += ROW_SPAN;
         }
 
-        // Tạo row cho task - QUAN TRỌNG: Đảm bảo record được truyền
+        // Tạo row cho task
         const taskRow = {
             fromServer,
             groupedByField,
             groupLevel: groupLevel,
-            id: `${id || 'root'}_${record.id}`, // ID duy nhất cho task row
+            id: `${id || 'root'}_${record.id}`,
             isGroup: false,
             name: record.display_name,
             pills: [taskPill],
-            record: record, // QUAN TRỌNG: Thêm record từ pill
+            record: record,
             progressBar,
             resId: record.id,
             grid: {
@@ -2619,9 +2822,10 @@ export class GanttRenderer extends Component {
                 column: [groupLevel + 2, -1],
             },
             cellColors: {},
-            // THÊM: parent_id nếu có
-            parentTaskId: record.parent_id,
-            isSubtask: !!record.parent_id
+            parentTaskId: currentParentTaskId,
+            isSubtask: isSubtask || !!record.parent_id,
+            levelClass: (isSubtask || record.parent_id) ? 'o_gantt_subtask' : '',
+            indentStyle: `padding-left: ${groupLevel * 20}px`
         };
 
         // Xử lý unavailabilities nếu có
@@ -2634,6 +2838,8 @@ export class GanttRenderer extends Component {
         console.log(`Created task row: ${taskRow.name} ${taskRow.isSubtask ? '(SUBTASK)' : ''}`);
         if (taskRow.isSubtask) {
             console.log(`  Parent ID: ${taskRow.parentTaskId}`);
+            console.log(`  Group Level: ${taskRow.groupLevel}`);
+            console.log(`  Indent Style: ${taskRow.indentStyle}`);
         }
 
         console.log('=== CREATE TASK ROW END ===');
@@ -3368,85 +3574,89 @@ export class GanttRenderer extends Component {
      */
     async generateParentChildConnectors() {
         console.log('=== GENERATING PARENT-CHILD CONNECTORS ===');
-        console.log('Total pills:', Object.keys(this.pills).length);
 
-        // Tạo mapping từ record ID sang pills
-        const recordToPills = {};
-        for (const pillId in this.pills) {
-            const pill = this.pills[pillId];
-            const recordId = pill.record.id;
-            if (!recordToPills[recordId]) {
-                recordToPills[recordId] = [];
-            }
-            recordToPills[recordId].push(pill);
+        // QUAN TRỌNG: Kiểm tra this.pills tồn tại
+        if (!this.pills) {
+            console.log('this.pills is undefined, initializing...');
+            this.pills = {};
         }
 
-        console.log('Record to pills mapping:', Object.keys(recordToPills).length);
-        console.log('Available record IDs:', Object.keys(recordToPills));
+        console.log('Total pills:', Object.keys(this.pills).length);
+        console.log('Parent-child mapping:', this.parentChildMapping);
+
+        // Đảm bảo parentChildMapping tồn tại
+        if (!this.parentChildMapping) {
+            console.log('this.parentChildMapping is undefined, initializing...');
+            this.parentChildMapping = {};
+        }
+
+        if (Object.keys(this.parentChildMapping).length === 0) {
+            console.log('No parent-child mapping found, checking records directly...');
+
+            // Tạo mapping từ records
+            this.createParentChildMappingFromRecords();
+        }
+
+        console.log('Parent-child mapping after check:', this.parentChildMapping);
+
+        // Tạo mapping từ record ID sang pills
+        const recordToPills = this.createRecordToPillsMapping();
+        if (!recordToPills) {
+            console.log('Failed to create record to pills mapping');
+            return 0;
+        }
+
+        console.log('Record to pills mapping size:', Object.keys(recordToPills).length);
 
         let connectorCount = 0;
         const createdConnectors = new Set();
 
-        // Duyệt qua tất cả pills để tìm parent-child relationships
-        for (const pillId in this.pills) {
-            const pill = this.pills[pillId];
-            const record = pill.record;
+        // Duyệt qua parent-child mapping
+        for (const parentId in this.parentChildMapping) {
+            const childIds = this.parentChildMapping[parentId];
 
-            // Kiểm tra xem record có parent_id không
-            if (!record.parent_id) {
+            if (!childIds || !Array.isArray(childIds)) {
+                console.log(`No child IDs for parent ${parentId}`);
                 continue;
             }
 
-            // Parse parent_id
-            let parentId;
-            if (Array.isArray(record.parent_id)) {
-                parentId = record.parent_id[0]; // [id, name]
-            } else if (typeof record.parent_id === 'object' && record.parent_id.id) {
-                parentId = record.parent_id.id; // {id: ..., name: ...}
-            } else {
-                parentId = record.parent_id; // số đơn thuần
-            }
-
-            console.log(`Found parent-child relationship: ${record.id} -> ${parentId}`);
-
-            // Tìm pills của parent và child
+            // Tìm pills của parent
             const parentPills = recordToPills[parentId];
-            const childPills = recordToPills[record.id];
-
-            console.log(`Parent pills: ${parentPills ? parentPills.length : 0}`);
-            console.log(`Child pills: ${childPills ? childPills.length : 0}`);
-
             if (!parentPills || parentPills.length === 0) {
                 console.log(`✗ Missing parent pills for parent ID: ${parentId}`);
                 continue;
             }
 
-            if (!childPills || childPills.length === 0) {
-                console.log(`✗ Missing child pills for child ID: ${record.id}`);
-                continue;
-            }
+            // Duyệt qua từng child
+            for (const childId of childIds) {
+                // Tìm pills của child
+                const childPills = recordToPills[childId];
+                if (!childPills || childPills.length === 0) {
+                    console.log(`✗ Missing child pills for child ID: ${childId}`);
+                    continue;
+                }
 
-            // Lấy pill đầu tiên của mỗi bên
-            const parentPill = parentPills[0];
-            const childPill = childPills[0];
+                // Tạo connector ID duy nhất
+                const connectorId = `__parent_child__${parentId}_${childId}`;
 
-            // Tạo connector ID duy nhất
-            const connectorId = `__parent_child__${parentId}_${record.id}`;
+                // Tránh tạo trùng
+                if (createdConnectors.has(connectorId)) {
+                    console.log(`Connector ${connectorId} already created`);
+                    continue;
+                }
 
-            // Tránh tạo trùng
-            if (createdConnectors.has(connectorId)) {
-                console.log(`Connector ${connectorId} already created`);
-                continue;
-            }
+                // Lấy pill đầu tiên của mỗi bên
+                const parentPill = parentPills[0];
+                const childPill = childPills[0];
 
             console.log(`Creating parent-child connector: ${connectorId}`);
             console.log(`Parent pill: ${parentPill.id}, Child pill: ${childPill.id}`);
 
-            // Tạo connector
+            // Tạo connector với style đặc biệt
             this.setConnector(
                 {
                     id: connectorId,
-                    className: "o_parent_child_connector", // QUAN TRỌNG: class để style
+                    className: "o_parent_child_connector",
                     alert: null,
                     displayButtons: false,
                     highlighted: false,
@@ -3455,21 +3665,28 @@ export class GanttRenderer extends Component {
                 childPill.id     // target
             );
 
-            // Đánh dấu connector này là parent-child
-            this.parentChildMapping[connectorId] = true;
             createdConnectors.add(connectorId);
             connectorCount++;
 
             console.log(`✓ Created parent-child connector: ${connectorId}`);
         }
-
-        console.log(`Total parent-child connectors created: ${connectorCount}`);
-
-        // Debug: kiểm tra connectors đã tạo
-        console.log('Created connectors:', Array.from(createdConnectors));
-
-        return connectorCount;
     }
+
+    console.log(`Total parent-child connectors created: ${connectorCount}`);
+
+    // Debug: kiểm tra connectors đã tạo
+    if (this.connectors) {
+        const allConnectors = Object.keys(this.connectors);
+        const parentChildConnectors = allConnectors.filter(id => id.startsWith('__parent_child__'));
+        console.log('All connectors:', allConnectors.length);
+        console.log('Parent-child connectors:', parentChildConnectors);
+    } else {
+        console.log('this.connectors is undefined');
+    }
+
+    return connectorCount;
+}
+
 
     /**
      * Kiểm tra và xử lý parent_id field từ record
@@ -3513,26 +3730,32 @@ export class GanttRenderer extends Component {
      * Parse parent ID từ các định dạng khác nhau
      */
     parseParentId(parentValue) {
-        if (!parentValue) {
-            return null;
-        }
+        if (!parentValue) return null;
 
-        // Đơn giản: nếu là array [id, name] thì lấy id
+        console.log(`Parsing parent_id:`, parentValue, 'type:', typeof parentValue);
+
         if (Array.isArray(parentValue)) {
-            return parentValue[0];
+            // Format: [id, name]
+            const id = parentValue[0];
+            console.log(`Parsed array parent_id: ${id}`);
+            return id;
         }
 
-        // Nếu là object {id, name} thì lấy id
-        if (typeof parentValue === 'object' && parentValue.id) {
-            return parentValue.id;
+        if (typeof parentValue === 'object' && parentValue !== null) {
+            // Format: {id: ..., name: ..., ...}
+            const id = parentValue.id;
+            console.log(`Parsed object parent_id: ${id}`);
+            return id;
         }
 
-        // Nếu là number hoặc string có thể parse thành number
-        const numValue = Number(parentValue);
-        if (!isNaN(numValue)) {
-            return numValue;
+        if (typeof parentValue === 'number' || (typeof parentValue === 'string' && !isNaN(parentValue))) {
+            // Format: number hoặc string number
+            const id = Number(parentValue);
+            console.log(`Parsed number parent_id: ${id}`);
+            return id;
         }
 
+        console.log(`Could not parse parent_id:`, parentValue);
         return null;
     }
 
@@ -3666,16 +3889,35 @@ export class GanttRenderer extends Component {
      * Tạo mapping record id -> pills
      */
     createRecordToPillsMapping() {
+        console.log('=== CREATING RECORD TO PILLS MAPPING ===');
+
+        if (!this.pills) {
+            console.log('this.pills is undefined');
+            return {};
+        }
+
         const recordToPills = {};
+
         for (const pillId in this.pills) {
             const pill = this.pills[pillId];
+            if (!pill || !pill.record) {
+                console.log(`Skipping pill ${pillId} - no record`);
+                continue;
+            }
+
             const recordId = pill.record.id;
+            if (!recordId) {
+                console.log(`Skipping pill ${pillId} - no record id`);
+                continue;
+            }
+
             if (!recordToPills[recordId]) {
                 recordToPills[recordId] = [];
             }
             recordToPills[recordId].push(pill);
         }
-        console.log('Record to pills mapping created:', Object.keys(recordToPills));
+
+        console.log('Record to pills mapping created with', Object.keys(recordToPills).length, 'records');
         return recordToPills;
     }
 
@@ -3857,5 +4099,183 @@ export class GanttRenderer extends Component {
             console.log('  Stop Date:', pill.stopDate?.toISO());
             console.log('  Grid Column:', pill.grid.column);
         });
+    }
+    /**
+     * Xử lý row cho subtask
+     * @param {Row} row
+     * @param {Pill[]} pills
+     */
+    processSubtaskRow(row, pills) {
+        console.log('=== PROCESS SUBTASK ROW ===');
+        console.log('Subtask record:', row.record);
+
+        const { GROUP_ROW_SPAN, ROW_SPAN } = this.constructor;
+        const { dependencyField } = this.model.metaData;
+        const {
+            groupLevel = 0,
+            progressBar,
+            unavailabilities,
+            record,
+        } = row;
+
+        const result = { rows: [], pillsToProcess: [] };
+
+        // Tìm pill tương ứng với subtask này
+        const matchingPills = pills.filter(pill => {
+            if (!row.record) return false;
+            return pill.record.id === row.record.id;
+        });
+
+        if (matchingPills.length === 0) {
+            console.log('No matching pill found for subtask:', row.record.display_name);
+            result.pillsToProcess = pills;
+            return result;
+        }
+
+        // Parse parent ID
+        const parentTaskId = this.parseParentId(record.parent_id);
+        console.log(`Parsed parent ID: ${parentTaskId} from`, record.parent_id);
+
+        // Tạo row cho subtask với level thụt vào hơn
+        const subtaskRow = this.createTaskRow({
+            ...row,
+            groupLevel: groupLevel + 1, // Thụt lề thêm 1 level
+            parentTaskId: parentTaskId,
+            isSubtask: true
+        }, matchingPills[0]);
+
+        // Đánh dấu đây là subtask
+        subtaskRow.isSubtask = true;
+        subtaskRow.parentTaskId = parentTaskId;
+        subtaskRow.levelClass = 'o_gantt_subtask';
+        subtaskRow.indentStyle = `padding-left: ${(groupLevel + 1) * 20}px`;
+
+        console.log('Created subtask row:', {
+            name: subtaskRow.name,
+            parentTaskId: subtaskRow.parentTaskId,
+            isSubtask: subtaskRow.isSubtask,
+            groupLevel: subtaskRow.groupLevel
+        });
+
+        result.rows.push(subtaskRow);
+
+        // Loại bỏ pill đã sử dụng khỏi danh sách
+        result.pillsToProcess = pills.filter(pill => pill.record.id !== row.record.id);
+
+        console.log(`Processed subtask: ${result.rows.length} row created`);
+        return result;
+    }
+
+    /**
+     * Force update connectors để đảm bảo chúng được render
+     */
+    forceUpdateConnectors() {
+        console.log('=== FORCE UPDATING CONNECTORS ===');
+
+        try {
+            // QUAN TRỌNG: Đảm bảo các object được khởi tạo
+            if (!this.pills) this.pills = {};
+            if (!this.connectors) this.connectors = reactive({});
+            if (!this.parentChildMapping) this.parentChildMapping = {};
+            if (!this.mappingConnectorToPills) this.mappingConnectorToPills = {};
+            if (!this.mappingPillToConnectors) this.mappingPillToConnectors = {};
+
+            // Xóa tất cả connectors cũ
+            this.initializeConnectors();
+
+            // Tạo lại connectors
+            this.generateConnectors();
+            this.generateParentChildConnectors();
+
+            // Force re-render
+            this.computeDerivedParams();
+
+            console.log('Connectors force updated successfully');
+        } catch (error) {
+            console.error('Error force updating connectors:', error);
+            console.error('Error stack:', error.stack);
+        }
+    }
+    /**
+     * Safely serialize data for server communication
+     * @param {any} data
+     * @returns {any}
+     */
+    safeSerialize(data) {
+        if (data === undefined || data === null) {
+            return false;
+        }
+
+        // Handle Luxon DateTime
+        if (data && typeof data.isLuxonDateTime !== "undefined" && data.isLuxonDateTime) {
+            return data.toISO();
+        }
+
+        if (data instanceof DateTime) {
+            return data.toISO();
+        }
+
+        // Handle arrays
+        if (Array.isArray(data)) {
+            return data.map(item => this.safeSerialize(item));
+        }
+
+        // Handle objects (but not DOM elements or functions)
+        if (typeof data === 'object' && data !== null && !(data instanceof Element) && !(typeof data === 'function')) {
+            const result = {};
+            for (const key in data) {
+                result[key] = this.safeSerialize(data[key]);
+            }
+            return result;
+        }
+
+        // Handle functions (return false)
+        if (typeof data === 'function') {
+            return false;
+        }
+
+        // Handle DOM elements (return false)
+        if (data instanceof Element) {
+            return false;
+        }
+
+        // Return primitives as-is
+        return data;
+    }
+    /**
+     * Tạo parent-child mapping từ records
+     */
+    createParentChildMappingFromRecords() {
+        console.log('=== CREATING PARENT-CHILD MAPPING FROM RECORDS ===');
+
+        const { records } = this.model.data;
+
+        // Đảm bảo parentChildMapping được khởi tạo
+        if (!this.parentChildMapping) {
+            this.parentChildMapping = {};
+        }
+
+        // Tìm tất cả records có parent_id
+        const childRecords = records.filter(record => record.parent_id);
+        console.log(`Found ${childRecords.length} child records`);
+
+        for (const childRecord of childRecords) {
+            const parentId = this.parseParentId(childRecord.parent_id);
+            const childId = childRecord.id;
+
+            if (parentId && childId) {
+                console.log(`Found relationship: ${parentId} -> ${childId}`);
+
+                if (!this.parentChildMapping[parentId]) {
+                    this.parentChildMapping[parentId] = [];
+                }
+
+                if (!this.parentChildMapping[parentId].includes(childId)) {
+                    this.parentChildMapping[parentId].push(childId);
+                }
+            }
+        }
+
+        console.log('Parent-child mapping created:', this.parentChildMapping);
     }
 }

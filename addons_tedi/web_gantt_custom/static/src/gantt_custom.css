@@ -85,28 +85,31 @@
 }
 
 /* hiện mũi tên */
-/* Thêm vào CSS file của bạn */
-.o_gantt_subtask_row {
-    margin-left: 20px;
-    border-left: 2px solid #ccc;
-    padding-left: 10px;
+/* Đảm bảo connectors có z-index cao hơn pills */
+.o_gantt_connector {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10; /* Tăng z-index */
 }
 
-.o_gantt_subtask_pill {
-    background-color: #e6f3ff !important;
-    border-color: #4da6ff !important;
+.o_gantt_connector svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
 }
 
-/* Style cho parent-child connector */
-.o_parent_child_connector .o_connector_line {
-    stroke: #999;
-    stroke-width: 2px;
-    stroke-dasharray: 5, 5;
-    opacity: 0.7;
+/* Style cho parent-child connectors */
+.o_parent_child_connector .o_connector_stroke {
+    stroke-dasharray: 5, 5 !important;
+    stroke: #666 !important;
+    stroke-width: 2px !important;
 }
 
-.o_parent_child_connector .o_connector_start,
-.o_parent_child_connector .o_connector_end {
-    fill: #999;
-    r: 4;
+.o_parent_child_connector .o_connector_stroke_hover_ease {
+    stroke: transparent !important;
+    stroke-width: 10px !important;
 }
