@@ -48,7 +48,7 @@ export class AttendanceGantt extends Component {
         this.dialogService = useService("dialog");
         this.userService = useService("user");
 
-        this.display = { controlPanel: true };
+        // Dữ liệu 'display' được nhận từ props (this.props.display)
 
         const today = new Date();
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -221,14 +221,13 @@ export class AttendanceGantt extends Component {
         });
 
         // 2. Lấy chi tiết lịch (resource.calendar.attendance)
-        // QUAN TRỌNG: Lọc bỏ dòng 'lunch' để code không hiểu nhầm 12-13h là giờ làm
         if (calendarIds.length > 0) {
             const calendarLines = await this.orm.searchRead(
                 "resource.calendar.attendance",
                 [
                     ["calendar_id", "in", calendarIds],
                     ["display_type", "!=", "line_section"],
-                    ["day_period", "!=", "lunch"] // <--- LỌC BỎ DÒNG 'NGHỈ' TRONG ẢNH
+                    ["day_period", "!=", "lunch"]
                 ],
                 ["calendar_id", "dayofweek", "hour_from", "hour_to", "day_period"]
             );
@@ -297,12 +296,15 @@ export class AttendanceGantt extends Component {
             // Gọi hàm tách ca (Dynamic theo config)
             const splitIntervals = this.getShiftIntervals(start, end, empId, type);
 
+            let intervalIndex = 0; // Thêm biến index cho intervalsByEmp
             for (const interval of splitIntervals) {
                  const label = this.buildLabel(interval.start, interval.end, type);
                  intervalsByEmp[empId].push({
                     id: rec.id, start: interval.start, end: interval.end, status: rec.status, label,
-                    type: type, colorClass: colorClass
-                });
+                    type: type, colorClass: colorClass,
+                    index: intervalIndex, // THÊM INDEX VÀO INTERVALSBYEMP để key unique trong mode week/month
+                 });
+                 intervalIndex++;
             }
 
             const daySegs = this.splitShiftIntoSegments(start, end, rec.status, rec.id, empId, type, colorClass, null);
@@ -329,6 +331,7 @@ export class AttendanceGantt extends Component {
         const segments = [];
         if (!rawStart || !rawEnd || rawEnd <= rawStart) return segments;
         let current = new Date(rawStart);
+        let index = 0; // Thêm index để tạo key duy nhất trong t-foreach (mode day)
         while (current < rawEnd) {
             const dateKey = this.formatDateKey(current);
             const endOfDay = new Date(current); endOfDay.setHours(23, 59, 59, 999);
@@ -344,7 +347,8 @@ export class AttendanceGantt extends Component {
                 const label = customLabel ? customLabel : this.buildLabel(s, e, type);
                 let finalClass = colorClass;
                 if (!finalClass) finalClass = status === 'late' ? 'bg-danger' : 'bg-success';
-                segments.push({ dateKey, id, label, status: status || "ontime", style, startTime: s.getTime(), type: type, resModel: 'hr.attendance', colorClass: finalClass });
+                segments.push({ dateKey, id, label, status: status || "ontime", style, startTime: s.getTime(), type: type, resModel: 'hr.attendance', colorClass: finalClass, index: index });
+                index++; // Tăng index sau mỗi đoạn
             }
             current.setDate(current.getDate() + 1); current.setHours(0, 0, 0, 0);
         }
@@ -352,7 +356,6 @@ export class AttendanceGantt extends Component {
     }
 
     // ... (Giữ nguyên các hàm Utils hiển thị: buildLabel, computeBarStyleInDay, computeTimelineBars...) ...
-    // Copy lại phần cuối của file JS trước đó vào đây nếu chưa có
     buildLabel(start, end, type = 'attendance') {
         const diffMs = end - start;
         const totalMinutes = Math.floor(diffMs / 60000);
@@ -360,7 +363,7 @@ export class AttendanceGantt extends Component {
         const minutes = totalMinutes % 60;
         let durationStr = "";
         if (hours > 0) durationStr += `${hours}h`;
-        if (minutes > 0) durationStr += `${String(minutes).padStart(2, '0')}`;
+        if (minutes > 0) durationStr += `${String(minutes).padStart(2, "0")}`;
         if (!durationStr) durationStr = "0h";
         if (this.state.mode === 'month' || this.state.mode === 'week') return durationStr;
         const opt = { hour: "2-digit", minute: "2-digit", hour12: false };
@@ -401,7 +404,7 @@ export class AttendanceGantt extends Component {
                     }
                 }
                 const endOfDay = new Date(realEnd); endOfDay.setHours(23, 59, 59, 999);
-                bars.push({ id: interval.id, status: interval.status, label: interval.label, startMs: realStart.getTime(), endMs: realEnd.getTime(), collisionEndMs: endOfDay.getTime(), left, width, type: interval.type, resModel: 'hr.attendance', colorClass: interval.colorClass, level: 0 });
+                bars.push({ id: interval.id, status: interval.status, label: interval.label, startMs: realStart.getTime(), endMs: realEnd.getTime(), collisionEndMs: endOfDay.getTime(), left, width, type: interval.type, resModel: 'hr.attendance', colorClass: interval.colorClass, level: 0, index: interval.index }); // Truyền index từ intervalsByEmp
             }
             bars.sort((a, b) => a.startMs - b.startMs);
             const levels = [];
@@ -453,4 +456,20 @@ export class AttendanceGantt extends Component {
 
 AttendanceGantt.template = "hr_attendance_tedi.AttendanceGantt";
 AttendanceGantt.components = { Layout };
+
+// KHAI BÁO TẤT CẢ CÁC PROPS TIÊU CHUẨN MÀ ODOO TRUYỀN XUỐNG
+AttendanceGantt.props = {
+    // Props tiêu chuẩn Odoo View
+    action: { type: Object, optional: true },
+    actionId: { type: Number, optional: true },
+    className: { type: String, optional: true },
+    resId: { type: [Number, Boolean], optional: true },
+    resModel: { type: String, optional: true },
+    viewId: { type: Number, optional: true },
+    context: { type: Object, optional: true },
+
+    // Prop 'display' (đã gây lỗi gốc)
+    display: { type: Object, optional: true },
+};
+
 registry.category("actions").add("tedi_attendance_gantt_view", AttendanceGantt);
