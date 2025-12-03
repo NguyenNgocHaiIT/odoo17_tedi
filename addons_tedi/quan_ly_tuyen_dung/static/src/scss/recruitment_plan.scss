@@ -21,8 +21,8 @@
     .o_datepicker_input,
     select,
     textarea {
-      border-radius: var(--tedi-radius);
-      border: 1px solid var(--tedi-border-color);
+      /*border-radius: var(--tedi-radius);
+      border: 1px solid var(--tedi-border-color);*/
       background: var(--tedi-bg);
       padding: 6px 10px;
       outline: none;
@@ -38,8 +38,8 @@
     .o_datepicker_input:focus,
     select:focus,
     textarea:focus {
-      border-color: var(--tedi-border-focus);
-      box-shadow: 0 0 0 3px var(--tedi-shadow-focus);
+      /*border-color: var(--tedi-border-focus);
+      box-shadow: 0 0 0 3px var(--tedi-shadow-focus);*/
     }
 
     /* Disabled / Readonly */

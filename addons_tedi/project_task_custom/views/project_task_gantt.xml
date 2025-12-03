@@ -81,7 +81,7 @@
                    default_scale="month"
                    scales="day,week,month,year"
                    color="project_id"
-                   string="Gantt Only"
+                   string="Nhiệm vụ"
                    js_class="project_task_gantt_custom"
                    default_group_by="project_id"
                    progress_bar="user_ids"
