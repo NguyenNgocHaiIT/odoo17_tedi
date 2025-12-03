@@ -37,7 +37,7 @@
                 <t t-if="shouldRenderConnectors()">
                     <t t-foreach="visibleConnectors" t-as="connector" t-key="connector.id">
                         <!-- QUAN TRỌNG: Thêm điều kiện kiểm tra sourcePoint và targetPoint -->
-                        <GanttConnector t-if="connector.sourcePoint and connector.targetPoint"
+                        <GanttConnector
                             reactive="connector"
                             onRemoveButtonClick="() => this.onRemoveButtonClick(connector.id)"
                             onLeftButtonClick="() => this.onRescheduleButtonClick('backward', connector.id)"
