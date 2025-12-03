@@ -96,7 +96,7 @@ export class GanttConnector extends Component {
     }
 
     get displayButtons() {
-        return this.props.reactive.displayButtons;
+        return false;
     }
 
     get highlighted() {
