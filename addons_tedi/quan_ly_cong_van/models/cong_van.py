@@ -639,6 +639,15 @@ class OfficeDocument(models.Model):
 
     @api.model
     def create(self, vals):
+
+        self.env.cr.execute("""
+                    SELECT setval(
+                        pg_get_serial_sequence('office_document', 'id'),
+                        (SELECT COALESCE(MAX(id), 0) FROM office_document) + 1,
+                        false
+                    )
+                """)
+
         # Xử lý han_ket_thuc
         if 'ngay_bat_dau' in vals and not vals.get('han_ket_thuc'):
             vals['han_ket_thuc'] = fields.Date.from_string(vals['ngay_bat_dau']) + timedelta(days=7)

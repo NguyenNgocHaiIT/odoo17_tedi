@@ -1,0 +1,115 @@
+.o_gantt_row_header {
+    display: grid !important;
+    grid-template-columns: minmax(150px, 1fr) 120px 120px 80px 130px!important;
+    text-overflow: ellipsis !important;
+    gap: 0 !important;
+}
+
+.o_gantt_row_title,
+.o_gantt_row_info {
+    min-height: 100%;
+    display: flex !important;
+    align-items: center;
+    text-overflow: ellipsis !important;
+}
+
+/* Đảm bảo row header có đủ không gian */
+.o_gantt_row_sidebar {
+    min-width: 600px !important; /* Tăng độ rộng tối thiểu */
+}
+
+/* Cập nhật độ rộng tổng thể của sidebar */
+.o_gantt_row_headers {
+    width: 600px !important; /* Hoặc giá trị phù hợp với tổng độ rộng các cột */
+}
+
+/* Grid layout cho title container - phải khớp với row header */
+.o_gantt_title_container {
+    display: grid !important;
+    grid-template-columns: minmax(150px, 1fr) 120px 120px 80px 130px!important;
+    text-overflow: ellipsis !important;
+    gap: 0 !important;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Đảm bảo mỗi phần tử chỉ chiếm 1 cột */
+.o_gantt_title {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    text-overflow: ellipsis !important;
+}
+
+.o_gantt_header_info:nth-of-type(1) {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    text-overflow: ellipsis !important;
+}
+
+.o_gantt_header_info:nth-of-type(2) {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    text-overflow: ellipsis !important;
+}
+
+.o_gantt_header_info:nth-of-type(3) {
+    grid-column: 4 !important;
+    grid-row: 1 !important;
+    text-overflow: ellipsis !important;
+}
+
+/* Đảm bảo độ rộng tổng thể */
+.o_gantt_title_container {
+    width: var(--Gantt__RowHeader-width, 600px) !important;
+}
+
+/* Xóa class cũ có thể gây conflict */
+.o_gantt_row_sidebar {
+    width: auto !important;
+}
+
+/* Cố định cột & chặn tràn */
+.o_gantt_row_info,
+.o_gantt_row_title {
+    width: 100%;
+    overflow: hidden !important;
+}
+
+/* Chặn chữ tràn + hiển thị ... */
+.o_gantt_row_info span,
+.o_gantt_row_title span {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* hiện mũi tên */
+/* Đảm bảo connectors có z-index cao hơn pills */
+.o_gantt_connector {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10; /* Tăng z-index */
+}
+
+.o_gantt_connector svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* Style cho parent-child connectors */
+.o_parent_child_connector .o_connector_stroke {
+    stroke-dasharray: 5, 5 !important;
+    stroke: #666 !important;
+    stroke-width: 2px !important;
+}
+
+.o_parent_child_connector .o_connector_stroke_hover_ease {
+    stroke: transparent !important;
+    stroke-width: 10px !important;
+}

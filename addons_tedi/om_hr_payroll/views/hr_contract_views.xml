@@ -33,10 +33,13 @@
             <xpath expr="//page[@name='information']" position="after">
                 <page name="other" position="move"/>
             </xpath>
+            <xpath expr="//group[@name='salary']" position="inside">
+                <field name="salary_grade_id"/>
+            </xpath>
 
             <xpath expr="//group[@name='salary_info']" position="after">
-                <group string="Monthly Advantages in Cash" name='allowances'>
-                    <label for="hra"/>
+                <group string="Chế độ hàng tháng bằng tiền mặt" name='allowances'>
+                    <label for="hra" string=""/>
                     <div class="o_row">
                         <field name="hra" nolabel="1"/>
                         <span>/ month</span>
@@ -123,9 +126,9 @@
     </record>
 
     <menuitem
-        id="hr_contract_advantage_template_menu_action"
-        action="hr_contract_advantage_template_action"
-        parent="menu_hr_payroll_configuration"
-        sequence="50"/>
+            id="hr_contract_advantage_template_menu_action"
+            action="hr_contract_advantage_template_action"
+            parent="menu_hr_payroll_configuration"
+            sequence="50"/>
 
 </odoo>

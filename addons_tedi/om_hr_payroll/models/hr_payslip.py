@@ -227,8 +227,27 @@ class HrPayslip(models.Model):
                 'number_of_hours': work_data['hours'],
                 'contract_id': contract.id,
             }
-
             res.append(attendances)
+            # Todo: Xem thêm chỗ này
+            Attendance = self.env['hr.attendance']
+            att_lines = Attendance.search([
+                ('employee_id', '=', contract.employee_id.id),
+                ('check_in', '>=', date_from),
+                ('check_out', '<=', date_to),
+            ])
+            total_hours = sum(att.worked_hours for att in att_lines)  # hr.attendance cần có compute worked_hours
+            hours_per_day = contract.resource_calendar_id.hours_per_day or 8.0
+            total_days = total_hours / hours_per_day if hours_per_day else 0.0
+
+            att_real_line = {
+                'name': _('Ngày làm việc thực tế trả lương 100%'),
+                'sequence': 2,
+                'code': 'ATT_REAL',
+                'number_of_days': total_days,
+                'number_of_hours': total_hours,
+                'contract_id': contract.id,
+            }
+            res.append(att_real_line)
             res.extend(leaves.values())
         return res
 

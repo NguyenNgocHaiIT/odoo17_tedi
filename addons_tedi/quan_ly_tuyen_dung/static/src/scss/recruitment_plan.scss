@@ -21,8 +21,8 @@
     .o_datepicker_input,
     select,
     textarea {
-      border-radius: var(--tedi-radius);
-      border: 1px solid var(--tedi-border-color);
+      /*border-radius: var(--tedi-radius);
+      border: 1px solid var(--tedi-border-color);*/
       background: var(--tedi-bg);
       padding: 6px 10px;
       outline: none;
@@ -38,8 +38,8 @@
     .o_datepicker_input:focus,
     select:focus,
     textarea:focus {
-      border-color: var(--tedi-border-focus);
-      box-shadow: 0 0 0 3px var(--tedi-shadow-focus);
+      /*border-color: var(--tedi-border-focus);
+      box-shadow: 0 0 0 3px var(--tedi-shadow-focus);*/
     }
 
     /* Disabled / Readonly */
@@ -60,30 +60,30 @@
     [aria-invalid="true"],
     .is-invalid,
     .o_field_invalid & {
-      border-color: #dc3545;                  /* đỏ */
-      box-shadow: 0 0 0 3px rgba(220, 53, 69, .15);
+      /*border-color: #dc3545;                  /* đỏ */
+      /*box-shadow: 0 0 0 3px rgba(220, 53, 69, .15);*/
     }
 
     /* Many2one input cũng là .o_input bên trong widget */
     &.o_field_many2one .o_input {
-      border-radius: var(--tedi-radius);
+      /*border-radius: var(--tedi-radius);*/
     }
 
     /* Monetary (có symbol/currency) */
     &.o_field_monetary .o_input {
-      border-radius: var(--tedi-radius);
+      /*border-radius: var(--tedi-radius);*/
     }
 
     /* Date/datetime widget */
     &.o_datepicker .o_datepicker_input {
-      border-radius: var(--tedi-radius);
+      /*border-radius: var(--tedi-radius);*/
     }
   }
 
   /* Chọn nhanh: ô Select (m2o/m2m x2many) giữ bo tròn */
   .o_input_dropdown {
     .o_input, select {
-      border-radius: var(--tedi-radius);
+      /*border-radius: var(--tedi-radius);*/
     }
   }
 }
