@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="hr_attendance_tedi.AttendanceGantt">
-      <Layout display="display" className="'h-100 d-flex flex-column overflow-hidden bg-white'">
+      <Layout display="props.display" className="'h-100 d-flex flex-column overflow-hidden bg-white'">
 
         <div class="o_tedi_attendance_gantt d-flex flex-column h-100 w-100 bg-white">
 
@@ -100,7 +100,8 @@
                             <t t-set="currentDaySegs" t-value="row.segmentsByDate[state.inputStart] || []"/>
                             <div class="d-flex flex-column gap-1">
                                 <t t-if="currentDaySegs.length">
-                                    <t t-foreach="currentDaySegs" t-as="bar" t-key="bar.id + '_' + bar.dateKey + '_' + bar.type">
+
+                                    <t t-foreach="currentDaySegs" t-as="bar" t-key="bar.id + '_' + bar.index + '_' + bar.type">
                                         <div class="position-relative w-100" style="height: 40px;">
                                             <div class="d-flex w-100 h-100 position-absolute top-0 start-0" style="z-index:0;">
                                                 <t t-foreach="state.hours" t-as="h" t-key="h">
@@ -150,7 +151,7 @@
                                     </t>
                                 </div>
 
-                                <t t-foreach="bars" t-as="wb" t-key="wb.id + '_' + wb.left + '_' + wb.type">
+                                <t t-foreach="bars" t-as="wb" t-key="wb.id + '_' + wb.index + '_' + wb.type">
                                     <div t-on-click="(ev) => { ev.stopPropagation(); openDocument(wb.id, wb.resModel); }"
                                          class="position-absolute rounded shadow-sm d-flex align-items-center justify-content-center text-white cursor-pointer"
                                          t-att-class="wb.colorClass"
