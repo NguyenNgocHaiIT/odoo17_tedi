@@ -60,30 +60,30 @@
     [aria-invalid="true"],
     .is-invalid,
     .o_field_invalid & {
-      border-color: #dc3545;                  /* đỏ */
-      box-shadow: 0 0 0 3px rgba(220, 53, 69, .15);
+      /*border-color: #dc3545;                  /* đỏ */
+      /*box-shadow: 0 0 0 3px rgba(220, 53, 69, .15);*/
     }
 
     /* Many2one input cũng là .o_input bên trong widget */
     &.o_field_many2one .o_input {
-      border-radius: var(--tedi-radius);
+      /*border-radius: var(--tedi-radius);*/
     }
 
     /* Monetary (có symbol/currency) */
     &.o_field_monetary .o_input {
-      border-radius: var(--tedi-radius);
+      /*border-radius: var(--tedi-radius);*/
     }
 
     /* Date/datetime widget */
     &.o_datepicker .o_datepicker_input {
-      border-radius: var(--tedi-radius);
+      /*border-radius: var(--tedi-radius);*/
     }
   }
 
   /* Chọn nhanh: ô Select (m2o/m2m x2many) giữ bo tròn */
   .o_input_dropdown {
     .o_input, select {
-      border-radius: var(--tedi-radius);
+      /*border-radius: var(--tedi-radius);*/
     }
   }
 }
