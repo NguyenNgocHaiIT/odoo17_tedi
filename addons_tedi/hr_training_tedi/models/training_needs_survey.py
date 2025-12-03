@@ -15,7 +15,7 @@ class TrainingNeedsSurvey(models.Model):
     _description = 'Training Needs Survey'
     _order = "id desc"
 
-    # ----------------------------------------------------
+    # ----------------------------------------------------F
     #   FIELDS
     # ----------------------------------------------------
     name = fields.Char(string='Name')
@@ -163,8 +163,8 @@ class TrainingNeedsSurvey(models.Model):
     # ----------------------------------------------------
     #   INIT: chạy khi server start để đồng bộ trạng thái
     # ----------------------------------------------------
-    def init(self):
-        self._cron_update_survey_states()
+    # def init(self):
+    #     self._cron_update_survey_states()
 
     def unlink(self):
         # for rec in self:

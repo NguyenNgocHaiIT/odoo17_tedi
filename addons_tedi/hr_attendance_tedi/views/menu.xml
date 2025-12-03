@@ -1,6 +1,11 @@
 <odoo>
     <data>
 
+
+        <record id="hr_attendance.menu_hr_attendance_root" model="ir.ui.menu">
+            <field name="groups_id" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
         <menuitem id="menu_tedi_attendance_config"
                   name="Cấu hình"
                   parent="hr_attendance.menu_hr_attendance_root"
@@ -10,35 +15,65 @@
                   name="Ngày nghỉ"
                   parent="menu_tedi_attendance_config"
                   action="action_tedi_holiday_config"
+                  groups="hr_holidays.group_hr_holidays_user"
                   sequence="1"/>
 
-        <menuitem id="menu_tedi_attendance_category"
-                  name="Danh sách chấm công"
+
+<!--        <menuitem id="menu_tedi_attendance_category"-->
+<!--                  name="Danh sách chấm công"-->
+<!--                  parent="hr_attendance.menu_hr_attendance_root"-->
+<!--                  sequence="1"/>-->
+
+<!--        <menuitem id="menu_tedi_attendance_list_all"-->
+<!--                  name="Danh sách chấm công"-->
+<!--                  parent="menu_tedi_attendance_category"-->
+<!--                  action="action_tedi_attendance_all"-->
+<!--                  sequence="2"/>-->
+
+<!--        <menuitem id="menu_tedi_attendance_my"-->
+<!--                  name="Chấm công của tôi"-->
+<!--                  parent="menu_tedi_attendance_category"-->
+<!--                  action="action_tedi_attendance_my"-->
+<!--                  sequence="1"/>-->
+
+        <menuitem id="menu_tedi_attendance_gantt_custom"
+                  name="Lịch chấm công"
                   parent="hr_attendance.menu_hr_attendance_root"
-                  sequence="1"/>
-
-        <menuitem id="menu_tedi_attendance_list_all"
-                  name="Danh sách chấm công"
-                  parent="menu_tedi_attendance_category"
-                  action="action_tedi_attendance_all"
-                  sequence="1"/>
-
-        <menuitem id="menu_tedi_attendance_my"
-                  name="Chấm công của tôi"
-                  parent="menu_tedi_attendance_category"
-                  action="action_tedi_attendance_my"
+                  action="action_tedi_attendance_gantt_custom"
                   sequence="2"/>
+
         <menuitem id="menu_tedi_request_root"
-                  name="Đơn báo"
+                  name="Đơn nghỉ phép"
                   parent="hr_attendance.menu_hr_attendance_root"
-                  action="action_tedi_request"
-                  sequence="10"/>
+                  sequence="3"/>
+
+        <menuitem id="menu_tedi_request_dashboard"
+                  name="Bảng điều khiển"
+                  parent="menu_tedi_request_root"
+                  action="hr_holidays.hr_leave_action_new_request"
+                  sequence="0"/>
+
+        <menuitem id="menu_tedi_request_my"
+                  name="Đơn nghỉ phép của tôi"
+                  parent="menu_tedi_request_root"
+                  action="hr_holidays.hr_leave_action_my"
+                  sequence="1"/>
+
+        <menuitem id="menu_tedi_request_all"
+                  name="Tất cả đơn nghỉ phép"
+                  parent="menu_tedi_request_root"
+                  action="hr_holidays.hr_leave_action_action_approve_department"
+                  groups="hr_holidays.group_hr_holidays_user"
+                  sequence="2"/>
 
         <menuitem id="menu_tedi_attendance_import"
                   name="Import Excel"
                   parent="hr_attendance.menu_hr_attendance_root"
                   action="action_tedi_attendance_import"
-                  sequence="3"/>
+                  groups="hr_attendance.group_hr_attendance_officer"
+                  sequence="4"/>
+
+
 
         <record id="group_tedi_hidden_menus" model="res.groups">
             <field name="name">Hidden Menus (Do not use)</field>

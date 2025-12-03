@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <record id="hr_salary_grade_view_tree" model="ir.ui.view">
+        <field name="name">hr_salary_grade_view_tree</field>
+        <field name="model">hr.salary.grade</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="salary_coefficient"/>
+                <field name="advance_amount"/>
+                <field name="bonus_rate"/>
+            </tree>
+        </field>
+    </record>
+
+        <record id="hr_salary_grade_action" model="ir.actions.act_window">
+            <field name="name">Cấu hình bậc lương</field>
+            <field name="res_model">hr.salary.grade</field>
+        </record>
+
+        <menuitem
+                id="hr_salary_grade_action_menu_action"
+                action="hr_salary_grade_action"
+                parent="menu_hr_payroll_configuration"
+                sequence="10"/>
+    </data>
+</odoo>

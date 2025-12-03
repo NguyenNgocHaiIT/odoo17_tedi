@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="hr_leave_view_form_inherit_tedi" model="ir.ui.view">
+            <field name="name">hr.leave.view.form.inherit.tedi</field>
+            <field name="model">hr.leave</field>
+            <field name="inherit_id" ref="hr_holidays.hr_leave_view_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//div[hasclass('col_left')]" position="before">
+                    <div class="o_hr_leave_column col-md-6 col-12">
+                        <group>
+                            <field name="report_title" placeholder="Nhập tiêu đề (Ví dụ: Nghỉ mát...)"/>
+                            <field name="request_date"/>
+
+                            <field name="employee_id" string="Người đề nghị" readonly="state not in ['draft', 'confirm']"/>
+                            <field name="employee_code" readonly="1" force_save="1"/>
+                            <field name="department_id" string="Phòng ban" readonly="1" force_save="1"/>
+
+                            <label for="leaves_taken_count" string="Thống kê phép"/>
+                            <div class="o_row">
+                                <span class="badge text-bg-warning">Đã nghỉ: <field name="leaves_taken_count" class="oe_inline"/></span>
+                                <span class="badge text-bg-success ms-2">Còn lại: <field name="remaining_leaves_count" class="oe_inline"/></span>
+                            </div>
+                        </group>
+                    </div>
+                </xpath>
+
+                <xpath expr="//sheet" position="inside">
+                    <notebook>
+                        <page string="Lịch sử nghỉ phép gần đây">
+                            <field name="my_history_ids" readonly="1">
+                                <tree create="0" delete="0" edit="0" decoration-muted="state == 'cancel'">
+                                    <field name="holiday_status_id"/>
+                                    <field name="date_from"/>
+                                    <field name="date_to"/>
+                                    <field name="duration_display" string="Thời lượng"/>
+                                    <field name="state" widget="badge"
+                                           decoration-info="state == 'draft'"
+                                           decoration-warning="state in ('confirm','validate1')"
+                                           decoration-success="state == 'validate'"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </xpath>
+
+            </field>
+        </record>
+
+        <record id="hr_leave_view_search_inherit_tedi" model="ir.ui.view">
+            <field name="name">hr.leave.view.search.inherit.tedi</field>
+            <field name="model">hr.leave</field>
+            <field name="inherit_id" ref="hr_holidays.view_hr_holidays_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="employee_code"/>
+                    <field name="report_title"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="hr_leave_view_tree_inherit_tedi" model="ir.ui.view">
+            <field name="name">hr.leave.view.tree.inherit.tedi</field>
+            <field name="model">hr.leave</field>
+            <field name="inherit_id" ref="hr_holidays.hr_leave_view_tree"/>
+            <field name="arch" type="xml">
+                 <xpath expr="//field[@name='employee_id']" position="after">
+                    <field name="employee_code" optional="show"/>
+                </xpath>
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="report_title" optional="hide"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

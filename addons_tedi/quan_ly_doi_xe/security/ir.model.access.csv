@@ -1,7 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_hr_tedi_vehicle_record_user,access.hr_tedi_vehicle_record.user,model_hr_tedi_vehicle_record,,1,1,1,1
+
 access_hr_tedi_vehicle_registration_user,access.hr.tedi.vehicle.registration.user,model_hr_tedi_vehicle_registration,,1,1,1,1
-access_hr_tedi_vehicle_repair_user,access.hr.tedi.vehicle.repair.user,model_hr_tedi_vehicle_repair,,1,1,1,1
-access_hr_tedi_vehicle_repair_line_user,access.hr.tedi.vehicle.repair.line.user,model_hr_tedi_vehicle_repair_line,,1,1,1,1
+
+access_fleet_service_line_user,fleet.service.line.user,model_fleet_service_line,base.group_user,1,1,1,1
 access_hr_employee_base_user,access.hr.employee.base.user,hr.model_hr_employee,,1,1,1,1
-access_hr_tedi_odometer_report_user,access.hr.tedi.odometer.report.user,model_hr_tedi_vehicle_odometer_report,,1,1,1,1
+

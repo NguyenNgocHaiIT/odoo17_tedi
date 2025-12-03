@@ -770,7 +770,7 @@ msgstr "Tích lũy (Tương lai):"
 #. module: hr_holidays
 #: model:ir.model.fields.selection,name:hr_holidays.selection__hr_leave_allocation__allocation_type__accrual
 msgid "Accrual Allocation"
-msgstr "Accrual Allocation"
+msgstr "Cấp phát lũy kế/tích lũy"
 
 #. module: hr_holidays
 #: model_terms:ir.ui.view,arch_db:hr_holidays.hr_accrual_level_view_form
@@ -3272,7 +3272,7 @@ msgstr "Đơn nghỉ phép bị từ chối"
 #. module: hr_holidays
 #: model:ir.model.fields.selection,name:hr_holidays.selection__hr_leave_allocation__allocation_type__regular
 msgid "Regular Allocation"
-msgstr "Regular Allocation"
+msgstr "Cấp phát một lần"
 
 #. module: hr_holidays
 #: model:ir.model.fields,help:hr_holidays.field_hr_leave__user_id
