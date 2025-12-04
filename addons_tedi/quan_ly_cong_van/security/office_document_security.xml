@@ -66,7 +66,7 @@
             <field name="groups" eval="[(4, ref('base.group_user'))]"/>
         </record>
 
-        <record id="office_document_rule_nhan_vien" model="ir.rule">
+        <record id="office_document_rule_don_vi_xu_ly" model="ir.rule">
             <field name="name">Office Document - Nhân viên/Đơn vị xử lý</field>
             <field name="model_id" ref="model_office_document"/>
             <field name="domain_force">
