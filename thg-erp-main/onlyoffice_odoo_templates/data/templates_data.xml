@@ -1,0 +1,4 @@
+<?xml version="1.0" ?>
+<odoo>
+  <function model="onlyoffice.odoo.templates" name="_create_demo_data" />
+</odoo>

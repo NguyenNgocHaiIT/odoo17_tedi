@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="windx_documents_management_preview.BinaryFieldPreview" t-inherit="web.BinaryField" t-inherit-mode="primary">
+        <xpath expr="//button[hasclass('o_clear_file_button')]" position="after">
+            <t t-if="state.attachment and state.attachment.isViewable and props.record.resId and !props.record.dirty">
+                <button
+                    class="btn btn-link btn-sm lh-1 fa fa-eye o_preview_file_button"
+                    data-tooltip="Preview File"
+                    aria-label="Preview File"
+                    t-on-click="previewAttachment">
+                </button>
+            </t>
+            <script src="/windx_documents_management_preview/static/src/lib/docx/DocxJS.min.js"/>
+            <script src="/windx_documents_management_preview/static/src/lib/docx/DocxUiLoader.js"/>
+            <script src="/windx_documents_management_preview/static/src/lib/xlsx/CellJS.min.js"/>
+            <script src="/windx_documents_management_preview/static/src/lib/xlsx/CellUiLoader.js"/>
+            <script src="/windx_documents_management_preview/static/src/lib/pptx/SlideJS.min.js"/>
+            <script src="/windx_documents_management_preview/static/src/lib/pptx/SlideUiLoader.js"/>
+        </xpath>
+    </t>
+</templates>

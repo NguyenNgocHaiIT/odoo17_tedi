@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Odoo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+    <link type="text/css" rel="stylesheet"
+          href="//apps.odoocdn.com/web/content/7646917-3314048/1/web.assets_frontend.css">
+
+</head>
+<!-- odoo description page css -->
+
+<body>
+<!-- Header -->
+<div class="row justify-content-md-between justify-content-center border-bottom align-items-center py-2 mx-0">
+    <div class="text-center mr-lg-5 mb-lg-0" style="width: 170px;">
+        <a class="btn p-2" target="_blank" href="https://windx.com.vn/">
+            <img src="images/windx-logo.png" alt="windx-logo" style="height: 50px">
+        </a>
+    </div>
+    <div class="mt-md-0 mt-4 mb-lg-0" style="margin-right: 10px; width: 170px;">
+        <div class="text-center">
+            <a href="https://apps.odoo.com/apps/modules/browse?author=Win%20DX%20JSC" target="_blank"
+               class="btn btn-sm mb-2 mb-lg-0"
+               style="padding: 7px;font-size: 13px;font-size: 14px; font-weight: 500;background-color: #203038; color:#fff;"><i
+                    class="fa fa-list-alt mr-1"></i> <span class="d-none d-sm-inline">WinDX</span> All Apps</a>
+        </div>
+    </div>
+</div>
+
+<div id="loempia_tabs" class="container py-5 oe_styling_v8"
+     style="color: #0b3b52;font-family: 'Open sans','sans-serif';">
+    <div class="row text-center mb-2">
+        <div class="col-12 text-center">
+            <h1 style="color: #203038;">MANAGEMENT ATTACHMENT/DOCUMENT WITH DIRECTORY, SECURITY AND TAGS</h1>
+        </div>
+    </div>
+    <div class="row align-items-center">
+        <div class="col-12">
+            <h2 class="mb-4 text-justify" style="font-size: 20px;color: #3c3c3c;">
+                Smart document and attachment management made easy!
+                <br/>
+                This powerful module enhances Odoo’s document handling by allowing you to organize attachments and documents into custom directories,
+                apply multiple tags, and control access with advanced security settings. Perfect for teams that need structure, visibility,
+                and secure collaboration in managing files across the system.
+            </h2>
+
+            <div class="alert alert-primary mt-4">
+                <hr>
+                This module relies on an external Python library called 'magic'.
+                Before you install the module, you need to install this Python package first.
+                You can do this using the command provided below.
+                <br>
+                <br>
+                OS - Linux
+                <code class="d-block mt-2" style="background-color:#e1f1f7">sudo apt install libmagic1</code>
+                <code class="d-block mt-2" style="background-color:#e1f1f7">pip install python-magic</code>
+                <br>
+                OS - macOS
+                <code class="d-block mt-2" style="background-color:#e1f1f7">brew install libmagic</code>
+                <code class="d-block mt-2" style="background-color:#e1f1f7">pip install python-magic</code>
+                <br>
+                OS - Windows
+                <code class="d-block mt-2" style="background-color:#e1f1f7">pip install python-magic-bin</code>
+            </div>
+
+            <div style="border-radius: 10px; background-color: #FFF9D8; padding: 20px; margin-bottom: 15px;">
+                <h1 style="text-align: center; font-size: 2rem;">Free <span style="color: red">60 Days</span> support</h1>
+                <br>
+                <div class="font-weight-bold ml-2" style="font-size: 15px;">
+                    <p>
+                        WinDX will provide FREE 60-day support for any doubts, queries, and bug fixing or any types of
+                        issues related to this module.
+                        <br>
+                        This is applicable from the date of purchase.
+                    </p>
+                    <span>Contact us:</span>
+                    <ul>
+                        <li>
+                            <b>Whatsapp:</b>
+                            <a target="_blank"
+                               href="https://api.whatsapp.com/send/?phone=84945027735">0945027735</a>
+                        </li>
+                        <li>
+                            <b>Facebook:</b>
+                            <a target="_blank"
+                               href="https://www.facebook.com/windxofficial">https://www.facebook.com/windxofficial</a>
+                        </li>
+                        <li>
+                            <b>Email:</b>
+                            <a target="_blank" href="mailto:nguyenxuanlinh@windx.com.vn">nguyenxuanlinh@windx.com.vn</a>
+                        </li>
+                        <li>
+                            <b>Website:</b>
+                            <a target="_blank" href="https://windx.com.vn/">https://windx.com.vn/</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <h4 class="font-weight-bold mb-3">FEATURES</h4>
+            <ul style="font-size:18px;">
+                <li class="mb-2">
+                    Organize documents and attachments into directories.
+                </li>
+                <li class="mb-2">
+                    Tag documents for easy searching and filtering.
+                </li>
+                <li class="mb-2">
+                    Set access rights and security rules per directory.
+                </li>
+                <li class="mb-2">
+                    Seamless integration with Odoo records.
+                </li>
+                <li class="mb-2">
+                    Clean and intuitive user interface.
+                </li>
+                <li class="mb-2">
+                    Boosts efficiency and document traceability.
+                </li>
+                <li class="mb-2">
+                    Preview attachments(pdf, images, audio, video, MS Office) and documents without downloading.
+                </li>
+            </ul>
+            <h4 class="font-weight-bold mb-3">Menus</h4>
+            <ul style="font-size:18px">
+              <li>Document</li>
+              <ul>
+                  <li>Directories</li>
+                  <li>All Documents</li>
+                  <li>My Documents</li>
+                  <li>Configuration</li>
+                  <ul>
+                      <li>Directory Tags</li>
+                      <li>Document Tags</li>
+                  </ul>
+              </ul>
+            </ul>
+        </div>
+    </div>
+
+    <!-- GIF -->
+    <img src="banner.gif" alt="Guide of app" style="width: 100%;"/>
+
+    <section class="card" style="border: none;">
+        <div class="card-body">
+            <div class="tab-pane text-center mt-4">
+                <span class="text-center my-4 mt-4"
+                      style="font-size: 24px;font-weight: 400;color: #0b3b52;"><b>HOW IT WORKS</b></span>
+            </div>
+
+            <div class="tab-pane">
+                <p class="font-weight-bold mt-5 mb-3" style="font-size: 22px;"><b>Configuration - Directory Tags</b></p>
+                <div class="mb-3" style="font-size: 20px;">
+                    <img src="preview_img/image_1.png" alt="Report" style="max-width:100%;" class="border">
+                </div>
+
+                <p class="font-weight-bold mt-5 mb-3" style="font-size: 22px;"><b>Configuration - Document Tags</b></p>
+                <div class="mb-3" style="font-size: 20px;">
+                    <img src="preview_img/image_2.png" alt="Report" style="max-width:100%;" class="border">
+                </div>
+
+                <p class="font-weight-bold mt-5 mb-3" style="font-size: 22px;"><b>Directories</b></p>
+                <div class="mb-3" style="font-size: 20px;">
+                    <div class="mb-3" style="font-size: 20px;">
+                        <span>
+                            <img src="images/forward-arrow.svg" alt="arrow" style="width:15px; margin-right:10px;">
+                            Kanban View.
+                            <img src="preview_img/image_3.png" alt="Report" style="max-width:100%;"
+                                 class="border">
+                        </span>
+                    </div>
+                    <div class="mb-3" style="font-size: 20px;">
+                        <span>
+                            <img src="images/forward-arrow.svg" alt="arrow" style="width:15px; margin-right:10px;">
+                            Tree View.
+                            <img src="preview_img/image_4.png" alt="Report" style="max-width:100%;"
+                                 class="border">
+                        </span>
+                    </div>
+                    <div class="mb-3" style="font-size: 20px;">
+                        <span>
+                            <img src="images/forward-arrow.svg" alt="arrow" style="width:15px; margin-right:10px;">
+                            Directory Details(Form View).
+                            <img src="preview_img/image_5.png" alt="Report" style="max-width:100%;"
+                                 class="border">
+                        </span>
+                    </div>
+                    <div class="mb-3" style="font-size: 20px;">
+                        <span>
+                            <img src="images/forward-arrow.svg" alt="arrow" style="width:15px; margin-right:10px;">
+                            Open Documents smart button "Attachments" in Kanban View or Form View.
+                            <img src="preview_img/image_6.png" alt="Report" style="max-width:100%;"
+                                 class="border">
+                        </span>
+                    </div>
+                </div>
+
+                <p class="font-weight-bold mt-5 mb-3" style="font-size: 22px;"><b>Add Attachments</b></p>
+                <div class="mb-3" style="font-size: 20px;">
+                    <div class="mb-3" style="font-size: 20px;">
+                        <span>
+                            <img src="images/forward-arrow.svg" alt="arrow" style="width:15px; margin-right:10px;">
+                            Internal User (Abigail Peterson) can add attachments on Employee form (Odoo Standard).
+                            <img src="preview_img/image_7.png" alt="Report" style="max-width:100%;"
+                                 class="border">
+                        </span>
+                    </div>
+                    <div class="mb-3" style="font-size: 20px;">
+                        <span>
+                            <img src="images/forward-arrow.svg" alt="arrow" style="width:15px; margin-right:10px;">
+                            Login with Document Manager - Mitchell Admin after add attachment.
+                            <img src="preview_img/image_8.png" alt="Report" style="max-width:100%;"
+                                 class="border">
+                        </span>
+                    </div>
+                </div>
+
+                <p class="font-weight-bold mt-5 mb-3" style="font-size: 22px;"><b>All Documents</b></p>
+                <div class="mb-3" style="font-size: 20px;">
+                    <img src="preview_img/image_9.png" alt="Report" style="max-width:100%;" class="border">
+                </div>
+
+                <p class="font-weight-bold mt-5 mb-3" style="font-size: 22px;"><b>My Documents - Employee (Abigail Peterson) Login</b></p>
+                <div class="mb-3" style="font-size: 20px;">
+                    <img src="preview_img/image_10.png" alt="Report" style="max-width:100%;" class="border">
+                </div>
+
+                <p class="font-weight-bold mt-5 mb-3" style="font-size: 22px;"><b>Attachments</b></p>
+                <div class="mb-3" style="font-size: 20px;">
+                    <div class="mb-3" style="font-size: 20px;">
+                        <span>
+                            <img src="images/forward-arrow.svg" alt="arrow" style="width:15px; margin-right:10px;">
+                            Kanban View.
+                            <img src="preview_img/image_11.png" alt="Report" style="max-width:100%;"
+                                 class="border">
+                        </span>
+                    </div>
+                    <div class="mb-3" style="font-size: 20px;">
+                        <span>
+                            <img src="images/forward-arrow.svg" alt="arrow" style="width:15px; margin-right:10px;">
+                            Form View.
+                            <img src="preview_img/image_12.png" alt="Report" style="max-width:100%;"
+                                 class="border">
+                        </span>
+                    </div>
+                    <div class="mb-3" style="font-size: 20px;">
+                        <span>
+                            <img src="images/forward-arrow.svg" alt="arrow" style="width:15px; margin-right:10px;">
+                            Send Email with Attachment.
+                            <img src="preview_img/image_13.png" alt="Report" style="max-width:100%;"
+                                 class="border">
+                        </span>
+                    </div>
+                </div>
+
+                <p class="font-weight-bold mt-5 mb-3" style="font-size: 22px;"><b>Preview attachments(pdf, images, audio, video, MS Office) and documents without downloading</b></p>
+                <div class="mb-3" style="font-size: 20px;">
+
+                    <div class="mb-3" style="font-size: 20px;">
+                        <span>
+                            <img src="images/forward-arrow.svg" alt="arrow" style="width:15px; margin-right:10px;">
+                            A button like (
+                            <i class="fa fa-eye" style="padding: 0px 2px; color: #7C7BAD;"
+                               title="Sample Button"></i>
+                             ) will be visible beside all binary fields like shown in the image.
+                            <br>
+                            <img src="preview_img/image_14.png" alt="arrow" style="max-width:100%;"
+                                 class="my-4 border">
+                        </span>
+                    </div>
+
+                    <div class="mb-3" style="font-size: 20px;">
+                        <span>
+                            <img src="images/forward-arrow.svg" alt="arrow" style="width:15px; margin-right:10px;">
+                            Allow access to preview the attachments for the normal user.
+                            <br>
+                            <img src="preview_img/image_15.png" alt="arrow" style="max-width:100%;"
+                                 class="my-4 border">
+                            <br>
+                            <img src="preview_img/image_16.png" alt="arrow" style="max-width:100%;"
+                                 class="my-4 border">
+                            <br>
+                            <img src="preview_img/image_17.png" alt="arrow" style="max-width:100%;"
+                                 class="my-4 border">
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- WinDX Odoo Services -->
+    <div class="row pb-sm-5 px-1 pb-4">
+        <h2 class="w-100 text-center my-3" style="font-weight: 400;">WinDX Odoo Services</h2>
+        <div class="col-12 col-sm-6 col-md-4" style="margin-bottom: 20px;">
+            <div class="card text-center" style="min-height: 90px; background-color: #4524a3">
+                <div class="pt-4">
+                    <img src="images/support.png" alt="support">
+                </div>
+                <div class="card-body" style="background-color: transparent !important">
+                    <h5 class="card-title text-white" style="font-size: 19px; font-weight: 400;">Odoo
+                        Implementation</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4" style="margin-bottom: 20px;">
+            <div class="card text-center" style="min-height: 90px; background-color: #4524a3">
+                <div class="pt-4">
+                    <img src="images/apps.png" alt="apps">
+                </div>
+                <div class="card-body" style="background-color: transparent !important">
+                    <h5 class="card-title text-white" style="font-size: 19px; font-weight: 400;">Odoo Community
+                        Apps</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4" style="margin-bottom: 20px;">
+            <div class="card text-center"
+                 style="mmin-height: 90px; background-color: #4524a3 ">
+                <div class="pt-4">
+                    <img src="images/support2.png" alt="support2">
+                </div>
+                <div class="card-body" style="background-color: transparent !important">
+                    <h5 class="card-title text-white" style="font-size: 19px; font-weight: 400;">Odoo Support &amp;
+                        Maintenance</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4" style="margin-bottom: 20px;">
+            <div class="card text-center" style="min-height: 90px; background-color: #4524a3">
+                <div class="pt-4">
+                    <img src="images/custom.png" alt="custom">
+                </div>
+                <div class="card-body" style="background-color: transparent !important">
+                    <h5 class="card-title text-white" style="font-size: 19px; font-weight: 400;">Odoo
+                        Customization</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4" style="margin-bottom: 20px;">
+            <div class="card text-center" style="min-height: 90px; background-color: #4524a3">
+                <div class="pt-4">
+                    <img src="images/integrated.png" alt="integrated">
+                </div>
+                <div class="card-body" style="background-color: transparent !important">
+                    <h5 class="card-title text-white" style="font-size: 19px; font-weight: 400;">Odoo Integration
+                        Services</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4" style="margin-bottom: 20px;">
+            <div class="card text-center" style="min-height: 90px; background-color: #4524a3">
+                <div class="pt-4">
+                    <img src="images/develop.png" alt="develop">
+                </div>
+                <div class="card-body" style="background-color: transparent !important">
+                    <h5 class="card-title text-white" style="font-size: 19px; font-weight: 400;">Odoo Developer
+                        Outsourcing</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- WinDX Footer -->
+    <div class="row no-gutters mx-0 justify-content-sm-between justify-content-center"
+         style="border-top: 1px solid black;">
+        <div class="mb-sm-0 mb-3 d-flex align-items-center">
+            <img src="images/letter.svg" style="width: 35px;height: 35px;margin-right: 20px">
+            <a href="mailto:windxcontact@gmail.com" style="font-size: 18px;">windxcontact@gmail.com</a>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</body>
+</html>
+
+
+
