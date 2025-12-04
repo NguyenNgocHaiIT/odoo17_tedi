@@ -213,7 +213,7 @@
                 <form delete="false" duplicate="false">
                     <header>
                         <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_don_vi_xu_ly"
+                                groups="base.group_system, base.group_user"
                                 invisible="tt_vb != 'draft'"/>
                         <button name="approve" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe"/>
@@ -402,7 +402,7 @@
                 <form delete="false" duplicate="false">
                     <header>
                         <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_don_vi_xu_ly"
+                                groups="base.group_system, base.group_user"
                                 invisible="tt_vb != 'draft'"/>
                         <button name="approve" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe"/>
