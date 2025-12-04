@@ -12,8 +12,8 @@
                         <field name="description"/>
                         <field name="country_of_manufacture"/>
                         <field name="license_plate"/>
-
                         <field name="driver_id" string="Tài xế"/>
+                        <field name="odometer" string="Odometer"/>
                     </tree>
                 </xpath>
             </field>
@@ -33,6 +33,16 @@
                         <field name="currency_id" invisible="1"/>
 
                         <div class="oe_button_box" name="button_box">
+                            <!-- Button xem lịch sử Odometer -->
+                            <button name="return_action_to_open"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-tachometer"
+                                context="{'xml_id':'fleet_vehicle_odometer_action'}"
+                                help="Nhật ký Odometer">
+                                <field name="odometer" widget="statinfo" string="Odometer"/>
+                            </button>
+
                             <button name="return_action_to_open"
                                 type="object"
                                 class="oe_stat_button"
@@ -59,11 +69,16 @@
                                 <field name="country_of_manufacture"/>
                                 <field name="model_id"/>
                                 <field name="license_plate"/>
+
+                                <!-- Hiển thị Odometer để nhập ban đầu -->
+                                <field name="odometer" string="Số Km hiện tại" help="Nhập số km ban đầu nếu tạo mới"/>
+                                <field name="odometer_unit" class="oe_inline" readonly="1"/>
+
                                 <field name="year_manufacture"/>
                                 <field name="year_in_use"/>
                                 <field name="vin_sn" string="Số khung (VIN)"/>
                                 <field name="engine_no"/>
-                                <field name="color"/>
+                                <field name="color_select" widget="color"/>
                             </group>
                             <group>
                                 <field name="cylinder_capacity"/>
@@ -83,6 +98,7 @@
                                         <field name="end_date"/>
                                         <field name="trip_type"/>
                                         <field name="destination"/>
+                                        <field name="distance_km"/>
                                     </tree>
                                 </field>
                             </page>
