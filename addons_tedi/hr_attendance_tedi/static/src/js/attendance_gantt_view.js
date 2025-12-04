@@ -386,26 +386,83 @@ export class AttendanceGantt extends Component {
         const viewEnd = new Date(this.state.endDate); viewEnd.setDate(viewEnd.getDate() + 1); viewEnd.setHours(0, 0, 0, 0);
         const totalMs = viewEnd - viewStart || 1;
         const timelineBars = {};
+
         for (const [empIdStr, list] of Object.entries(intervalsByEmp)) {
             const empId = parseInt(empIdStr, 10);
-            let bars = [];
+
+            // 1. Nhóm các đoạn (intervals) lại theo ID bản ghi gốc
+            const groupedBars = {};
             for (const interval of list) {
-                let realStart = interval.start < viewStart ? viewStart : interval.start;
-                let realEnd = interval.end > viewEnd ? viewEnd : interval.end;
+                // Sử dụng ID và TYPE để nhóm (đảm bảo không gộp Attendance và Leave)
+                const key = `${interval.id}_${interval.type}`;
+                if (!groupedBars[key]) {
+                    // Khởi tạo thanh ngang tổng hợp
+                    groupedBars[key] = {
+                        id: interval.id,
+                        type: interval.type,
+                        status: interval.status,
+                        colorClass: interval.colorClass,
+                        resModel: 'hr.attendance',
+
+                        // Lấy thời gian bắt đầu sớm nhất (sẽ được cập nhật sau)
+                        start: interval.start,
+                        // Lấy thời gian kết thúc muộn nhất (sẽ được cập nhật sau)
+                        end: interval.end,
+
+                        // Cần thiết cho việc hiển thị label
+                        originalIntervals: [interval],
+                        index: interval.index, // Giữ index để làm key duy nhất (chỉ quan trọng nếu 1 lần chấm công kéo dài qua nhiều ngày)
+                    };
+                } else {
+                    // Cập nhật thời gian Bắt đầu sớm nhất và Kết thúc muộn nhất
+                    if (interval.start < groupedBars[key].start) {
+                        groupedBars[key].start = interval.start;
+                    }
+                    if (interval.end > groupedBars[key].end) {
+                        groupedBars[key].end = interval.end;
+                    }
+                    groupedBars[key].originalIntervals.push(interval);
+                }
+            }
+
+            // 2. Chuyển đổi các thanh ngang đã gộp thành dữ liệu hiển thị (Bar Data)
+            let bars = [];
+            for (const key in groupedBars) {
+                const grouped = groupedBars[key];
+
+                let realStart = grouped.start < viewStart ? viewStart : grouped.start;
+                let realEnd = grouped.end > viewEnd ? viewEnd : grouped.end;
+
                 if (realEnd <= realStart) continue;
+
                 let visualStart = new Date(realStart);
                 if (this.state.mode === 'month') visualStart.setHours(0, 0, 0, 0);
+
                 const left = ((visualStart - viewStart) / totalMs) * 100;
                 let width = ((realEnd - visualStart) / totalMs) * 100;
-                if (this.state.mode === 'month') {
-                    if (interval.start.getDate() === interval.end.getDate()) {
-                         const oneDay = (24*3600*1000/totalMs)*100;
-                         if (width < oneDay*0.7) width = oneDay*0.7;
-                    }
+
+                // Tái tính toán label dựa trên START và END đã gộp
+                const label = this.buildLabel(grouped.start, grouped.end, grouped.type);
+
+                // Logic điều chỉnh chiều rộng tối thiểu cho mode 'month'
+                if (this.state.mode === 'month' && grouped.start.getDate() === grouped.end.getDate()) {
+                    const oneDay = (24*3600*1000/totalMs)*100;
+                    if (width < oneDay*0.7) width = oneDay*0.7;
                 }
+
                 const endOfDay = new Date(realEnd); endOfDay.setHours(23, 59, 59, 999);
-                bars.push({ id: interval.id, status: interval.status, label: interval.label, startMs: realStart.getTime(), endMs: realEnd.getTime(), collisionEndMs: endOfDay.getTime(), left, width, type: interval.type, resModel: 'hr.attendance', colorClass: interval.colorClass, level: 0, index: interval.index }); // Truyền index từ intervalsByEmp
+
+                bars.push({
+                    id: grouped.id, status: grouped.status, label,
+                    startMs: realStart.getTime(), endMs: realEnd.getTime(),
+                    collisionEndMs: endOfDay.getTime(), left, width,
+                    type: grouped.type, resModel: grouped.resModel,
+                    colorClass: grouped.colorClass, level: 0,
+                    index: grouped.index // Dùng index gốc làm key duy nhất
+                });
             }
+
+            // 3. Xử lý va chạm (Collision) và cấp độ (Level)
             bars.sort((a, b) => a.startMs - b.startMs);
             const levels = [];
             for (let bar of bars) {
@@ -421,6 +478,7 @@ export class AttendanceGantt extends Component {
         }
         this.state.weekBars = timelineBars;
     }
+
     computeDays(start, end) {
         const days = []; let d = new Date(start);
         while (d <= end) {
@@ -470,6 +528,7 @@ AttendanceGantt.props = {
 
     // Prop 'display' (đã gây lỗi gốc)
     display: { type: Object, optional: true },
+    globalState: { type: Object, optional: true },
 };
 
 registry.category("actions").add("tedi_attendance_gantt_view", AttendanceGantt);

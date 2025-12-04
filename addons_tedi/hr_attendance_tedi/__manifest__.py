@@ -12,6 +12,7 @@
         "views/attendance_views.xml",
         "views/holiday_config_views.xml",
         'views/attendance_report_views.xml',
+        'views/hr_leave_type_views.xml',
 
 
         "views/menu.xml",

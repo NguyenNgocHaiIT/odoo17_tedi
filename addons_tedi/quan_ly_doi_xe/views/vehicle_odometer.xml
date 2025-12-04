@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
+        <!-- 1. SEARCH VIEW (Giữ nguyên) -->
         <record id="view_fleet_vehicle_odometer_monthly_report_search" model="ir.ui.view">
             <field name="name">fleet.vehicle.odometer.monthly.report.search</field>
             <field name="model">fleet.vehicle.odometer</field>
             <field name="arch" type="xml">
                 <search string="Tìm kiếm báo cáo tháng">
                     <field name="vehicle_id"/>
+                    <field name="driver_id"/>
                     <field name="year"/>
                     <field name="month"/>
+                    <field name="date"/>
 
                     <filter name="filter_monthly" string="Báo cáo tháng" domain="[('report_type', '=', 'monthly')]"/>
+                    <filter name="filter_log" string="Nhật ký chạy xe" domain="[('report_type', '=', 'log')]"/>
 
                     <group expand="1" string="Nhóm theo">
                         <filter name="groupby_year" string="Năm" context="{'group_by': 'year'}"/>
@@ -21,11 +25,13 @@
             </field>
         </record>
 
+        <!-- 2. FORM VIEW (Đã sửa lỗi driver_id) -->
         <record id="fleet_vehicle_odometer_view_form_inherit_tedi" model="ir.ui.view">
             <field name="name">fleet.vehicle.odometer.form.inherit.tedi</field>
             <field name="model">fleet.vehicle.odometer</field>
             <field name="inherit_id" ref="fleet.fleet_vehicle_odometer_view_form"/>
             <field name="arch" type="xml">
+                <!-- Thêm Radio Button chọn loại báo cáo -->
                 <xpath expr="//group" position="before">
                     <group>
                         <group>
@@ -33,13 +39,20 @@
                         </group>
                     </group>
                 </xpath>
+
                 <field name="date" position="attributes">
-                    <attribute name="string">Ngày chốt sổ</attribute>
+                    <attribute name="string">Ngày ghi nhận</attribute>
                 </field>
+
                 <field name="vehicle_id" position="after">
+                    <!-- Các trường cho Báo cáo tháng -->
                     <field name="month" invisible="report_type != 'monthly'" required="report_type == 'monthly'"/>
                     <field name="year" widget="integer" options="{'format': 0}" invisible="report_type != 'monthly'" required="report_type == 'monthly'"/>
+
+                    <!-- [FIX LỖI] Thêm driver_id vào đây (Chỉ hiện khi là Nhật ký, ẩn khi là Báo cáo tháng) -->
+                    <field name="driver_id" invisible="report_type == 'monthly'"/>
                 </field>
+
                 <field name="unit" position="after">
                      <label for="odometer_start" string="Chi tiết Km" invisible="report_type != 'monthly'"/>
                     <div invisible="report_type != 'monthly'">
@@ -54,6 +67,7 @@
             </field>
         </record>
 
+        <!-- 3. TREE VIEW BÁO CÁO THÁNG (Giữ nguyên) -->
         <record id="view_fleet_vehicle_odometer_monthly_report_tree" model="ir.ui.view">
             <field name="name">fleet.vehicle.odometer.monthly.report.tree</field>
             <field name="model">fleet.vehicle.odometer</field>
@@ -64,26 +78,23 @@
                     <field name="vehicle_id" options="{'no_create': True}"/>
                     <field name="month"/>
                     <field name="year" widget="integer" options="{'format': 0}"/>
-                    <field name="odometer_start" optional="show"/>
+                    <field name="odometer_start" optional="show" string="Km đầu"/>
+                    <field name="odometer_total" readonly="1" force_save="1" decoration-bf="1" sum="Tổng hoạt động" string="Km trong tháng"/>
                     <field name="value" string="Số cuối kỳ" readonly="1" force_save="1"/>
-                    <field name="odometer_total" readonly="1" force_save="1" decoration-bf="1" sum="Tổng hoạt động"/>
                     <field name="unit" optional="hide"/>
                     <button name="action_calculate_data" type="object" icon="fa-refresh" title="Đồng bộ lại"/>
                 </tree>
             </field>
         </record>
 
+        <!-- 4. ACTION (Giữ nguyên) -->
         <record id="action_fleet_vehicle_odometer_monthly_report" model="ir.actions.act_window">
             <field name="name">Báo cáo chốt Km tháng</field>
             <field name="res_model">fleet.vehicle.odometer</field>
             <field name="view_mode">tree,form</field>
-
             <field name="view_id" ref="view_fleet_vehicle_odometer_monthly_report_tree"/>
-
             <field name="search_view_id" ref="view_fleet_vehicle_odometer_monthly_report_search"/>
-
             <field name="domain">[('report_type', '=', 'monthly')]</field>
-
             <field name="context">
                 {
                     'default_report_type': 'monthly',

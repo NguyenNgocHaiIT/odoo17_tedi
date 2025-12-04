@@ -1,6 +1,6 @@
 <odoo>
     <data>
-        <!-- 1. TREE VIEW (Danh sách) -->
+        <!-- 1. TREE VIEW -->
         <record id="view_hr_tedi_vehicle_registration_tree" model="ir.ui.view">
             <field name="name">hr.tedi.vehicle.registration.tree</field>
             <field name="model">hr_tedi.vehicle.registration</field>
@@ -28,62 +28,20 @@
             </field>
         </record>
 
-        <!-- 2. FORM VIEW (Chi tiết) -->
+        <!-- 2. FORM VIEW -->
         <record id="view_hr_tedi_vehicle_registration_form" model="ir.ui.view">
             <field name="name">hr.tedi.vehicle.registration.form</field>
             <field name="model">hr_tedi.vehicle.registration</field>
             <field name="arch" type="xml">
                 <form string="Phiếu đăng ký xe">
                     <header>
-                        <!-- Nút Gửi duyệt (Hiện khi Nháp) -->
-                        <button name="action_submit"
-                                string="Gửi duyệt"
-                                type="object"
-                                class="oe_highlight"
-                                invisible="state != 'draft'"/>
-
-                        <!-- Nút Lãnh đạo (Hiện khi Chờ duyệt) -->
-                        <button name="action_manager_approve"
-                                string="Lãnh đạo Duyệt"
-                                type="object"
-                                class="oe_highlight"
-                                invisible="state != 'submitted'"/>
-
-                        <button name="action_manager_refuse"
-                                string="Từ chối"
-                                type="object"
-                                invisible="state != 'submitted'"/>
-
-                        <!-- Nút Văn phòng (Hiện khi LĐ đã duyệt) -->
-                        <button name="action_office_assign"
-                                string="Phân phối xe"
-                                type="object"
-                                class="oe_highlight"
-                                groups="fleet.fleet_group_user"
-                                invisible="state != 'approved'"/>
-
-                        <button name="action_office_no_car"
-                                string="Báo hết xe"
-                                type="object"
-                                class="btn-warning"
-                                groups="fleet.fleet_group_user"
-                                invisible="state != 'approved'"/>
-
-                        <!-- Nút Hoàn thành (Hiện khi Đã phân xe) -->
-                        <button name="action_done"
-                                string="Xác nhận hoàn thành"
-                                type="object"
-                                class="oe_highlight"
-                                groups="fleet.fleet_group_user"
-                                invisible="state != 'assigned'"/>
-
-                        <!-- Nút Reset -->
-                        <button name="action_draft"
-                                string="Về nháp"
-                                type="object"
-                                invisible="state != 'submitted'"/>
-
-                        <!-- Thanh trạng thái -->
+                        <button name="action_submit" string="Gửi duyệt" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                        <button name="action_manager_approve" string="Lãnh đạo Duyệt" type="object" class="oe_highlight" invisible="state != 'submitted'"/>
+                        <button name="action_manager_refuse" string="Từ chối" type="object" invisible="state != 'submitted'"/>
+                        <button name="action_office_assign" string="Phân phối xe" type="object" class="oe_highlight" groups="fleet.fleet_group_user" invisible="state != 'approved'"/>
+                        <button name="action_office_no_car" string="Báo hết xe" type="object" class="btn-warning" groups="fleet.fleet_group_user" invisible="state != 'approved'"/>
+                        <button name="action_done" string="Xác nhận hoàn thành" type="object" class="oe_highlight" groups="fleet.fleet_group_user" invisible="state != 'assigned'"/>
+                        <button name="action_draft" string="Về nháp" type="object" invisible="state != 'submitted'"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,assigned,done"/>
                     </header>
 
@@ -95,23 +53,20 @@
                         </div>
 
                         <group>
-                            <group >
+                            <group>
                                 <field name="requester_id" string="Người đề nghị" readonly="state != 'draft'"/>
-                                <field name="trip_type"  readonly="state != 'draft'"/>
+                                <field name="trip_type" readonly="state != 'draft'"/>
+
+                                <!-- Thông tin xe & Tài xế -->
                                 <field name="assigned_vehicle_id" string="Xe phân công" readonly="state not in ['approved']" required="state == 'assigned'"/>
+                                <field name="driver_id" string="Tài xế" readonly="state not in ['approved', 'assigned']" required="state == 'assigned'"/>
+
                                 <field name="num_passengers" readonly="state != 'draft'"/>
                                 <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
-
                                 <field name="work_content" placeholder="Mô tả chi tiết mục đích sử dụng xe..." readonly="state != 'draft'"/>
-
-
-
-
                             </group>
 
-                            <group >
-
-
+                            <group>
                                 <label for="start_date" string="Thời gian"/>
                                 <div class="o_row">
                                     <field name="start_date" widget="daterange" options="{'related_end_date': 'end_date'}" readonly="state != 'draft'"/>
@@ -119,14 +74,14 @@
                                     <field name="end_date" widget="daterange" options="{'related_start_date': 'start_date'}" readonly="state != 'draft'"/>
                                 </div>
                                 <field name="destination" readonly="state != 'draft'"/>
-                                <field name="distance_km" readonly="state != 'draft'"/>
 
+                                <!-- Quan trọng: Cho phép nhập khi 'assigned' để chốt KM -->
+                                <field name="distance_km"
+                                       string="Số Km thực tế"
+                                       readonly="state != 'assigned'"
+                                       class="fw-bold text-primary"/>
                             </group>
                         </group>
-
-
-
-
                     </sheet>
 
                     <div class="oe_chatter">
