@@ -314,6 +314,13 @@ export class GanttRenderer extends Component {
             className: "o_gantt_group_hovered",
         });
 
+        useMultiHover({
+            ref: this.rootRef,
+            selector: ".o_gantt_hoverable:not(.o_gantt_group)", // chỉ task
+            related: ["data-row-id"],
+            className: "o_gantt_task_row_hovered",
+        });
+
         // Draggable pills
         this.cellForDrag = { el: null, part: 0 };
         const dragState = useGanttDraggable({
@@ -893,9 +900,31 @@ export class GanttRenderer extends Component {
             pill._progress = pill.record[progressField] || 0;
         }
 
+        // Fallback: nếu không có progressField trong metaData, thử lấy trực tiếp từ record
+        if (pill._progress === undefined && pill.record && pill.record.progress !== undefined) {
+            pill._progress = pill.record.progress || 0;
+        }
+
+        // Thêm class dựa trên mức độ progress (tùy chọn)
+        if (pill._progress !== undefined) {
+            if (pill._progress <= 30) {
+                classes.push('o_gantt_progress_low');
+            } else if (pill._progress <= 70) {
+                classes.push('o_gantt_progress_medium');
+            } else {
+                classes.push('o_gantt_progress_high');
+            }
+
+            // Thêm class cho pill có progress
+            if (pill._progress > 0) {
+                classes.push('o_gantt_has_progress');
+            }
+        }
+
         pill.className = classes.join(" ");
 
         return pill;
+
     }
 
     generateConnectors() {
@@ -1174,6 +1203,7 @@ export class GanttRenderer extends Component {
             startDate: this.dateGridColumns[startIndex],
             stopDate: this.dateGridColumns[stopIndex],
             level: 0, // QUAN TRỌNG: Luôn set level = 0
+            _progress: record.progress || 0,
         };
 
         return pill;
@@ -2514,6 +2544,10 @@ export class GanttRenderer extends Component {
             rowPills = groups.map((group) =>
                 this.getPillFromGroup(group, maxAggregateValue, consolidate)
             );
+            for (let i = 0; i < rowPills.length; i++) {
+                const group = groups[i];
+                rowPills[i]._progress = this.calculateGroupProgress(group.pills);
+            }
         }
 
         for (const rowPill of rowPills) {
@@ -2749,7 +2783,7 @@ export class GanttRenderer extends Component {
             displayName: pill.displayName,
             className: pill.className || '',
             _color: pill._color,
-            _progress: pill._progress,
+            _progress: pill._progress || 0,
             disableStartResize: pill.disableStartResize,
             disableStopResize: pill.disableStopResize,
             disableDrag: pill.disableDrag,
@@ -3060,6 +3094,14 @@ export class GanttRenderer extends Component {
         const baseSpan = GROUP_ROW_SPAN;
         let span = baseSpan;
 
+
+        // Kiểm tra nếu là group theo project_id và không xác định dự
+        let displayName = row.name;
+        if (displayName && displayName.includes("Không xác định Dự án")) {
+            displayName = _t("Công việc chung");
+            console.log(`Changed name from "${row.name}" to "${displayName}"`);
+        }
+
         // Tạo row cho group hiện tại
         const groupRow = {
             ...row,
@@ -3067,6 +3109,7 @@ export class GanttRenderer extends Component {
             groupLevel,          // Level hiện tại
             groupField,          // Field của level hiện tại
             isGroup: true,
+            name: displayName,
             pills: [],           // Group row không hiển thị pills
             grid: {
                 row: [this.topOffset + 1, span],
@@ -4278,4 +4321,42 @@ export class GanttRenderer extends Component {
 
         console.log('Parent-child mapping created:', this.parentChildMapping);
     }
+    /**
+     * Lấy giá trị progress từ record, ưu tiên progressField từ metaData
+     */
+    getProgressValue(record) {
+        const { progressField } = this.model.metaData;
+
+        if (progressField && record[progressField] !== undefined) {
+            return record[progressField] || 0;
+        }
+
+        // Fallback: nếu không có progressField, thử lấy từ field 'progress'
+        if (record.progress !== undefined) {
+            return record.progress || 0;
+        }
+
+        return 0;
+    }
+    /**
+     * Tính progress trung bình cho group từ các pills con
+     * @param {Pill[]} pills
+     * @returns {number}
+     */
+    calculateGroupProgress(pills) {
+        if (!pills || pills.length === 0) return 0;
+
+        let totalProgress = 0;
+        let count = 0;
+
+        for (const pill of pills) {
+            if (pill._progress !== undefined) {
+                totalProgress += pill._progress;
+                count++;
+            }
+        }
+
+        return count > 0 ? Math.round(totalProgress / count) : 0;
+    }
+
 }

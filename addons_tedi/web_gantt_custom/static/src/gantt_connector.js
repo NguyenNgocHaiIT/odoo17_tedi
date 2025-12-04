@@ -55,6 +55,7 @@ export class GanttConnector extends Component {
             type: Object,
             shape: {
                 id: String,
+                className: { type: String, optional: true },
                 alert: {
                     type: [{ value: "error" }, { value: "warning" }, { value: null }],
                     optional: true,
