@@ -9,11 +9,10 @@ _logger = logging.getLogger(__name__)
 class HrLeave(models.Model):
     _inherit = 'hr.leave'
 
-    # --- CÁC TRƯỜNG CUSTOM ---
+    # --- CÁC TRƯỜNG CUSTOM CŨ (GIỮ NGUYÊN) ---
     request_date = fields.Date(string='Ngày đề nghị', default=fields.Date.context_today, readonly=True)
     report_title = fields.Char(string='Tiêu đề')
     employee_code = fields.Char(related='employee_id.employee_code', string='Mã NV', store=True)
-
     leaves_taken_count = fields.Float(string='Số ngày phép đã nghỉ', compute='_compute_leave_stats')
     remaining_leaves_count = fields.Float(string='Số ngày phép còn lại', compute='_compute_leave_stats')
     my_history_ids = fields.Many2many('hr.leave', string='Các đơn báo của tôi', compute='_compute_my_history')
@@ -43,11 +42,10 @@ class HrLeave(models.Model):
             else:
                 rec.my_history_ids = False
 
-    # --- LOGIC TẠO ATTENDANCE ---
+    # --- LOGIC TẠO ATTENDANCE (KHỚP VỚI MODEL HR.ATTENDANCE CỦA BẠN) ---
 
     def write(self, vals):
         res = super(HrLeave, self).write(vals)
-        # Sử dụng sudo() để đảm bảo quyền truy cập khi trigger logic
         if 'state' in vals:
             for leave in self:
                 if vals['state'] == 'validate':
@@ -59,9 +57,14 @@ class HrLeave(models.Model):
     def _create_attendance_from_leave(self):
         """ Tạo các bản ghi Attendance chia theo ca làm việc """
         self.ensure_one()
+
+        # 1. Kiểm tra checkbox tự tạo (auto_create_attendance)
+        if not self.holiday_status_id.auto_create_attendance:
+            return
+
         sudo_attendance = self.env['hr.attendance'].sudo()
 
-        # 1. Kiểm tra đã tạo chưa
+        # 2. Kiểm tra đã tạo chưa
         if sudo_attendance.search_count([('leave_id', '=', self.id)]):
             return
 
@@ -69,54 +72,58 @@ class HrLeave(models.Model):
         calendar = employee.resource_calendar_id
         resource = employee.resource_id
 
-        # 2. Xử lý Timezone: Chuyển Naive UTC (DB) -> Aware UTC
+        if not self.date_from or not self.date_to:
+            return
+
+        # 3. Xử lý Timezone
         start_dt = pytz.utc.localize(self.date_from)
         end_dt = pytz.utc.localize(self.date_to)
 
-        # 3. Tính toán ca làm việc (Intervals)
-        if not calendar or not resource:
-            sudo_attendance.create({
-                'employee_id': employee.id,
-                'check_in': self.date_from, # Naive UTC
-                'check_out': self.date_to, # Naive UTC
-                'attendance_type': 'leave',
-                'leave_id': self.id,
-                'status': 'leave'
-            })
-            return
-
-        # Lấy các khoảng thời gian làm việc trong khoảng nghỉ
-        intervals = calendar._work_intervals_batch(start_dt, end_dt, resources=resource)
-        my_intervals = intervals[resource.id]
+        # 4. Tính toán ca làm việc (Intervals)
         vals_list = []
 
-        # 4. Duyệt qua từng ca và chuẩn bị dữ liệu
-        for start, end, meta in my_intervals:
-            # Bước 1: Convert về UTC Aware
-            start_utc = start.astimezone(pytz.utc)
-            end_utc = end.astimezone(pytz.utc)
-
-            # Bước 2: Bỏ tzinfo để thành Naive UTC
-            start_naive = start_utc.replace(tzinfo=None)
-            end_naive = end_utc.replace(tzinfo=None)
-
+        # Trường hợp A: Không có lịch làm việc -> Tạo 1 cục
+        if not calendar or not resource:
             vals_list.append({
                 'employee_id': employee.id,
-                'check_in': start_naive,
-                'check_out': end_naive,
-                'attendance_type': 'leave',
+                'check_in': self.date_from,
+                'check_out': self.date_to,
                 'leave_id': self.id,
-                'status': 'leave'
+                # --- KHỚP CODE CỦA BẠN ---
+                'attendance_type': 'leave',  # Để phân biệt với chấm công thường
+                'status': 'leave',  # Để hàm compute không tính là Muộn/Sớm
+                # -------------------------
             })
 
-        # 5. Tạo dữ liệu hàng loạt
+        # Trường hợp B: Có lịch làm việc -> Chia nhỏ theo ca (Sáng/Chiều)
+        else:
+            intervals = calendar._work_intervals_batch(start_dt, end_dt, resources=resource)
+            my_intervals = intervals[resource.id]
+
+            for start, end, meta in my_intervals:
+                # Convert về UTC Naive để lưu vào DB
+                start_naive = start.astimezone(pytz.utc).replace(tzinfo=None)
+                end_naive = end.astimezone(pytz.utc).replace(tzinfo=None)
+
+                vals_list.append({
+                    'employee_id': employee.id,
+                    'check_in': start_naive,
+                    'check_out': end_naive,
+                    'leave_id': self.id,
+                    # --- KHỚP CODE CỦA BẠN ---
+                    'attendance_type': 'leave',
+                    'status': 'leave',
+                    # -------------------------
+                })
+
+        # 5. Tạo dữ liệu
         if vals_list:
-            _logger.info(f"TEDICT: Creating {len(vals_list)} leave-attendances for Leave ID {self.id}")
-            # Truyền context bypass_attendance_validation
+            _logger.info(f"CUSTOM: Creating {len(vals_list)} leave-attendances for Leave ID {self.id}")
+            # Truyền context 'bypass_attendance_validation' để kích hoạt logic
+            # bỏ qua check trùng trong hàm _check_validity bên file hr_attendance.py của bạn
             sudo_attendance.with_context(bypass_attendance_validation=True).create(vals_list)
 
     def _remove_attendance_from_leave(self):
-        """ Xóa attendance liên kết khi hủy/sửa đơn """
         self.ensure_one()
         sudo_attendance = self.env['hr.attendance'].sudo()
         attendances = sudo_attendance.search([('leave_id', '=', self.id)])

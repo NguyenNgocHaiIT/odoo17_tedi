@@ -1,7 +1,6 @@
 <odoo>
     <data>
 
-
         <record id="hr_attendance.menu_hr_attendance_root" model="ir.ui.menu">
             <field name="groups_id" eval="[(4, ref('base.group_user'))]"/>
         </record>
@@ -12,29 +11,19 @@
                   sequence="100"/>
 
         <menuitem id="menu_tedi_holiday_config"
-                  name="Ngày nghỉ"
+                  name="Ngày nghỉ (Lịch)"
                   parent="menu_tedi_attendance_config"
                   action="action_tedi_holiday_config"
                   groups="hr_holidays.group_hr_holidays_user"
                   sequence="1"/>
 
+        <menuitem id="menu_tedi_leave_type_config"
+                  name="Loại nghỉ phép"
+                  parent="menu_tedi_attendance_config"
+                  action="hr_holidays.open_view_holiday_status"
+                  groups="hr_holidays.group_hr_holidays_manager"
+                  sequence="2"/>
 
-<!--        <menuitem id="menu_tedi_attendance_category"-->
-<!--                  name="Danh sách chấm công"-->
-<!--                  parent="hr_attendance.menu_hr_attendance_root"-->
-<!--                  sequence="1"/>-->
-
-<!--        <menuitem id="menu_tedi_attendance_list_all"-->
-<!--                  name="Danh sách chấm công"-->
-<!--                  parent="menu_tedi_attendance_category"-->
-<!--                  action="action_tedi_attendance_all"-->
-<!--                  sequence="2"/>-->
-
-<!--        <menuitem id="menu_tedi_attendance_my"-->
-<!--                  name="Chấm công của tôi"-->
-<!--                  parent="menu_tedi_attendance_category"-->
-<!--                  action="action_tedi_attendance_my"-->
-<!--                  sequence="1"/>-->
 
         <menuitem id="menu_tedi_attendance_gantt_custom"
                   name="Lịch chấm công"
@@ -72,8 +61,6 @@
                   action="action_tedi_attendance_import"
                   groups="hr_attendance.group_hr_attendance_officer"
                   sequence="4"/>
-
-
 
         <record id="group_tedi_hidden_menus" model="res.groups">
             <field name="name">Hidden Menus (Do not use)</field>

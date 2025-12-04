@@ -123,7 +123,7 @@
             </field>
         </record>
 
-
+<!--<field name="check_in" options="{'rounding': 0}"/>-->
 
         <record id="hr_attendance_view_form_inherit_tedi" model="ir.ui.view">
             <field name="name">hr.attendance.form.inherit.tedi</field>
@@ -135,22 +135,29 @@
                     <field name="status" widget="radio" options="{'horizontal': true}"/>
                 </xpath>
 
-                <xpath expr="//field[@name='check_out']" position="after">
-                    <separator string="Thông tin nhân sự"/>
-                    <group>
-                        <group>
-                            <field name="department_id" readonly="1"/>
-                            <field name="job_id" readonly="1"/>
-                        </group>
-                        <group>
-                            <field name="attendance_date" readonly="1"/>
-                        </group>
+                <xpath expr="//field[@name='check_in']" position="replace">
+
+                    <field name="check_in" string="Check-in" />
+
+                </xpath>
+
+                <xpath expr="//field[@name='check_out']" position="replace">
+
+                    <field name="check_out" string="Check-out" />
+
+                </xpath>
+
+                <xpath expr="//sheet/group" position="after">
+                    <separator string="Thông tin nhân sự" style="margin-top: 20px;"/>
+                    <group col="4">
+                        <field name="department_id" readonly="1"/>
+                        <field name="job_id" readonly="1"/>
+                        <field name="attendance_date" readonly="1"/>
                     </group>
                 </xpath>
 
             </field>
         </record>
-
 
 
         <record id="action_tedi_attendance_all" model="ir.actions.act_window">
@@ -160,6 +167,8 @@
             <field name="context">{'search_default_grp_date': 1}</field>
         </record>
 
+
+
         <record id="action_tedi_attendance_my" model="ir.actions.act_window">
             <field name="name">Chấm công của tôi</field>
             <field name="res_model">hr.attendance</field>
@@ -167,8 +176,6 @@
             <field name="domain">[('employee_id.user_id', '=', uid)]</field>
             <field name="context">{'search_default_grp_date': 1}</field>
         </record>
-
-
 
 
 
