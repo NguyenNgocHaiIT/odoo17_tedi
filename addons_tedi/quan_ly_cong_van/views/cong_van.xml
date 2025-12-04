@@ -558,7 +558,7 @@
                         <group>
                             <group>
                                 <!--                                <field name="nhan_van_ban"/>-->
-                                <field name="don_vi_xu_ly_chinh" widget="many2many_tags"/>
+                                <field name="don_vi_xu_ly_chinh"/>
                                 <field name="don_vi_dong_xu_ly" widget="many2many_tags"/>
                             </group>
                             <group>
