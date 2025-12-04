@@ -7,16 +7,6 @@
         <field name="inherit_id" ref="project.view_task_form2"/>
         <field name="arch" type="xml">
             <xpath expr="//sheet" position="before">
-                <div role="alert" class="alert alert-warning d-flex flex-wrap gap-3"
-                    invisible="not planning_overlap">
-                    <div class="d-flex align-items-center">
-                        <i class="fa fa-random me-2" role="img" title="Planning overlap"/>
-                        <field name="planning_overlap" widget="html"  nolabel="1" class="m-0"/>
-                    </div>
-                    <a name="action_fsm_view_overlapping_tasks" type="object" class="alert-link ms-auto" invisible="not planning_overlap">
-                        Check it out <i class="oi oi-chevron-right ms-2"/>
-                    </a>
-                </div>
                 <div role="alert"
                     class="alert alert-warning d-flex align-items-center"
                     invisible="not dependency_warning">
@@ -91,6 +81,7 @@
 
                 <!-- Fields available inside gantt (for popover rendering) -->
                 <field name="parent_id"/>
+                <field name="progress"/>
                 <field name="project_id"/>
                 <field name="milestone_id"/>
                 <field name="user_ids"/>

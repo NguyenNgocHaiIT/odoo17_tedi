@@ -47,6 +47,7 @@ class Task(models.Model):
     user_ids = fields.Many2many(group_expand="_group_expand_user_ids")
     partner_id = fields.Many2one(group_expand="_group_expand_partner_ids")
     project_id = fields.Many2one(group_expand="_group_expand_project_ids")
+    progress = fields.Float(string="Tiến độ (%)", default=0.0)
 
     _sql_constraints = [
         ('planned_dates_check', "CHECK ((planned_date_begin <= date_deadline))", "The planned start date must be before the planned end date."),
@@ -1181,9 +1182,32 @@ class Task(models.Model):
         is_portal_user = self.env.user.has_group('base.group_portal')
         if is_portal_user:
             self.check_access_rights('create')
-        default_stage = dict()
+
+        default_stage = {}  # Cache default stage theo project
+
         for vals in vals_list:
-            project_id = vals.get('project_id')
+            # ------------------------------------------------------------------
+            # 1. XÁC ĐỊNH CHẮC CHẮN PROJECT_ID (đây là điểm quan trọng nhất)
+            # ------------------------------------------------------------------
+            project_id = vals.get('project_id') or self._context.get('default_project_id')
+
+            # Trường hợp tạo subtask mà chưa có project_id → lấy từ parent
+            if not project_id and vals.get('parent_id'):
+                parent_task = self.browse(vals['parent_id'])
+                if parent_task.exists() and parent_task.project_id:
+                    project_id = parent_task.project_id.id
+                    vals['project_id'] = project_id
+                    vals['display_in_project'] = True  # QUAN TRỌNG: luôn hiển thị subtask trong project
+                else:
+                    vals['display_in_project'] = False
+            else:
+                # Task gốc hoặc đã có project_id → đảm bảo hiển thị trong project
+                if project_id:
+                    vals['display_in_project'] = vals.get('display_in_project', True)
+
+            # ------------------------------------------------------------------
+            # 2. Các xử lý khác (giữ nguyên logic gốc + bổ sung an toàn)
+            # ------------------------------------------------------------------
             if vals.get('user_ids'):
                 vals['date_assign'] = fields.Datetime.now()
                 if not (vals.get('parent_id') or project_id or self._context.get('default_project_id')):
@@ -1193,81 +1217,90 @@ class Task(models.Model):
 
             if default_personal_stage and 'personal_stage_type_id' not in vals:
                 vals['personal_stage_type_id'] = default_personal_stage[0]
+
             if not vals.get('name') and vals.get('display_name'):
                 vals['name'] = vals['display_name']
+
             if is_portal_user:
                 self._ensure_fields_are_accessible(vals.keys(), operation='write', check_group_user=False)
 
-            if project_id:
-                # set the project => "I want to display the task in the project"
-                #                 => => set `display_in_project` to True
-                vals['display_in_project'] = vals.get('display_in_project', True)
-            elif vals.get('parent_id'):
-                # QUAN TRỌNG: SỬA Ở ĐÂY - Luôn hiển thị subtask trong project
-                # Lấy project_id từ parent task
-                parent_task = self.browse(vals['parent_id'])
-                project_id = parent_task.project_id.id
-                vals.update({
-                    'project_id': project_id,
-                    'display_in_project': True,  # QUAN TRỌNG: Set thành True thay vì False
-                })
+            # Gán company_id từ project (nếu có)
+            if project_id and 'company_id' not in vals:
+                project = self.env['project.project'].browse(project_id)
+                if project.exists():
+                    vals['company_id'] = project.company_id.id or self.env.company.id
 
-            if project_id and not "company_id" in vals:
-                vals["company_id"] = self.env["project.project"].browse(
-                    project_id
-                ).company_id.id
-            if not project_id and ("stage_id" in vals or self.env.context.get('default_stage_id')):
-                vals["stage_id"] = False
+            # Nếu KHÔNG có project → xóa stage_id (tránh stage của project khác)
+            if not project_id and (vals.get('stage_id') or self._context.get('default_stage_id')):
+                vals['stage_id'] = False
 
-            if project_id and "stage_id" not in vals:
-                # 1) Allows keeping the batch creation of tasks
-                # 2) Ensure the defaults are correct (and computed once by project),
-                # by using default get (instead of _get_default_stage_id or _stage_find),
+            if not vals.get('planned_date_begin'):
+                vals['planned_date_begin'] = fields.Datetime.now()
+
+            # ------------------------------------------------------------------
+            # 3. Set default stage_id theo project (chỉ khi có project)
+            # ------------------------------------------------------------------
+            if project_id and 'stage_id' not in vals:
                 if project_id not in default_stage:
                     default_stage[project_id] = self.with_context(
                         default_project_id=project_id
                     ).default_get(['stage_id']).get('stage_id')
-                vals["stage_id"] = default_stage[project_id]
-            # user_ids change: update date_assign
-            # Stage change: Update date_end if folded stage and date_last_stage_update
+                if default_stage.get(project_id):
+                    vals['stage_id'] = default_stage[project_id]
+
+            # Cập nhật date_end nếu stage là folded + date_last_stage_update
             if vals.get('stage_id'):
                 vals.update(self.update_date_end(vals['stage_id']))
                 vals['date_last_stage_update'] = fields.Datetime.now()
-            # recurrence
+
+            # Recurrence
             rec_fields = vals.keys() & self._get_recurrence_fields()
             if rec_fields and vals.get('recurring_task') is True:
-                rec_values = {rec_field: vals[rec_field] for rec_field in rec_fields}
+                rec_values = {f: vals[f] for f in rec_fields}
                 recurrence = self.env['project.task.recurrence'].create(rec_values)
                 vals['recurrence_id'] = recurrence.id
-        # The sudo is required for a portal user as the record creation
-        # requires the read access on other models, as mail.template
-        # in order to compute the field tracking
+
+        # ------------------------------------------------------------------
+        # Tạo task (sudo cho portal user)
+        # ------------------------------------------------------------------
         was_in_sudo = self.env.su
         if is_portal_user:
-            vals_list_no_sudo, vals_list = zip(*(self._get_portal_sudo_vals(vals, defaults=True) for vals in vals_list))
+            vals_list_no_sudo, vals_list = zip(*(
+                self._get_portal_sudo_vals(vals, defaults=True) for vals in vals_list
+            ))
             self_no_sudo, self = self, self.sudo().with_context(self._get_portal_sudo_context())
+
         tasks = super(Task, self.with_context(mail_create_nosubscribe=True)).create(vals_list)
+
         if is_portal_user:
             for task, vals in zip(tasks.with_env(self_no_sudo.env), vals_list_no_sudo):
                 task.write(vals)
-        tasks._populate_missing_personal_stages()
-        self._task_message_auto_subscribe_notify({task: task.user_ids - self.env.user for task in tasks})
 
-        # in case we were already in sudo, we don't check the rights.
+        tasks._populate_missing_personal_stages()
+        self._task_message_auto_subscribe_notify({
+            task: task.user_ids - self.env.user for task in tasks
+        })
+
+        # Kiểm tra quyền tạo task (portal user)
         if is_portal_user and not was_in_sudo:
-            # since we use sudo to create tasks, we need to check
-            # if the portal user could really create the tasks based on the ir rule.
             tasks.with_user(self.env.user).check_access_rule('create')
+
+        # Các xử lý sau khi tạo
         current_partner = self.env.user.partner_id
         if tasks.project_id:
             tasks._set_stage_on_project_from_task()
+
         for task in tasks:
-            if task.project_id.privacy_visibility == 'portal':
+            if task.project_id and task.project_id.privacy_visibility == 'portal':
                 task._portal_ensure_token()
-            for follower in task.parent_id.message_follower_ids:
-                task.message_subscribe(follower.partner_id.ids, follower.subtype_ids.ids)
+            # Kế thừa follower từ parent task
+            if task.parent_id:
+                for follower in task.parent_id.message_follower_ids:
+                    task.message_subscribe(follower.partner_id.ids, follower.subtype_ids.ids)
+            # Tự động theo dõi task vừa tạo
             if current_partner not in task.message_partner_ids:
                 task.message_subscribe(current_partner.ids)
+
         return tasks
 
     def write(self, vals):
