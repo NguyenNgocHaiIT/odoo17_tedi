@@ -67,7 +67,7 @@
         </record>
 
         <record id="office_document_rule_nhan_vien" model="ir.rule">
-            <field name="name">Office Document - Nhân viên/Người dùng cơ bản</field>
+            <field name="name">Office Document - Nhân viên/Đơn vị xử lý</field>
             <field name="model_id" ref="model_office_document"/>
             <field name="domain_force">
                 ['|', '|',
