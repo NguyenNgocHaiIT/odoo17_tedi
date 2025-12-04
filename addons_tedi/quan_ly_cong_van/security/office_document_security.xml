@@ -16,6 +16,13 @@
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
         </record>
 
+        <!-- Nhóm Đơn vị xử lý -->
+        <record id="group_don_vi_xu_ly" model="res.groups">
+            <field name="name">Đơn vị xử lý</field>
+            <field name="category_id" ref="base.module_category_administration"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
 
         <!-- Văn thư: xem tất cả -->
         <record id="office_document_rule_van_thu" model="ir.rule">
@@ -57,6 +64,19 @@
                 ]
             </field>
             <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <record id="office_document_rule_don_vi_xu_ly" model="ir.rule">
+            <field name="name">Office Document - Nhân viên/Đơn vị xử lý</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">
+                ['|', '|',
+                    ('create_uid','=',user.id),
+                    ('detail2.nguoi_nhap_y_kien.user_id','=',user.id),
+                    ('lanh_dao_xu_ly.user_id','=',user.id)
+                ]
+            </field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_don_vi_xu_ly'))]"/>
         </record>
 
     </data>
