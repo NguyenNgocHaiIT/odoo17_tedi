@@ -11,7 +11,7 @@ _logger = logging.getLogger(__name__)
 class Calendar(models.Model):
     _inherit = 'calendar.event'
 
-    lanh_dao = fields.Many2one("res.users", string="Lãnh đạo")
+    lanh_dao = fields.Many2one("hr.employee", string="Lãnh đạo")
     don_vi = fields.Many2many(
         "hr.department",
         'calendar_don_vi_tham_gia_rel',
@@ -35,6 +35,7 @@ class Calendar(models.Model):
         'calendar_event_id', 'room_materials_id',
         string='Thông tin khác'
     )
+    chu_tri = fields.Many2one("hr.employee", string="Người chủ trì", default=lambda self: self._get_default_chu_tri())
 
     room = fields.Many2one('room.room', string='Phòng')
 
@@ -46,6 +47,20 @@ class Calendar(models.Model):
 
     date_only = fields.Date(string="Ngày", compute='_compute_date_only', store=True)
 
+    employee_ids = fields.Many2many(
+        'hr.employee',
+        'calendar_event_employee_rel',
+        'event_id', 'employee_id',
+        string='Người tham gia',
+        default=lambda self: self._get_default_employees(),
+    )
+
+    def _get_default_chu_tri(self):
+        """Lấy employee của user hiện tại làm chủ trì mặc định"""
+        if self.env.user.employee_ids:
+            return self.env.user.employee_ids[0].id
+        return False
+
     @api.depends('start')
     def _compute_date_only(self):
         for rec in self:
@@ -55,38 +70,31 @@ class Calendar(models.Model):
     def _compute_start_stop(self):
         for rec in self:
             if rec.start and rec.stop:
-                # chỉ lấy giờ:phút
                 rec.start_stop = f"{rec.start.strftime('%H:%M')} → {rec.stop.strftime('%H:%M')}"
             else:
                 rec.start_stop = ""
 
-    def _get_default_partners(self, vals):
-        """Lấy danh sách partner cần thêm vào sự kiện:
-           - Lãnh đạo chủ trì
-           - Manager của các đơn vị tham gia
-        """
-        partner_ids = set()
+    def _get_default_employees(self):
+        """Lấy danh sách người tham gia mặc định (bao gồm chủ trì)"""
+        participant_ids = []
 
-        # 1. Lãnh đạo chủ trì
-        lanh_dao_id = vals.get("lanh_dao")
-        if lanh_dao_id:
-            user = self.env['res.users'].browse(lanh_dao_id)
-            if user.partner_id:
-                partner_ids.add(user.partner_id.id)
+        # 1. Thêm chủ trì (employee của user hiện tại)
+        if self.env.user.employee_ids:
+            chu_tri_id = self.env.user.employee_ids[0].id
+            participant_ids.append(chu_tri_id)
 
-        return list(partner_ids)
+        return [(6, 0, participant_ids)]
 
     @api.model
     def create(self, vals):
+        if not vals.get('chu_tri') and self.env.user.employee_ids:
+            # Lấy employee từ user hiện tại
+            current_employee = self.env.user.employee_ids[0]
+            vals['chu_tri'] = current_employee.id
+
         record = super().create(vals)
 
-        # Lấy danh sách partner tự động
-        auto_partner_ids = self._get_default_partners(vals)
-
-        if auto_partner_ids:
-            record.partner_ids = [(4, pid) for pid in auto_partner_ids]
-
-        # Giữ logic cũ: tạo màu
+        # Tạo màu
         record.color = record.id % 12
         return record
 
@@ -97,10 +105,10 @@ class Calendar(models.Model):
         """
         res = super().write(vals)
 
-        auto_partner_ids = self._get_default_partners(vals)
-        if auto_partner_ids:
+        auto_employee_ids = self._get_default_employees(vals)
+        if auto_employee_ids:
             for rec in self:
-                rec.partner_ids = [(4, pid) for pid in auto_partner_ids]
+                rec.employee_ids = [(4, eid) for eid in auto_employee_ids]
 
         return res
 
@@ -111,29 +119,35 @@ class Calendar(models.Model):
             event.calendar_label = f"{time_str} - {event.name or ''}"
 
     def approve(self):
-        """Duyệt cuộc họp, gửi notification chat + popup + email cho partner và manager các đơn vị tham gia"""
+        """Duyệt cuộc họp, gửi notification chat + popup + email cho employee và manager các đơn vị tham gia"""
         self.ensure_one()
         odoobot = self.env.ref('base.user_root')
-        odoobot_partner = odoobot.partner_id
+        odoobot_employee = self.env['hr.employee'].search([('user_id', '=', odoobot.id)], limit=1)
         web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
 
         # 1. Đánh dấu đã duyệt
         self.write({'state': 'approved'})
 
-        # 2. Lấy danh sách partner cần mời (người tham dự + lãnh đạo)
-        partner_ids = self.partner_ids.ids
-        if self.lanh_dao and self.lanh_dao.partner_id:
-            partner_ids.append(self.lanh_dao.partner_id.id)
-        partners = self.env['res.partner'].browse(set(partner_ids))
+        # 2. Lấy danh sách employee cần mời (người tham dự + lãnh đạo)
+        employee_ids = self.employee_ids.ids
+        if self.lanh_dao:
+            employee_ids.append(self.lanh_dao.id)
+        employees = self.env['hr.employee'].browse(set(employee_ids))
 
         # 3. Lấy các manager của các đơn vị tham gia
-        manager_partners = self.env['res.partner']
+        manager_employees = self.env['hr.employee']
         for dept in self.don_vi:
-            if dept.manager_id and dept.manager_id.user_id and dept.manager_id.user_id.partner_id:
-                manager_partners |= dept.manager_id.user_id.partner_id
+            if dept.manager_id:
+                manager_employees |= dept.manager_id
 
-        # 4. Hàm tạo kênh chat 1-1
-        def get_or_create_direct_chat(partner1, partner2):
+        # 4. Hàm tạo kênh chat 1-1 (dựa trên user của employee)
+        def get_or_create_direct_chat(employee1, employee2):
+            if not employee1.user_id or not employee2.user_id:
+                return None
+
+            partner1 = employee1.user_id.partner_id
+            partner2 = employee2.user_id.partner_id
+
             domain = [
                 ('channel_type', '=', 'chat'),
                 ('channel_member_ids.partner_id', 'in', [partner1.id, partner2.id])
@@ -144,7 +158,7 @@ class Calendar(models.Model):
                 if len(members) == 2 and set(members.ids) == {partner1.id, partner2.id}:
                     return channel
             return self.env['discuss.channel'].sudo().create({
-                'name': f"Lời mời họp: {partner2.name}",
+                'name': f"Lời mời họp: {employee2.name}",
                 'channel_type': 'chat',
                 'channel_member_ids': [
                     (0, 0, {'partner_id': partner1.id}),
@@ -152,16 +166,19 @@ class Calendar(models.Model):
                 ]
             })
 
-        # 5. Gửi notification popup + chat cho tất cả partner + manager
-        all_notify_partners = partners | manager_partners
-        for partner in all_notify_partners:
+        # 5. Gửi notification popup + chat cho tất cả employees + managers
+        all_notify_employees = employees | manager_employees
+        for employee in all_notify_employees:
+            if not employee.user_id:
+                continue
+
             # Popup notification
             self.env['bus.bus']._sendone(
-                partner,
+                employee.user_id.partner_id,
                 'simple_notification',
                 {
                     'title': '📅 Lời mời họp mới',
-                    'message': f"Bạn có lời mời tham dự cuộc họp: {self.name}" if partner in partners else
+                    'message': f"Bạn có lời mời tham dự cuộc họp: {self.name}" if employee in employees else
                     f"Đơn vị của bạn đã được mời tham dự cuộc họp: {self.name}",
                     'sticky': False,
                     'type': 'info',
@@ -174,25 +191,27 @@ class Calendar(models.Model):
                 <p>📅 Cuộc họp: <b>{self.name}</b></p>
                 <p>⏰ {time_str}</p>
                 <p>🏢 Phòng: {self.room.name if self.room else 'Chưa đăng ký'}</p>
-                <p>{'Bạn được mời tham dự.' if partner in partners else 'Đơn vị của bạn đã được mời tham dự.'}</p>
+                <p>{'Bạn được mời tham dự.' if employee in employees else 'Đơn vị của bạn đã được mời tham dự.'}</p>
                 <p><a href="{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
                       style="background:#28a745;color:blue;padding:6px 12px;border-radius:4px;text-decoration:none;">📨 Xem cuộc họp</a></p>
             """
             try:
-                channel = get_or_create_direct_chat(odoobot_partner, partner)
-                channel.sudo().message_post(
-                    body=body_chat,
-                    message_type='comment',
-                    subtype_xmlid='mail.mt_comment',
-                    author_id=odoobot_partner.id,
-                    body_is_html=True,
-                )
+                if odoobot_employee and odoobot_employee.user_id:
+                    channel = get_or_create_direct_chat(odoobot_employee, employee)
+                    if channel:
+                        channel.sudo().message_post(
+                            body=body_chat,
+                            message_type='comment',
+                            subtype_xmlid='mail.mt_comment',
+                            author_id=odoobot_employee.user_id.partner_id.id,
+                            body_is_html=True,
+                        )
             except Exception as e:
-                _logger.error(f"Lỗi gửi chat cho {partner.name}: {str(e)}")
+                _logger.error(f"Lỗi gửi chat cho {employee.name}: {str(e)}")
 
         # 6. Gửi email tới manager các đơn vị tham gia
-        for partner in manager_partners:
-            if not partner.email:
+        for employee in manager_employees:
+            if not employee.work_email:
                 continue
 
             # Người tạo
@@ -209,7 +228,7 @@ class Calendar(models.Model):
 
             subject = f"Mời họp {self.name}"
             body_html = f"""
-                <p>Kính gửi,</p>
+                <p>Kính gửi {employee.name},</p>
                 <p>Phòng {dept_create} kính mời đơn vị tham dự cuộc họp <b>{self.name}</b> với nội dung chi tiết như sau:</p>
                 <p><b>Thời gian:</b> {time_str}</p>
                 <p><b>Thành phần tham dự:</b> {don_vi_names}</p>
@@ -225,14 +244,12 @@ class Calendar(models.Model):
             self.env['mail.mail'].sudo().create({
                 'subject': subject,
                 'body_html': body_html,
-                'email_to': partner.email,
+                'email_to': employee.work_email,
             }).send()
 
         return True
 
-    # Trong class Calendar(models.Model):
     def open_room_booking_wizard(self):
-
         self.ensure_one()
         if not self.start or not self.stop:
             raise UserError("Vui lòng nhập thời gian bắt đầu và kết thúc trước khi đăng ký phòng.")
@@ -259,7 +276,6 @@ class Calendar(models.Model):
             'view_id': self.env.ref('Quan_ly_lich_hop.view_dashboard_today_form').id,
             'target': 'current',
         }
-
 
     def action_add_participants(self):
         self.ensure_one()
@@ -373,7 +389,7 @@ class MeetingInvitationWizard(models.TransientModel):
     _description = 'Xử lý lời mời họp'
 
     event_id = fields.Many2one('calendar.event', string="Cuộc họp", required=True)
-    partner_id = fields.Many2one('res.partner', string="Người tham dự", required=True)
+    employee_id = fields.Many2one('hr.employee', string="Người tham dự", required=True)
     action_type = fields.Selection([
         ('accept', 'Đồng ý tham dự'),
         ('reject', 'Từ chối tham dự')
@@ -384,18 +400,18 @@ class MeetingInvitationWizard(models.TransientModel):
     def action_confirm(self):
         self.ensure_one()
         event = self.event_id
-        partner = self.partner_id
+        employee = self.employee_id
 
         if self.action_type == 'accept':
-            message = f"✅ {partner.name} đã <b>đồng ý tham dự</b> cuộc họp <b>{event.name}</b>."
-            # Nếu partner chưa có trong danh sách, thêm vào
-            if partner not in event.partner_ids:
-                event.partner_ids = [(4, partner.id)]
+            message = f"✅ {employee.name} đã <b>đồng ý tham dự</b> cuộc họp <b>{event.name}</b>."
+            # Nếu employee chưa có trong danh sách, thêm vào
+            if employee not in event.employee_ids:
+                event.employee_ids = [(4, employee.id)]
         else:
-            message = f"❌ {partner.name} đã <b>từ chối tham dự</b> cuộc họp <b>{event.name}</b>."
-            # Nếu partner có trong danh sách, xóa khỏi cuộc họp
-            if partner in event.partner_ids:
-                event.partner_ids = [(3, partner.id)]
+            message = f"❌ {employee.name} đã <b>từ chối tham dự</b> cuộc họp <b>{event.name}</b>."
+            # Nếu employee có trong danh sách, xóa khỏi cuộc họp
+            if employee in event.employee_ids:
+                event.employee_ids = [(3, employee.id)]
 
         # Gửi notification vào chatter
         event.message_post(
@@ -406,39 +422,43 @@ class MeetingInvitationWizard(models.TransientModel):
 
         return {'type': 'ir.actions.act_window_close'}
 
+
 class CalendarAddParticipantsWizard(models.TransientModel):
     _name = 'calendar.add.participants.wizard'
     _description = 'Thêm người tham gia cuộc họp'
 
     event_id = fields.Many2one('calendar.event', string="Cuộc họp", required=True)
-    partner_ids = fields.Many2many('res.partner', string="Người tham gia")
+    employee_ids = fields.Many2many('hr.employee', string="Người tham gia")
 
     def action_confirm(self):
         self.ensure_one()
-        if not self.partner_ids:
+        if not self.employee_ids:
             return {'type': 'ir.actions.act_window_close'}
 
-        new_partners = self.partner_ids - self.event_id.partner_ids
-        if not new_partners:
+        new_employees = self.employee_ids - self.event_id.employee_ids
+        if not new_employees:
             return {'type': 'ir.actions.act_window_close'}
 
         # Thêm vào event
-        for partner in new_partners:
-            self.event_id.partner_ids = [(4, partner.id)]
+        for employee in new_employees:
+            self.event_id.employee_ids = [(4, employee.id)]
 
         # Lấy thông tin cần thiết
         odoobot = self.env.ref('base.user_root')
-        odoobot_partner = odoobot.partner_id
+        odoobot_employee = self.env['hr.employee'].search([('user_id', '=', odoobot.id)], limit=1)
         web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
 
         time_str = f"{self.event_id.start.strftime('%H:%M %d/%m/%Y')} → {self.event_id.stop.strftime('%H:%M %d/%m/%Y')}" if self.event_id.start and self.event_id.stop else ""
         room_name = self.event_id.room.name if self.event_id.room else 'Chưa đăng ký'
 
         # 1. Gửi notification popup + chat
-        for partner in new_partners:
+        for employee in new_employees:
+            if not employee.user_id:
+                continue
+
             # Popup notification
             self.env['bus.bus']._sendone(
-                partner,
+                employee.user_id.partner_id,
                 'simple_notification',
                 {
                     'title': '📅 Lời mời họp mới',
@@ -459,37 +479,39 @@ class CalendarAddParticipantsWizard(models.TransientModel):
                 </p>
             """
             try:
-                # Chat với OdooBot
-                channels = self.env['discuss.channel'].sudo().search([
-                    ('channel_type', '=', 'chat'),
-                    ('channel_member_ids.partner_id', 'in', [odoobot_partner.id, partner.id])
-                ])
-                if channels:
-                    channel = channels[0]
-                else:
-                    channel = self.env['discuss.channel'].sudo().create({
-                        'name': f"Lời mời họp: {partner.name}",
-                        'channel_type': 'chat',
-                        'channel_member_ids': [
-                            (0, 0, {'partner_id': odoobot_partner.id}),
-                            (0, 0, {'partner_id': partner.id}),
-                        ]
-                    })
-                channel.sudo().message_post(
-                    body=body_chat,
-                    message_type='comment',
-                    subtype_xmlid='mail.mt_comment',
-                    author_id=odoobot_partner.id,
-                    body_is_html=True,
-                )
+                if odoobot_employee and odoobot_employee.user_id:
+                    # Chat với OdooBot
+                    channels = self.env['discuss.channel'].sudo().search([
+                        ('channel_type', '=', 'chat'),
+                        ('channel_member_ids.partner_id', 'in',
+                         [odoobot_employee.user_id.partner_id.id, employee.user_id.partner_id.id])
+                    ])
+                    if channels:
+                        channel = channels[0]
+                    else:
+                        channel = self.env['discuss.channel'].sudo().create({
+                            'name': f"Lời mời họp: {employee.name}",
+                            'channel_type': 'chat',
+                            'channel_member_ids': [
+                                (0, 0, {'partner_id': odoobot_employee.user_id.partner_id.id}),
+                                (0, 0, {'partner_id': employee.user_id.partner_id.id}),
+                            ]
+                        })
+                    channel.sudo().message_post(
+                        body=body_chat,
+                        message_type='comment',
+                        subtype_xmlid='mail.mt_comment',
+                        author_id=odoobot_employee.user_id.partner_id.id,
+                        body_is_html=True,
+                    )
             except Exception as e:
-                _logger.error(f"Lỗi gửi chat cho {partner.name}: {str(e)}")
+                _logger.error(f"Lỗi gửi chat cho {employee.name}: {str(e)}")
 
             # 2. Gửi email
-            if partner.email:
+            if employee.work_email:
                 subject = f"Mời họp {self.event_id.name}"
                 body_html = f"""
-                    <p>Kính gửi {partner.name},</p>
+                    <p>Kính gửi {employee.name},</p>
                     <p>Bạn đã được thêm tham dự cuộc họp <b>{self.event_id.name}</b> với nội dung chi tiết:</p>
                     <p><b>Thời gian:</b> {time_str}</p>
                     <p><b>Phòng:</b> {room_name}</p>
@@ -501,7 +523,7 @@ class CalendarAddParticipantsWizard(models.TransientModel):
                 self.env['mail.mail'].sudo().create({
                     'subject': subject,
                     'body_html': body_html,
-                    'email_to': partner.email,
+                    'email_to': employee.work_email,
                 }).send()
 
         return {'type': 'ir.actions.act_window_close'}
