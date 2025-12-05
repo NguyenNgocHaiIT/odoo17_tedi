@@ -417,7 +417,7 @@ class OfficeDocumentDetail3(models.Model):
         store=True  # Nếu muốn lưu giá trị vào DB
     )
     noi_dung_chi_dao = fields.Char('Nội dung')
-    thoi_diem_chi_dao = fields.Datetime('Thời điểm')
+    thoi_diem_chi_dao = fields.Datetime('Thời điểm', default=fields.Datetime.now)
     office_document_id = fields.Many2one('office.document')
 
     @api.depends('nguoi_nhap_y_kien')
@@ -426,6 +426,16 @@ class OfficeDocumentDetail3(models.Model):
             rec.nhom_phong_ban = 'Không xác định'
             if rec.nguoi_nhap_y_kien and rec.nguoi_nhap_y_kien.department_id:
                 rec.nhom_phong_ban = rec.nguoi_nhap_y_kien.department_id.name
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        # Tự động lấy HR Employee của user hiện tại
+        user = self.env.user
+        hr_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+        if 'nguoi_nhap_y_kien' in fields_list and hr_employee:
+            res['nguoi_nhap_y_kien'] = hr_employee.id
+        return res
 
 
 class OfficeDocument(models.Model):
@@ -540,6 +550,8 @@ class OfficeDocument(models.Model):
         compute='_compute_co_the_but_phe',
         store=False  # Không lưu vào database, tính toán real-time
     )
+
+    task_id = fields.Many2one('project.task', string="Công việc liên quan")
 
     def phan_phat(self):
         return {
@@ -681,7 +693,13 @@ class OfficeDocument(models.Model):
         # Xử lý so_den_tong_hop và so_di_tong_hop khi có phan_loai_van_ban
         vals = self._update_document_numbers(vals)
 
-        return super(OfficeDocument, self).create(vals)
+        record = super(OfficeDocument, self).create(vals)
+
+        # 🔥 Nếu có task_id, tự chuyển trạng thái task thành "Đã giao"
+        if record.task_id:
+            record.task_id.office_task_status = 'da_tao_cong_van'
+
+        return record
 
     def write(self, vals):
         # 2. Nếu thay đổi phan_loai_van_ban thì cập nhật số tổng hợp
