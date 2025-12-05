@@ -15,17 +15,14 @@ class OfficeTask(models.Model):
 
     don_vi = fields.Many2one('hr.department', string='Đơn vị')
 
-    office_task_status = fields.Selection([
-        ('draft', 'Chưa giao việc'),
-        ('da_giao', 'Đã giao việc'),
-        ('da_tao_cong_van', 'Đã tạo công văn'),
-    ], string='trạng thái', default='draft')
-
     task_type = fields.Selection([
         ('cong_van_di', 'Công việc của công văn đi'),
         ('quyet_dinh', 'công việc của quyết định'),
         ('cong_van_di_noi_bo', 'công việc của công văn đi nội bộ'),
     ], string='Loại công việc')
+
+    da_giao_viec = fields.Boolean(string="Đã giao việc", default=False)
+    da_tao_cong_van = fields.Boolean(string="Đã tạo công văn", default=False)
 
     @api.model
     def create(self, vals):
@@ -90,7 +87,7 @@ class OfficeTask(models.Model):
             raise UserError("Vui lòng chọn đơn vị xử lý để giao việc")
 
         # 1. Đổi trạng thái task
-        self.office_task_status = 'da_giao'
+        self.da_giao_viec = True
 
         # 2. Lấy manager của đơn vị
         manager_partner = False
