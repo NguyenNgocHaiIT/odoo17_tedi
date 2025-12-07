@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import babel
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from dateutil.relativedelta import relativedelta
 from pytz import timezone
 from odoo import api, fields, models, tools, _
@@ -176,79 +176,442 @@ class HrPayslip(models.Model):
             payslip.write({'line_ids': lines, 'number': number})
         return True
 
+    # @api.model
+    # def get_worked_day_lines(self, contracts, date_from, date_to):
+    #     res = []
+    #
+    #     for contract in contracts.filtered(lambda c: c.resource_calendar_id):
+    #         day_from = datetime.combine(fields.Date.from_string(date_from), time.min)
+    #         day_to = datetime.combine(fields.Date.from_string(date_to), time.max)
+    #
+    #         # grouping theo hr.leave.type (holiday_status_id)
+    #         leaves = {}
+    #         calendar = contract.resource_calendar_id
+    #         try:
+    #             tz = timezone(calendar.tz or 'UTC')
+    #         except Exception:
+    #             tz = timezone('UTC')
+    #
+    #         try:
+    #             day_leave_intervals = contract.employee_id.list_leaves(
+    #                 day_from, day_to, calendar=contract.resource_calendar_id
+    #             ) or []
+    #         except Exception as e:
+    #             day_leave_intervals = []
+    #
+    #         for day, hours, leave in day_leave_intervals:
+    #             # Tìm hr.leave.type (holiday_status) một cách an toàn
+    #             leave_type = None  # record hr.leave.type nếu tìm được
+    #             leave_type_name = None
+    #             leave_type_code = None
+    #             leave_type_id = None
+    #
+    #             # 1) Nếu leave là hr.leave và có holiday_status_id
+    #             if hasattr(leave, 'holiday_status_id') and getattr(leave, 'holiday_status_id', False):
+    #                 leave_type = getattr(leave, 'holiday_status_id')
+    #             # 2) Nếu leave có attribute holiday_id (vd: resource.calendar.leaves liên kết tới hr.leave?)
+    #             elif hasattr(leave, 'holiday_id') and getattr(leave, 'holiday_id', False):
+    #                 # đôi khi calendar leave có trường holiday_id tham chiếu tới hr.leave -> lấy holiday_status_id từ đó
+    #                 holiday = getattr(leave, 'holiday_id')
+    #                 if hasattr(holiday, 'holiday_status_id') and getattr(holiday, 'holiday_status_id', False):
+    #                     leave_type = getattr(holiday, 'holiday_status_id')
+    #             # 3) thử các tên field thay thế (tùy custom)
+    #             else:
+    #                 for attr in ('leave_type_id', 'time_off_type_id', 'request_type_id'):
+    #                     if hasattr(leave, attr) and getattr(leave, attr, False):
+    #                         leave_type = getattr(leave, attr)
+    #                         break
+    #
+    #             # Nếu có leave_type lấy id/name/code
+    #             if leave_type:
+    #                 # leave_type có thể là recordset hoặc id
+    #                 try:
+    #                     if hasattr(leave_type, 'id'):
+    #                         leave_type_id = leave_type.id
+    #                     else:
+    #                         # numeric id fallback
+    #                         leave_type_id = int(leave_type)
+    #                 except Exception:
+    #                     leave_type_id = None
+    #                 try:
+    #                     leave_type_name = getattr(leave_type, 'name', None) or str(leave_type_id or '')
+    #                 except Exception:
+    #                     leave_type_name = str(leave_type_id or '')
+    #                 try:
+    #                     leave_type_code = getattr(leave_type, 'code', None)
+    #                 except Exception:
+    #                     leave_type_code = None
+    #
+    #             # Fallback: nếu không tìm được leave_type thì dùng tên từ record leave
+    #             if not leave_type_name:
+    #                 if hasattr(leave, 'name') and getattr(leave, 'name'):
+    #                     leave_type_name = getattr(leave, 'name')
+    #                 else:
+    #                     leave_type_name = _('Other Leave')
+    #
+    #             # Key nhóm: dùng id nếu có, còn không dùng name
+    #             key = (leave_type_id, leave_type_name) if leave_type_id else (None, leave_type_name)
+    #
+    #             current_leave_struct = leaves.setdefault(key, {
+    #                 'name': leave_type_name,
+    #                 'sequence': 5,
+    #                 # code ưu tiên lấy mã của hr.leave.type nếu có, fallback tạo từ tên
+    #                 'code': (
+    #                     leave_type_code if leave_type_code else ('LEAVE_' + leave_type_name.replace(' ', '_')[:20])),
+    #                 'number_of_days': 0.0,
+    #                 'number_of_hours': 0.0,
+    #                 'contract_id': contract.id,
+    #             })
+    #
+    #             # giữ logic dấu âm như code gốc của bạn
+    #             current_leave_struct['number_of_hours'] += float(hours or 0.0)
+    #
+    #             # chuyển hours -> days dựa trên work_hours của ngày theo calendar
+    #             try:
+    #                 work_hours = calendar.get_work_hours_count(
+    #                     tz.localize(datetime.combine(day, time.min)),
+    #                     tz.localize(datetime.combine(day, time.max)),
+    #                     compute_leaves=False,
+    #                 ) or 0.0
+    #             except Exception:
+    #                 work_hours = 0.0
+    #
+    #             if work_hours:
+    #                 try:
+    #                     current_leave_struct['number_of_days'] += (hours or 0.0) / work_hours
+    #                 except Exception:
+    #                     pass
+    #             else:
+    #                 # fallback dùng hours_per_day
+    #                 try:
+    #                     hours_per_day = float(getattr(calendar, 'hours_per_day', 8.0) or 8.0)
+    #                 except Exception:
+    #                     hours_per_day = 8.0
+    #                 if hours_per_day:
+    #                     try:
+    #                         current_leave_struct['number_of_days'] += (hours or 0.0) / hours_per_day
+    #                     except Exception:
+    #                         pass
+    #
+    #         # compute worked days (normal)
+    #         try:
+    #             work_data = contract.employee_id._get_work_days_data(
+    #                 day_from,
+    #                 day_to,
+    #                 calendar=contract.resource_calendar_id,
+    #                 compute_leaves=False,
+    #             ) or {}
+    #         except Exception as e:
+    #             work_data = {'days': 0.0, 'hours': 0.0}
+    #
+    #         attendances = {
+    #             'name': _("Normal Working Days paid at 100%"),
+    #             'sequence': 1,
+    #             'code': 'WORK100',
+    #             'number_of_days': work_data.get('days', 0.0),
+    #             'number_of_hours': work_data.get('hours', 0.0),
+    #             'contract_id': contract.id,
+    #         }
+    #         res.append(attendances)
+    #
+    #         # attendance-based worked hours (nếu bạn dùng hr.attendance)
+    #         Attendance = self.env['hr.attendance']
+    #         try:
+    #             att_lines = Attendance.search([
+    #                 ('employee_id', '=', contract.employee_id.id),
+    #                 ('check_in', '>=', date_from),
+    #                 ('check_out', '<=', date_to), ('status', 'in', ['ontime', 'late', 'early'])
+    #             ])
+    #             total_hours = sum((getattr(att, 'worked_hours', 0.0) or 0.0) for att in att_lines)
+    #         except Exception:
+    #             total_hours = 0.0
+    #
+    #         hours_per_day = calendar.hours_per_day or 8.0
+    #         total_days = total_hours / hours_per_day if hours_per_day else 0.0
+    #
+    #         att_real_line = {
+    #             'name': _('Ngày làm việc thực tế'),
+    #             'sequence': 2,
+    #             'code': 'ATT_REAL',
+    #             'number_of_days': total_days,
+    #             'number_of_hours': total_hours,
+    #             'contract_id': contract.id,
+    #         }
+    #         res.append(att_real_line)
+    #
+    #         # thêm các dòng leave đã group (lưu ý: không thêm trường relation không tồn tại)
+    #         for (_lt_id, lt_name), vals in leaves.items():
+    #             res.append({
+    #                 'name': vals['name'],
+    #                 'sequence': vals['sequence'],
+    #                 'code': vals['code'],
+    #                 'number_of_days': vals['number_of_days'],
+    #                 'number_of_hours': vals['number_of_hours'],
+    #                 'contract_id': vals['contract_id'],
+    #             })
+    #
+    #     return res
+
     @api.model
     def get_worked_day_lines(self, contracts, date_from, date_to):
         """
-        @param contract: Browse record of contracts
-        @return: returns a list of dict containing the input that should be applied for the given contract between date_from and date_to
+        Trả về list of dict (worked day lines) cho các contract.
+        Nghiệp vụ chính: tất cả các dòng nghỉ sẽ được nhóm theo hr.leave.type.code.
+        Nếu hr.leave.type.code không có -> fallback tạo code từ tên.
         """
         res = []
-        # fill only if the contract as a working schedule linked
-        for contract in contracts.filtered(lambda contract: contract.resource_calendar_id):
-            day_from = datetime.combine(fields.Date.from_string(date_from), time.min)
-            day_to = datetime.combine(fields.Date.from_string(date_to), time.max)
 
-            # compute leave days
-            leaves = {}
+        # Chuẩn hoá ngày
+        try:
+            start_date = fields.Date.from_string(date_from)
+        except Exception:
+            start_date = fields.Datetime.from_string(date_from).date()
+        try:
+            end_date = fields.Date.from_string(date_to)
+        except Exception:
+            end_date = fields.Datetime.from_string(date_to).date()
+
+        def daterange(d1, d2):
+            cur = d1
+            while cur <= d2:
+                yield cur
+                cur += timedelta(days=1)
+
+        for contract in contracts.filtered(lambda c: c.resource_calendar_id):
             calendar = contract.resource_calendar_id
-            tz = timezone(calendar.tz)
-            day_leave_intervals = contract.employee_id.list_leaves(day_from, day_to, calendar=contract.resource_calendar_id)
-            for day, hours, leave in day_leave_intervals:
-                holiday = leave.holiday_id
-                current_leave_struct = leaves.setdefault(holiday.holiday_status_id, {
-                    'name': holiday.holiday_status_id.name or _('Global Leaves'),
-                    'sequence': 5,
-                    'code': holiday.holiday_status_id.code or 'GLOBAL',
-                    'number_of_days': 0.0,
+            try:
+                tz = timezone(calendar.tz or 'UTC')
+            except Exception:
+                tz = timezone('UTC')
+
+            # --- 1) Calendar leaves (nghỉ lễ chung) ---
+            cal_leaves = self.env['resource.calendar.leaves'].search([
+                ('calendar_id', '=', calendar.id),
+                ('date_from', '<=', fields.Datetime.to_string(datetime.combine(end_date, time.max))),
+                ('date_to', '>=', fields.Datetime.to_string(datetime.combine(start_date, time.min))),
+            ])
+
+            calendar_holiday_dates = set()
+            holidays_grouped = {}  # keyed by leave_type_code (or fallback code)
+
+            for cl in cal_leaves:
+                # parse datetime fields
+                try:
+                    cl_from = fields.Datetime.from_string(cl.date_from) if isinstance(cl.date_from,
+                                                                                      str) else cl.date_from
+                    cl_to = fields.Datetime.from_string(cl.date_to) if isinstance(cl.date_to, str) else cl.date_to
+                except Exception:
+                    continue
+
+                # normalize in calendar tz
+                try:
+                    start_dt = cl_from.astimezone(tz) if getattr(cl_from, 'tzinfo', None) else tz.localize(cl_from)
+                    end_dt = cl_to.astimezone(tz) if getattr(cl_to, 'tzinfo', None) else tz.localize(cl_to)
+                except Exception:
+                    start_dt = cl_from
+                    end_dt = cl_to
+
+                d_from = start_dt.date()
+                d_to = end_dt.date()
+
+                # collect holiday dates for exclusion of personal leaves
+                for d in daterange(d_from, d_to):
+                    calendar_holiday_dates.add(d)
+
+                # determine hr.leave.type.code if possible
+                leave_type_code = None
+                leave_type_name = cl.name or _('Holiday')
+
+                # if calendar.leave linked to hr.leave via holiday_id
+                holiday_link = getattr(cl, 'holiday_id', False)
+                if holiday_link and getattr(holiday_link, 'holiday_status_id', False):
+                    lt = holiday_link.holiday_status_id
+                    leave_type_code = getattr(lt, 'code', None)
+                    leave_type_name = getattr(lt, 'name', leave_type_name)
+
+                # otherwise try to find hr.leave.type by name
+                if not leave_type_code:
+                    lt = self.env['hr.leave.type'].search([('name', '=', leave_type_name)], limit=1)
+                    if lt:
+                        leave_type_code = lt.code
+                        leave_type_name = lt.name
+
+                # fallback code if still missing
+                code_key = leave_type_code or ('HOLIDAY_' + leave_type_name.replace(' ', '_')[:20])
+
+                grp = holidays_grouped.setdefault(code_key, {
+                    'name': leave_type_name,
+                    'code': leave_type_code or code_key,
                     'number_of_hours': 0.0,
+                    'number_of_days': 0.0,
                     'contract_id': contract.id,
                 })
-                current_leave_struct['number_of_hours'] -= hours
-                work_hours = calendar.get_work_hours_count(
-                    tz.localize(datetime.combine(day, time.min)),
-                    tz.localize(datetime.combine(day, time.max)),
-                    compute_leaves=False,
-                )
-                if work_hours:
-                    current_leave_struct['number_of_days'] -= hours / work_hours
 
-            # compute worked days
-            work_data = contract.employee_id._get_work_days_data(
-                day_from,
-                day_to,
-                calendar=contract.resource_calendar_id,
-                compute_leaves=False,
-            )
-            attendances = {
+                # compute hours/days for overlapping days between calendar.leave and payslip period
+                overlap_from = max(d_from, start_date)
+                overlap_to = min(d_to, end_date)
+                for d in daterange(overlap_from, overlap_to):
+                    try:
+                        sdt = tz.localize(datetime.combine(d, time.min))
+                        edt = tz.localize(datetime.combine(d, time.max))
+                        wh = calendar.get_work_hours_count(sdt, edt, compute_leaves=False) or 0.0
+                    except Exception:
+                        wh = getattr(calendar, 'hours_per_day', 8.0) or 8.0
+                    grp['number_of_hours'] += float(wh)
+                    hours_per_day = getattr(calendar, 'hours_per_day', 8.0) or 8.0
+                    grp['number_of_days'] += (wh / hours_per_day) if hours_per_day else 0.0
+
+            # --- 2) Personal leaves (những ngày nghỉ của nhân viên) ---
+            personal_grouped = {}  # keyed by leave_type_code (or fallback)
+            try:
+                day_leave_intervals = contract.employee_id.list_leaves(
+                    datetime.combine(start_date, time.min),
+                    datetime.combine(end_date, time.max),
+                    calendar=contract.resource_calendar_id
+                ) or []
+            except Exception:
+                day_leave_intervals = []
+
+            for day, hours, leave in day_leave_intervals:
+                # normalize day -> date
+                if isinstance(day, datetime):
+                    d = day.date()
+                else:
+                    d = day
+
+                # skip if this date is a calendar holiday (already counted)
+                if d in calendar_holiday_dates:
+                    continue
+
+                # find hr.leave.type for this leave
+                lt_rec = None
+                lt_code = None
+                lt_name = None
+
+                if hasattr(leave, 'holiday_status_id') and getattr(leave, 'holiday_status_id', False):
+                    lt_rec = getattr(leave, 'holiday_status_id')
+                elif hasattr(leave, 'holiday_id') and getattr(leave, 'holiday_id', False):
+                    holiday_link = getattr(leave, 'holiday_id')
+                    if getattr(holiday_link, 'holiday_status_id', False):
+                        lt_rec = getattr(holiday_link, 'holiday_status_id')
+                else:
+                    for attr in ('leave_type_id', 'time_off_type_id', 'request_type_id'):
+                        if hasattr(leave, attr) and getattr(leave, attr, False):
+                            lt_rec = getattr(leave, attr)
+                            break
+
+                if lt_rec:
+                    lt_code = getattr(lt_rec, 'code', None)
+                    lt_name = getattr(lt_rec, 'name', None) or lt_code or _('Personal Leave')
+                else:
+                    lt_name = getattr(leave, 'name', None) or _('Personal Leave')
+                    # try to search type by name
+                    lt = self.env['hr.leave.type'].search([('name', '=', lt_name)], limit=1)
+                    if lt:
+                        lt_code = lt.code
+                        lt_name = lt.name
+
+                code_key = lt_code or ('LEAVE_' + lt_name.replace(' ', '_')[:20])
+
+                grp = personal_grouped.setdefault(code_key, {
+                    'name': lt_name,
+                    'code': lt_code or code_key,
+                    'number_of_hours': 0.0,
+                    'number_of_days': 0.0,
+                    'contract_id': contract.id,
+                })
+
+                grp['number_of_hours'] += float(hours or 0.0)
+
+                # convert hours -> days
+                try:
+                    sdt = tz.localize(datetime.combine(d, time.min))
+                    edt = tz.localize(datetime.combine(d, time.max))
+                    work_hours = calendar.get_work_hours_count(sdt, edt, compute_leaves=False) or 0.0
+                except Exception:
+                    work_hours = 0.0
+
+                if work_hours:
+                    try:
+                        grp['number_of_days'] += (hours or 0.0) / work_hours
+                    except Exception:
+                        pass
+                else:
+                    hours_per_day = getattr(calendar, 'hours_per_day', 8.0) or 8.0
+                    if hours_per_day:
+                        try:
+                            grp['number_of_days'] += (hours or 0.0) / hours_per_day
+                        except Exception:
+                            pass
+
+            # --- 3) WORK100 (normal) using employee._get_work_days_data ---
+            try:
+                work_data = contract.employee_id._get_work_days_data(
+                    datetime.combine(start_date, time.min),
+                    datetime.combine(end_date, time.max),
+                    calendar=contract.resource_calendar_id,
+                    compute_leaves=False
+                ) or {}
+            except Exception:
+                work_data = {'days': 0.0, 'hours': 0.0}
+
+            res.append({
                 'name': _("Normal Working Days paid at 100%"),
                 'sequence': 1,
                 'code': 'WORK100',
-                'number_of_days': work_data['days'],
-                'number_of_hours': work_data['hours'],
+                'number_of_days': float(work_data.get('days', 0.0)),
+                'number_of_hours': float(work_data.get('hours', 0.0)),
                 'contract_id': contract.id,
-            }
-            res.append(attendances)
-            # Todo: Xem thêm chỗ này
-            Attendance = self.env['hr.attendance']
-            att_lines = Attendance.search([
-                ('employee_id', '=', contract.employee_id.id),
-                ('check_in', '>=', date_from),
-                ('check_out', '<=', date_to),
-            ])
-            total_hours = sum(att.worked_hours for att in att_lines)  # hr.attendance cần có compute worked_hours
-            hours_per_day = contract.resource_calendar_id.hours_per_day or 8.0
-            total_days = total_hours / hours_per_day if hours_per_day else 0.0
+            })
 
-            att_real_line = {
-                'name': _('Ngày làm việc thực tế trả lương 100%'),
+            # --- 4) ATT_REAL from hr.attendance ---
+            Attendance = self.env['hr.attendance']
+            try:
+                dt_from_str = fields.Datetime.to_string(datetime.combine(start_date, time.min))
+                dt_to_str = fields.Datetime.to_string(datetime.combine(end_date, time.max))
+                att_lines = Attendance.search([
+                    ('employee_id', '=', contract.employee_id.id),
+                    ('check_in', '>=', dt_from_str),
+                    ('check_out', '<=', dt_to_str),
+                ])
+                total_hours = sum((getattr(att, 'worked_hours', 0.0) or 0.0) for att in att_lines)
+            except Exception:
+                total_hours = 0.0
+
+            hours_per_day = getattr(calendar, 'hours_per_day', 8.0) or 8.0
+            total_days = (total_hours / hours_per_day) if hours_per_day else 0.0
+
+            res.append({
+                'name': _('Ngày làm việc thực tế'),
                 'sequence': 2,
                 'code': 'ATT_REAL',
-                'number_of_days': total_days,
-                'number_of_hours': total_hours,
+                'number_of_days': float(total_days),
+                'number_of_hours': float(total_hours),
                 'contract_id': contract.id,
-            }
-            res.append(att_real_line)
-            res.extend(leaves.values())
+            })
+
+            # --- 5) Append holidays (grouped by hr.leave.type.code) ---
+            for code_key, vals in holidays_grouped.items():
+                res.append({
+                    'name': vals['name'],
+                    'sequence': 3,
+                    'code': vals['code'],
+                    'number_of_days': float(vals['number_of_days']),
+                    'number_of_hours': float(vals['number_of_hours']),
+                    'contract_id': vals['contract_id'],
+                })
+
+            # --- 6) Append personal leaves (grouped by hr.leave.type.code) ---
+            for code_key, vals in personal_grouped.items():
+                res.append({
+                    'name': vals['name'],
+                    'sequence': 5,
+                    'code': vals['code'],
+                    'number_of_days': float(vals['number_of_days']),
+                    'number_of_hours': float(vals['number_of_hours']),
+                    'contract_id': vals['contract_id'],
+                })
+
         return res
 
     @api.model
