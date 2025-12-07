@@ -122,12 +122,12 @@
                                 </field>
 
                                 <label for="detail3" string="XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG"/>
-                                <field name="detail3" readonly="1">
-                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
-                                        <field name="nguoi_nhap_y_kien"/>
-                                        <field name="nhom_phong_ban"/>
+                                <field name="detail3">
+                                    <tree editable="bottom" options="{'no_create': True, 'no_open': True}">
+                                        <field name="nguoi_nhap_y_kien" readonly="1"/>
+                                        <field name="nhom_phong_ban" readonly="1"/>
                                         <field name="noi_dung_chi_dao"/>
-                                        <field name="thoi_diem_chi_dao"/>
+                                        <field name="thoi_diem_chi_dao" readonly="1"/>
                                     </tree>
                                 </field>
 
@@ -313,12 +313,12 @@
                                 </field>
 
                                 <label for="detail3" string="XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG"/>
-                                <field name="detail3" readonly="1">
-                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
-                                        <field name="nguoi_nhap_y_kien"/>
-                                        <field name="nhom_phong_ban"/>
+                                <field name="detail3">
+                                    <tree editable="bottom" options="{'no_create': True, 'no_open': True}">
+                                        <field name="nguoi_nhap_y_kien" readonly="1"/>
+                                        <field name="nhom_phong_ban" readonly="1"/>
                                         <field name="noi_dung_chi_dao"/>
-                                        <field name="thoi_diem_chi_dao"/>
+                                        <field name="thoi_diem_chi_dao" readonly="1"/>
                                     </tree>
                                 </field>
 
@@ -486,8 +486,8 @@
                             <page string="Ý kiến chỉ đạo">
                                 <group></group>
                                 <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
-                                <field name="detail1">
-                                    <tree editable="bottom">
+                                <field name="detail1" readonly="1">
+                                    <tree >
                                         <field name="nguoi_nhap_y_kien"/>
                                         <field name="nhom_phong_ban"/>
                                         <field name="noi_dung_chi_dao"/>
@@ -497,11 +497,11 @@
 
                                 <label for="detail3" string="XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG"/>
                                 <field name="detail3">
-                                    <tree editable="bottom">
-                                        <field name="nguoi_nhap_y_kien"/>
-                                        <field name="nhom_phong_ban"/>
+                                    <tree editable="bottom" options="{'no_open': True}">
+                                        <field name="nguoi_nhap_y_kien" readonly="1"/>
+                                        <field name="nhom_phong_ban" readonly="1"/>
                                         <field name="noi_dung_chi_dao"/>
-                                        <field name="thoi_diem_chi_dao"/>
+                                        <field name="thoi_diem_chi_dao" readonly="1"/>
                                     </tree>
                                 </field>
 
