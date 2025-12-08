@@ -13,6 +13,7 @@
         'views/project.xml',
         'views/task.xml',
         'wizard/task_progress_wizard.xml',
+        'views/task_template.xml',
         'views/menu.xml',
     ],
     'assets': {

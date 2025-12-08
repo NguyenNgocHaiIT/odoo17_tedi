@@ -20,7 +20,7 @@ class ProjectTaskProgress(models.Model):
     _name = 'project.task.progress'
     _description = 'Tiến độ và Review Task'
 
-    task_id = fields.Many2one('project.task', string='Task', required=True)
+    task_id = fields.Many2one('project.task', string='Task', required=True, ondelete='cascade' )
     progress = fields.Float(string='Tiến độ (%)', required=True)
     review = fields.Text(string='Review/Nhận xét')
     user_id = fields.Many2one('res.users', string='Người cập nhật', default=lambda self: self.env.user)
@@ -32,7 +32,7 @@ class ProjectTaskDeliverable(models.Model):
     _description = "Hồ sơ trong công việc"
 
     name = fields.Char('Tên')
-    task_id = fields.Many2one('project.task', string='Công việc')
+    task_id = fields.Many2one('project.task', string='Công việc', ondelete='cascade' )
     version = fields.Integer('Phiên bản')
     attachment_ids = fields.Many2many('ir.attachment', string='Tài liệu', required=True)
     state = fields.Selection([('draft', 'Đang thực hiện'),

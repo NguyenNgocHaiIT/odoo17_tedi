@@ -24,18 +24,29 @@ class Project(models.Model):
     phan_loai_goi_thau = fields.Selection([('1', 'Khảo sát thiết kế'),
                                            ('2', 'Tư vấn giám sát'),
                                            ('3', 'Kiểm định')], string='Phân loại gói thầu')
-    phan_loai_cong_trinh = fields.Selection([('1', 'Đường bộ'),
-                                             ('2', 'Đường sắt'),
-                                             ('3', 'Hàng không'),
-                                             ('4', 'Cảng, đường thủy'),
-                                             ('5', 'Cầu đặc biệt'),
-                                             ('6', 'Hầm đặc biệt')], string="Phân loại công trình")
+    phan_loai_cong_trinh_id = fields.Many2one(
+        'project.task.template',
+        string='Phân loại công trình'
+    )
+
     contract_id = fields.Char('Hợp đồng')
     giai_doan_du_an = fields.Char("Giai đoạn thực hiện")
     project_member_ids = fields.One2many('project.member', 'project_id')
     dia_diem = fields.Text('Địa điểm')
     giao_nhiem_vu = fields.One2many('project.giao.nhiem.vu', 'project_id', 'Phân công giao nhiệm vụ')
     giao_nhiem_vu_attachment_id = fields.Many2many('ir.attachment', string='Thông báo giao nhiệm vụ')
+
+    @api.onchange('phan_loai_cong_trinh_id')
+    def _onchange_template(self):
+        if self.phan_loai_cong_trinh_id:
+            vals_list = [
+                (0, 0, {
+                    'department_id': line.department_id.id,
+                    'nhiem_vu': line.nhiem_vu,
+                    'sequence': line.sequence,
+                }) for line in self.phan_loai_cong_trinh_id.nhiem_vu_ids
+            ]
+            self.giao_nhiem_vu = [(5, 0, 0)] + vals_list
 
 
 class ProjectMember(models.Model):

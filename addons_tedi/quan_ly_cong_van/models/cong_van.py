@@ -697,7 +697,7 @@ class OfficeDocument(models.Model):
 
         # 🔥 Nếu có task_id, tự chuyển trạng thái task thành "Đã giao"
         if record.task_id:
-            record.task_id.office_task_status = 'da_tao_cong_van'
+            record.task_id.da_tao_cong_van = True
 
         return record
 
