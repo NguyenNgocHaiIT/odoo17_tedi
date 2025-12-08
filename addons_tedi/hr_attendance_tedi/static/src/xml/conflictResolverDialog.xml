@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="tedi.ConflictResolverDialog">
+        <Dialog title="title">
+            <div class="p-3">
+                <div class="alert alert-warning mb-3">
+                    <i class="fa fa-exclamation-triangle me-2"/>
+                    Hệ thống phát hiện các mục công việc trùng giờ nhau. Vui lòng chọn <strong>MỘT</strong> mục chính xác nhất để giữ lại. Các mục còn lại sẽ bị hủy.
+                </div>
+
+                <div class="d-flex gap-3 overflow-auto pb-2" style="min-height: 250px;">
+                    <t t-foreach="props.entries" t-as="entry" t-key="entry.id">
+
+                        <div class="card shadow-sm flex-shrink-0 border-0" style="width: 280px; background-color: #f8f9fa;">
+
+                            <div class="card-header fw-bold d-flex justify-content-between align-items-center"
+                                 t-att-class="'o_color_' + entry.color + ' ' + getTextColorClass(entry.color)">
+                                <span><t t-esc="entry.type"/></span>
+                                <i class="fa fa-clock-o"/>
+                            </div>
+
+                            <div class="card-body d-flex flex-column gap-2">
+                                <h5 class="card-title text-primary"><t t-esc="entry.name"/></h5>
+
+                                <div class="d-flex justify-content-between border-bottom pb-2">
+                                    <span class="text-muted small">Bắt đầu:</span>
+                                    <span class="fw-bold"><t t-esc="formatDateTime(entry.start)"/></span>
+                                </div>
+                                <div class="d-flex justify-content-between border-bottom pb-2">
+                                    <span class="text-muted small">Kết thúc:</span>
+                                    <span class="fw-bold"><t t-esc="formatDateTime(entry.stop)"/></span>
+                                </div>
+                                <div class="d-flex justify-content-between border-bottom pb-2">
+                                    <span class="text-muted small">Thời lượng:</span>
+                                    <span class="fw-bold"><t t-esc="entry.duration"/> giờ</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted small">Nguồn gốc:</span>
+                                    <span class="badge bg-secondary"><t t-esc="entry.source"/></span>
+                                </div>
+                            </div>
+
+                            <div class="card-footer bg-transparent border-0 pb-3">
+                                <button class="btn btn-success w-100 fw-bold shadow-sm py-2"
+                                        t-on-click="() => this.onAccept(entry.id)">
+                                    <i class="fa fa-check-circle me-2"/>GIỮ MỤC NÀY
+                                </button>
+                            </div>
+                        </div>
+
+                    </t>
+                </div>
+            </div>
+
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-on-click="props.close">Đóng</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

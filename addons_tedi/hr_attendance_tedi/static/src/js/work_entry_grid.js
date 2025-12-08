@@ -3,13 +3,15 @@ import { registry } from "@web/core/registry";
 import { Layout } from "@web/search/layout";
 import { useService } from "@web/core/utils/hooks";
 import { Component, useState, onWillStart } from "@odoo/owl";
+import { ConflictResolverDialog } from "./conflictResolverDialog";
 
 export class WorkEntryMonthlyGrid extends Component {
     setup() {
         this.orm = useService("orm");
         this.actionService = useService("action");
         this.userService = useService("user");
-        this.notificationService = useService("notification"); // Thêm service thông báo
+        this.notificationService = useService("notification");
+        this.dialogService = useService("dialog");
 
         const today = new Date();
 
@@ -22,6 +24,7 @@ export class WorkEntryMonthlyGrid extends Component {
             isLoading: false,
             collapsedGroupIds: new Set(),
             filterState: 'all',
+            hasConflict: false, // [NEW] Biến cờ để kiểm tra có xung đột trong tháng không
         });
 
         onWillStart(async () => {
@@ -53,21 +56,15 @@ export class WorkEntryMonthlyGrid extends Component {
         const startDate = new Date(year, month, 1);
         const endDate = new Date(year, month + 1, 0);
 
-        // --- XÓA ĐOẠN NÀY ---
-        // const visibleEmployeeIds = this.state.rowsData.map(row => row.id);
-        // --------------------
-
         this.actionService.doAction({
             type: 'ir.actions.act_window',
             res_model: 'tedi.work.entry.generate.wizard',
-            name: 'Tạo công cho TẤT CẢ nhân viên', // Đổi tên tiêu đề cho hợp lý
+            name: 'Tạo công cho TẤT CẢ nhân viên',
             views: [[false, 'form']],
             target: 'new',
             context: {
                 default_date_from: this.formatDate(startDate),
                 default_date_to: this.formatDate(endDate),
-                // KHÔNG TRUYỀN default_employee_ids Ở ĐÂY NỮA
-                // Để Python tự đi tìm trong database
             }
         }, { onClose: () => { this.reloadData(); } });
     }
@@ -99,17 +96,12 @@ export class WorkEntryMonthlyGrid extends Component {
         );
     };
 
-
-    // --- HÀM MỚI: ĐỒNG BỘ CHẤM CÔNG ---
     onSyncAttendance = async () => {
         const year = this.state.currentDate.getFullYear();
         const month = this.state.currentDate.getMonth();
-
-        // Xác định ngày đầu tháng và cuối tháng của view hiện tại
         const startStr = this.formatDate(new Date(year, month, 1));
         const endStr = this.formatDate(new Date(year, month + 1, 0, 23, 59, 59));
 
-        // Tìm các Work Entry chưa chốt trong tháng này
         const domain = [
             ['date_start', '>=', startStr],
             ['date_stop', '<=', endStr],
@@ -123,7 +115,6 @@ export class WorkEntryMonthlyGrid extends Component {
             if (ids.length === 0) {
                 this.notificationService.add("Không có công việc nào (Draft/Conflict) cần đồng bộ.", { type: "info" });
             } else {
-                // Gọi hàm Python action_sync_attendance
                 await this.orm.call("hr.work.entry", "action_sync_attendance", [ids]);
                 this.notificationService.add("Đã đồng bộ chấm công thành công!", { type: "success" });
                 await this.reloadData();
@@ -135,7 +126,6 @@ export class WorkEntryMonthlyGrid extends Component {
             this.state.isLoading = false;
         }
     }
-    // ----------------------------------
 
     createWorkEntry = () => {
         this.actionService.doAction({
@@ -191,6 +181,8 @@ export class WorkEntryMonthlyGrid extends Component {
 
     async reloadData() {
         this.state.isLoading = true;
+        this.state.hasConflict = false; // [RESET] Reset cờ báo lỗi mỗi lần load lại
+
         const year = this.state.currentDate.getFullYear();
         const month = this.state.currentDate.getMonth();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -224,8 +216,9 @@ export class WorkEntryMonthlyGrid extends Component {
             domain.push(['state', '=', this.state.filterState]);
         }
 
+        // [UPDATE] Thêm 'state' vào danh sách field cần lấy
         const workEntries = await this.orm.searchRead("hr.work.entry", domain,
-            ['id', 'employee_id', 'date_start', 'duration', 'work_entry_type_id', 'color'],
+            ['id', 'employee_id', 'date_start', 'duration', 'work_entry_type_id', 'color', 'state'],
             { order: "date_start asc" }
         );
 
@@ -255,6 +248,14 @@ export class WorkEntryMonthlyGrid extends Component {
             daysWithData.add(day);
             rowMap[empId].totalDuration += (we.duration || 0);
 
+            // [LOGIC MỚI] Kiểm tra xung đột
+            const isConflict = we.state === 'conflict';
+            if (isConflict) {
+                this.state.hasConflict = true; // Bật cờ báo động trên Header
+            }
+
+            const isValidated = we.state === 'validated';
+
             const typeId = we.work_entry_type_id ? we.work_entry_type_id[0] : 0;
             const typeName = we.work_entry_type_id ? we.work_entry_type_id[1] : 'Undefined';
             const colorInt = we.color || 0;
@@ -270,7 +271,10 @@ export class WorkEntryMonthlyGrid extends Component {
             rowMap[empId].cells[day].push({
                 id: we.id,
                 label: this.formatCellDuration(we.duration),
-                colorClass: `o_color_${colorInt}`
+                colorClass: `o_color_${colorInt}`,
+                isConflict: isConflict, // [UPDATE] Truyền trạng thái conflict xuống cell
+                isValidated: isValidated,
+                state: we.state
             });
         });
 
@@ -298,8 +302,35 @@ export class WorkEntryMonthlyGrid extends Component {
         this.state.isLoading = false;
     }
 
-    openEntry(entryId) {
+    async openEntry(entryId, state) {
         if (!entryId) return;
+
+        // [LOGIC MỚI] Nếu là xung đột -> Mở Modal so sánh
+        if (state === 'conflict') {
+            this.state.isLoading = true;
+            try {
+                // 1. Lấy dữ liệu các mục bị trùng từ backend
+                const conflictData = await this.orm.call("hr.work.entry", "get_conflict_data", [[entryId]]);
+
+                // 2. Mở Dialog (Dùng this.dialogService đã khai báo ở setup)
+                // KHÔNG ĐƯỢC GỌI useService Ở ĐÂY NỮA
+                this.dialogService.add(ConflictResolverDialog, {
+                    entries: conflictData,
+                    onResolved: () => {
+                        this.reloadData(); // Load lại bảng sau khi user chọn xong
+                    }
+                });
+
+            } catch (error) {
+                console.error(error);
+                this.notificationService.add("Lỗi tải dữ liệu xung đột: " + error.message, { type: "danger" });
+            } finally {
+                this.state.isLoading = false;
+            }
+            return;
+        }
+
+        // [LOGIC CŨ] Mở form view bình thường
         this.actionService.doAction({
             type: 'ir.actions.act_window',
             res_model: 'hr.work.entry',
