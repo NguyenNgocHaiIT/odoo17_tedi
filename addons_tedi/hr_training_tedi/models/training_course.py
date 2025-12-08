@@ -1,12 +1,12 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
 
-HR_OFFICER          = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
 PARTICIPANT         = "hr_training_tedi.group_training_participant"
 UNIT_MANAGER        = "hr_training_tedi.group_training_unit_manager"
+MANAGER             = "hr_training_tedi.group_training_manager"       # Thay cho HR Officer cũ
 GENERAL_DIRECTOR    = "hr_training_tedi.group_training_general_director"
+ADMIN               = "hr_training_tedi.group_training_admin"
 BASE                = "base.group_user"
-
 
 
 class TrainingCourse(models.Model):

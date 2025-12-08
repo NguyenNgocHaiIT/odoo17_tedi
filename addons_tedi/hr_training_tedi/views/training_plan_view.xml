@@ -44,7 +44,7 @@
                         type="object"
                         string="Đăng ký"
                         class="btn-primary"
-                        groups="quan_ly_tuyen_dung.group_recruitment_hr_officer"
+                        groups="hr_training_tedi.group_training_manager"
                         invisible="state != 'draft'"/>
 
                 <!-- Duyệt: pending -> approved -->

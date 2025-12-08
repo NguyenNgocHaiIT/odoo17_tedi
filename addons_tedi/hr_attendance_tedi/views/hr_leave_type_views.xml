@@ -6,9 +6,12 @@
         <field name="inherit_id" ref="hr_holidays.edit_holiday_status_form"/>
         <field name="arch" type="xml">
 
+<!--            <xpath expr="//field[@name='request_unit']" position="attributes">-->
+<!--                <attribute name="invisible">1</attribute>-->
+<!--            </xpath>-->
 
-            <xpath expr="//group[@name='configuration']" position="inside">
-                <field name="auto_create_attendance" widget="boolean_toggle"/>
+            <xpath expr="//field[@name='support_document']" position="attributes">
+                <attribute name="invisible">1</attribute>
             </xpath>
 
             <xpath expr="//group[@name='negative_cap']" position="attributes">
@@ -19,6 +22,13 @@
                 <field name="employee_id" string="Người lập"/>
             </xpath>
 
+            <xpath expr="//field[@name='overtime_deductible']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='responsible_ids']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
 
         </field>
     </record>
@@ -28,21 +38,9 @@
         <field name="model">hr.leave.type</field>
         <field name="inherit_id" ref="hr_holidays.view_holiday_status_normal_tree"/>
         <field name="arch" type="xml">
-
-<!--            <xpath expr="//field[@name='employee_requests']" position="attributes">-->
-<!--                <attribute name="optional">show</attribute>-->
-<!--            </xpath>-->
-
             <xpath expr="//field[@name='display_name']" position="after">
                 <field name="employee_id" string="Người lập"/>
-                <field name="auto_create_attendance" widget="boolean_toggle" optional="show"/>
             </xpath>
-
         </field>
     </record>
-
-
-
-
-
 </odoo>

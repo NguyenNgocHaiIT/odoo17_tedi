@@ -41,7 +41,7 @@
                             type="object"
                             string="Xác nhận"
                             class="btn-primary"
-                            groups="quan_ly_tuyen_dung.group_recruitment_hr_officer"
+                            groups="hr_training_tedi.group_training_manager"
                             invisible="state != 'draft'"/>
 
                     <button name="action_end"

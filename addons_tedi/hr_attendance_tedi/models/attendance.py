@@ -10,16 +10,17 @@ _logger = logging.getLogger(__name__)
 class HolidaysType(models.Model):
     _inherit = "hr.leave.type"
 
-    # Đây là checkbox riêng của bạn, không phụ thuộc Odoo
-    auto_create_attendance = fields.Boolean(
-        string='Tự động tạo chấm công',
-        default=False,
-        help="Nếu tích chọn, khi đơn nghỉ được duyệt, hệ thống sẽ tự tạo dữ liệu chấm công."
-    )
     employee_id = fields.Many2one(
         'hr.employee',  # <--- Sửa thành hr.employee
         string='Người tạo',
         default=lambda self: self.env.user.employee_id,  # Lấy nhân viên gắn với user đang đăng nhập
+    )
+    request_unit = fields.Selection(
+        selection_add=[('day', 'Day'), ('half_day', 'Half Day'), ('hour', 'Hours')],
+        default='hour',  # <-- Đã thay đổi mặc định thành 'hour'
+        string='Take Time Off in',
+        required=True,
+        # Giữ nguyên các thuộc tính khác nếu cần
     )
 
 
@@ -30,6 +31,53 @@ class HrAttendance(models.Model):
     employee_code = fields.Char(related='employee_id.employee_code', string='Mã số NV', store=True, readonly=True)
     department_id = fields.Many2one(related='employee_id.department_id', string="Phòng ban", store=True, readonly=True)
     job_id = fields.Many2one(related='employee_id.job_id', string="Chức vụ", store=True, readonly=True)
+
+    worked_hours = fields.Float(string='Giờ làm việc', compute='_compute_working_hours', store=True)
+    overtime_hours = fields.Float(string='Giờ làm thêm', compute='_compute_working_hours', store=True)
+
+    @api.depends('check_in', 'check_out', 'employee_id')
+    def _compute_working_hours(self):
+        for rec in self:
+            # 1. Nếu chưa checkout thì bằng 0
+            if not rec.check_in or not rec.check_out:
+                rec.worked_hours = 0.0
+                rec.overtime_hours = 0.0
+                continue
+
+            # 2. Lấy lịch làm việc của nhân viên
+            calendar = rec.employee_id.resource_calendar_id
+            if not calendar:
+                # Nếu không có lịch, toàn bộ thời gian là làm thêm
+                delta = rec.check_out - rec.check_in
+                rec.worked_hours = delta.total_seconds() / 3600.0
+                rec.overtime_hours = rec.worked_hours
+                continue
+
+            # 3. Tính "Giờ làm việc thực tế" (đã trừ giờ nghỉ trưa dựa theo lịch)
+            # Hàm get_work_hours_count của Odoo sẽ tự động trừ giờ nghỉ trưa nếu cấu hình đúng
+            rec.worked_hours = calendar.get_work_hours_count(rec.check_in, rec.check_out)
+
+            # 4. Tính "Giờ tiêu chuẩn" của ngày hôm đó (Ví dụ: 8 tiếng)
+            # Ta lấy tổng giờ làm việc dự kiến trong khoảng thời gian checkin-checkout
+            # Lưu ý: Logic này giả định nhân viên làm đúng ca.
+            # Nếu muốn chặt chẽ hơn (so với 8h cứng), bạn có thể fix cứng số 8 hoặc query attendance của lịch.
+
+            # Cách 1: Lấy giờ chuẩn theo lịch (Recommended)
+            # Tìm xem ngày hôm nay theo lịch được quy định làm bao nhiêu tiếng
+            check_in_date = rec.check_in.date()
+            expected_hours = calendar.get_work_hours_count(
+                datetime.combine(check_in_date, time.min),
+                datetime.combine(check_in_date, time.max),
+                compute_leaves=False
+            )
+
+            # Cách 2 (Đơn giản hóa): Nếu công ty luôn làm 8 tiếng/ngày
+            # expected_hours = 8.0
+
+            # 5. Tính Giờ làm thêm
+            # Làm thêm = Thực tế - Tiêu chuẩn (Nếu dương)
+            overtime = rec.worked_hours - expected_hours
+            rec.overtime_hours = overtime if overtime > 0 else 0.0
 
     attendance_date = fields.Date(string='Ngày', compute='_compute_attendance_date', store=True)
 
@@ -55,6 +103,8 @@ class HrAttendance(models.Model):
     def _compute_attendance_date(self):
         for rec in self:
             rec.attendance_date = rec.check_in.date() if rec.check_in else False
+
+
 
     # Thêm 'leave_id' vào depends để nếu gắn đơn nghỉ phép vào thì status tự cập nhật ngay
     @api.depends('check_in', 'check_out', 'employee_id', 'attendance_type', 'leave_id')
