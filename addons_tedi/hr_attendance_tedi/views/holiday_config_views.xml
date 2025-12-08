@@ -9,11 +9,20 @@
                     <field name="company_id" column_invisible="True"/>
 
                     <field name="name" string="Tên ngày lễ"/>
+
+                    <field name="work_entry_type_id" options="{'no_create': True}"/>
+
                     <field name="date_from" string="Từ ngày" widget="daterange"/>
                     <field name="date_to" string="Đến ngày"/>
 
                     <field name="resource_id" column_invisible="True"/>
-                    <field name="calendar_id" column_invisible="True"/>
+                    <field name="calendar_id" column_invisible="True" optional="hide"/>
+
+                    <button name="action_generate_work_entries_for_holiday"
+                            type="object"
+                            icon="fa-cogs"
+                            title="Tạo Work Entry cho ngày lễ này"
+                            class="btn-primary"/>
                 </tree>
             </field>
         </record>
@@ -45,6 +54,9 @@
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
                     Tạo mới ngày nghỉ lễ chung (Tết, Quốc Khánh...)
+                </p>
+                <p>
+                    Lưu ý: Hãy chọn đúng "Loại công việc" (Work Entry Type) là Nghỉ Lễ để hệ thống tính lương chính xác.
                 </p>
             </field>
         </record>

@@ -43,68 +43,27 @@
                                 groups="base.group_system"/>
                     </header>
 
-                    <style>
-                        .fixed-label {
-                        display: block;
-                        width: 120px;
-                        margin: 0;
-                        align-self: center;
-                        text-align: left;
-                        padding-right: 8px;
-                        }
-                    </style>
-
                     <sheet>
                         <div class="oe_title">
-                            <label for="name" string="Chủ đề cuộc họp" class="o_form_label"/>
+                            <label for="name" string="Chủ đề cuộc họp"/>
                             <h1>
-                                <field name="name"
-                                       style="border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
+                                <field name="name"/>
                             </h1>
                         </div>
-
-                        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
-                            <label for="start" string="Thời gian" class="o_form_label"/>
-                            <div style="display: flex; gap: 8px; flex: 1;">
-                                <field name="start" class="oe_inline"
-                                       style="margin: 0; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px; flex: 1;"/>
+                        <group>
+                            <label for="start" string="Thời gian" />
+                            <div style="display: flex;" >
+                                <field name="start" class="oe_inline"/>
                                 <span class="o_form_label" style="padding: 0 4px;">→</span>
-                                <field name="stop" class="oe_inline"
-                                       style="margin: 0; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px; flex: 1;"/>
+                                <field name="stop" class="oe_inline"/>
                             </div>
-                        </div>
 
-                        <div style="display: flex; align-items: center;">
-                            <label for="lanh_dao" string="Lãnh đạo" class="fixed-label o_form_label"/>
-                            <field name="lanh_dao"
-                                   style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
-                        </div>
-
-                        <div style="display: flex; align-items: center;">
-                            <label for="user_id" string="Người chủ trì" class="fixed-label o_form_label"/>
-                            <field name="user_id"
-                                   style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
-                        </div>
-
-
-                        <div style="display: flex; align-items: center;">
-                            <label for="partner_ids" string="Thành phần tham gia" class="fixed-label o_form_label"/>
-                            <field name="partner_ids" widget="many2many_tags"
-                                   style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
-                        </div>
-
-                        <div style="display: flex; align-items: center;">
-                            <label for="location" string="Địa điểm" class="fixed-label o_form_label"/>
-                            <field name="location"
-                                   style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
-                        </div>
-
-                        <!-- Nội dung cuộc họp -->
-                        <div style="display: flex; align-items: center;">
-                            <label for="name" string="Nội dung" class="fixed-label o_form_label"/>
-                            <field name="name"
-                                   style="flex: 1; border: 1px solid #dcdcdc; padding: 4px; border-radius: 12px;"/>
-                        </div>
+                            <field name="lanh_dao" string="Lãnh đạo"/>
+                            <field name="user_id" string="Người chủ trì" />
+                            <field name="partner_ids" widget="many2many_tags" string="Thành phần tham gia" />
+                            <field name="location" string="Địa điểm"/>
+                            <field name="name" string="Nội dung"/>
+                        </group>
                     </sheet>
                 </form>
             </field>

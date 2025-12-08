@@ -1,10 +1,9 @@
-from pygments.lexer import default
-
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError , AccessError
+from odoo.exceptions import ValidationError, AccessError
 
-
-HR_OFFICER          = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
+# --- CẬP NHẬT CONSTANTS THEO PHÂN QUYỀN MỚI ---
+# MANAGER = Quản lý nghiệp vụ (Cấp cao hơn Unit Manager)
+MANAGER             = "hr_training_tedi.group_training_manager"
 PARTICIPANT         = "hr_training_tedi.group_training_participant"
 UNIT_MANAGER        = "hr_training_tedi.group_training_unit_manager"
 GENERAL_DIRECTOR    = "hr_training_tedi.group_training_general_director"
@@ -15,10 +14,10 @@ class TrainingNeedsSurvey(models.Model):
     _description = 'Training Needs Survey'
     _order = "id desc"
 
-    # ----------------------------------------------------F
+    # ----------------------------------------------------
     #   FIELDS
     # ----------------------------------------------------
-    name = fields.Char(string='Name')
+    name = fields.Char(string='Name', required=True) # Nên để required
 
     user_id = fields.Many2one(
         'res.users',
@@ -46,37 +45,40 @@ class TrainingNeedsSurvey(models.Model):
         ("end", "Kết thúc"),
     ], string="Trạng thái", default="draft")
 
-
-    def _check_participant(self):
-        if self.env.user.has_group(PARTICIPANT):
-            raise AccessError(_("Participant không được thực hiện thao tác này"))
+    # ----------------------------------------------------
+    #   PERMISSION CHECK (LOGIC MỚI)
+    # ----------------------------------------------------
+    def _check_manager_access(self):
+        """
+        Hàm này kiểm tra xem User hiện tại có thuộc nhóm Manager (hoặc cao hơn) không.
+        Vì General Director và Admin kế thừa Manager, nên check Manager là đủ.
+        """
+        if not self.env.user.has_group(MANAGER):
+            raise AccessError(_("Bạn không có quyền thực hiện thao tác này. Chỉ Quản lý nghiệp vụ trở lên mới được phép."))
 
     # ----------------------------------------------------
-    #   BUTTON: SUBMIT (draft → confirmed)
+    #   OVERRIDES & ACTIONS
     # ----------------------------------------------------
-    def _check_and_update_state_on_date_change(self):
-        """Kiểm tra và cập nhật trạng thái cho bản ghi hiện tại."""
-        today = fields.Date.context_today(self)
 
-        for rec in self:
-            # Điều kiện 1: confirmed → in_process (Chuyển ngay nếu hôm nay là ngày bắt đầu)
-            if rec.state == 'confirmed' and rec.start_date and rec.start_date <= today:
-                rec.state = 'in_process'
+    @api.model
+    def create(self, vals):
+        # 1. Kiểm tra quyền ngay khi tạo
+        self._check_manager_access()
+        return super().create(vals)
 
-            # Điều kiện 2: in_process → end
-            elif rec.state == 'in_process' and rec.end_date and rec.end_date < today:
-                rec.state = 'end'
-
+    def unlink(self):
+        # 1. Kiểm tra quyền khi xóa
+        self._check_manager_access()
+        return super().unlink()
 
     def action_start_survey(self):
         # 1. Kiểm tra quyền
-        self._check_participant()
+        self._check_manager_access()
 
         today = fields.Date.context_today(self)
 
         for rec in self:
             # 2. Kiểm tra tính hợp lệ của ngày tháng
-            # Vì start_date sẽ gán bằng hôm nay, nên phải đảm bảo end_date (nếu có) phải >= hôm nay
             if rec.end_date and rec.end_date < today:
                 raise ValidationError(_(
                     "Không thể bắt đầu ngay vì Ngày kết thúc (%s) đang ở quá khứ. "
@@ -87,41 +89,51 @@ class TrainingNeedsSurvey(models.Model):
             rec.start_date = today
             rec.state = 'in_process'
 
-
     def action_end(self):
-        self._check_participant()
+        # 1. Kiểm tra quyền
+        self._check_manager_access()
 
-        # Lấy ngày hiện tại
         today = fields.Date.context_today(self)
-
         for rec in self:
-            # 2. Cập nhật trạng thái
             rec.state = 'end'
-
+            # Nếu chưa có ngày kết thúc hoặc ngày kết thúc > hôm nay -> gán lại bằng hôm nay
             if not rec.end_date or rec.end_date > today:
                 rec.end_date = today
 
     def action_submit(self):
+        # 1. Kiểm tra quyền
+        self._check_manager_access()
+
         today = fields.Date.context_today(self)
         for rec in self:
-            # Kiểm tra ngày tháng trước khi chuyển trạng thái: Nếu đã quá hạn thì báo lỗi
             if rec.start_date and rec.end_date and rec.end_date < today:
                 raise ValidationError(_(
                     "Không thể xác nhận khảo sát vì Ngày kết thúc (%s) đã qua." % rec.end_date
                 ))
 
-            # Chuyển trạng thái sang Confirmed
             rec.state = "confirmed"
 
-            # TỰ ĐỘNG CHUYỂN SANG IN_PROCESS nếu đã đến hoặc quá ngày bắt đầu
             if rec.start_date and rec.start_date <= today:
                 rec.state = 'in_process'
 
-        # Sau khi submit, cần kiểm tra lại cả trạng thái end (đề phòng trường hợp end_date = today)
+        # Check lại logic ngày tháng
         self._check_and_update_state_on_date_change()
 
     # ----------------------------------------------------
-    #   VALIDATION: start_date < end_date
+    #   HELPER LOGIC
+    # ----------------------------------------------------
+    def _check_and_update_state_on_date_change(self):
+        """Kiểm tra và cập nhật trạng thái cho bản ghi hiện tại."""
+        today = fields.Date.context_today(self)
+
+        for rec in self:
+            if rec.state == 'confirmed' and rec.start_date and rec.start_date <= today:
+                rec.state = 'in_process'
+            elif rec.state == 'in_process' and rec.end_date and rec.end_date < today:
+                rec.state = 'end'
+
+    # ----------------------------------------------------
+    #   VALIDATION
     # ----------------------------------------------------
     @api.constrains('start_date', 'end_date')
     def _check_dates(self):
@@ -131,20 +143,15 @@ class TrainingNeedsSurvey(models.Model):
                     "Ngày kết thúc (%s) không được nhỏ hơn ngày bắt đầu (%s)." %
                     (rec.end_date, rec.start_date)
                 ))
-    @api.model
-    def create(self, vals):
-        self._check_participant()
-        return super().create(vals)
-
 
     # ----------------------------------------------------
-    #   CRON: auto update trạng thái
+    #   CRON JOB
     # ----------------------------------------------------
     @api.model
     def _cron_update_survey_states(self):
+        # Cron job chạy bằng quyền hệ thống (SUPERUSER) nên không cần check quyền
         today = fields.Date.context_today(self)
 
-        # 1. confirmed → in_process khi đến ngày bắt đầu
         surveys_to_start = self.search([
             ('state', '=', 'confirmed'),
             ('start_date', '!=', False),
@@ -152,24 +159,9 @@ class TrainingNeedsSurvey(models.Model):
         ])
         surveys_to_start.write({'state': 'in_process'})
 
-        # 2. in_process → end nếu quá hạn
         surveys_to_end = self.search([
             ('state', '=', 'in_process'),
             ('end_date', '!=', False),
             ('end_date', '<', today),
         ])
         surveys_to_end.write({'state': 'end'})
-
-    # ----------------------------------------------------
-    #   INIT: chạy khi server start để đồng bộ trạng thái
-    # ----------------------------------------------------
-    # def init(self):
-    #     self._cron_update_survey_states()
-
-    def unlink(self):
-        # for rec in self:
-        #     if rec.state == 'end':
-        #         raise ValidationError(_("Không thể xoá khảo sát đã kết thúc."))
-        return super().unlink()
-
-

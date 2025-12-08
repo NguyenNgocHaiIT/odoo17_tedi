@@ -16,26 +16,18 @@
               </div>
 
               <div class="ms-auto d-flex align-items-center gap-2">
+                  <t t-if="state.isManager">
+                    <button type="button" class="btn btn-success text-white shadow-sm" t-on-click="onImportClick">
+                        <i class="fa fa-file-excel-o me-1"/> Import Excel
+                    </button>
+                  </t>
                   <div class="d-flex align-items-center gap-1 bg-light p-1 rounded border">
-                      <input type="date"
-                             class="form-control form-control-sm border-0 bg-transparent"
-                             style="width: 130px;"
-                             t-att-value="state.inputStart"
-                             t-on-change="onDateChange"/>
+                      <input type="date" class="form-control form-control-sm border-0 bg-transparent" style="width: 130px;" t-att-value="state.inputStart" t-on-change="onDateChange"/>
                   </div>
-
                   <div class="btn-group" role="group">
-                      <button type="button" class="btn"
-                          t-att-class="state.mode == 'day' ? 'btn-primary' : 'btn-outline-primary'"
-                          t-on-click="() => this.setViewMode('day')">Ngày</button>
-
-                      <button type="button" class="btn"
-                          t-att-class="state.mode == 'week' ? 'btn-primary' : 'btn-outline-primary'"
-                          t-on-click="() => this.setViewMode('week')">Tuần</button>
-
-                      <button type="button" class="btn"
-                          t-att-class="state.mode == 'month' ? 'btn-primary' : 'btn-outline-primary'"
-                          t-on-click="() => this.setViewMode('month')">Tháng</button>
+                      <button type="button" class="btn" t-att-class="state.mode == 'day' ? 'btn-primary' : 'btn-outline-primary'" t-on-click="() => this.setViewMode('day')">Ngày</button>
+                      <button type="button" class="btn" t-att-class="state.mode == 'week' ? 'btn-primary' : 'btn-outline-primary'" t-on-click="() => this.setViewMode('week')">Tuần</button>
+                      <button type="button" class="btn" t-att-class="state.mode == 'month' ? 'btn-primary' : 'btn-outline-primary'" t-on-click="() => this.setViewMode('month')">Tháng</button>
                   </div>
               </div>
           </div>
@@ -48,31 +40,26 @@
 
               <thead class="table-light sticky-top" style="top: 0; z-index: 20;">
                 <tr>
-                  <th class="o_tedi_ag_col_employee text-start align-middle shadow-sm"
-                      style="width: 170px; min-width: 170px; max-width: 170px; position: sticky; left: 0; z-index: 30; background-color: #f8f9fa;">
-                    Nhân viên
+                  <th class="o_tedi_ag_col_employee text-start align-middle shadow-sm ps-2"
+                      style="width: 170px; min-width: 170px; max-width: 170px; position: sticky; left: 0; z-index: 30; background-color: #f8f9fa; border-right: 2px solid #dee2e6;">
+                    <span class="text-uppercase text-muted small fw-bold">Nhân viên</span>
                   </th>
-
                   <t t-if="state.mode == 'day'">
                       <t t-foreach="state.hours" t-as="hour" t-key="hour">
-                          <th class="align-middle text-muted small" style="min-width: 45px;">
+                          <th class="align-middle text-muted small bg-white" style="min-width: 45px; border-bottom: 2px solid #dee2e6;">
                               <t t-esc="hour"/>h
                           </th>
                       </t>
                   </t>
-
                   <t t-else="">
                       <t t-foreach="state.days" t-as="dayInfo" t-key="dayInfo.keyStr">
-                        <th class="o_tedi_ag_col_day align-middle p-0"
-                            t-att-style="state.mode === 'month'
-                                              ? 'width: 40px; min-width: 40px; max-width: 40px; box-sizing: border-box;'
-                                              : 'width: 150px; min-width: 150px; max-width: 150px; box-sizing: border-box;'">
-
-                          <div class="d-flex flex-column justify-content-center w-100 h-100 overflow-hidden">
-                              <div class="small fw-bold text-truncate"><t t-esc="dayInfo.label"/></div>
-                              <div class="small text-muted text-truncate" style="font-size: 0.7rem;" t-if="state.mode == 'week'">
-                                  <t t-esc="dayInfo.fullDate"/>
-                              </div>
+                        <th class="o_tedi_ag_col_day align-middle p-1"
+                            t-att-class="dayInfo.isSunday ? 'bg-light' : 'bg-white'"
+                            t-att-style="state.mode === 'month' ? 'width: 40px; min-width: 40px; max-width: 40px; border-bottom: 2px solid #dee2e6;' : 'width: 100px; min-width: 100px; max-width: 100px; border-bottom: 2px solid #dee2e6;'">
+                          <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100 overflow-hidden">
+                              <span class="text-uppercase fw-bold" t-att-class="dayInfo.isSunday ? 'text-danger' : (dayInfo.isWeekend ? 'text-primary' : 'text-muted')" style="font-size: 0.65rem; line-height: 1;"><t t-esc="dayInfo.weekday"/></span>
+                              <span class="fw-bolder mt-1 text-dark" style="font-size: 1.1rem; line-height: 1;"><t t-esc="dayInfo.dayNum"/></span>
+                              <span t-if="state.mode == 'week'" class="text-muted small mt-1" style="font-size: 0.65rem;"><t t-esc="dayInfo.fullDate"/></span>
                           </div>
                         </th>
                       </t>
@@ -83,24 +70,19 @@
               <tbody>
                   <t t-foreach="state.rowsData" t-as="row" t-key="row.id">
                     <tr>
-
-                        <td class="o_tedi_ag_employee_cell text-start fw-bold align-middle bg-white"
-                            t-att-class="row.isEditable ? 'cursor-pointer' : 'text-muted'"
-                            t-attf-style="position: sticky; left: 0; z-index: 10; border-right: 2px solid #dee2e6;"
-                            t-on-click="() => onCreateFromEmployee(row.id)"> <t t-esc="row.name"/>
+                        <td class="o_tedi_ag_employee_cell text-start fw-bold align-middle bg-white text-muted"
+                            t-attf-style="position: sticky; left: 0; z-index: 10; border-right: 2px solid #dee2e6;">
+                            <span class="ps-2"><t t-esc="row.name"/></span>
                         </td>
 
                       <t t-if="state.mode == 'day'">
                         <td colspan="24"
                             class="p-1 align-middle"
-                            t-att-class="row.isEditable ? 'cursor-pointer' : ''"
-                            t-att-style="row.isEditable ? 'background-color: #fcfcfc;' : 'background-color: #f2f2f2; cursor: not-allowed;'"
-                            t-on-click="() => onCreateFromEmployee(row.id)">
+                            style="background-color: #fcfcfc;">
 
                             <t t-set="currentDaySegs" t-value="row.segmentsByDate[state.inputStart] || []"/>
                             <div class="d-flex flex-column gap-1">
                                 <t t-if="currentDaySegs.length">
-
                                     <t t-foreach="currentDaySegs" t-as="bar" t-key="bar.id + '_' + bar.index + '_' + bar.type">
                                         <div class="position-relative w-100" style="height: 40px;">
                                             <div class="d-flex w-100 h-100 position-absolute top-0 start-0" style="z-index:0;">
@@ -134,9 +116,7 @@
                       <t t-else="">
                         <td t-att-colspan="state.days.length"
                             class="p-1 align-middle"
-                            t-att-class="row.isEditable ? 'cursor-pointer' : ''"
-                            t-att-style="row.isEditable ? 'background-color: #fcfcfc; height: auto;' : 'background-color: #f2f2f2; height: auto; cursor: not-allowed;'"
-                            t-on-click="(ev) => onWeekCellClick(ev, row.id)">
+                            style="background-color: #fcfcfc; height: auto;">
 
                             <t t-set="bars" t-value="state.weekBars[row.id] || []"/>
 

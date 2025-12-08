@@ -7,3 +7,5 @@ access_task_progress_wizard,access_task_progress_wizard,model_task_progress_wiza
 access_project_state,access_project_state,model_project_state,,1,1,1,1
 access_project_task_type,access_project_task_type,model_project_task_categorize,,1,1,1,1
 access_project_giao_nhiem_vu,access_project_giao_nhiem_vu,model_project_giao_nhiem_vu,,1,1,1,1
+access_project_task_template,access_project_task_template,model_project_task_template,,1,1,1,1
+access_project_task_template_line,access_project_task_template_line,model_project_task_template_line,,1,1,1,1

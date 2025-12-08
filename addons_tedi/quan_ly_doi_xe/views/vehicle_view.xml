@@ -102,6 +102,20 @@
                                     </tree>
                                 </field>
                             </page>
+
+                            <page string="Lịch sử sửa chữa">
+                                <field name="service_history_ids" readonly="1">
+                                    <tree string="Danh sách phiếu dịch vụ" default_order="date desc">
+                                        <field name="date" string="Ngày thực hiện"/>
+                                        <field name="code" string="Mã phiếu"/>
+                                        <field name="service_type_id" string="Loại dịch vụ"/>
+                                        <field name="vendor_id" string="Nhà cung cấp"/>
+                                        <field name="requester_id" string="Người đề nghị"/>
+                                        <field name="amount" string="Chi phí" sum="Tổng cộng"/>
+                                        <field name="state" widget="badge" decoration-success="state == 'done'" decoration-info="state == 'new'"/>
+                                    </tree>
+                                </field>
+                            </page>
                         </notebook>
                     </sheet>
                 </xpath>

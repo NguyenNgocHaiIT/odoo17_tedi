@@ -180,7 +180,7 @@
 
 
         <record id="action_tedi_attendance_gantt_custom" model="ir.actions.client">
-            <field name="name">Lịch chấm công (Gantt)</field>
+            <field name="name">Lịch chấm công</field>
             <field name="tag">tedi_attendance_gantt_view</field>
         </record>
 
