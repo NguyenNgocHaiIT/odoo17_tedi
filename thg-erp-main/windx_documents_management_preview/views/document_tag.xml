@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_document_tag_list" model="ir.ui.view">
+            <field name="name">document.tag.list</field>
+            <field name="model">document.tag</field>
+            <field name="arch" type="xml">
+                <tree editable="bottom">
+                    <field name="name"/>
+                    <field name="color" widget="color_picker"/>
+                </tree>
+            </field>
+        </record>
+        
+        <record id="document_tag_action" model="ir.actions.act_window">
+            <field name="name">Document Tag</field>
+            <field name="res_model">document.tag</field>
+            <field name="view_mode">tree</field>
+            <field name="search_view_id" ref="view_document_tag_list"/>
+            <field name="help" type="html">
+              <p class="o_view_nocontent_smiling_face">
+                Create a new Document Tag
+              </p>
+            </field>
+        </record>
+    </data>
+</odoo>

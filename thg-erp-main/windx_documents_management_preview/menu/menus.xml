@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Defined all menus here  -->
+    <menuitem id="menu_document_root"
+              name="Document"
+              sequence="150"
+              groups="windx_documents_management_preview.group_documents_user"
+              web_icon="windx_documents_management_preview,static/description/icon.png"/>
+
+    <menuitem id="menu_document_directory"
+              name="Directories"
+              parent="windx_documents_management_preview.menu_document_root"
+              action="document_directory_kanban_action"
+              groups="windx_documents_management_preview.group_documents_manager"
+              sequence="1"/>
+    <menuitem id="menu_all_document"
+              name="All Documents"
+              parent="windx_documents_management_preview.menu_document_root"
+              action="act_all_attachment_from_document_directory"
+              groups="windx_documents_management_preview.group_documents_manager"
+              sequence="3"/>
+    <menuitem id="menu_my_document"
+              name="My Documents"
+              parent="windx_documents_management_preview.menu_document_root"
+              action="act_my_attachment_from_document_directory"
+              groups="windx_documents_management_preview.group_documents_user"
+              sequence="5"/>
+    <menuitem id="menu_document_configuration"
+              name="Configuration"
+              parent="windx_documents_management_preview.menu_document_root"
+              groups="windx_documents_management_preview.group_documents_manager"
+              sequence="7"/>
+    <menuitem id="menu_directory_tag"
+              name="Directory Tags"
+              action="directory_tag_action"
+              parent="menu_document_configuration"
+              sequence="1"/>
+    <menuitem id="daily_document_tag"
+              name="Document Tags"
+              action="document_tag_action"
+              parent="menu_document_configuration"
+              sequence="2"/>
+</odoo>

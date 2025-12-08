@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <menuitem id="alnas_docx.menu_main_docx_report" active="False"/>
+        <menuitem id="alnas_xlsx.menu_main_xlsx_report" active="False"/>
+
+        <menuitem id="menu_custom_report_root"
+                  name="Template Report"
+                  sequence="10">
+            <menuitem id="menu_custom_docx_report"
+                      name="Docx Report"
+                      action="alnas_docx.docx_report_action"
+                      sequence="1"/>
+
+            <menuitem id="menu_custom_xlsx_report"
+                      name="XLSX Report"
+                      action="alnas_xlsx.xlsx_report_action"
+                      sequence="2"/>
+        </menuitem>
+    </data>
+</odoo>

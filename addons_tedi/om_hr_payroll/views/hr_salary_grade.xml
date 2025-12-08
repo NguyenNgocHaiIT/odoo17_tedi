@@ -9,6 +9,7 @@
                 <field name="name"/>
                 <field name="code"/>
                 <field name="salary_coefficient"/>
+                <field name="salary_grade"/>
                 <field name="advance_amount"/>
                 <field name="bonus_rate"/>
             </tree>

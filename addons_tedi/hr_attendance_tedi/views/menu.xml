@@ -1,40 +1,11 @@
 <odoo>
     <data>
 
-
         <record id="hr_attendance.menu_hr_attendance_root" model="ir.ui.menu">
             <field name="groups_id" eval="[(4, ref('base.group_user'))]"/>
         </record>
 
-        <menuitem id="menu_tedi_attendance_config"
-                  name="Cấu hình"
-                  parent="hr_attendance.menu_hr_attendance_root"
-                  sequence="100"/>
 
-        <menuitem id="menu_tedi_holiday_config"
-                  name="Ngày nghỉ"
-                  parent="menu_tedi_attendance_config"
-                  action="action_tedi_holiday_config"
-                  groups="hr_holidays.group_hr_holidays_user"
-                  sequence="1"/>
-
-
-<!--        <menuitem id="menu_tedi_attendance_category"-->
-<!--                  name="Danh sách chấm công"-->
-<!--                  parent="hr_attendance.menu_hr_attendance_root"-->
-<!--                  sequence="1"/>-->
-
-<!--        <menuitem id="menu_tedi_attendance_list_all"-->
-<!--                  name="Danh sách chấm công"-->
-<!--                  parent="menu_tedi_attendance_category"-->
-<!--                  action="action_tedi_attendance_all"-->
-<!--                  sequence="2"/>-->
-
-<!--        <menuitem id="menu_tedi_attendance_my"-->
-<!--                  name="Chấm công của tôi"-->
-<!--                  parent="menu_tedi_attendance_category"-->
-<!--                  action="action_tedi_attendance_my"-->
-<!--                  sequence="1"/>-->
 
         <menuitem id="menu_tedi_attendance_gantt_custom"
                   name="Lịch chấm công"
@@ -42,10 +13,40 @@
                   action="action_tedi_attendance_gantt_custom"
                   sequence="2"/>
 
+        <menuitem id="menu_tedi_attendance"
+                  name="Chấm công"
+                  parent="hr_attendance.menu_hr_attendance_root"
+                  action="hr_attendance.hr_attendance_action"
+                  sequence="3"/>
+
         <menuitem id="menu_tedi_request_root"
                   name="Đơn nghỉ phép"
                   parent="hr_attendance.menu_hr_attendance_root"
                   sequence="3"/>
+
+        <menuitem id="menu_tedi_work_entry_root"
+                  name="Công"
+                  parent="hr_attendance.menu_hr_attendance_root"
+                  groups="hr_holidays.group_hr_holidays_user"
+                  sequence="4"/>
+
+        <menuitem id="menu_tedi_work_entry_grid"
+                  name="Bảng công"
+                  parent="menu_tedi_work_entry_root"
+                  action="action_tedi_work_entry_grid"
+                  sequence="5"/>
+
+        <menuitem id="menu_tedi_work_entry"
+                  name="Công"
+                  parent="menu_tedi_work_entry_root"
+                  action="hr_work_entry.hr_work_entry_action"
+                  sequence="10"/>
+
+        <menuitem id="menu_tedi_work_entry_type"
+                  name="Loại công"
+                  parent="menu_tedi_work_entry_root"
+                  action="hr_work_entry.hr_work_entry_type_action"
+                  sequence="15"/>
 
         <menuitem id="menu_tedi_request_dashboard"
                   name="Bảng điều khiển"
@@ -66,12 +67,41 @@
                   groups="hr_holidays.group_hr_holidays_user"
                   sequence="2"/>
 
-        <menuitem id="menu_tedi_attendance_import"
-                  name="Import Excel"
+<!--        <menuitem id="menu_tedi_attendance_import"-->
+<!--                  name="Import Excel"-->
+<!--                  parent="hr_attendance.menu_hr_attendance_root"-->
+<!--                  action="action_tedi_attendance_import"-->
+<!--                  groups="hr_attendance.group_hr_attendance_officer"-->
+<!--                  sequence="5"/>-->
+
+
+
+         <menuitem id="menu_tedi_attendance_config"
+                  name="Cấu hình"
                   parent="hr_attendance.menu_hr_attendance_root"
-                  action="action_tedi_attendance_import"
-                  groups="hr_attendance.group_hr_attendance_officer"
-                  sequence="4"/>
+                  sequence="100"/>
+
+        <menuitem id="menu_tedi_holiday_config"
+                  name="Ngày nghỉ (Lịch)"
+                  parent="menu_tedi_attendance_config"
+                  action="action_tedi_holiday_config"
+                  groups="hr_holidays.group_hr_holidays_user"
+                  sequence="1"/>
+
+        <menuitem id="menu_tedi_leave_type_config"
+                  name="Loại nghỉ phép"
+                  parent="menu_tedi_attendance_config"
+                  action="hr_holidays.open_view_holiday_status"
+                  groups="hr_holidays.group_hr_holidays_manager"
+                  sequence="2"/>
+
+        <menuitem id="menu_tedi_config"
+                  name="Cấu hình"
+                  parent="menu_tedi_attendance_config"
+                  action="hr_attendance.action_hr_attendance_settings"
+                  groups="hr_holidays.group_hr_holidays_manager"
+                  sequence="3"/>
+
 
 
 

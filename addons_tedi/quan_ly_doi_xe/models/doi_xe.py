@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
 
+
 class FleetVehicle(models.Model):
     """
     Kế thừa model fleet.vehicle chuẩn của Odoo.
@@ -30,10 +31,45 @@ class FleetVehicle(models.Model):
     fuel_rate = fields.Char(string="Định mức nhiên liệu (L/100km)")
     oil_change_rate = fields.Char(string="Định mức thay dầu (km)")
 
-    # --- LỊCH SỬ CÔNG TÁC (QUAN TRỌNG) ---
-    # Sửa: Trỏ vào 'assigned_vehicle_id' vì đã bỏ 'vehicle_id'
+    # --- LỊCH SỬ CÔNG TÁC ---
     trip_history_ids = fields.One2many(
         'hr_tedi.vehicle.registration',
         'assigned_vehicle_id',
         string="Lịch sử công tác"
     )
+    service_history_ids = fields.One2many(
+        'fleet.vehicle.log.services',  # Model đích
+        'vehicle_id',  # Field trong model đích trỏ về model này
+        string="Lịch sử sửa chữa"
+    )
+
+    @api.model
+    def create(self, vals):
+        """
+        Khi tạo xe mới:
+        1. Tạo xe.
+        2. Tự động tạo bản ghi Odometer đầu tiên.
+           - Nếu người dùng nhập 'odometer' thì dùng giá trị đó.
+           - Nếu không nhập thì mặc định = 0.
+        """
+        # Nếu người dùng không nhập odometer, gán mặc định là 0 trong vals để Odoo xử lý
+        initial_odometer = vals.get('odometer', 0.0)
+
+        vehicle = super(FleetVehicle, self).create(vals)
+
+        Odometer = self.env['fleet.vehicle.odometer']
+
+        # [SỬA LỖI] Dùng search_count thay vì search(count=True)
+        existing_log = Odometer.search_count([('vehicle_id', '=', vehicle.id)])
+
+        if existing_log == 0:
+            Odometer.create({
+                'vehicle_id': vehicle.id,
+                'value': initial_odometer,
+                'date': fields.Date.today(),
+                'report_type': 'log',  # Đánh dấu đây là nhật ký thường
+                'driver_id': vehicle.driver_id.id or False,
+                'unit': 'kilometers',  # Đơn vị mặc định
+            })
+
+        return vehicle

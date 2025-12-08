@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_document_directory_filter" model="ir.ui.view">
+            <field name="name">document.directory.search</field>
+            <field name="model">document.directory</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="name"/>
+                    <field name="tag_ids"/>
+                    <field name="parent_id"/>
+                    <field name="visible_directory"/>
+                    <field name="create_uid"/>
+                    <separator/>
+                    <filter string="Archived" name="inactive" domain="[('active','=',False)]"/>
+                    <filter string="Visible Directory" name="visible_directory" domain="[('visible_directory','=',True)]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Tags" name="tags" help="By assigned tags" context="{'group_by':'tag_ids'}"/>
+                        <filter string="Parent Directory" name="parent_id" help="By parent directory" context="{'group_by':'parent_id'}"/>
+                        <filter string="Created By" name="created_by" context="{'group_by': 'create_uid'}"/>
+                    </group>
+                </search>
+             </field>
+        </record>
+
+        <record id="act_document_sub_directory" model="ir.actions.act_window">
+            <field name="name">Directory</field>
+            <field name="res_model">document.directory</field>
+            <field name="view_mode">tree,kanban,form</field>
+            <field name="search_view_id" ref="view_document_directory_filter"/>
+            <field name="context">{
+                "searchpanel_default_parent_id": active_id,
+                "default_parent_id": active_id,
+                "search_default_parent_id": active_id,
+                "search_default_group_parent_id": 1,
+                "expand": 1}
+            </field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create a new Directory
+                </p>
+            </field>
+        </record>
+
+        <record id="view_document_directory_form" model="ir.ui.view">
+            <field name="name">document.directory.form</field>
+            <field name="model">document.directory</field>
+            <field name="arch" type="xml">
+                <form>
+                    <field name="company_id" invisible="1"/>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box" invisible="not id">
+                            <button class="oe_stat_button" type="action" name="%(windx_documents_management_preview.act_attachment_from_document_directory)d" icon="fa-file">
+                                <field string="Attachments" name="total_attachment" widget="statinfo"/>
+                            </button>
+                            <button class="oe_stat_button" type="action" name="%(act_document_sub_directory)d" icon="fa-folder">
+                                <field string="Sub Directories" name="total_sub_directory" widget="statinfo"/>
+                            </button>
+                        </div>
+                        <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                        <field name="active" invisible="1"/>
+                        <field name="avatar_128" invisible="1"/>
+                        <field name="image_1920" widget='image' class="oe_avatar" options='{"zoom": true, "preview_image":"avatar_128"}'/>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="parent_id"/>
+                                <field name="child_ids" invisible="1"/>
+                                <field name="company_id" options="{'no_create': True}" groups="base.group_multi_company"/>
+                                <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                                <field name="model_id"/>
+                                <field name="model"/>
+                                <field name="color" widget="color_picker" string="Color"/>
+                                <field name="visible_directory"/>
+                            </group>
+                            <div invisible="not id or id and not child_ids and not parent_id">
+                                <widget name="document_directory_chart_preview"/>
+                            </div>
+                            <group colspan="4">
+                                <field colspan="2" name="note" placeholder="Notes..."/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Users" name="user_ids">
+                                <field name="user_ids" context="{'search_default_filter_no_share':1}"/>
+                            </page>
+                            <page name="attachments" string="Files">
+                                <field name="attachment_ids" widget="one2many" nolabel="1"/>
+                            </page>
+                            <page name="child" string="Sub Directories">
+                                <field name="child_ids" widget="one2many" nolabel="1"/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids" groups="base.group_user"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+<!--        <record id="view_document_directory_tree" model="ir.ui.view">-->
+<!--            <field name="name">document.directory.tree</field>-->
+<!--            <field name="model">document.directory</field>-->
+<!--            <field name="arch" type="xml">-->
+<!--                <tree>-->
+<!--                    <field name="company_id" column_invisible="True"/>-->
+<!--                    <field name="name"/>-->
+<!--                    <field name="company_id" groups="base.group_multi_company" readonly="1"/>-->
+<!--                    <field name="total_attachment" string="Attachments"/>-->
+<!--                    <field name="parent_id"/>-->
+<!--                    <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>-->
+<!--                    <field name="color" widget="color_picker" string="Color"/>-->
+<!--                </tree>-->
+<!--            </field>-->
+<!--        </record>-->
+
+        <record id="document_directory_view_kanban" model="ir.ui.view" >
+            <field name="name">document.directory.kanban</field>
+            <field name="model">document.directory</field>
+            <field name="arch" type="xml">
+                <kanban class="o_document_directory_kanban o_kanban_small_column">
+                    <field name="name"/>
+                    <field name="company_id"/>
+                    <field name="color"/>
+                    <field name="total_attachment"/>
+                    <field name="total_sub_directory"/>
+                    <field name="image_128" />
+                    <templates>
+                        <t t-name="kanban-menu" t-if="!selection_mode">
+                            <div class="o_kanban_card_manage_section">
+                                <div role="menuitem" class="o_kanban_manage_reports">
+                                    <div class="o_kanban_card_manage_title ps-4 pb-1">
+                                        <span class="fw-bolder">Reporting</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <a t-if="widget.editable" role="menuitem" class="dropdown-item" type="edit">Configuration</a>
+                            <ul t-if="widget.editable" class="oe_kanban_colorpicker" data-field="color" role="menu"/>
+                        </t>
+                        <t t-name="kanban-box">
+                            <div t-attf-class="#{!selection_mode ? kanban_color(record.color.raw_value) : ''} oe_kanban_global_click o_kanban_record_has_image_fill">
+
+                                <t t-if="record.image_1024.raw_value">
+                                    <field name="image_1024" class="o_kanban_image_fill_left d-block" preview_image="image_128"
+                                        widget="background_image" options="{'zoom': true, 'zoom_delay': 1000}"/>
+                                </t>
+                                <t t-elif="record.image_128.raw_value">
+                                    <field name="avatar_128" class="o_kanban_image_fill_left d-block"
+                                        widget="background_image" options="{'zoom': true, 'zoom_delay': 1000}"/>
+                                </t>
+                                <div t-else="" class="o_kanban_image_fill_left d-flex align-items-center justify-content-center bg-100 bg-gradient">
+                                    <img t-attf-src="windx_documents_management_preview/static/src/imgs/folder.jpg" alt="folder"/>
+                                </div>
+
+                                <div t-attf-class="o_kanban_card_header oe_kanban_details">
+                                    <div class="o_kanban_card_header_title mb-2">
+                                        <div class="o_primary mb-2"><a type="edit"><field name="name"/></a></div>
+                                        <div class="o_secondary" groups="base.group_multi_company">
+                                            <small>
+                                                <i class="fa fa-building-o" role="img" aria-label="Company" title="Company"/> <field name="company_id"/>
+                                            </small>
+                                        </div>
+                                        <div class="o_secondary">
+                                            <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                                        </div>
+                                    </div>
+
+                                    <div class="o_kanban_card_content" t-if="!selection_mode">
+                                        <div class="row o_kanban_card_upper_content">
+                                            <div class="col-6 o_kanban_primary_left">
+                                                <button class="btn btn-primary btn-sm" name="%(act_attachment_from_document_directory)d" type="action">
+                                                    <t t-out="record.total_attachment.raw_value"/> Attachments
+                                                </button>
+                                            </div>
+                                            <div class="col-6 o_kanban_primary_right">
+                                                <button class="btn btn-primary btn-sm" name="%(act_document_sub_directory)d" type="action">
+                                                    <t t-out="record.total_sub_directory.raw_value"/> Sub Directories
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <record id="document_directory_kanban_action" model="ir.actions.act_window">
+            <field name="name">Directory</field>
+            <field name="res_model">document.directory</field>
+            <field name="view_mode">kanban,tree,form</field>
+            <field name="search_view_id" ref="view_document_directory_filter"/>
+            <field name="help" type="html">
+              <p class="o_view_nocontent_smiling_face">
+                Create a new Directory
+              </p>
+            </field>
+        </record>
+
+        <record id="document_directory_tree_action" model="ir.actions.act_window">
+            <field name="name">Directory</field>
+            <field name="res_model">document.directory</field>
+            <field name="view_mode">tree,kanban,form</field>
+            <field name="search_view_id" ref="view_document_directory_filter"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create a new Directory
+                </p>
+            </field>
+        </record>
+    </data>
+</odoo>

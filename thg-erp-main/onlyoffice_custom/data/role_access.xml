@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="role_viewer1" model="role.onlyoffice">
+            <field name="role_access">edit</field>
+        </record>
+        <record id="role_viewer2" model="role.onlyoffice">
+            <field name="role_access">comment</field>
+        </record>
+        <record id="role_viewer3" model="role.onlyoffice">
+            <field name="role_access">review</field>
+        </record>
+        <record id="role_viewer4" model="role.onlyoffice">
+            <field name="role_access">copy</field>
+        </record>
+        <record id="role_viewer5" model="role.onlyoffice">
+            <field name="role_access">print</field>
+        </record>
+        <record id="role_viewer6" model="role.onlyoffice">
+            <field name="role_access">download</field>
+        </record>
+        <record id="role_viewer7" model="role.onlyoffice">
+            <field name="role_access">chat</field>
+        </record>
+        <record id="role_viewer8" model="role.onlyoffice">
+            <field name="role_access">rename</field>
+        </record>
+    </data>
+</odoo>
+
+

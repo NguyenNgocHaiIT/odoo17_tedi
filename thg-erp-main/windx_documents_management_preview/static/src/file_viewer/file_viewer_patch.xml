@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-inherit="web.FileViewer" t-inherit-mode="extension">
+
+        <xpath expr="//div[hasclass('o-FileViewer-header')]/div[@t-if='isViewable']" position="inside">
+            <div t-if="state.file.isViewable" class="d-flex align-items-center ms-2 me-2">
+                <i t-if="state.file.isImage" class="fa fa-picture-o" role="img" title="Image"/>
+                <i t-if="state.file.isPdf" class="fa fa-file-text" role="img" title="PDF file"/>
+                <i t-if="state.file.isText" class="fa fa-file-text" role="img" title="Text file"/>
+                <i t-if="state.file.isVideo" class="fa fa-video-camera" role="img" title="Video"/>
+                <i t-if="state.file.isDocx" class="fa fa-file-word-o" role="img" title="Docx file"/>
+                <i t-if="state.file.isXLSX" class="fa fa-file-excel-o" role="img" title="Excel file"/>
+                <i t-if="state.file.isXLS" class="fa fa-file-excel-o" role="img" title="Excel file"/>
+                <i t-if="state.file.isPPTX" class="fa fa-file-powerpoint-o" role="img" title="Powerpoint file"/>
+            </div>
+        </xpath>
+
+        <xpath expr="//video[hasclass('o-FileViewer-view')]" position="attributes">
+            <attribute name="t-key">state.file.defaultSource</attribute>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o-FileViewer-main')]" position="inside">
+            <div t-if="state.file.isOfficeFile" id="ms-office-root" class="o-FileViewer-view w-75 h-100 border-0"
+                 style="position: relative;"
+                 t-on-click.stop="">
+                <div id="ms-office-container" class="ms-office-container w-100" t-ref="ViewerMsOffice">
+                </div>
+            </div>
+        </xpath>
+    </t>
+</templates>
