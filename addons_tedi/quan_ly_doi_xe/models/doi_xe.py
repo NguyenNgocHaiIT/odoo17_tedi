@@ -37,6 +37,11 @@ class FleetVehicle(models.Model):
         'assigned_vehicle_id',
         string="Lịch sử công tác"
     )
+    service_history_ids = fields.One2many(
+        'fleet.vehicle.log.services',  # Model đích
+        'vehicle_id',  # Field trong model đích trỏ về model này
+        string="Lịch sử sửa chữa"
+    )
 
     @api.model
     def create(self, vals):

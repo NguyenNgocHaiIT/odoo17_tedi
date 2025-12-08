@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_attendance_tedi.WorkEntryMonthlyGrid">
+        <Layout display="props.display" className="'h-100 d-flex flex-column overflow-hidden bg-white'">
+
+            <style>
+                .o_tedi_grid_table td, .o_tedi_grid_table th { border: 1px solid #dee2e6; }
+                .o_tedi_grid_table th.o_collapsed_col, .o_tedi_grid_table td.o_collapsed_col {
+                    border: 0 !important; border-top: none !important; border-bottom: none !important; background-color: #f8f9fa;
+                }
+                /* Giữ nguyên các class màu sắc cũ */
+                .o_color_0 { background-color: #ffffff; color: #495057; border: 1px solid #adb5bd !important; }
+                .o_color_1 { background-color: #dc3545; color: white; border-color: #dc3545; }
+                .o_color_2 { background-color: #fd7e14; color: white; border-color: #fd7e14; }
+                .o_color_3 { background-color: #ffc107; color: #212529; border-color: #ffc107; }
+                .o_color_4 { background-color: #198754; color: white; border-color: #198754; }
+                .o_color_5 { background-color: #212529; color: white; border-color: #212529; }
+                .o_color_6 { background-color: #0d6efd; color: white; border-color: #0d6efd; }
+                .o_color_7 { background-color: #0dcaf0; color: #212529; border-color: #0dcaf0; }
+                .o_color_8 { background-color: #6c757d; color: white; border-color: #6c757d; }
+                .o_color_9 { background-color: #6610f2; color: white; border-color: #6610f2; }
+                .o_color_10 { background-color: #20c997; color: white; border-color: #20c997; }
+                .o_color_11 { background-color: #d63384; color: white; border-color: #d63384; }
+            </style>
+
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom bg-white shadow-sm" style="z-index: 50; min-height: 80px;">
+                <div class="d-flex flex-column gap-2">
+                     <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-2 shadow-sm rounded">
+                             <div class="btn-group">
+                                <button class="btn btn-outline-secondary btn-sm" t-on-click="goPrev"><i class="fa fa-chevron-left"/></button>
+                                <button class="btn btn-outline-secondary btn-sm fw-bold px-3" t-on-click="goToToday">Hôm nay</button>
+                                <button class="btn btn-outline-secondary btn-sm" t-on-click="goNext"><i class="fa fa-chevron-right"/></button>
+                            </div>
+                            <div class="position-relative">
+                                 <input type="date" class="form-control form-control-sm text-center fw-bold text-primary border-secondary" style="width: 140px;"
+                                        t-att-value="inputValue" t-on-change="onDateChange"/>
+                            </div>
+                        </div>
+                        <h4 class="m-0 fw-bold text-primary"><t t-esc="state.viewLabel"/></h4>
+                    </div>
+
+                    <div class="d-flex gap-2 align-items-center">
+                        <button class="btn btn-primary btn-sm fw-bold shadow-sm" t-on-click="openGenerateWizard" title="Tạo công cho tháng chưa có dữ liệu">
+                            <i class="fa fa-plus-circle me-1"/>Tạo tất cả
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm fw-bold shadow-sm" t-on-click="openRegenerateWizard" title="Reset dữ liệu về mặc định">
+                            <i class="fa fa-refresh me-1"/>Tạo lại
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm fw-bold shadow-sm" t-on-click="onSyncAttendance" title="Cập nhật giờ công thực tế từ máy chấm công">
+                            <i class="fa fa-clock-o me-1"/>Đồng bộ
+                        </button>
+                        <button class="btn btn-outline-success btn-sm fw-bold shadow-sm" t-on-click="createWorkEntry" title="Thêm 1 dòng thủ công">
+                            <i class="fa fa-plus"/>
+                        </button>
+                        <div class="vr mx-1"></div>
+                        <select class="form-select form-select-sm shadow-sm text-primary fw-bold border-secondary text-center"
+                                style="width: 110px; height: 30px; padding: 0; font-size: 12px; line-height: 28px; text-align-last: center;"
+                                t-model="state.filterState"
+                                t-on-change="onFilterStateChange">
+                            <option value="all">Tất cả</option>
+                            <option value="draft">Dự thảo</option>
+                            <option value="validated">Đã chốt</option>
+                            <option value="conflict">Xung đột</option>
+                            <option value="cancelled">Đã hủy</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="small" style="display: grid; grid-template-columns: repeat(4, max-content); gap: 8px; justify-content: end;">
+                    <t t-foreach="state.legendData" t-as="legend" t-key="legend.id">
+                        <div class="d-flex align-items-center border rounded px-2 py-1 bg-light shadow-sm" style="gap: 6px;">
+                            <span t-att-class="'border rounded-1 shadow-sm ' + legend.colorClass" style="width: 16px; height: 16px; display: inline-block;"></span>
+                            <span class="text-dark fw-bold" style="font-size: 0.8rem;"><t t-esc="legend.name"/></span>
+                        </div>
+                    </t>
+                </div>
+            </div>
+
+            <div class="flex-grow-1 overflow-auto bg-white position-relative">
+                <table class="table table-sm text-center mb-0 table-hover o_tedi_grid_table"
+                       style="table-layout: fixed; border-collapse: collapse; border-spacing: 0; min-width: 100%; width: max-content;">
+                    <colgroup>
+                        <col style="width: 200px; min-width: 200px;"/>
+                        <t t-foreach="columns" t-as="col" t-key="col.type + '_' + col.day + '_' + col.groupId">
+                            <t t-if="col.type == 'day'"> <col style="width: 48px; min-width: 48px;"/> </t>
+                            <t t-else=""> <col style="width: 20px; min-width: 20px;"/> </t>
+                        </t>
+                    </colgroup>
+
+                    <thead class="sticky-top" style="top: 0; z-index: 40;">
+                        <tr>
+                            <th class="align-middle bg-light shadow-sm" style="position: sticky; left: 0; z-index: 50; height: 50px;">
+                                <div class="px-2 fw-bold text-secondary small text-uppercase">Nhân viên</div>
+                            </th>
+
+                            <t t-foreach="columns" t-as="col" t-key="col.type + '_' + col.day + '_' + col.groupId">
+
+                                <th t-if="col.type == 'day'"
+                                    class="align-middle p-1 position-relative group-hover-target"
+                                    t-att-class="col.dateObj.getDay() == 0 ? 'bg-light' : 'bg-white'"
+                                    style="height: 50px;">
+
+                                    <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100 position-relative overflow-hidden">
+
+                                        <span class="text-uppercase fw-bold"
+                                              t-att-class="col.dateObj.getDay() == 0 ? 'text-danger' : (col.dateObj.getDay() == 6 ? 'text-primary' : 'text-muted')"
+                                              style="font-size: 0.65rem; line-height: 1;">
+                                            <t t-if="col.dateObj.getDay() == 0">CN</t>
+                                            <t t-else="">T<t t-esc="col.dateObj.getDay() + 1"/></t>
+                                        </span>
+
+                                        <span class="fw-bolder mt-1 text-dark" style="font-size: 1.1rem; line-height: 1;">
+                                            <t t-esc="col.label"/>
+                                        </span>
+
+                                        <t t-if="col.canCollapse">
+                                            <i class="fa fa-compress position-absolute top-0 end-0 m-1 text-primary cursor-pointer opacity-50 hover-opacity-100"
+                                               style="font-size: 10px;"
+                                               t-on-click="() => toggleGroup(col.groupId)"
+                                               title="Thu gọn khoảng này"/>
+                                        </t>
+                                    </div>
+                                </th>
+                                <th t-else="" class="align-middle p-0 cursor-pointer hover-bg-secondary o_collapsed_col" style="height: 50px;" t-on-click="() => toggleGroup(col.groupId)" title="Nhấn để mở rộng">
+                                    <i class="fa fa-ellipsis-v text-muted" style="font-size: 10px;"/>
+                                </th>
+                            </t>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <t t-if="state.isLoading">
+                            <tr><td t-att-colspan="columns.length + 1" class="p-5 text-center">Đang tải...</td></tr>
+                        </t>
+
+                        <t t-foreach="state.rowsData" t-as="emp" t-key="emp.id">
+                            <tr style="height: 60px;">
+                                <td class="text-start align-middle bg-white" style="position: sticky; left: 0; z-index: 30;">
+                                    <div class="d-flex align-items-center gap-2 px-2 py-1 cursor-pointer h-100" t-on-click="() => openEmployee(emp.id)">
+                                        <t t-if="emp.hasAvatar">
+                                            <img t-attf-src="/web/image/hr.employee/{{emp.id}}/avatar_128" class="rounded-circle border flex-shrink-0" style="width: 36px; height: 36px; object-fit: cover;"/>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="rounded-circle border bg-light d-flex align-items-center justify-content-center flex-shrink-0 text-secondary" style="width: 36px; height: 36px;">
+                                                <i class="fa fa-user" style="font-size: 18px;"/>
+                                            </div>
+                                        </t>
+                                        <div class="d-flex flex-column overflow-hidden justify-content-center">
+                                            <span class="fw-bold text-dark small text-wrap" style="line-height: 1.2;"><t t-esc="emp.name"/></span>
+                                            <span class="fw-bold text-primary mt-1" style="font-size: 0.7rem;"><t t-esc="formatHours(emp.totalDuration)"/></span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <t t-foreach="columns" t-as="col" t-key="col.type + '_' + col.day + '_' + col.groupId">
+                                    <t t-if="col.type == 'day'">
+                                        <t t-set="cellData" t-value="emp.cells[col.day]"/>
+                                        <td class="align-middle p-1" t-att-class="col.isWeekend ? 'bg-light' : ''">
+                                            <div class="d-flex flex-column gap-1 w-100 h-100 justify-content-center">
+                                                <t t-if="cellData">
+                                                    <t t-foreach="cellData" t-as="entry" t-key="entry.id">
+                                                        <div class="w-100 d-flex align-items-center justify-content-center rounded border fw-bold shadow-sm cursor-pointer"
+                                                             t-att-class="entry.colorClass"
+                                                             style="font-size: 0.7rem; min-height: 20px;"
+                                                             t-on-click="() => this.openEntry(entry.id)"
+                                                             title="Xem chi tiết">
+                                                            <t t-esc="entry.label"/>
+                                                        </div>
+                                                    </t>
+                                                </t>
+                                            </div>
+                                        </td>
+                                    </t>
+                                    <t t-else="">
+                                        <td class="o_collapsed_col" style="padding: 0;"></td>
+                                    </t>
+                                </t>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+            </div>
+        </Layout>
+    </t>
+</templates>

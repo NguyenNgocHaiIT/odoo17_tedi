@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_tedi_work_entry_grid" model="ir.actions.client">
+        <field name="name">Bảng chấm công tổng hợp</field>
+        <field name="tag">tedi_work_entry_monthly_grid</field> </record>
+
+</odoo>
