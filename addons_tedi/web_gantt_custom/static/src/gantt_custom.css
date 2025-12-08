@@ -103,13 +103,87 @@
 }
 
 /* Style cho parent-child connectors */
-.o_parent_child_connector .o_connector_stroke {
-    stroke-dasharray: 5, 5 !important;
-    stroke: #666 !important;
-    stroke-width: 2px !important;
+.o_connector_stroke,
+.o_connector_stroke_hover_ease {
+    stroke-width: 2px;
+    stroke: rgba(143,143,143,0.3);
+    transition: stroke-width 0.2s ease, stroke 0.2s ease;
 }
 
-.o_parent_child_connector .o_connector_stroke_hover_ease {
-    stroke: transparent !important;
-    stroke-width: 10px !important;
+/* Khi hover hoặc khi connector có highlighted */
+.o_gantt_connector.o_connector_highlighted .o_connector_stroke,
+.o_gantt_connector.o_connector_highlighted .o_connector_stroke_hover_ease,
+.o_gantt_connector:hover .o_connector_stroke,
+.o_gantt_connector:hover .o_connector_stroke_hover_ease {
+    stroke-width: 2px;           /* dày lên */
+    stroke: rgba(143,143,143,1); /* màu đậm, hoặc dùng COLORS.default.highlightedColor */
 }
+
+.o_gantt_task_row_hovered { background: rgba(0,123,255,0.08); }
+
+/* Màu sắc cho các trạng thái progress */
+.o_gantt_progress_normal {
+    background-color: #2196F3 !important;
+    border: 1px solid #1976D2;
+}
+
+/* Badge styling */
+.o_gantt_pill .badge {
+    font-size: 9px;
+    padding: 1px 4px;
+    line-height: 1;
+    font-weight: bold;
+}
+
+/* Text trong pill */
+.o_gantt_pill_title {
+    font-weight: normal;
+    letter-spacing: 0.3px;
+    color: #000 !important;
+}
+
+/* Tooltip cho deadline info */
+.o_gantt_pill:hover::after {
+    content: attr(data-deadline-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: black;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 5px;
+    display: none;
+}
+
+.o_gantt_pill:hover::after {
+    display: block;
+    color: #000 !important;
+}
+/* Tooltip */
+.o_gantt_pill[data-deadline-tooltip]:hover::after {
+    display: block;
+}
+
+/* Hover màu / highlight */
+.o_gantt_pill:hover {
+    filter: brightness(0.9);
+    cursor: pointer;
+}
+
+/* chữ luôn đen, không bị hover đổi màu */
+.o_gantt_pill small {
+    color: #000 !important;
+}
+
+/* Thêm vào file CSS */
+.o_gantt_pill {
+    background-color: rgba(240, 240, 240, 0.5) !important; /* Màu nền mặc định */
+    background-image: none !important; /* Xóa gradient khi không cần */
+    height: 80% !important;
+}
+

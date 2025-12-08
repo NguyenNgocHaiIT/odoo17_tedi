@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <t t-inherit="web.Many2ManyBinaryField" t-inherit-mode="extension">
+        <xpath expr="//div[contains(@t-attf-class, 'oe_fileupload')]" position="inside">
+            <script src="/windx_documents_management_preview/static/src/lib/docx/DocxJS.min.js"/>
+            <script src="/windx_documents_management_preview/static/src/lib/docx/DocxUiLoader.js"/>
+            <script src="/windx_documents_management_preview/static/src/lib/xlsx/CellJS.min.js"/>
+            <script src="/windx_documents_management_preview/static/src/lib/xlsx/CellUiLoader.js"/>
+            <script src="/windx_documents_management_preview/static/src/lib/pptx/SlideJS.min.js"/>
+            <script src="/windx_documents_management_preview/static/src/lib/pptx/SlideUiLoader.js"/>
+        </xpath>
+    </t>
+
+    <t t-inherit="web.Many2ManyBinaryField.attachment_preview"
+       t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_image_box')]" position="replace">
+            <t t-set="attachment" t-value="getAttachment(file.id)"/>
+            <t t-set="attachments" t-value="getAttachments()"/>
+            <t t-if="attachment.isViewable">
+                <div class="o_image_box float-start o-viewable"
+                     t-att-data-tooltip="'Preview ' + file.name"
+                     t-on-click="() => this.fileViewer.open(attachment, attachments)">
+                    <span class="o_image o_hover" t-att-data-mimetype="file.mimetype" t-att-data-ext="ext" role="img"/>
+                </div>
+            </t>
+            <t t-if="!attachment.isViewable">
+                <div class="o_image_box float-start" t-att-data-tooltip="'Download ' + file.name">
+                    <a t-att-href="url" aria-label="Download" download="">
+                        <span class="o_image o_hover" t-att-data-mimetype="file.mimetype" t-att-data-ext="ext" role="img"/>
+                    </a>
+                </div>
+            </t>
+        </xpath>
+    </t>
+
+</templates>

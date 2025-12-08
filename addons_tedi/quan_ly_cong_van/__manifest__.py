@@ -19,6 +19,8 @@
         'web.assets_backend': [
             #'quan_ly_cong_van/static/src/css/danh_sach_phan_phat.css',
 			'quan_ly_cong_van/static/src/js/form_editable.js',
+            'quan_ly_cong_van/static/src/css/tree_color.css',
+            'quan_ly_cong_van/static/src/js/tree_color_custom.js',
         ],
     },
 

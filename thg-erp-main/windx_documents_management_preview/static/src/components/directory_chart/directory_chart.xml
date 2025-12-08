@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="windx_documents_management_preview.DocumentDirectoryChart">
+        <div class="o_document_directory_chart">
+            <div class="o_horizontal_separator mb-3 text-uppercase fw-bolder small">Directory Organization</div>
+            <t t-if="state.hierarchy.self">
+                <div class="o_document_directory_chart_parent">
+                    <t t-set="directory" t-value="state.hierarchy.parent"/>
+                    <t t-set="hideTree" t-value="true"/>
+                    <t t-call="windx_documents_management_preview.DocumentDirectoryChart.Directory"/>
+                </div>
+
+                <div t-att-class="state.hierarchy.parent?'ms-4':''">
+                    <div class="o_document_directory_chart_self">
+                        <t t-set="directory" t-value="state.hierarchy.self"/>
+                        <t t-set="hideTree" t-value="!state.hierarchy.parent"/>
+                        <t t-call="windx_documents_management_preview.DocumentDirectoryChart.Directory"/>
+                    </div>
+
+                    <t t-set="hideTree" t-value="false"/>
+                    <div class="o_document_directory_chart_children ms-4">
+                        <t t-foreach="state.hierarchy.children" t-as="directory" t-key="directory.name">
+                            <t t-call="windx_documents_management_preview.DocumentDirectoryChart.Directory"/>
+                        </t>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="windx_documents_management_preview.DocumentDirectoryChart.Directory">
+        <t t-if="directory">
+            <div t-attf-class="#{hideTree?'':'o_treeEntry'} mb-0 ps-4">
+                <div class="d-flex justify-content-between">
+                    <span class="department_name ms-2">
+                        <t t-esc="directory.name"/>
+                    </span>
+                    <a class="badge rounded-pill bg-300 border px-2" role="button"
+                        title="Show attachments"
+                        t-on-click.prevent="() => this.openDirectoryAttachments(directory.id)">
+                        <t t-esc="directory.attachments"/>
+                    </a>
+                </div>
+            </div>
+        </t>
+    </t>
+</templates>

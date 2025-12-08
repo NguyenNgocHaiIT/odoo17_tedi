@@ -20,6 +20,7 @@
             t-on-pointerleave="onPointerLeave"
         >
             <t t-call="{{ constructor.headerTemplate }}"/>
+
             <t t-if="model.metaData.groupedBy.length">
                 <div class="o_gantt_row_headers o_gantt_grid_rows">
                     <t t-foreach="visibleRows" t-as="row" t-key="row.id">
@@ -312,24 +313,38 @@
             t-att-style="getGridPosition(pill.grid)"
             t-att-data-pill-id="pill.id"
         >
-            <t t-if="renderConnectors" t-call="{{ constructor.connectorCreatorTemplate }}">
-                <t t-set="alignment" t-value="{ horizontal: 'left', vertical: 'top' }" />
-            </t>
+            <!-- PILL VỚI PROGRESS BAR -->
             <div class="o_gantt_pill position-relative h-100 d-flex align-items-center"
                 t-att-class="pill.className"
+                t-attf-style="{{ pill._progress ? 'background: linear-gradient(to right, rgba(0,0,0,0.2) ' + pill._progress + '%, rgba(0,0,0,0.05) ' + pill._progress + '%);' : '' }}"
                 t-on-click.synthetic="(ev) => this.onPillClicked(ev, pill)"
             >
-                <span
-                    t-if="pill._progress"
-                    class="position-absolute h-100 o_gantt_progress"
-                    t-attf-style="width:{{ pill._progress }}%;"
-                />
-                <span class="o_gantt_pill_title text-truncate mx-1" t-esc="pill.displayName" />
-                <div t-if="pill.disableDrag" class="o_gantt_lock fa fa-lock ms-auto me-2" />
+                <!-- Progress bar background (phần chưa hoàn thành) -->
+                <div t-if="pill._progress != null"
+                     class="position-absolute h-100 w-100 start-0 top-0"
+                     style="background-color: #1E90FF; opacity: 0.2; border-radius: 3px;">
+                </div>
+
+                <!-- Progress bar fill (phần đã hoàn thành) -->
+                <div t-if="pill._progress != null  "
+                     class="position-absolute h-100 start-0 top-0"
+                     t-attf-style="width: {{ pill._progress }}%; background-color: #1E90FF; opacity: 0.8; border-radius: 3px 0 0 3px;">
+                </div>
+
+
+                <!-- Nội dung pill -->
+                <div class="position-relative z-index-1 d-flex align-items-center w-100 h-100 px-1">
+
+                    <!-- Hiển thị % progress nhỏ -->
+                    <small t-if="pill._progress != null"
+                           class="ms-auto small fw-bold text-nowrap"
+                           t-esc="`${Math.round(pill._progress)}%`"
+                           style="background: rgba(255, 255, 255, 0.8); padding: 1px 4px; border-radius: 2px;"/>
+
+                    <div t-if="pill.disableDrag"
+                         class="o_gantt_lock fa fa-lock ms-1" />
+                </div>
             </div>
-            <t t-if="renderConnectors" t-call="{{ constructor.connectorCreatorTemplate }}">
-                <t t-set="alignment" t-value="{ horizontal: 'right', vertical: 'bottom' }" />
-            </t>
         </div>
     </t>
 

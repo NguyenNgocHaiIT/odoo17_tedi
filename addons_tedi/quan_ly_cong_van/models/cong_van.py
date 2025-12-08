@@ -15,11 +15,10 @@ class PhanPhat(models.TransientModel):
     _name = 'office.document.phan.phat'
 
     nhan_van_ban = fields.Char('Nhận văn bản')
-    don_vi_xu_ly_chinh = fields.Many2many(
+    don_vi_xu_ly_chinh = fields.Many2one(
         'hr.department',
-        'office_document_dv_xu_ly_chinh_rel',
-        'phanphat_id', 'department_id',
-        string='Đơn vị xử lý chính')
+        string='Đơn vị xử lý chính'
+    )
     don_vi_dong_xu_ly = fields.Many2many(
         'hr.department',
         'office_document_dv_dong_xu_ly_rel',
@@ -47,17 +46,15 @@ class PhanPhat(models.TransientModel):
     @api.constrains('don_vi_xu_ly_chinh', 'don_vi_dong_xu_ly')
     def _check_don_vi_trung(self):
         for rec in self:
-            common = set(rec.don_vi_xu_ly_chinh.ids) & set(rec.don_vi_dong_xu_ly.ids)
-            if common:
-                raise ValidationError("Đơn vị xử lý chính và đồng xử lý không được trùng nhau!")
+            if rec.don_vi_xu_ly_chinh and rec.don_vi_xu_ly_chinh in rec.don_vi_dong_xu_ly:
+                raise ValidationError("Đơn vị xử lý chính không được trùng với đơn vị đồng xử lý!")
 
     # ----- COMPUTE FIELD -----
     @api.depends('don_vi_xu_ly_chinh')
     def _compute_nguoi_xu_ly_chinh(self):
         for rec in self:
-            if rec.don_vi_xu_ly_chinh:
-                employees = rec.don_vi_xu_ly_chinh.mapped('manager_id')
-                rec.nguoi_xu_ly_chinh = employees
+            if rec.don_vi_xu_ly_chinh and rec.don_vi_xu_ly_chinh.manager_id:
+                rec.nguoi_xu_ly_chinh = rec.don_vi_xu_ly_chinh.manager_id
             else:
                 rec.nguoi_xu_ly_chinh = False
 
@@ -81,9 +78,9 @@ class PhanPhat(models.TransientModel):
 
         # --- 1. Cập nhật Many2many vào văn bản ---
         doc.write({
-            'dv_xu_ly_chinh': [(6, 0, self.don_vi_xu_ly_chinh.ids)],
+            'dv_xu_ly_chinh': self.don_vi_xu_ly_chinh.id or False,
             'dv_dong_xu_ly': [(6, 0, self.don_vi_dong_xu_ly.ids)],
-            'nguoi_xu_ly_chinh': [(6, 0, self.nguoi_xu_ly_chinh.ids)],
+            'nguoi_xu_ly_chinh': [(6, 0, self.nguoi_xu_ly_chinh.ids)] if self.nguoi_xu_ly_chinh else [(5,)],
             'nguoi_dong_xu_ly': [(6, 0, self.nguoi_dong_xu_ly.ids)],
             'tt_vb': 'cho_xu_ly',
         })
@@ -420,7 +417,7 @@ class OfficeDocumentDetail3(models.Model):
         store=True  # Nếu muốn lưu giá trị vào DB
     )
     noi_dung_chi_dao = fields.Char('Nội dung')
-    thoi_diem_chi_dao = fields.Datetime('Thời điểm')
+    thoi_diem_chi_dao = fields.Datetime('Thời điểm', default=fields.Datetime.now)
     office_document_id = fields.Many2one('office.document')
 
     @api.depends('nguoi_nhap_y_kien')
@@ -429,6 +426,16 @@ class OfficeDocumentDetail3(models.Model):
             rec.nhom_phong_ban = 'Không xác định'
             if rec.nguoi_nhap_y_kien and rec.nguoi_nhap_y_kien.department_id:
                 rec.nhom_phong_ban = rec.nguoi_nhap_y_kien.department_id.name
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        # Tự động lấy HR Employee của user hiện tại
+        user = self.env.user
+        hr_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+        if 'nguoi_nhap_y_kien' in fields_list and hr_employee:
+            res['nguoi_nhap_y_kien'] = hr_employee.id
+        return res
 
 
 class OfficeDocument(models.Model):
@@ -465,20 +472,18 @@ class OfficeDocument(models.Model):
         ('hoa_toc', 'Hỏa tốc')], string='Độ khẩn', default='khan')
     vb_nhan = fields.Char('Văn bản nhận')
     tt_vb = fields.Selection([
-        ('draft', 'Nhập thông tin'),
-        ('cho_duyet', 'Chờ duyệt'),
-        ('da_duyet', 'Đã duyệt'),
-        ('cho_but_phe', 'Chờ bút phê'),
-        ('cho_phan_phat', 'Chờ phân phát'),
-        ('cho_xu_ly', 'Đã phân phát'),
-        ('phat_hanh', 'Phát hành'),
+        ('draft', 'Nhập thông tin'),#thường
+        ('cho_duyet', 'Chờ duyệt'),#vàng
+        ('da_duyet', 'Đã duyệt'),#vàng
+        ('cho_but_phe', 'Chờ bút phê'),#vàng
+        ('cho_phan_phat', 'Chờ phân phát'),#vàng
+        ('cho_xu_ly', 'Đã phân phát'),#xanh
+        ('phat_hanh', 'Phát hành'),#xanh
     ], string='Trạng thái văn bản', default='draft', tracking=True)
-    dv_xu_ly_chinh = fields.Many2many(
+    dv_xu_ly_chinh = fields.Many2one(
         'hr.department',
-        'dv_xu_ly_chinh_rel',
-        'document_id',
-        'department_id',
-        string='Đơn vị xử lý chính')
+        string='Đơn vị xử lý chính'
+    )
     dv_dong_xu_ly = fields.Many2many(
         'hr.department',
         'office_doc_donvi_rel',
@@ -540,7 +545,13 @@ class OfficeDocument(models.Model):
         domain="[('document_type','in',['outgoing_internal'])]"
     )
     can_duyet = fields.Boolean(string='Văn bản có cần duyệt không ?', default=True)
+    co_the_but_phe = fields.Boolean(
+        string='Có thể bút phê',
+        compute='_compute_co_the_but_phe',
+        store=False  # Không lưu vào database, tính toán real-time
+    )
 
+    task_id = fields.Many2one('project.task', string="Công việc liên quan")
 
     def phan_phat(self):
         return {
@@ -682,7 +693,13 @@ class OfficeDocument(models.Model):
         # Xử lý so_den_tong_hop và so_di_tong_hop khi có phan_loai_van_ban
         vals = self._update_document_numbers(vals)
 
-        return super(OfficeDocument, self).create(vals)
+        record = super(OfficeDocument, self).create(vals)
+
+        # 🔥 Nếu có task_id, tự chuyển trạng thái task thành "Đã giao"
+        if record.task_id:
+            record.task_id.office_task_status = 'da_tao_cong_van'
+
+        return record
 
     def write(self, vals):
         # 2. Nếu thay đổi phan_loai_van_ban thì cập nhật số tổng hợp
@@ -843,6 +860,22 @@ class OfficeDocument(models.Model):
         self.ensure_one()
         self.tt_vb = 'phat_hanh'
         return True
+
+    @api.depends('lanh_dao_xu_ly')
+    def _compute_co_the_but_phe(self):
+        """Tính toán xem người dùng hiện tại có phải là lãnh đạo xử lý không"""
+        current_user = self.env.user
+        current_employee = self.env['hr.employee'].search(
+            [('user_id', '=', current_user.id)], limit=1
+        )
+
+        for record in self:
+            # Nếu có lãnh đạo xử lý và người dùng hiện tại là lãnh đạo đó
+            if record.lanh_dao_xu_ly and current_employee:
+                record.co_the_but_phe = (record.lanh_dao_xu_ly.id == current_employee.id)
+            else:
+                record.co_the_but_phe = False
+
 
 class AssignTaskWizard(models.TransientModel):
     _name = 'assign.task.wizard'
