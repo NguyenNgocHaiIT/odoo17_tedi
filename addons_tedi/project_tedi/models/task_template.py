@@ -25,12 +25,18 @@ class ProjectTaskTemplateLine(models.Model):
 
     department_id = fields.Many2one(
         'hr.department',
-        string='Phòng ban/Đơn vị'
+        string='Đơn vị phụ trách'
     )
 
     nhiem_vu = fields.Text(string='Nhiệm vụ')
 
     sequence = fields.Integer(string='Thứ tự',)
+
+    task_categorize = fields.Many2one("project.task.categorize", string="Phân loại công việc")
+
+    is_deliverable = fields.Boolean(string="Đây là công vệc làm hồ sơ")
+
+    deliverable_type_id = fields.Many2one("project.deliverable.type", string="Loại hồ sơ")
 
     @api.onchange('template_id', 'template_id.nhiem_vu_ids')
     def _onchange_template_lines(self):

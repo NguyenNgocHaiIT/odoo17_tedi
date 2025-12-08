@@ -38,11 +38,15 @@
                             <page name="phan_cong_giao_nhiem_vu" string="Bảng phân công, giao nhiệm vụ">
                                 <label for="giao_nhiem_vu_attachment_id" string="Phân công giao nhiệm vụ:"/>
                                 <field name="giao_nhiem_vu_attachment_id" widget="many2many_binary"/>
-                                <field name="giao_nhiem_vu" mode="tree">
-                                    <tree editable="bottom">
+                                <field name="giao_nhiem_vu" mode="tree,form" >
+                                    <tree form_view_ref="project_tedi.view_task_form">
                                         <field name="sequence" widget="handle"/>
                                         <field name="department_id"/>
-                                        <field name="nhiem_vu"/>
+                                        <field name="name"/>
+                                        <field name="task_categorize" column_invisible="1"/>
+                                        <field name="is_deliverable" column_invisible="1"/>
+                                        <field name="deliverable_type_id" column_invisible="1"/>
+                                        <field name="project_id" column_invisible="1"/>
                                     </tree>
                                 </field>
                             </page>
