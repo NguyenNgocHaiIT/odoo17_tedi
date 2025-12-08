@@ -33,48 +33,70 @@
             <xpath expr="//page[@name='information']" position="after">
                 <page name="other" position="move"/>
             </xpath>
-            <xpath expr="//group[@name='salary']" position="inside">
+            <xpath expr="//field[@name='job_id'][1]" position="after">
                 <field name="salary_grade_id"/>
             </xpath>
-
-            <xpath expr="//group[@name='salary_info']" position="after">
-                <group string="Chế độ hàng tháng bằng tiền mặt" name='allowances'>
-                    <label for="hra" string=""/>
-                    <div class="o_row">
-                        <field name="hra" nolabel="1"/>
-                        <span>/ month</span>
-                    </div>
-                    <label for="da"/>
-                    <div class="o_row">
-                        <field name="da" nolabel="1"/>
-                        <span>/ month</span>
-                    </div>
-                    <label for="travel_allowance"/>
-                    <div class="o_row">
-
-                        <field name="travel_allowance" nolabel="1"/>
-                        <span>/ month</span>
-                    </div>
-                    <label for="meal_allowance"/>
-                    <div class="o_row">
-
-                        <field name="meal_allowance" nolabel="1"/>
-                        <span>/ month</span>
-                    </div>
-                    <label for="medical_allowance"/>
-                    <div class="o_row">
-
-                        <field name="medical_allowance" nolabel="1"/>
-                        <span>/ month</span>
-                    </div>
-                    <label for="other_allowance"/>
-                    <div class="o_row">
-
-                        <field name="other_allowance" nolabel="1"/>
-                        <span>/ month</span>
-                    </div>
-                </group>
+            <xpath expr="//field[@name='job_id'][1]" position="attributes">
+                <attribute name="groups"/>
             </xpath>
+            <xpath expr="//field[@name='job_id'][2]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <xpath expr="//page[@name='information']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='contract_type_id'][1]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='type_id']" position="attributes">
+                <attribute name="string">Phân loại hợp đồng</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='contract_type_id'][2]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!--            <xpath expr="//group[@name='salary_info']" position="after">-->
+            <!--                <group string="Chế độ hàng tháng bằng tiền mặt" name='allowances'>-->
+            <!--                    <label for="hra" string=""/>-->
+            <!--                    <div class="o_row">-->
+            <!--                        <field name="hra" nolabel="1"/>-->
+            <!--                        <span>/ month</span>-->
+            <!--                    </div>-->
+            <!--                    <label for="da"/>-->
+            <!--                    <div class="o_row">-->
+            <!--                        <field name="da" nolabel="1"/>-->
+            <!--                        <span>/ month</span>-->
+            <!--                    </div>-->
+            <!--                    <label for="travel_allowance"/>-->
+            <!--                    <div class="o_row">-->
+
+            <!--                        <field name="travel_allowance" nolabel="1"/>-->
+            <!--                        <span>/ month</span>-->
+            <!--                    </div>-->
+            <!--                    <label for="meal_allowance"/>-->
+            <!--                    <div class="o_row">-->
+
+            <!--                        <field name="meal_allowance" nolabel="1"/>-->
+            <!--                        <span>/ month</span>-->
+            <!--                    </div>-->
+            <!--                    <label for="medical_allowance"/>-->
+            <!--                    <div class="o_row">-->
+
+            <!--                        <field name="medical_allowance" nolabel="1"/>-->
+            <!--                        <span>/ month</span>-->
+            <!--                    </div>-->
+            <!--                    <label for="other_allowance"/>-->
+            <!--                    <div class="o_row">-->
+
+            <!--                        <field name="other_allowance" nolabel="1"/>-->
+            <!--                        <span>/ month</span>-->
+            <!--                    </div>-->
+            <!--                </group>-->
+            <!--            </xpath>-->
         </field>
     </record>
 

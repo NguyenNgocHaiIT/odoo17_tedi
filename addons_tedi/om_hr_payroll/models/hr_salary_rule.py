@@ -21,6 +21,10 @@ class HrPayrollStructure(models.Model):
 
     name = fields.Char(required=True)
     code = fields.Char(string='Reference', required=True)
+    pay_batch = fields.Selection(
+        [('1', 'Đợt 1 hàng tháng'), ('2', 'Đợt 2 hàng tháng')],
+        string='Đợt thanh toán', help="Cấu trúc lương này áp dụng cho đợt thanh toán"
+    )
     company_id = fields.Many2one('res.company', string='Company', required=True, default=lambda self: self.env.company)
     note = fields.Text(string='Description')
     parent_id = fields.Many2one('hr.payroll.structure', string='Parent', default=_get_parent)

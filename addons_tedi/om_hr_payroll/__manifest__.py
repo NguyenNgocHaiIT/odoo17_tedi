@@ -36,6 +36,7 @@
         'views/hr_leave_type_view.xml',
         'views/hr_salary_grade.xml',
         'views/hr_work_entry_view.xml',
+        'views/hr_insurance.xml',
         'data/mail_template.xml',
     ],
     'images': ['static/description/banner.png'],

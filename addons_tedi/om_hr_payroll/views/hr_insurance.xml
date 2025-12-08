@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <record id="hr_employee_insurance_tree" model="ir.ui.view">
+        <field name="name">hr_employee_insurance_tree</field>
+        <field name="model">hr.employee.insurance</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom">
+                <field name="month"/>
+                <field name="year"/>
+                <field name="employee_id"/>
+                <field name="salary_bhxh"/>
+                <field name="currency_id" column_invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+        <record id="hr_employee_insurance_action" model="ir.actions.act_window">
+            <field name="name">Lương tính BHXH</field>
+            <field name="res_model">hr.employee.insurance</field>
+        </record>
+
+        <menuitem
+                id="hr_employee_insurance_menu_action"
+                action="hr_employee_insurance_action"
+                parent="menu_hr_payroll_root"
+                sequence="10"/>
+    </data>
+</odoo>
