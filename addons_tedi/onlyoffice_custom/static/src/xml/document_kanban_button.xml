@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+    <t t-name="button_document.KanbanView.Buttons" t-inherit="web.KanbanView.Buttons">
+        <xpath expr="//div[hasclass('o_cp_buttons')]" position="inside">
+            <button class="btn btn-secondary ms-1" t-on-click="() => this.onCreateDocumentClick()" style="text-wrap: nowrap;">
+                Create Document
+            </button>
+        </xpath>
+    </t>
+</templates>

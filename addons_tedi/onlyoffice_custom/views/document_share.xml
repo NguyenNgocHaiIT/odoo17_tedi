@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="document_share_view_form" model="ir.ui.view">
+            <field name="name">document.share.view.form</field>
+            <field name="model">document.share</field>
+            <field name="arch" type="xml">
+                <form string="Document Share">
+                    <sheet>
+                    <group>
+                        <field name="link_share" widget="CopyClipboardChar" options="{'string': 'Copy Link'}"/>
+                    </group>
+                    <group col="4">
+                        Public Access <field name="public_access"/>
+                        <field name="role_access_ids"  widget="many2many_checkboxes" invisible="not public_access"/>
+                    </group>
+                    
+                        <group>
+                            <field name="user_role_permision_ids" widget="one2many">
+                                <tree editable="bottom">
+                                    <field name="user_id"/>
+                                    <field name="role_access_ids" widget="many2many_tags"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="document_share_view_form_folder" model="ir.ui.view">
+            <field name="name">document.share.view.form.folder</field>
+            <field name="model">document.share</field>
+            <field name="arch" type="xml">
+                <form string="Document Share">
+                    <sheet>
+                    <group>
+                        Public Access <field name="public_access"/>
+                    </group>
+
+                        <group>
+                            <field name="user_role_permision_ids" widget="one2many">
+                                <tree editable="bottom">
+                                    <field name="user_id"/>
+                                    <field name="role_access_ids" widget="many2many_tags"/>
+                                </tree>
+                            </field>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button string="Share" type="object" name="action_share_document"
+                                class="btn btn-primary"/>
+                        <button string="Cancel" class="btn btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="document_share_view_tree" model="ir.ui.view">
+            <field name="name">document.share.view.tree</field>
+            <field name="model">document.share</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="user_ids"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_document_share" model="ir.actions.act_window">
+            <field name="name">Document Shares</field> 
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">document.share</field>
+            <field name="view_mode">tree,form</field>  
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create your first document share
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

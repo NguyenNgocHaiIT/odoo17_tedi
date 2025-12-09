@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="docx_report_xml_view_form_inherit_field_doc" model="ir.ui.view">
+            <field name="name">docx_ir.actions.report.form.inherit.field.documentation</field>
+            <field name="model">docx.report.config</field>
+            <field name="inherit_id" ref="alnas_docx.view_docx_report_config_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@class='oe_chatter']" position="replace"/>
+
+<!--                <xpath expr="//header" position="inside">-->
+<!--                    <button string="Sync" name="sync_attachment" type="object" class="oe_highlight btn-primary"/>-->
+<!--                </xpath>-->
+
+                <xpath expr="//field[@name='report_docx_template']" position="after">
+                    <field name="onlyoffice_url" invisible="1"/>
+                    <field name="attachment_id" invisible="1"/>
+                    <field name="attachment_ids" widget="many2many_binary_preview" readonly="state != 'draft'"/>
+                </xpath>
+
+                <xpath expr="//group" position="after">
+                    <notebook>
+                        <page name="field_document" string="Field Document">
+                            <div class="row">
+                                <div class="col-lg-3">
+                                    <div style="display:flex;gap:8px;align-items:center;height:45px;">
+                                        <div style="flex: 10;">
+                                            <field name="field_filter" placeholder="Search" nolabel="1"
+                                                   style="width: 250px;"/>
+                                        </div>
+                                        <div style="flex: 2;">
+                                            <button name="action_filter_fields"
+                                                    type="object"
+                                                    class="btn btn-secondary w-80"
+                                                    title="Search">
+                                                <i class="fa fa-search"/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div style="max-height:70vh;overflow-y:auto;overflow-x:hidden;padding-top:15px;">
+                                        <field name="field_docx_ids" nolabel="1" open="0"/>
+                                    </div>
+                                </div>
+                                <div class="col-lg-9">
+                                    <div class="mt-3">
+                                        <field name="onlyoffice_iframe" widget="html" nolabel="1"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </page>
+                    </notebook>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="xlsx_report_xml_view_form_inherit_field_doc" model="ir.ui.view">
+            <field name="name">xlsx_ir.actions.report.form.inherit.field.documentation</field>
+            <field name="model">xlsx.report.config</field>
+            <field name="inherit_id" ref="alnas_xlsx.view_xlsx_report_config_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@class='oe_chatter']" position="replace"/>
+
+                <xpath expr="//field[@name='report_xlsx_template']" position="after">
+                    <field name="onlyoffice_url" invisible="1"/>
+                    <field name="attachment_id" invisible="1"/>
+                    <field name="attachment_ids" widget="many2many_binary_preview"/>
+                </xpath>
+
+                <xpath expr="//group" position="after">
+                    <notebook>
+                        <page name="field_document" string="Field Document">
+                            <div class="row">
+                                <div class="col-lg-3">
+                                    <div style="display:flex;gap:8px;align-items:center;height:45px;">
+                                        <div style="flex:10;">
+                                            <field name="field_filter" placeholder="Search" nolabel="1"
+                                                   style="width:250px;"/>
+                                        </div>
+                                        <div style="flex:2;">
+                                            <button name="action_filter_fields"
+                                                    type="object"
+                                                    class="btn btn-secondary w-80"
+                                                    title="Search">
+                                                <i class="fa fa-search"/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div style="max-height:70vh;overflow-y:auto;overflow-x:hidden;padding-top:15px;">
+                                        <field name="field_docx_ids" nolabel="1" open="0"/>
+                                    </div>
+                                </div>
+                                <div class="col-lg-9">
+                                    <div class="mt-3">
+                                        <field name="onlyoffice_iframe" widget="html" nolabel="1"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </page>
+                    </notebook>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="field_documentation_form_view" model="ir.ui.view">
+            <field name="name">field.documentation.form.view</field>
+            <field name="model">field.documentation</field>
+            <field name="arch" type="xml">
+                <form string="ModelTitle">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="model_name"/>
+                                <field name="field_name"/>
+                            </group>
+                            <group>
+                                <field name="field_string"/>
+                                <field name="field_type"/>
+                                <field name="field_help"/>
+                                <field name="rendered_jinja_code" readonly="1" widget="CopyClipboardChar"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="field_documentation_tree_view" model="ir.ui.view">
+            <field name="name">field.documentation.tree.view</field>
+            <field name="model">field.documentation</field>
+            <field name="arch" type="xml">
+                <tree limit="100">
+                    <field name="model_name" column_invisible="True"/>
+                    <field name="field_name" column_invisible="True"/>
+                    <field name="field_string"/>
+                    <field name="field_type" column_invisible="True"/>
+                    <field name="field_help" column_invisible="True"/>
+                    <field name="rendered_jinja_code" readonly="1" widget="CopyClipboardChar"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="field_documentation_act_window" model="ir.actions.act_window">
+            <field name="name">Field documentation</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">field.documentation</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+    </data>
+</odoo>
