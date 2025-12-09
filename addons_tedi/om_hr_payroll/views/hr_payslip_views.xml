@@ -193,8 +193,8 @@
                                         <field name="code"/>
                                         <field name="number_of_days" sum="Total Working Days"/>
                                         <field name="number_of_hours"/>
-                                        <field name="contract_id"/>
-                                        <field name="sequence" invisible="True"/>
+                                        <field name="contract_id" column_invisible="True"/>
+                                        <field name="sequence" column_invisible="True"/>
                                     </tree>
                                     <form string="Worked Day">
                                         <group col="4">

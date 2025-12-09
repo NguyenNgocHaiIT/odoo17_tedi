@@ -13,7 +13,7 @@
     'website': 'https://windx.com.vn',
     'support': 'windxcontact@gmail.com',
     'category': 'Tools',
-    'depends': ['base', 'attachment_indexation'],
+    'depends': ['base', 'attachment_indexation', 'mail'],
     'data': [
         'security/document_security.xml',
         'security/ir.model.access.csv',
