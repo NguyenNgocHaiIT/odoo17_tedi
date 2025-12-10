@@ -6,19 +6,15 @@
         <field name="model">hr.payslip.employees</field>
         <field name="arch" type="xml">
             <form string="Payslips by Employees">
-                <header>
-                    <button icon="fa-cogs" string="Generate" name="compute_sheet" type="object" class="oe_highlight"/>
-                </header>
+
                 <group>
-                    <span colspan="4" nolabel="1">This wizard will generate payslips for all selected employee(s) based
-                        on the dates and credit note specified on Payslips Run.
+                    <span colspan="4" nolabel="1">Khi bạn ấn nút "Tạo phiếu lương, hệ thống sẽ tạo phiếu lương cho tất cả những người mà bạn đã chọn trong chu kỳ lương này."
                     </span>
                 </group>
-                <group colspan="4">
-                    <separator string="Employees" colspan="4"/>
-                    <newline/>
-                    <field name="employee_ids" nolabel="1"/>
-                </group>
+                <field name="employee_ids"  widget="many2many_tags"/>
+                <footer>
+                    <button icon="fa-cogs" string="Tạo phiếu lương" name="compute_sheet" type="object" class="oe_highlight"/>
+                </footer>
             </form>
         </field>
     </record>

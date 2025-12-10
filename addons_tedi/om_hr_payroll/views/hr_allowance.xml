@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <record id="hr_employee_allowance_tree" model="ir.ui.view">
+        <field name="name">hr_employee_allowance_tree</field>
+        <field name="model">hr.employee.allowance</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom">
+                <field name="month"/>
+                <field name="year"/>
+                <field name="type"/>
+                <field name="code"/>
+                <field name="employee_id"/>
+                <field name="salary_allowance"/>
+                <field name="currency_id" column_invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+        <record id="hr_employee_allowance_action" model="ir.actions.act_window">
+            <field name="name">Phụ cấp nhân viên</field>
+            <field name="res_model">hr.employee.allowance</field>
+        </record>
+
+        <menuitem
+                id="hr_employee_allowance_menu_action"
+                action="hr_employee_allowance_action"
+                parent="menu_hr_payroll_root"
+                sequence="10"/>
+    </data>
+</odoo>

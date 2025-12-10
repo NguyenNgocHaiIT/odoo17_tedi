@@ -16,13 +16,19 @@ class HrPayslipEmployees(models.TransientModel):
         [data] = self.read()
         active_id = self.env.context.get('active_id')
         if active_id:
-            [run_data] = self.env['hr.payslip.run'].browse(active_id).read(['date_start', 'date_end', 'credit_note'])
+            [run_data] = self.env['hr.payslip.run'].browse(active_id).read(['date_start', 'date_end', 'credit_note', 'pay_batch'])
         from_date = run_data.get('date_start')
         to_date = run_data.get('date_end')
         if not data['employee_ids']:
             raise UserError(_("You must select employee(s) to generate payslip(s)."))
+        if run_data.get('pay_batch'):
+            pay_batch = run_data.get('pay_batch')
+        else:
+            pay_batch = False
+        print(pay_batch)
         for employee in self.env['hr.employee'].browse(data['employee_ids']):
-            slip_data = self.env['hr.payslip'].onchange_employee_id(from_date, to_date, employee.id, contract_id=False)
+            slip_data = self.env['hr.payslip'].onchange_employee_id(from_date, to_date, employee.id, contract_id=False, pay_batch=pay_batch)
+            print(slip_data)
             res = {
                 'employee_id': employee.id,
                 'name': slip_data['value'].get('name'),
@@ -36,6 +42,7 @@ class HrPayslipEmployees(models.TransientModel):
                 'credit_note': run_data.get('credit_note'),
                 'company_id': employee.company_id.id,
             }
+            # raise ValueError('dừng')
             payslips += self.env['hr.payslip'].create(res)
         payslips.compute_sheet()
         return {'type': 'ir.actions.act_window_close'}

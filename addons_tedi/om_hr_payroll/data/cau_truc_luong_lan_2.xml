@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <record id="INSURANCE" model="hr.salary.rule.category">
+            <field name="name">Bảo hiểm</field>
+            <field name="code">INSURANCE</field>
+        </record>
+        <record id="CĐP" model="hr.salary.rule.category">
+            <field name="name">Công đoàn phí</field>
+            <field name="code">CĐP</field>
+        </record>
+        <record id="ĐP" model="hr.salary.rule.category">
+            <field name="name">Đảng phí</field>
+            <field name="code">ĐP</field>
+        </record>
+
+        <record id="work_att_rule" model="hr.salary.rule">
+            <field name="name">Lương ngày làm việc thực tế</field>
+            <field name="sequence" eval="1"/>
+            <field name="code">WORK_ATT</field>
+            <field name="category_id" ref="om_hr_payroll.BASIC"/>
+            <field name="amount_select">code</field>
+            <field name="quantity">1</field>
+            <field name="amount_python_compute">att_real = worked_days.WORK_REAL.number_of_days
+if worked_days.WORK110:
+    att_real += worked_days.WORK110.number_of_days
+result = (contract.salary_grade_id.luong_chuc_danh/ worked_days.WORK100.number_of_days) * att_real</field>
+<!--            <field name="amount_percentage">45</field>-->
+        </record>
+
+        <record id="lcd_rule" model="hr.salary.rule">
+            <field name="name">Lương chế độ</field>
+            <field name="sequence" eval="2"/>
+            <field name="code">LCĐ</field>
+            <field name="category_id" ref="om_hr_payroll.BASIC"/>
+            <field name="amount_select">code</field>
+            <field name="quantity">1</field>
+            <field name="amount_python_compute">leave_real = 0
+if worked_days.LEAVE110:
+    leave_real += worked_days.LEAVE110.number_of_days
+if worked_days.LEAVE120:
+    leave_real += worked_days.LEAVE120.number_of_days
+result = (contract.salary_grade_id.luong_chuc_danh/ worked_days.WORK100.number_of_days) * leave_real</field>
+        </record>
+
+        <record id="tns_rule" model="hr.salary.rule">
+            <field name="name">Thưởng năng suất</field>
+            <field name="sequence" eval="3"/>
+            <field name="code">TNS</field>
+            <field name="category_id" ref="om_hr_payroll.BASIC"/>
+            <field name="amount_select">code</field>
+            <field name="quantity">1</field>
+            <field name="amount_python_compute">if contract.salary_grade_id.code == 'C':
+    result = contract.salary_grade_id.advance_amount - contract.salary_grade_id.luong_chuc_danh
+elif contract.salary_grade_id.code == 'B':
+    result = contract.salary_grade_id.luong_chuc_danh * contract.salary_grade_id.bonus_rate/100
+else:
+    result = 0</field>
+        </record>
+
+        <record id="tt_01_rule" model="hr.salary.rule">
+            <field name="name">Đã thanh toán lần 1 hàng tháng</field>
+            <field name="sequence" eval="4"/>
+            <field name="code">TƯ_TT_01</field>
+            <field name="category_id" ref="om_hr_payroll.TT_01"/>
+            <field name="amount_select">percentage</field>
+            <field name="quantity">1</field>
+            <field name="amount_percentage_base">tt_01</field>
+            <field name="amount_percentage">100</field>
+        </record>
+
+        <record id="BHXH_rule" model="hr.salary.rule">
+            <field name="name">Bảo hiểm xã hội</field>
+            <field name="sequence" eval="5"/>
+            <field name="code">BHXH</field>
+            <field name="category_id" ref="om_hr_payroll.INSURANCE"/>
+            <field name="amount_select">percentage</field>
+            <field name="quantity">1</field>
+            <field name="amount_percentage_base">inputs.LUONG_BHXH.amount</field>
+            <field name="amount_percentage">25</field>
+        </record>
+
+        <record id="BHYT_rule" model="hr.salary.rule">
+            <field name="name">Bảo hiểm y tế</field>
+            <field name="sequence" eval="6"/>
+            <field name="code">BHYT</field>
+            <field name="category_id" ref="om_hr_payroll.INSURANCE"/>
+            <field name="amount_select">percentage</field>
+            <field name="quantity">1</field>
+            <field name="amount_percentage_base">inputs.LUONG_BHXH.amount</field>
+            <field name="amount_percentage">4.5</field>
+        </record>
+
+        <record id="BHTN_rule" model="hr.salary.rule">
+            <field name="name">Bảo hiểm tự nguyện</field>
+            <field name="sequence" eval="7"/>
+            <field name="code">BHTN</field>
+            <field name="category_id" ref="om_hr_payroll.INSURANCE"/>
+            <field name="amount_select">percentage</field>
+            <field name="quantity">1</field>
+            <field name="amount_percentage_base">inputs.LUONG_BHXH.amount</field>
+            <field name="amount_percentage">2</field>
+        </record>
+
+        <record id="BHTNLĐ_rule" model="hr.salary.rule">
+            <field name="name">Bảo hiểm trách nhiệm lao động</field>
+            <field name="sequence" eval="8"/>
+            <field name="code">BHTNLĐ</field>
+            <field name="category_id" ref="om_hr_payroll.INSURANCE"/>
+            <field name="amount_select">percentage</field>
+            <field name="quantity">1</field>
+            <field name="amount_percentage_base">inputs.LUONG_BHXH.amount</field>
+            <field name="amount_percentage">0.5</field>
+        </record>
+
+        <record id="CĐ_rule" model="hr.salary.rule">
+            <field name="name">Công đoàn phí</field>
+            <field name="sequence" eval="9"/>
+            <field name="code">CĐ</field>
+            <field name="category_id" ref="om_hr_payroll.CĐP"/>
+            <field name="amount_select">percentage</field>
+            <field name="quantity">1</field>
+            <field name="amount_percentage_base">inputs.LUONG_BHXH.amount</field>
+            <field name="amount_percentage">50</field>
+        </record>
+
+        <record id="ĐP_rule" model="hr.salary.rule">
+            <field name="name">Đảng phí</field>
+            <field name="sequence" eval="10"/>
+            <field name="code">ĐP</field>
+            <field name="category_id" ref="om_hr_payroll.ĐP"/>
+            <field name="amount_select">percentage</field>
+            <field name="quantity">1</field>
+            <field name="amount_percentage_base">categories.BASIC - tt_01</field>
+            <field name="amount_percentage">1</field>
+        </record>
+
+        <record id="PC_AC_rule" model="hr.salary.rule">
+            <field name="name">Phụ cấp ăn ca</field>
+            <field name="sequence" eval="11"/>
+            <field name="code">PCAC</field>
+            <field name="category_id" ref="om_hr_payroll.ALW"/>
+            <field name="amount_select">percentage</field>
+            <field name="quantity">1</field>
+            <field name="amount_percentage_base">inputs.PCAC.amount</field>
+            <field name="amount_percentage">100</field>
+        </record>
+
+        <record id="thanh_toan_lan_2_hang_thang_structure" model="hr.payroll.structure">
+            <field name="code">TT.02</field>
+            <field name="pay_batch">2</field>
+            <field name="name">Cấu trúc lương thanh toán lần 2 hàng tháng</field>
+            <field eval="[(6, 0, [ref('work_att_rule'),ref('lcd_rule'),ref('tns_rule'),ref('tt_01_rule'),ref('BHXH_rule'),ref('BHYT_rule'),ref('BHTN_rule'),ref('BHTNLĐ_rule'),ref('CĐ_rule'),ref('ĐP_rule'),ref('PC_AC_rule'), ref('tn_rule')])]" name="rule_ids"/>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+    </data>
+</odoo>
