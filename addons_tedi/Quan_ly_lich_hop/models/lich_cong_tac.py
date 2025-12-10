@@ -1,5 +1,5 @@
 from odoo import api, models, fields
-from odoo.exceptions import UserError
+from odoo.exceptions import ValidationError
 from datetime import timedelta
 
 class CalendarOutside(models.Model):
@@ -18,6 +18,12 @@ class CalendarOutside(models.Model):
         ('approved', 'Đã duyệt'),
         ('canceled', 'Đã hủy')
     ], string='Trạng thái', default='draft', tracking=True)
+
+    @api.constrains('start', 'stop')
+    def _check_start_stop(self):
+        for rec in self:
+            if rec.start and rec.stop and rec.start > rec.stop:
+                raise ValidationError("Thời gian bắt đầu không được lớn hơn thời gian kết thúc.")
 
     def approve(self):
         for event in self:

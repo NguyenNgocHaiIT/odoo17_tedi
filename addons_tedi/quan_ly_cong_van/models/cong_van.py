@@ -6,6 +6,7 @@ from pygments.lexer import default
 from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
 import odoo
+from odoo.http import request
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -498,7 +499,7 @@ class OfficeDocument(models.Model):
     nguoi_theo_doi = fields.Many2one('res.users', string='Người theo dõi')
     ngay_bat_dau = fields.Date('Ngày bắt đầu', default=fields.Date.context_today)
     ho_so_cong_viec = fields.Char('Hồ sơ công việc')
-    attachment = fields.Many2many('ir.attachment', string='Tài liệu')
+    attachment = fields.Binary( string='Tài liệu')
     note = fields.Text('Ghi chú')
     don_vi_ban_hanh_ngoai = fields.Many2one('res.partner', string='Đơn vị ban hành')
     don_vi_ban_hanh = fields.Many2one('hr.department', string='Đơn vị ban hành')
@@ -875,6 +876,20 @@ class OfficeDocument(models.Model):
                 record.co_the_but_phe = (record.lanh_dao_xu_ly.id == current_employee.id)
             else:
                 record.co_the_but_phe = False
+
+    def xac_nhan(self):
+        self.ensure_one()
+        # Cập nhật trạng thái
+        self.tt_vb = 'cho_duyet'
+
+    def khong_dat(self):
+        self.ensure_one()
+        self.tt_vb = 'draft'
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'history_back',
+        }
 
 
 class AssignTaskWizard(models.TransientModel):

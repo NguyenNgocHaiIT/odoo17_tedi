@@ -36,6 +36,7 @@ class Task(models.Model):
     partner_mobile = fields.Char(related='partner_id.mobile', readonly=False)
     partner_zip = fields.Char(related='partner_id.zip', readonly=False)
     partner_street = fields.Char(related='partner_id.street', readonly=False)
+    project_id = fields.Many2one("project.project", string="Project")
 
     # Task Dependencies fields
     display_warning_dependency_in_gantt = fields.Boolean(compute="_compute_display_warning_dependency_in_gantt")
@@ -1175,9 +1176,8 @@ class Task(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        new_context = dict(self.env.context)
-        default_personal_stage = new_context.pop('default_personal_stage_type_ids', False)
-        self = self.with_context(new_context)
+        # Chỉ lấy những key thực sự cần thiết, không đụng vào default_project_id
+        default_personal_stage = self._context.get('default_personal_stage_type_ids')
 
         is_portal_user = self.env.user.has_group('base.group_portal')
         if is_portal_user:
@@ -1186,9 +1186,7 @@ class Task(models.Model):
         default_stage = {}  # Cache default stage theo project
 
         for vals in vals_list:
-            # ------------------------------------------------------------------
             # 1. XÁC ĐỊNH CHẮC CHẮN PROJECT_ID (đây là điểm quan trọng nhất)
-            # ------------------------------------------------------------------
             project_id = vals.get('project_id') or self._context.get('default_project_id')
 
             # Trường hợp tạo subtask mà chưa có project_id → lấy từ parent
@@ -1205,9 +1203,7 @@ class Task(models.Model):
                 if project_id:
                     vals['display_in_project'] = vals.get('display_in_project', True)
 
-            # ------------------------------------------------------------------
             # 2. Các xử lý khác (giữ nguyên logic gốc + bổ sung an toàn)
-            # ------------------------------------------------------------------
             if vals.get('user_ids'):
                 vals['date_assign'] = fields.Datetime.now()
                 if not (vals.get('parent_id') or project_id or self._context.get('default_project_id')):
@@ -1237,16 +1233,6 @@ class Task(models.Model):
             if not vals.get('planned_date_begin'):
                 vals['planned_date_begin'] = fields.Datetime.now()
 
-            # ------------------------------------------------------------------
-            # 3. Set default stage_id theo project (chỉ khi có project)
-            # ------------------------------------------------------------------
-            if project_id and 'stage_id' not in vals:
-                if project_id not in default_stage:
-                    default_stage[project_id] = self.with_context(
-                        default_project_id=project_id
-                    ).default_get(['stage_id']).get('stage_id')
-                if default_stage.get(project_id):
-                    vals['stage_id'] = default_stage[project_id]
 
             # Cập nhật date_end nếu stage là folded + date_last_stage_update
             if vals.get('stage_id'):
@@ -1260,9 +1246,7 @@ class Task(models.Model):
                 recurrence = self.env['project.task.recurrence'].create(rec_values)
                 vals['recurrence_id'] = recurrence.id
 
-        # ------------------------------------------------------------------
         # Tạo task (sudo cho portal user)
-        # ------------------------------------------------------------------
         was_in_sudo = self.env.su
         if is_portal_user:
             vals_list_no_sudo, vals_list = zip(*(

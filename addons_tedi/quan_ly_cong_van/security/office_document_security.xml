@@ -42,10 +42,12 @@
             <field name="name">Office Document - Lanh Dao</field>
             <field name="model_id" ref="model_office_document"/>
             <field name="domain_force">
-                ['|', '|',
-                    ('create_uid', '=', user.id),
-                    ('detail2.nguoi_nhap_y_kien.user_id', '=', user.id),
-                    ('lanh_dao_xu_ly.user_id', '=', user.id)
+                ['|','|',
+                    ('create_uid','=',user.id),
+                    ('detail2.nguoi_nhap_y_kien.user_id','=',user.id),
+                    '&amp;',
+                        ('lanh_dao_xu_ly.user_id','=',user.id),
+                        ('tt_vb','!=','draft')
                 ]
             </field>
             <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_lanh_dao'))]"/>
@@ -57,10 +59,12 @@
             <field name="name">Office Document - Nhân viên/Người dùng cơ bản</field>
             <field name="model_id" ref="model_office_document"/>
             <field name="domain_force">
-                ['|', '|',
+                ['|','|',
                     ('create_uid','=',user.id),
                     ('detail2.nguoi_nhap_y_kien.user_id','=',user.id),
-                    ('lanh_dao_xu_ly.user_id','=',user.id)
+                    '&amp;',
+                        ('lanh_dao_xu_ly.user_id','=',user.id),
+                        ('tt_vb','!=','draft')
                 ]
             </field>
             <field name="groups" eval="[(4, ref('base.group_user'))]"/>
@@ -70,10 +74,12 @@
             <field name="name">Office Document - Nhân viên/Đơn vị xử lý</field>
             <field name="model_id" ref="model_office_document"/>
             <field name="domain_force">
-                ['|', '|',
+                ['|','|',
                     ('create_uid','=',user.id),
                     ('detail2.nguoi_nhap_y_kien.user_id','=',user.id),
-                    ('lanh_dao_xu_ly.user_id','=',user.id)
+                    '&amp;',
+                        ('lanh_dao_xu_ly.user_id','=',user.id),
+                        ('tt_vb','!=','draft')
                 ]
             </field>
             <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_don_vi_xu_ly'))]"/>
