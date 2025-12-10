@@ -1,5 +1,3 @@
-from email.policy import default
-
 from odoo import api, models, fields
 from odoo.exceptions import UserError
 from datetime import timedelta
@@ -83,7 +81,8 @@ class Calendar(models.Model):
             chu_tri_id = self.env.user.employee_ids[0].id
             participant_ids.append(chu_tri_id)
 
-        return [(6, 0, participant_ids)]
+        # TRẢ VỀ LIST OF INTEGERS
+        return participant_ids
 
     @api.model
     def create(self, vals):
@@ -99,16 +98,28 @@ class Calendar(models.Model):
         return record
 
     def write(self, vals):
-        """Tự động cập nhật người tham dự khi thay đổi:
-           - lãnh đạo
-           - đơn vị tham gia
-        """
+        # Lưu giá trị chu_tri cũ trước
+        old_chu_tri_ids = {rec.id: rec.chu_tri.id for rec in self}
+
         res = super().write(vals)
 
-        auto_employee_ids = self._get_default_employees(vals)
-        if auto_employee_ids:
+        if 'chu_tri' in vals:
             for rec in self:
-                rec.employee_ids = [(4, eid) for eid in auto_employee_ids]
+                old_chu_tri_id = old_chu_tri_ids.get(rec.id)
+                new_chu_tri_id = rec.chu_tri.id  # giá trị mới sau write
+
+                # Lấy danh sách employee hiện tại
+                current_ids = rec.employee_ids.ids
+                new_employee_ids = current_ids.copy()
+
+                # Thay thế chủ trì cũ bằng chủ trì mới, hoặc thêm mới nếu chưa có
+                if old_chu_tri_id and old_chu_tri_id in new_employee_ids:
+                    new_employee_ids = [eid if eid != old_chu_tri_id else new_chu_tri_id for eid in new_employee_ids]
+                elif new_chu_tri_id not in new_employee_ids:
+                    new_employee_ids.append(new_chu_tri_id)
+
+                # Loại bỏ trùng
+                rec.employee_ids = [(6, 0, list(set(new_employee_ids)))]
 
         return res
 
@@ -118,6 +129,7 @@ class Calendar(models.Model):
             time_str = event.start.strftime("%H:%M") if event.start else ""
             event.calendar_label = f"{time_str} - {event.name or ''}"
 
+    @api.onchange
     def approve(self):
         """Duyệt cuộc họp, gửi notification chat + popup + email cho employee và manager các đơn vị tham gia"""
         self.ensure_one()

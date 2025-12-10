@@ -62,7 +62,8 @@
                             <field name="user_id" string="Người chủ trì" />
                             <field name="partner_ids" widget="many2many_tags" string="Thành phần tham gia" />
                             <field name="location" string="Địa điểm"/>
-                            <field name="name" string="Nội dung"/>
+                            <label for="name" string="Nội dung"/>
+                            <field name="name"/>
                         </group>
                     </sheet>
                 </form>

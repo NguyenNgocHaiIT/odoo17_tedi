@@ -140,19 +140,6 @@
         </field>
     </record>
 
-    <record id="project_task_dependency_view_gantt" model="ir.ui.view">
-        <field name="name">project.task.dependency.view.gantt</field>
-        <field name="model">project.task</field>
-        <field name="inherit_id" ref="project_task_custom.view_project_task_gantt_custom"/>
-        <field name="mode">primary</field>
-        <field name="arch" type="xml">
-            <xpath expr="//gantt" position="attributes">
-                <attribute name="color">stage_id</attribute>
-            </xpath>
-            <xpath expr="//div[@name='project_id']" position="replace"/>
-        </field>
-    </record>
-
     <record id="project.action_view_my_task" model="ir.actions.act_window">
         <field name="res_model">project.task</field>
         <field name="view_mode">kanban,tree,form,gantt,calendar,pivot,graph,activity</field>

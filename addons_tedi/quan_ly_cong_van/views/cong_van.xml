@@ -24,6 +24,8 @@
             <field name="arch" type="xml">
                 <form delete="false" duplicate="false" >
                     <header>
+                        <button name="xac_nhan" string="Xác nhận" type="object"
+                                invisible="tt_vb != 'draft'"/>
                         <button name="trinh_lanh_dao_cong_van_den" string="Trình lãnh đạo" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb != 'da_duyet'"/>
@@ -99,7 +101,7 @@
                                         <!-- <field name="nguoi_theo_doi"/> -->
                                         <field name="ngay_bat_dau" readonly="tt_vb != 'draft'"/>
                                         <!-- <field name="ho_so_cong_viec"/> -->
-                                        <field name="attachment" widget="many2many_binary" readonly="tt_vb != 'draft'"/>
+                                        <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'"/>
 
                                         <field name="note" readonly="tt_vb != 'draft'"/>
                                     </group>
@@ -217,6 +219,8 @@
                                 invisible="tt_vb != 'draft'"/>
                         <button name="approve" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe"/>
+                        <button name="khong_dat" string="Không đạt" type="object"
+                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe" />
                         <button name="trinh_lanh_dao_cong_van_den" string="Trình lãnh đạo để bút phê" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb != 'da_duyet'"/>
@@ -296,7 +300,7 @@
                             <page string="Hồ sơ công việc">
                                 <group>
                                     <group string="Chi tiết">
-                                        <field name="attachment" widget="many2many_binary" readonly="tt_vb != 'draft'"/>
+                                        <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'"/>
                                     </group>
                                 </group>
                             </page>
@@ -406,6 +410,8 @@
                                 invisible="tt_vb != 'draft'"/>
                         <button name="approve" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe"/>
+                        <button name="khong_dat" string="Không đạt" type="object"
+                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe"/>
                         <button name="trinh_lanh_dao_cong_van_den" string="Trình lãnh đạo để bút phê" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb != 'da_duyet'"/>
@@ -479,7 +485,7 @@
                             <page string="Hồ sơ công việc">
                                 <group>
                                     <group string="Chi tiết">
-                                        <field name="attachment" widget="many2many_binary" readonly="tt_vb != 'draft'"/>
+                                        <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'"/>
                                     </group>
                                 </group>
                             </page>

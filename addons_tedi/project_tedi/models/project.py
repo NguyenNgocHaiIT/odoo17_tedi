@@ -33,7 +33,7 @@ class Project(models.Model):
     giai_doan_du_an = fields.Char("Giai đoạn thực hiện")
     project_member_ids = fields.One2many('project.member', 'project_id')
     dia_diem = fields.Text('Địa điểm')
-    giao_nhiem_vu = fields.One2many('project.giao.nhiem.vu', 'project_id', 'Phân công giao nhiệm vụ')
+    giao_nhiem_vu = fields.One2many('project.task', 'project_id', 'Phân công giao nhiệm vụ')
     giao_nhiem_vu_attachment_id = fields.Many2many('ir.attachment', string='Thông báo giao nhiệm vụ')
 
     @api.onchange('phan_loai_cong_trinh_id')
@@ -42,8 +42,12 @@ class Project(models.Model):
             vals_list = [
                 (0, 0, {
                     'department_id': line.department_id.id,
-                    'nhiem_vu': line.nhiem_vu,
+                    'name': line.nhiem_vu,
                     'sequence': line.sequence,
+                    'task_categorize':line.task_categorize,
+                    'is_deliverable':line.is_deliverable,
+                    'deliverable_type_id':line.deliverable_type_id,
+                    'project_id':self.id,
                 }) for line in self.phan_loai_cong_trinh_id.nhiem_vu_ids
             ]
             self.giao_nhiem_vu = [(5, 0, 0)] + vals_list
@@ -79,3 +83,4 @@ class ProjectGiaoNhiemVu(models.Model):
     project_id = fields.Many2one('project.project')
     department_id = fields.Many2one('hr.department', string='Phòng ban/Đơn vị')
     nhiem_vu = fields.Text(string='Nhiệm vụ')
+

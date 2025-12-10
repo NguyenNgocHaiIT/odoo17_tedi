@@ -32,11 +32,26 @@
                         </group>
                         <label for="nhiem_vu_ids" string="Template nhiệm vụ"/>
                         <field name="nhiem_vu_ids">
-                            <tree editable="bottom" string="Nhiệm vụ">
+                            <tree string="Nhiệm vụ">
                                 <field name="sequence" readonly="1"/>
                                 <field name="department_id"/>
                                 <field name="nhiem_vu"/>
                             </tree>
+                            <form>
+                                <sheet>
+                                    <group>
+                                        <group>
+                                            <field name="department_id"/>
+                                            <field name="nhiem_vu"/>
+                                            <field name="task_categorize"/>
+                                        </group>
+                                        <group>
+                                            <field name="is_deliverable"/>
+                                            <field name="deliverable_type_id"/>
+                                        </group>
+                                    </group>
+                                </sheet>
+                            </form>
                         </field>
                     </sheet>
                 </form>

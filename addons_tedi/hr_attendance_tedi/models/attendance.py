@@ -7,20 +7,29 @@ import pytz  # Cần import thư viện này để xử lý múi giờ
 
 _logger = logging.getLogger(__name__)
 
+
+
 class HolidaysType(models.Model):
     _inherit = "hr.leave.type"
 
+    # --- Phần code cũ của bạn ---
     employee_id = fields.Many2one(
-        'hr.employee',  # <--- Sửa thành hr.employee
+        'hr.employee',
         string='Người tạo',
-        default=lambda self: self.env.user.employee_id,  # Lấy nhân viên gắn với user đang đăng nhập
+        default=lambda self: self.env.user.employee_id,
     )
     request_unit = fields.Selection(
         selection_add=[('day', 'Day'), ('half_day', 'Half Day'), ('hour', 'Hours')],
-        default='hour',  # <-- Đã thay đổi mặc định thành 'hour'
+        default='hour',
         string='Take Time Off in',
         required=True,
-        # Giữ nguyên các thuộc tính khác nếu cần
+    )
+
+
+    work_entry_type_id = fields.Many2one(
+        'hr.work.entry.type',
+        string='Loại công', # Hoặc tên gốc Work Entry Type
+        required=True # <--- Dòng này sẽ chặn không cho lưu nếu bỏ trống
     )
 
 
