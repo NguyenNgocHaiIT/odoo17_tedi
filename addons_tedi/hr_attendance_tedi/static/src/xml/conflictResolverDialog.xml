@@ -23,17 +23,24 @@
                                 <h5 class="card-title text-primary"><t t-esc="entry.name"/></h5>
 
                                 <div class="d-flex justify-content-between border-bottom pb-2">
-                                    <span class="text-muted small">Bắt đầu:</span>
-                                    <span class="fw-bold"><t t-esc="formatDateTime(entry.start)"/></span>
+                                    <span class="text-muted small">Bắt đầu (Conflict):</span>
+                                    <span class="fw-bold text-dark">
+                                        <t t-esc="entry.start_formatted"/>
+                                    </span>
                                 </div>
+
                                 <div class="d-flex justify-content-between border-bottom pb-2">
-                                    <span class="text-muted small">Kết thúc:</span>
-                                    <span class="fw-bold"><t t-esc="formatDateTime(entry.stop)"/></span>
+                                    <span class="text-muted small">Kết thúc (Conflict):</span>
+                                    <span class="fw-bold text-dark">
+                                        <t t-esc="entry.stop_formatted"/>
+                                    </span>
                                 </div>
+
                                 <div class="d-flex justify-content-between border-bottom pb-2">
                                     <span class="text-muted small">Thời lượng:</span>
                                     <span class="fw-bold"><t t-esc="entry.duration"/> giờ</span>
                                 </div>
+
                                 <div class="d-flex justify-content-between">
                                     <span class="text-muted small">Nguồn gốc:</span>
                                     <span class="badge bg-secondary"><t t-esc="entry.source"/></span>

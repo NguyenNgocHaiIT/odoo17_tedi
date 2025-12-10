@@ -10,22 +10,15 @@ export class ConflictResolverDialog extends Component {
         this.title = "Giải quyết xung đột";
     }
 
-    formatDateTime(dateStr) {
-        const date = new Date(dateStr);
-        return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
-               ' ' + date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
-    }
+    // Không cần hàm formatDateTime phức tạp nữa vì Python đã làm rồi
 
     getTextColorClass(colorIndex) {
-
         const lightColors = [0, 3, 7];
-
         const colorId = parseInt(colorIndex);
-
         if (lightColors.includes(colorId)) {
-            return "text-dark"; // Chữ đen
+            return "text-dark";
         }
-        return "text-white"; // Chữ trắng (cho các màu đỏ, xanh đậm, cam...)
+        return "text-white";
     }
 
     async onAccept(entryId) {
