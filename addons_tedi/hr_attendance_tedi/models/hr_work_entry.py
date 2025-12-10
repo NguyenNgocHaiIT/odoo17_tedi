@@ -4,6 +4,67 @@ from odoo import models, fields, api
 class HrWorkEntry(models.Model):
     _inherit = 'hr.work.entry'
 
+    def get_conflict_data(self):
+        """
+        Tìm tất cả các work entry đang xung đột với entry hiện tại (self).
+        Trả về danh sách dữ liệu để hiển thị lên Modal.
+        """
+        self.ensure_one()
+
+        # Tìm các entry chồng lấn thời gian với entry này
+        # Logic: Start A < End B  VÀ  End A > Start B
+        conflicts = self.env['hr.work.entry'].search([
+            ('employee_id', '=', self.employee_id.id),
+            ('date_start', '<', self.date_stop),
+            ('date_stop', '>', self.date_start),
+            ('id', '!=', self.id),  # Trừ chính nó ra
+            ('active', '=', True)
+        ])
+
+        # Gom chính nó và các đối thủ vào 1 danh sách
+        all_entries = self | conflicts
+
+        result = []
+        for entry in all_entries:
+            result.append({
+                'id': entry.id,
+                'name': entry.name or entry.work_entry_type_id.name,
+                'type': entry.work_entry_type_id.name,
+                'start': entry.date_start,
+                'stop': entry.date_stop,
+                'duration': entry.duration,
+                'source': 'Nghỉ phép' if entry.work_entry_type_id.is_leave else 'Chấm công/Lịch',
+                'state': entry.state,
+                'color': entry.color,  # Màu sắc để hiển thị cho đẹp
+            })
+
+        return result
+
+    def action_resolve_conflict_git_style(self):
+        """
+        Hàm này được gọi khi người dùng chọn 'Giữ cái này'.
+        Self chính là cái được chọn (Winner).
+        """
+        self.ensure_one()
+
+        # 1. Tìm các entry chồng lấn (Losers)
+        losers = self.env['hr.work.entry'].search([
+            ('employee_id', '=', self.employee_id.id),
+            ('date_start', '<', self.date_stop),
+            ('date_stop', '>', self.date_start),
+            ('id', '!=', self.id),
+            ('active', '=', True)
+        ])
+
+        # 2. Xử lý kẻ thua cuộc (Archive đi để ẩn khỏi bảng công)
+        if losers:
+            losers.write({'active': False, 'state': 'cancelled'})
+
+        # 3. Xử lý người chiến thắng
+        self.write({'state': 'validated'})
+
+        return True
+
     def action_sync_attendance(self):
         # --- PHẦN 1: XỬ LÝ WORK ENTRY LÀ NGHỈ PHÉP (LEAVE) ---
         # Logic mới:

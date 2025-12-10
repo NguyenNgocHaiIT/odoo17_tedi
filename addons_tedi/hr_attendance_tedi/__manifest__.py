@@ -28,6 +28,9 @@
             'hr_attendance_tedi/static/src/js/work_entry_grid.js',
             'hr_attendance_tedi/static/src/xml/work_entry_grid.xml',
 
+            'hr_attendance_tedi/static/src/js/conflictResolverDialog.js',
+            'hr_attendance_tedi/static/src/xml/conflictResolverDialog.xml',
+
         ],
     },
     'installable': True,
