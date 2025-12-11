@@ -1,0 +1,1153 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+#   * onlyoffice_custom
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-12-10 11:12+0000\n"
+"PO-Revision-Date: 2025-12-10 11:12+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access_user__role
+msgid "Access Level"
+msgstr "Cấp độ truy cập"
+
+#. module: onlyoffice_custom
+#. odoo-javascript
+#: code:addons/onlyoffice_custom/static/src/xml/m2m_field_preview.xml:0
+#: code:addons/onlyoffice_custom/static/src/xml/m2m_field_preview.xml:0
+#, python-format
+msgid "Attach"
+msgstr "Đính kèm"
+
+#. module: onlyoffice_custom
+#: model:ir.model,name:onlyoffice_custom.model_ir_attachment
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_docx_report_config__attachment_id
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_xlsx_report_config__attachment_id
+msgid "Attachment"
+msgstr "Tệp đính kèm"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_docx_report_config__attachment_ids
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_hr_employee__attachment_ids
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_xlsx_report_config__attachment_ids
+msgid "Attachments"
+msgstr "Các tệp đính kèm"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.document_share_view_form_folder
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.documents_create_view_form
+msgid "Cancel"
+msgstr "Hủy"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_field_documentation__rendered_jinja_code
+msgid "Code Template Render"
+msgstr "Mã dữ liệu Field"
+
+#. module: onlyoffice_custom
+#. odoo-python
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access_user.py:0
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__internal_users__commenter
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__link_access__commenter
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access_user__role__commenter
+#, python-format
+msgid "Commenter"
+msgstr "Người bình luận"
+
+#. module: onlyoffice_custom
+#. odoo-javascript
+#: code:addons/onlyoffice_custom/static/src/xml/document_kanban_button.xml:0
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.documents_create_view_form
+#, python-format
+msgid "Create Document"
+msgstr "Tạo tài liệu"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.actions.act_window,help:onlyoffice_custom.action_document_share
+msgid "Create your first document share"
+msgstr "Tạo chia sẻ tài liệu đầu tiên của bạn"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__create_uid
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_documents_create__create_uid
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_field_documentation__create_uid
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access__create_uid
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access_user__create_uid
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_role_onlyoffice__create_uid
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_user_role_permision__create_uid
+msgid "Created by"
+msgstr "Được tạo bởi"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__create_date
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_documents_create__create_date
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_field_documentation__create_date
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access__create_date
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access_user__create_date
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_role_onlyoffice__create_date
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_user_role_permision__create_date
+msgid "Created on"
+msgstr "Ngày tạo"
+
+#. module: onlyoffice_custom
+#. odoo-python
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access_user.py:0
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__internal_users__custom_filter
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__link_access__custom_filter
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access_user__role__custom_filter
+#, python-format
+msgid "Custom Filter"
+msgstr "Bộ lọc tùy chỉnh"
+
+#. module: onlyoffice_custom
+#: model:ir.model,name:onlyoffice_custom.model_docx_report_config
+msgid "DOCX Report Configuration"
+msgstr "Cấu hình Báo cáo DOCX"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,help:onlyoffice_custom.field_docx_report_config__report_docx_template
+msgid "DOCX template to be used for the report"
+msgstr "Mẫu DOCX được sử dụng cho báo cáo"
+
+#. module: onlyoffice_custom
+#. odoo-javascript
+#: code:addons/onlyoffice_custom/static/src/xml/m2m_field_preview.xml:0
+#: code:addons/onlyoffice_custom/static/src/xml/m2m_field_preview.xml:0
+#, python-format
+msgid "Delete"
+msgstr "Xóa"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_documents_create__document_directory_id
+msgid "Directory"
+msgstr "Thư mục"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__display_name
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_documents_create__display_name
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_field_documentation__display_name
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access__display_name
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access_user__display_name
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_role_onlyoffice__display_name
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_user_role_permision__display_name
+msgid "Display Name"
+msgstr "Tên hiển thị"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__document_id
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access__document_id
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access_user__document_id
+msgid "Document"
+msgstr "Tài liệu"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.documents_create_view_form
+msgid "Document Create"
+msgstr "Tạo tài liệu"
+
+#. module: onlyoffice_custom
+#: model:ir.model,name:onlyoffice_custom.model_document_directory
+msgid "Document Directory"
+msgstr "Thư mục Tài liệu"
+
+#. module: onlyoffice_custom
+#: model:ir.model,name:onlyoffice_custom.model_document_share
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_directory__document_share_id
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_ir_attachment__document_share_id
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.document_share_view_form
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.document_share_view_form_folder
+msgid "Document Share"
+msgstr "Chia sẻ Tài liệu"
+
+#. module: onlyoffice_custom
+#: model:ir.actions.act_window,name:onlyoffice_custom.action_document_share
+msgid "Document Shares"
+msgstr "Các Chia sẻ Tài liệu"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_user_role_permision__document_share_id
+msgid "Document share"
+msgstr "Chia sẻ tài liệu"
+
+#. module: onlyoffice_custom
+#: model:ir.model,name:onlyoffice_custom.model_documents_create
+msgid "Documents Create"
+msgstr "Tạo Tài liệu"
+
+#. module: onlyoffice_custom
+#: model:ir.ui.menu,name:onlyoffice_custom.menu_custom_docx_report
+msgid "Docx Report"
+msgstr "Báo cáo Docx"
+
+#. module: onlyoffice_custom
+#. odoo-javascript
+#: code:addons/onlyoffice_custom/static/src/xml/m2m_field_preview.xml:0
+#, python-format
+msgid "Download"
+msgstr "Tải xuống"
+
+#. module: onlyoffice_custom
+#. odoo-python
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access_user.py:0
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__internal_users__editor
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__link_access__editor
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access_user__role__editor
+#, python-format
+msgid "Editor"
+msgstr "Người chỉnh sửa"
+
+#. module: onlyoffice_custom
+#: model:ir.model,name:onlyoffice_custom.model_hr_employee
+msgid "Employee"
+msgstr "Nhân viên"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,help:onlyoffice_custom.field_docx_report_config__field_filter
+#: model:ir.model.fields,help:onlyoffice_custom.field_xlsx_report_config__field_filter
+msgid "Enter field name to filter (wildcard * allowed)"
+msgstr "Nhập tên trường để lọc (cho phép ký tự đại diện *)"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_field_documentation__field_string
+msgid "Field Display Name"
+msgstr "Tên Field hiển thị"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Field Document"
+msgstr "Trường dữ liệu"
+
+#. module: onlyoffice_custom
+#: model:ir.model,name:onlyoffice_custom.model_field_documentation
+msgid "Field Documentation Storage"
+msgstr "Kho lưu trữ tài liệu Field"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_field_documentation__field_name
+msgid "Field Name"
+msgstr "Tên Field"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_field_documentation__field_help
+msgid "Field Note"
+msgstr "Ghi chú Field"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_field_documentation__field_type
+msgid "Field Type"
+msgstr "Loại Field"
+
+#. module: onlyoffice_custom
+#: model:ir.actions.act_window,name:onlyoffice_custom.field_documentation_act_window
+msgid "Field documentation"
+msgstr "Tài liệu Field"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_docx_report_config__field_docx_ids
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_xlsx_report_config__field_docx_ids
+msgid "Fields for docx"
+msgstr "Các Field cho docx"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_docx_report_config__field_filter
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_xlsx_report_config__field_filter
+msgid "Filter Field Name"
+msgstr "Lọc theo Tên Field"
+
+#. module: onlyoffice_custom
+#. odoo-python
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access_user.py:0
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__internal_users__form_filling
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__link_access__form_filling
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access_user__role__form_filling
+#, python-format
+msgid "Form Filling"
+msgstr "Điền Form"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__id
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_documents_create__id
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_field_documentation__id
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access__id
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access_user__id
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_role_onlyoffice__id
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_user_role_permision__id
+msgid "ID"
+msgstr "ID"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access__internal_users
+msgid "Internal Users Access"
+msgstr "Truy cập của Người dùng Nội bộ"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__write_uid
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_documents_create__write_uid
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_field_documentation__write_uid
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access__write_uid
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access_user__write_uid
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_role_onlyoffice__write_uid
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_user_role_permision__write_uid
+msgid "Last Updated by"
+msgstr "Cập nhật lần cuối bởi"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__write_date
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_documents_create__write_date
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_field_documentation__write_date
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access__write_date
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access_user__write_date
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_role_onlyoffice__write_date
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_user_role_permision__write_date
+msgid "Last Updated on"
+msgstr "Cập nhật lần cuối vào"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access__link_access
+msgid "Link Access"
+msgstr "Truy cập bằng Liên kết"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__link_share
+msgid "Link Share"
+msgstr "Liên kết Chia sẻ"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_field_documentation__model_name
+msgid "Model Name"
+msgstr "Tên Model"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.field_documentation_form_view
+msgid "ModelTitle"
+msgstr "Tiêu đề Model"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_documents_create__name
+msgid "Name"
+msgstr "Tên"
+
+#. module: onlyoffice_custom
+#. odoo-python
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access_user.py:0
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__internal_users__none
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__link_access__none
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access_user__role__none
+#, python-format
+msgid "None"
+msgstr "Không có"
+
+#. module: onlyoffice_custom
+#: model:ir.model,name:onlyoffice_custom.model_onlyoffice_odoo_documents_access
+msgid "ONLYOFFICE Documents Access"
+msgstr "Truy cập Tài liệu ONLYOFFICE"
+
+#. module: onlyoffice_custom
+#: model:ir.model,name:onlyoffice_custom.model_onlyoffice_odoo_documents_access_user
+msgid "ONLYOFFICE Documents Access Users"
+msgstr "Người dùng Truy cập Tài liệu ONLYOFFICE"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_docx_report_config__onlyoffice_iframe
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_xlsx_report_config__onlyoffice_iframe
+msgid "OnlyOffice Preview"
+msgstr "Xem trước OnlyOffice"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_docx_report_config__onlyoffice_url
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_xlsx_report_config__onlyoffice_url
+msgid "OnlyOffice URL"
+msgstr "Đường dẫn OnlyOffice"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.windx_ir_attachment_kanban
+msgid "Open with OnlyOffice"
+msgstr "Mở bằng OnlyOffice"
+
+#. module: onlyoffice_custom
+#. odoo-javascript
+#: code:addons/onlyoffice_custom/static/src/xml/m2m_field_preview.xml:0
+#, python-format
+msgid "Preview"
+msgstr "Xem trước"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__public_access
+msgid "Public"
+msgstr "Công khai"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.document_share_view_form
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.document_share_view_form_folder
+msgid "Public Access"
+msgstr "Truy cập Công khai"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,help:onlyoffice_custom.field_field_documentation__rendered_jinja_code
+msgid "Recommended Jinja/Docx syntax is based on data type."
+msgstr "Cú pháp Jinja/Docx được đề xuất dựa trên loại dữ liệu."
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_docx_report_config__report_docx_template
+msgid "Report DOCX Template"
+msgstr "Mẫu Báo cáo DOCX"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_docx_report_config__report_docx_template_filename
+msgid "Report DOCX Template Name"
+msgstr "Tên Mẫu Báo cáo DOCX"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_xlsx_report_config__report_xlsx_jinja_template
+msgid "Report XLSX Jinja Template"
+msgstr "Mẫu Jinja Báo cáo XLSX"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_xlsx_report_config__report_xlsx_jinja_template_name
+msgid "Report XLSX Jinja Template Name"
+msgstr "Tên Mẫu Jinja Báo cáo XLSX"
+
+#. module: onlyoffice_custom
+#. odoo-python
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access_user.py:0
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__internal_users__reviewer
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__link_access__reviewer
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access_user__role__reviewer
+#, python-format
+msgid "Reviewer"
+msgstr "Người đánh giá"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__role_access_ids
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_role_onlyoffice__role_access
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_user_role_permision__role_access_ids
+msgid "Role Access"
+msgstr "Quyền truy cập Vai trò"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Search"
+msgstr "Tìm kiếm"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.document_share_view_form_folder
+msgid "Share"
+msgstr "Chia sẻ"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.wind_kanban_inherit_directory
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.windx_ir_attachment_kanban
+msgid "Share with OnlyOffice"
+msgstr "Chia sẻ bằng OnlyOffice"
+
+#. module: onlyoffice_custom
+#: model:ir.ui.menu,name:onlyoffice_custom.menu_custom_report_root
+msgid "Template Report"
+msgstr "Mẫu báo cáo"
+
+#. module: onlyoffice_custom
+#: model:ir.model.constraint,message:onlyoffice_custom.constraint_field_documentation_field_unique
+msgid "This field is already stored for this Model!"
+msgstr "Trường này đã được lưu trữ cho Model này!"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_documents_create__type
+msgid "Type"
+msgstr "Loại"
+
+#. module: onlyoffice_custom
+#. odoo-javascript
+#: code:addons/onlyoffice_custom/static/src/xml/m2m_field_preview.xml:0
+#: code:addons/onlyoffice_custom/static/src/xml/m2m_field_preview.xml:0
+#, python-format
+msgid "Uploaded"
+msgstr "Đã tải lên"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_onlyoffice_odoo_documents_access_user__user_id
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_user_role_permision__user_id
+msgid "User"
+msgstr "Người dùng"
+
+#. module: onlyoffice_custom
+#: model:ir.model,name:onlyoffice_custom.model_user_role_permision
+msgid "User Role Permision"
+msgstr "Quyền Vai trò Người dùng"
+
+#. module: onlyoffice_custom
+#. odoo-python
+#: code:addons/onlyoffice_custom/controller/custom_onlyoffice_document.py:0
+#: code:addons/onlyoffice_custom/controller/custom_onlyoffice_document.py:0
+#, python-format
+msgid "User has no read access rights to open this document"
+msgstr "Người dùng không có quyền đọc để mở tài liệu này"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__user_role_permision_ids
+msgid "User role permision"
+msgstr "Quyền vai trò người dùng"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__user_ids
+msgid "Users"
+msgstr "Người dùng"
+
+#. module: onlyoffice_custom
+#. odoo-python
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access.py:0
+#: code:addons/onlyoffice_custom/models/onlyoffice_documents_access_user.py:0
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__internal_users__viewer
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access__link_access__viewer
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__onlyoffice_odoo_documents_access_user__role__viewer
+#, python-format
+msgid "Viewer"
+msgstr "Người xem"
+
+#. module: onlyoffice_custom
+#: model:ir.ui.menu,name:onlyoffice_custom.menu_custom_xlsx_report
+msgid "XLSX Report"
+msgstr "Báo cáo XLSX"
+
+#. module: onlyoffice_custom
+#: model:ir.model,name:onlyoffice_custom.model_xlsx_report_config
+msgid "Xlsx Report Configuration"
+msgstr "Cấu hình Báo cáo Xlsx"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.documents_create_view_form
+msgid "e.g. Name Document"
+msgstr "Ví dụ: Tên Tài liệu"
+
+#. module: onlyoffice_custom
+#: model:ir.model,name:onlyoffice_custom.model_role_onlyoffice
+msgid "role.onlyoffice"
+msgstr "role.onlyoffice"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__documents_create__type__xlsx
+msgid "📗 Excel"
+msgstr "📗 Excel"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__documents_create__type__docx
+msgid "📘 Docs"
+msgstr "📘 Tài liệu"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields.selection,name:onlyoffice_custom.selection__documents_create__type__pptx
+msgid "📙 PowerPoint"
+msgstr "📙 PowerPoint"
+
+
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.document_directory_view_kanban
+msgid "<i class=\"fa fa-building-o\" role=\"img\" aria-label=\"Company\" title=\"Company\"/>"
+msgstr "<i class=\"fa fa-building-o\" role=\"img\" aria-label=\"Công ty\" title=\"Công ty\"/>"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.document_directory_view_kanban
+msgid "<span class=\"fw-bolder\">Reporting</span>"
+msgstr "<span class=\"fw-bolder\">Báo cáo</span>"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__message_needaction
+msgid "Action Needed"
+msgstr "Cần hành động"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__active
+msgid "Active"
+msgstr "Hoạt động"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.actions.act_window,help:windx_documents_management_preview.act_all_attachment_from_document_directory
+#: model_terms:ir.actions.act_window,help:windx_documents_management_preview.act_attachment_from_document_directory
+#: model_terms:ir.actions.act_window,help:windx_documents_management_preview.act_my_attachment_from_document_directory
+msgid "Add a new attachment"
+msgstr "Thêm tệp đính kèm mới"
+
+#. module: windx_documents_management_preview
+#: model:ir.ui.menu,name:windx_documents_management_preview.menu_all_document
+msgid "All Documents"
+msgstr "Tất cả Tài liệu"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_filter
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_form
+msgid "Archived"
+msgstr "Đã lưu trữ"
+
+#. module: windx_documents_management_preview
+#: model:ir.model,name:windx_documents_management_preview.model_ir_attachment
+msgid "Attachment"
+msgstr "Tệp đính kèm"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__message_attachment_count
+msgid "Attachment Count"
+msgstr "Số lượng tệp đính kèm"
+
+#. module: windx_documents_management_preview
+#: model:ir.actions.act_window,name:windx_documents_management_preview.act_all_attachment_from_document_directory
+#: model:ir.actions.act_window,name:windx_documents_management_preview.act_attachment_from_document_directory
+#: model:ir.actions.act_window,name:windx_documents_management_preview.act_my_attachment_from_document_directory
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__attachment_ids
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.document_directory_view_kanban
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_form
+msgid "Attachments"
+msgstr "Các tệp đính kèm"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__avatar_1920
+msgid "Avatar"
+msgstr "Ảnh đại diện"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__avatar_1024
+msgid "Avatar 1024"
+msgstr "Ảnh đại diện 1024"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__avatar_128
+msgid "Avatar 128"
+msgstr "Ảnh đại diện 128"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__avatar_256
+msgid "Avatar 256"
+msgstr "Ảnh đại diện 256"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__avatar_512
+msgid "Avatar 512"
+msgstr "Ảnh đại diện 512"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_filter
+msgid "By assigned tags"
+msgstr "Theo thẻ được gán"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_filter
+msgid "By parent directory"
+msgstr "Theo thư mục cha"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__child_ids
+msgid "Child Directories"
+msgstr "Các Thư mục Con"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_directory_tag__color
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_tag__color
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_form
+msgid "Color"
+msgstr "Màu sắc"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__color
+msgid "Color Index"
+msgstr "Chỉ số Màu"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__company_id
+msgid "Company"
+msgstr "Công ty"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__complete_name
+msgid "Complete Name"
+msgstr "Tên đầy đủ"
+
+#. module: windx_documents_management_preview
+#: model:ir.ui.menu,name:windx_documents_management_preview.menu_document_configuration
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.document_directory_view_kanban
+msgid "Configuration"
+msgstr "Cấu hình"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.actions.act_window,help:windx_documents_management_preview.act_document_sub_directory
+#: model_terms:ir.actions.act_window,help:windx_documents_management_preview.document_directory_kanban_action
+#: model_terms:ir.actions.act_window,help:windx_documents_management_preview.document_directory_tree_action
+msgid "Create a new Directory"
+msgstr "Tạo Thư mục mới"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.actions.act_window,help:windx_documents_management_preview.directory_tag_action
+msgid "Create a new Directory Tag"
+msgstr "Tạo Thẻ Thư mục mới"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.actions.act_window,help:windx_documents_management_preview.document_tag_action
+msgid "Create a new Document Tag"
+msgstr "Tạo Thẻ Tài liệu mới"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_filter
+msgid "Created By"
+msgstr "Được tạo bởi"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_directory_tag__create_uid
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__create_uid
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_tag__create_uid
+msgid "Created by"
+msgstr "Được tạo bởi"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_directory_tag__create_date
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__create_date
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_tag__create_date
+msgid "Created on"
+msgstr "Ngày tạo"
+
+#. module: windx_documents_management_preview
+#: model:ir.ui.menu,name:windx_documents_management_preview.menu_document_directory
+msgid "Directories"
+msgstr "Các Thư mục"
+
+#. module: windx_documents_management_preview
+#: model:ir.actions.act_window,name:windx_documents_management_preview.act_document_sub_directory
+#: model:ir.actions.act_window,name:windx_documents_management_preview.document_directory_kanban_action
+#: model:ir.actions.act_window,name:windx_documents_management_preview.document_directory_tree_action
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_ir_attachment__document_directory_id
+msgid "Directory"
+msgstr "Thư mục"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__name
+msgid "Directory Name"
+msgstr "Tên Thư mục"
+
+#. module: windx_documents_management_preview
+#. odoo-javascript
+#: code:addons/windx_documents_management_preview/static/src/components/directory_chart/directory_chart.xml:0
+#, python-format
+msgid "Directory Organization"
+msgstr "Tổ chức Thư mục"
+
+#. module: windx_documents_management_preview
+#: model:ir.actions.act_window,name:windx_documents_management_preview.directory_tag_action
+#: model:ir.model,name:windx_documents_management_preview.model_directory_tag
+msgid "Directory Tag"
+msgstr "Thẻ Thư mục"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.constraint,message:windx_documents_management_preview.constraint_directory_tag_directory_tag_name_uniq
+msgid "Directory Tag name already exists!"
+msgstr "Tên Thẻ Thư mục đã tồn tại!"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_ir_attachment__directory_tag_ids
+#: model:ir.ui.menu,name:windx_documents_management_preview.menu_directory_tag
+msgid "Directory Tags"
+msgstr "Các Thẻ Thư mục"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.constraint,message:windx_documents_management_preview.constraint_document_directory_directory_model_uniq
+msgid "Directory for this model already exists!"
+msgstr "Thư mục cho model này đã tồn tại!"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_directory_tag__display_name
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__display_name
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_tag__display_name
+msgid "Display Name"
+msgstr "Tên hiển thị"
+
+#. module: windx_documents_management_preview
+#: model:ir.ui.menu,name:windx_documents_management_preview.menu_document_root
+msgid "Document"
+msgstr "Tài liệu"
+
+#. module: windx_documents_management_preview
+#: model:ir.model,name:windx_documents_management_preview.model_document_directory
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_attachment_search_inherit_document_management
+msgid "Document Directory"
+msgstr "Thư mục Tài liệu"
+
+#. module: windx_documents_management_preview
+#: model:ir.actions.act_window,name:windx_documents_management_preview.document_tag_action
+#: model:ir.model,name:windx_documents_management_preview.model_document_tag
+msgid "Document Tag"
+msgstr "Thẻ Tài liệu"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.constraint,message:windx_documents_management_preview.constraint_document_tag_document_tag_name_uniq
+msgid "Document Tag name already exists!"
+msgstr "Tên Thẻ Tài liệu đã tồn tại!"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_ir_attachment__document_tag_ids
+#: model:ir.ui.menu,name:windx_documents_management_preview.daily_document_tag
+msgid "Document Tags"
+msgstr "Các Thẻ Tài liệu"
+
+#. module: windx_documents_management_preview
+#: model:ir.module.category,name:windx_documents_management_preview.module_documents_management
+msgid "Documents Management"
+msgstr "Quản lý Tài liệu"
+
+#. module: windx_documents_management_preview
+#: model:res.groups,name:windx_documents_management_preview.group_documents_manager
+msgid "Documents Manager"
+msgstr "Quản lý Tài liệu"
+
+#. module: windx_documents_management_preview
+#: model:res.groups,name:windx_documents_management_preview.group_documents_user
+msgid "Documents User"
+msgstr "Người dùng Tài liệu"
+
+#. module: windx_documents_management_preview
+#. odoo-javascript
+#: code:addons/windx_documents_management_preview/static/src/file_viewer/file_viewer_patch.xml:0
+#, python-format
+msgid "Docx file"
+msgstr "Tệp Docx"
+
+#. module: windx_documents_management_preview
+#. odoo-javascript
+#: code:addons/windx_documents_management_preview/static/src/many2many_binary/many2many_binary_field_patch.xml:0
+#, python-format
+msgid "Download"
+msgstr "Tải xuống"
+
+#. module: windx_documents_management_preview
+#. odoo-javascript
+#: code:addons/windx_documents_management_preview/static/src/file_viewer/file_viewer_patch.xml:0
+#: code:addons/windx_documents_management_preview/static/src/file_viewer/file_viewer_patch.xml:0
+#, python-format
+msgid "Excel file"
+msgstr "Tệp Excel"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_form
+msgid "Files"
+msgstr "Các Tệp"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__message_follower_ids
+msgid "Followers"
+msgstr "Người theo dõi"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__message_partner_ids
+msgid "Followers (Partners)"
+msgstr "Người theo dõi (Đối tác)"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_filter
+msgid "Group By"
+msgstr "Nhóm theo"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__has_message
+msgid "Has Message"
+msgstr "Có tin nhắn"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_directory_tag__id
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__id
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_tag__id
+msgid "ID"
+msgstr "ID"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,help:windx_documents_management_preview.field_document_directory__message_needaction
+msgid "If checked, new messages require your attention."
+msgstr "Nếu được chọn, tin nhắn mới cần sự chú ý của bạn."
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,help:windx_documents_management_preview.field_document_directory__message_has_error
+msgid "If checked, some messages have a delivery error."
+msgstr "Nếu được chọn, một số tin nhắn gặp lỗi gửi."
+
+#. module: windx_documents_management_preview
+#. odoo-javascript
+#: code:addons/windx_documents_management_preview/static/src/file_viewer/file_viewer_patch.xml:0
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__image_1920
+#, python-format
+msgid "Image"
+msgstr "Hình ảnh"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__image_1024
+msgid "Image 1024"
+msgstr "Hình ảnh 1024"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__image_128
+msgid "Image 128"
+msgstr "Hình ảnh 128"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__image_256
+msgid "Image 256"
+msgstr "Hình ảnh 256"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__image_512
+msgid "Image 512"
+msgstr "Hình ảnh 512"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__message_is_follower
+msgid "Is Follower"
+msgstr "Là người theo dõi"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_directory_tag__write_uid
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__write_uid
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_tag__write_uid
+msgid "Last Updated by"
+msgstr "Cập nhật lần cuối bởi"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_directory_tag__write_date
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__write_date
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_tag__write_date
+msgid "Last Updated on"
+msgstr "Cập nhật lần cuối vào"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__master_document_directory_id
+msgid "Master Directory"
+msgstr "Thư mục Chính"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__message_has_error
+msgid "Message Delivery error"
+msgstr "Lỗi Gửi tin nhắn"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__message_ids
+msgid "Messages"
+msgstr "Các Tin nhắn"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__model
+msgid "Model Name"
+msgstr "Tên Model"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_attachment_search_inherit_document_management
+msgid "My Document"
+msgstr "Tài liệu của tôi"
+
+#. module: windx_documents_management_preview
+#: model:ir.ui.menu,name:windx_documents_management_preview.menu_my_document
+msgid "My Documents"
+msgstr "Các Tài liệu của tôi"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__note
+msgid "Note"
+msgstr "Ghi chú"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_form
+msgid "Notes..."
+msgstr "Ghi chú..."
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__message_needaction_counter
+msgid "Number of Actions"
+msgstr "Số hành động"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__message_has_error_counter
+msgid "Number of errors"
+msgstr "Số lỗi"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,help:windx_documents_management_preview.field_document_directory__message_needaction_counter
+msgid "Number of messages requiring action"
+msgstr "Số lượng tin nhắn cần hành động"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,help:windx_documents_management_preview.field_document_directory__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr "Số lượng tin nhắn bị lỗi gửi"
+
+#. module: windx_documents_management_preview
+#. odoo-javascript
+#: code:addons/windx_documents_management_preview/static/src/file_viewer/file_viewer_patch.xml:0
+#, python-format
+msgid "PDF file"
+msgstr "Tệp PDF"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__parent_id
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_filter
+msgid "Parent Directory"
+msgstr "Thư mục Cha"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__parent_path
+msgid "Parent Path"
+msgstr "Đường dẫn Cha"
+
+#. module: windx_documents_management_preview
+#. odoo-javascript
+#: code:addons/windx_documents_management_preview/static/src/file_viewer/file_viewer_patch.xml:0
+#, python-format
+msgid "Powerpoint file"
+msgstr "Tệp Powerpoint"
+
+#. module: windx_documents_management_preview
+#. odoo-javascript
+#: code:addons/windx_documents_management_preview/static/src/binary/binary_field.xml:0
+#: code:addons/windx_documents_management_preview/static/src/binary/binary_field.xml:0
+#, python-format
+msgid "Preview File"
+msgstr "Xem trước Tệp"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__model_id
+msgid "Related Model"
+msgstr "Model Liên quan"
+
+#. module: windx_documents_management_preview
+#. odoo-python
+#: code:addons/windx_documents_management_preview/models/ir_attachments.py:0
+#, python-format
+msgid "Send Email"
+msgstr "Gửi Email"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_attachment_form_inherit_document_management
+msgid "Send by Email"
+msgstr "Gửi qua Email"
+
+#. module: windx_documents_management_preview
+#. odoo-javascript
+#: code:addons/windx_documents_management_preview/static/src/components/directory_chart/directory_chart.xml:0
+#, python-format
+msgid "Show attachments"
+msgstr "Hiển thị các tệp đính kèm"
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.document_directory_view_kanban
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_form
+msgid "Sub Directories"
+msgstr "Các Thư mục Con"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_directory_tag__name
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_tag__name
+msgid "Tag Name"
+msgstr "Tên Thẻ"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__tag_ids
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_filter
+msgid "Tags"
+msgstr "Các Thẻ"
+
+#. module: windx_documents_management_preview
+#. odoo-javascript
+#: code:addons/windx_documents_management_preview/static/src/file_viewer/file_viewer_patch.xml:0
+#, python-format
+msgid "Text file"
+msgstr "Tệp Văn bản"
+
+#. module: windx_documents_management_preview
+#: model:res.groups,comment:windx_documents_management_preview.group_documents_user
+msgid "The user will be able to approve document created by user."
+msgstr "Người dùng sẽ có thể phê duyệt tài liệu do người dùng tạo."
+
+#. module: windx_documents_management_preview
+#: model:res.groups,comment:windx_documents_management_preview.group_documents_manager
+msgid "The user will have access to all documents and configuration."
+msgstr "Người dùng sẽ có quyền truy cập vào tất cả tài liệu và cấu hình."
+
+#. module: windx_documents_management_preview
+#. odoo-python
+#: code:addons/windx_documents_management_preview/models/ir_attachments.py:0
+#, python-format
+msgid "There are no contact and/or no email linked to this visitor."
+msgstr "Không có liên hệ và/hoặc không có email được liên kết với khách truy cập này."
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__total_attachment
+msgid "Total Attachment"
+msgstr "Tổng số Tệp đính kèm"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__total_sub_directory
+msgid "Total Sub Directories"
+msgstr "Tổng số Thư mục Con"
+
+#. module: windx_documents_management_preview
+#: model:ir.model,name:windx_documents_management_preview.model_res_users
+msgid "User"
+msgstr "Người dùng"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__user_ids
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_ir_attachment__user_ids
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_form
+msgid "Users"
+msgstr "Người dùng"
+
+#. module: windx_documents_management_preview
+#. odoo-javascript
+#: code:addons/windx_documents_management_preview/static/src/file_viewer/file_viewer_patch.xml:0
+#, python-format
+msgid "Video"
+msgstr "Video"
+
+#. module: windx_documents_management_preview
+#: model:ir.model.fields,field_description:windx_documents_management_preview.field_document_directory__visible_directory
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.view_document_directory_filter
+msgid "Visible Directory"
+msgstr "Thư mục Hiển thị"
+
+#. module: windx_documents_management_preview
+#. odoo-python
+#: code:addons/windx_documents_management_preview/models/document_directory.py:0
+#, python-format
+msgid "You cannot create recursive document_directories."
+msgstr "Bạn không thể tạo các thư mục tài liệu đệ quy."
+
+#. module: windx_documents_management_preview
+#: model_terms:ir.ui.view,arch_db:windx_documents_management_preview.document_directory_view_kanban
+msgid "folder"
+msgstr "thư mục"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Description"
+msgstr "Mô tả"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Field Naming Convention"
+msgstr "Quy ước"

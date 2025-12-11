@@ -15,19 +15,24 @@ class Directory(models.Model):
             link_share = self.env['ir.config_parameter'].sudo().get_param(
                 'web.base.url') + f"/onlyoffice/editor/{rec.id}"
             list_role_user = []
+            roll_access_public = []
 
             document_share = self.env['document.share'].create({
                 "link_share": link_share,
                 "document_id": rec.id,
                 "public_access": self.document_share_id.public_access
             })
+            if self.document_share_id.public_access:
+                for roll_public in self.document_share_id.role_access_ids:
+                    roll_access_public.append(roll_public.id)
+
             for role in self.document_share_id.user_role_permision_ids:
                 list_role_user.append(self.env['user.role.permision'].create({
                     "user_id": role.user_id.id,
                     "role_access_ids": [(6, 0, role.role_access_ids.ids)],
                     "document_share_id": document_share.id
                 }).id)
-            document_share.write({"user_role_permision_ids": [(6, 0, list_role_user)]})
+            document_share.write({"user_role_permision_ids": [(6, 0, list_role_user)], "role_access_ids":[(6, 0, roll_access_public)]})
             rec.write({"document_share_id": document_share.id})
         if self.id != dir.id:
             list_role_user = []
@@ -38,7 +43,8 @@ class Directory(models.Model):
                 }).id)
             document_share = self.env['document.share'].create({
                 "public_access": self.document_share_id.public_access,
-                "user_role_permision_ids": [(6, 0, list_role_user)]
+                "user_role_permision_ids": [(6, 0, list_role_user)],
+                "role_access_ids": [(6, 0, self.document_share_id.role_access_ids.ids)]
             })
             dir.write({
                 "document_share_id": document_share

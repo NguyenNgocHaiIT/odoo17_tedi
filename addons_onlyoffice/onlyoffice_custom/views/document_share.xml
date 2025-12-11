@@ -36,6 +36,7 @@
                     <sheet>
                     <group>
                         Public Access <field name="public_access"/>
+                        <field name="role_access_ids"  widget="many2many_checkboxes" invisible="not public_access"/>
                     </group>
 
                         <group>
