@@ -19,26 +19,82 @@
         </record>
 
         <!-- FORM OVERRIDE -->
-        <record id="hr_employee_view_form_inherit_profile_tedi" model="ir.ui.view">
+       <record id="hr_employee_view_form_inherit_profile_tedi" model="ir.ui.view">
             <field name="name">hr.employee.view.form.inherit.profile.tedi</field>
             <field name="model">hr.employee</field>
             <field name="inherit_id" ref="hr.view_employee_form"/>
-            <field name="priority" eval="50000"/>  <!-- Load cuối cùng -->
+            <field name="priority" eval="50000"/>
 
             <field name="arch" type="xml">
 
-                <!-- Thêm mã nhân viên dưới tên -->
-                <xpath expr="//div[contains(@class,'oe_title')]//h1" position="after">
-                    <h2 class="d-flex align-items-center text-muted mt-1 mb-0">
-                        <span class="me-2">Mã nhân viên:</span>
-                        <field name="employee_code" nolabel="1" readonly="1" class="oe_inline"/>
-                    </h2>
+                <xpath expr="//div[hasclass('row', 'justify-content-between', 'position-relative')]" position="replace">
+                    <div class="d-flex w-100 mb-3">
+
+                        <div class="me-4">
+                            <style>
+                                .my_custom_avatar img {
+                                    width: 180px !important;
+                                    height: 180px !important;
+                                    object-fit: cover !important;
+                                    border-radius: 10px !important;
+                                }
+                                .my_custom_avatar {
+                                    width: 180px !important;
+                                    height: 180px !important;
+                                    border: 1px solid #e2e2e2;
+                                    border-radius: 10px;
+                                }
+                            </style>
+
+                            <field name="image_1920" widget="image" class="oe_avatar my_custom_avatar m-0"
+                                   options="{'zoom': true, 'preview_image':'image_512'}"/>
+                        </div>
+
+                        <div class="flex-grow-1 d-flex flex-column justify-content-center">
+
+                            <div class="oe_title">
+                                <h1 class="d-flex flex-row align-items-center mb-1">
+                                    <field name="name" placeholder="Họ và tên" required="True"
+                                           style="font-size: 2.5rem; font-weight: 500;"/>
+                                </h1>
+                            </div>
+
+                            <h3 class="text-muted mb-3" style="font-weight: normal;">
+                                <field name="employee_code" placeholder="Mã nhân viên" nolabel="1" readonly="1"/>
+                                <field name="work_email" nolabel="1" />
+                                <field name="work_email" nolabel="1"/>
+                            </h3>
+
+                            <div class="d-flex flex-column gap-1" style="font-size: 1.1rem; color: #444;">
+
+                                <div class="d-flex align-items-center" invisible="not work_email">
+                                    <span class="fa fa-envelope me-3 text-muted" style="width: 20px; text-align: center;"></span>
+                                    <field name="work_email" nolabel="1" class="mb-0"/>
+                                </div>
+
+                                <div class="d-flex align-items-center" invisible="not work_phone">
+                                    <span class="fa fa-phone me-3 text-muted" style="width: 20px; text-align: center;"></span>
+                                    <field name="work_phone" nolabel="1" class="mb-0"/>
+                                </div>
+
+                                <div class="d-flex align-items-center" invisible="not mobile_phone">
+                                    <span class="fa fa-mobile me-3 text-muted" style="width: 20px; text-align: center; font-size: 1.4rem;"></span>
+                                    <field name="mobile_phone" nolabel="1" class="mb-0"/>
+                                </div>
+
+                                <div class="d-flex align-items-center mt-1">
+                                    <span class="fa fa-tag me-3 text-muted" style="width: 20px; text-align: center;"></span>
+                                    <field name="job_title" placeholder="Chức vụ" class="me-2 fw-bold"/>
+                                    <span class="text-muted me-1" invisible="not category_ids">|</span>
+                                    <field name="category_ids" widget="many2many_tags"
+                                           options="{'color_field': 'color', 'no_create_edit': True}"
+                                           placeholder="Tags"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </xpath>
 
-                <!-- ẨN CÁC FIELD MẶC ĐỊNH -->
-                <xpath expr="//field[@name='category_ids']" position="attributes">
-                    <attribute name="invisible">1</attribute>
-                </xpath>
                 <xpath expr="//field[@name='mobile_phone']" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>
@@ -48,10 +104,13 @@
                 <xpath expr="//field[@name='work_email']" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>
-                <xpath expr="//field[@name='department_id']" position="attributes">
+                <xpath expr="//field[@name='job_id']" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>
-                <xpath expr="//field[@name='job_id']" position="attributes">
+                <xpath expr="//field[@name='category_ids']" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+                <xpath expr="//field[@name='department_id']" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>
                 <xpath expr="//field[@name='coach_id']" position="attributes">
@@ -61,23 +120,17 @@
                     <attribute name="invisible">1</attribute>
                 </xpath>
 
-                <!-- Ẩn field thừa -->
                 <xpath expr="//form" position="inside">
                     <field name="child_ids" invisible="1"/>
                     <field name="work_contact_id" invisible="1"/>
                     <field name="last_activity" invisible="1"/>
                 </xpath>
 
-                <!-- ⭐⭐⭐ XOÁ TOÀN BỘ PAGE GỐC CỦA ODOO ⭐⭐⭐ -->
                 <xpath expr="//notebook" position="replace">
                     <notebook>
-
-                        <!-- PAGE 1: SƠ YẾU LÝ LỊCH -->
                         <page string="Sơ yếu lý lịch" name="profile_vn">
                             <group col="2">
-
                                 <group string="Thông tin cá nhân">
-                                    <field name="name" string="Họ và tên"/>
                                     <field name="birthday" string="Sinh ngày"/>
                                     <field name="country_id" string="Quốc tịch"/>
                                     <field name="ethnicity"/>
@@ -92,9 +145,8 @@
                                     <field name="phone_personal"/>
                                     <field name="bank_account" string="Tài khoản số"/>
                                     <field name="bank_name"/>
-                                    <field name="email_personal" string="Email"/>
+                                    <field name="email_personal" string="Email cá nhân"/>
                                 </group>
-
                             </group>
 
                             <separator string="TRÌNH ĐỘ CHUYÊN MÔN"/>
@@ -139,7 +191,6 @@
                             </field>
                         </page>
 
-                        <!-- PAGE 2: QUÁ TRÌNH CÔNG TÁC -->
                         <page string="Quá trình công tác" name="work_process">
                             <separator string="QUÁ TRÌNH CÔNG TÁC TẠI TEDI"/>
                             <field name="work_process_tedi_ids" nolabel="1" colspan="2">
@@ -167,7 +218,6 @@
                             </field>
                         </page>
 
-                        <!-- PAGE 3: KINH NGHIỆM -->
                         <page string="Kinh nghiệm công việc" name="exp_vn">
                             <separator string="KINH NGHIỆM CÔNG VIỆC LIÊN QUAN"/>
                             <field name="experience_ids" nolabel="1" colspan="2">
@@ -185,7 +235,6 @@
                             </field>
                         </page>
 
-                        <!-- PAGE 4: KHEN THƯỞNG KỶ LUẬT -->
                         <page string="Khen thưởng - Kỷ luật" name="reward_vn">
                             <separator string="KHEN THƯỞNG - KỶ LUẬT"/>
                             <field name="reward_discipline_ids" nolabel="1" colspan="2">
@@ -199,7 +248,6 @@
                             </field>
                         </page>
 
-                        <!-- PAGE 5: ĐẢNG - ĐOÀN THỂ -->
                         <page string="Đảng - Đoàn thể" name="union_vn">
                             <group>
                                 <group string="THÔNG TIN ĐẢNG VIÊN">
@@ -230,7 +278,6 @@
                             </group>
                         </page>
 
-                        <!-- PAGE 6: QUÁ TRÌNH ĐÀO TẠO -->
                         <page string="Quá trình đào tạo" name="training_vn">
                             <separator string="QUÁ TRÌNH ĐÀO TẠO"/>
                             <field name="training_ids" nolabel="1" colspan="2">
