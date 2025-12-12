@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <record id="view_tedi_allowance_import_wizard" model="ir.ui.view">
+            <field name="name">tedi.allowance.import.wizard.form</field>
+            <field name="model">tedi.allowance.import.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Import Phụ cấp từ Excel">
+                    <div class="alert alert-info" role="alert">
+                        <strong>Lưu ý định dạng Excel:</strong><br/>
+                        - Cột A: Tháng (VD: 1, 2...)<br/>
+                        - Cột B: Năm (VD: 2025)<br/>
+                        - Cột C: Loại (Nhập mã hệ thống, VD: <b>meal</b> cho Ăn ca)<br/>
+                        - Cột D: Mã phụ cấp (Code)<br/>
+                        - Cột E: Mã nhân viên (Bắt buộc)<br/>
+                        - Cột F: Số tiền phụ cấp<br/>
+                        <i>Hệ thống sẽ cập nhật số tiền nếu tìm thấy bản ghi trùng (NV + Tháng + Năm + Loại + Mã).</i>
+                    </div>
+                    <group>
+                        <field name="file" filename="filename"/>
+                        <field name="filename" invisible="1"/>
+                    </group>
+                    <footer>
+                        <button name="action_import"
+                                type="object"
+                                string="Import dữ liệu"
+                                class="btn-primary"/>
+                        <button string="Đóng" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_tedi_allowance_import" model="ir.actions.act_window">
+            <field name="name">Import Phụ cấp</field>
+            <field name="res_model">tedi.allowance.import.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+<!--        <menuitem-->
+<!--                id="menu_action_tedi_allowance_import"-->
+<!--                name="Import Excel Phụ cấp"-->
+<!--                action="action_tedi_allowance_import"-->
+<!--                parent="om_hr_payroll.menu_hr_payroll_root"-->
+<!--                sequence="25"/>-->
+
+    </data>
+</odoo>

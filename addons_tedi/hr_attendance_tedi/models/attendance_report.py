@@ -10,7 +10,7 @@ class HrLeave(models.Model):
     _inherit = 'hr.leave'
 
     # =========================================================================
-    # 1. KHAI BÁO DANH SÁCH GIỜ (ĐỂ FIX LỖI INVALID FIELD)
+    # 1. KHAI BÁO DANH SÁCH GIỜ
     # =========================================================================
     _HOUR_SELECTION = [
         ('0', '12:00 AM'), ('0.5', '12:30 AM'),
@@ -40,7 +40,7 @@ class HrLeave(models.Model):
     ]
 
     # =========================================================================
-    # 2. CORE FIX: CHẶN ODOO TỰ ĐỘNG SỬA GIỜ & ÉP CHẾ ĐỘ GIỜ
+    # 2. CORE FIX: CHẶN ODOO TỰ ĐỘNG SỬA GIỜ
     # =========================================================================
 
     request_unit_hours = fields.Boolean(
@@ -98,7 +98,7 @@ class HrLeave(models.Model):
             pass
 
     # =========================================================================
-    # 3. KHÔI PHỤC CÁC TRƯỜNG CỦA BẠN
+    # 3. FIELD CUSTOM
     # =========================================================================
     leaves_taken_count = fields.Float(string='Số ngày phép đã nghỉ', compute='_compute_leave_stats')
     remaining_leaves_count = fields.Float(string='Số ngày phép còn lại', compute='_compute_leave_stats')
@@ -108,12 +108,12 @@ class HrLeave(models.Model):
     report_title = fields.Char(string='Tiêu đề')
     employee_code = fields.Char(related='employee_id.employee_code', string='Mã NV', store=True)
 
+    # [SỬA ĐỔI] Bỏ compute, bỏ store=True (vì mặc định là True), thêm readonly=True để user không tự chọn
     manager_id = fields.Many2one(
         'hr.employee',
         string='Người phê duyệt',
-        compute='_compute_manager',
-        store=True,
-        help="Người quản lý trực tiếp của người đề nghị."
+        readonly=True,
+        help="Người thực tế đã bấm nút duyệt đơn này."
     )
 
     # =========================================================================
@@ -178,16 +178,35 @@ class HrLeave(models.Model):
         return super(HrLeave, self).write(vals)
 
     # =========================================================================
-    # 5. FIX WORK ENTRY CHỒNG LẤN (QUAN TRỌNG NHẤT)
+    # [SỬA ĐỔI] 5. OVERRIDE HÀM DUYỆT ĐỂ GHI NHẬN NGƯỜI DUYỆT
+    # =========================================================================
+
+    def action_approve(self):
+        """
+        Duyệt lần 1 (nếu có cấu hình 2 bước) hoặc Duyệt luôn (nếu 1 bước)
+        """
+        res = super(HrLeave, self).action_approve()
+        # Ghi nhận người đang đăng nhập (self.env.user) là người phê duyệt
+        if self.env.user.employee_id:
+            self.write({'manager_id': self.env.user.employee_id.id})
+        return res
+
+    def action_validate(self):
+        """
+        Duyệt lần 2 (nếu cấu hình 2 bước)
+        """
+        res = super(HrLeave, self).action_validate()
+        # Ghi nhận người đang đăng nhập là người phê duyệt cuối cùng
+        if self.env.user.employee_id:
+            self.write({'manager_id': self.env.user.employee_id.id})
+        return res
+
+    # =========================================================================
+    # 6. FIX WORK ENTRY CHỒNG LẤN
     # =========================================================================
 
     def _validate_leave_request(self):
-        """
-        Logic fix: Sau khi duyệt đơn, tự động xóa sạch Work Entry trong khoảng thời gian đó
-        và chạy lại hàm 'generate_work_entries' (giống hệt nút Wizard).
-        Điều này đảm bảo Work Entry được chia cắt chính xác: 8-10, 10-12, 13-14, 14-17.
-        """
-        # 1. Chạy logic gốc để đổi trạng thái đơn sang 'validate' và tạo resource leave
+        # 1. Chạy logic gốc
         res = super(HrLeave, self)._validate_leave_request()
 
         # 2. FIX: TỰ ĐỘNG REGENERATE WORK ENTRY
@@ -195,30 +214,24 @@ class HrLeave(models.Model):
 
         for leave in self:
             if leave.employee_id and leave.date_from and leave.date_to:
-                # Lấy ngày bắt đầu và kết thúc (chỉ lấy ngày, không lấy giờ)
                 d_from = leave.date_from.date()
                 d_to = leave.date_to.date()
 
-                # Xóa các Work Entry cũ trong khoảng ngày này (trừ những cái đã chốt/validated)
-                # Việc xóa đi tạo lại sẽ giúp Odoo tính toán lại các khoảng trống chính xác hơn
                 to_remove = sudo_we.search([
                     ('employee_id', '=', leave.employee_id.id),
                     ('date_stop', '>=', d_from),
                     ('date_start', '<=', d_to),
-                    ('state', '!=', 'validated')  # QUAN TRỌNG: Không xóa cái đã chốt
+                    ('state', '!=', 'validated')
                 ])
                 if to_remove:
-                    _logger.info(f"CUSTOM: Deleting {len(to_remove)} work entries to regenerate for Leave {leave.id}")
                     to_remove.unlink()
 
-                # Gọi hàm tạo lại (Force Generation = True)
-                # Hàm này chính là hàm mà Wizard của bạn đang sử dụng
                 leave.employee_id.sudo().generate_work_entries(d_from, d_to, True)
 
         return res
 
     # =========================================================================
-    # 6. CÁC HÀM COMPUTE KHÁC (GIỮ NGUYÊN)
+    # 7. CÁC HÀM COMPUTE KHÁC
     # =========================================================================
     @api.depends('employee_id', 'holiday_status_id', 'date_from')
     def _compute_leave_stats(self):
@@ -245,7 +258,3 @@ class HrLeave(models.Model):
             else:
                 rec.my_history_ids = False
 
-    @api.depends('employee_id')
-    def _compute_manager(self):
-        for rec in self:
-            rec.manager_id = rec.employee_id.parent_id.id if rec.employee_id.parent_id else False

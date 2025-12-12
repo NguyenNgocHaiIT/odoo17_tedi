@@ -23,5 +23,13 @@
             <field name="active" eval="False"/>
         </record>
 
+        <record id="fleet.fleet_vehicle_log_contract_menu" model="ir.ui.menu">
+            <field name="active" eval="False"/>
+        </record>
+
+        <record id="fleet.fleet_config_settings_menu" model="ir.ui.menu">
+            <field name="active" eval="False"/>
+        </record>
+
     </data>
 </odoo>

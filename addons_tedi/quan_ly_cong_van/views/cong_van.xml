@@ -97,17 +97,20 @@
                                         <!-- <field name="nhom_nguoi_dung_dv_nhan"/> -->
                                     </group>
                                     <group></group>
-                                    <group>
+                                    <group class="o_form_label_fixed">
                                         <!-- <field name="nguoi_theo_doi"/> -->
                                         <field name="ngay_bat_dau" readonly="tt_vb != 'draft'"/>
-                                        <!-- <field name="ho_so_cong_viec"/> -->
-                                        <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'"/>
-
-                                        <field name="note" readonly="tt_vb != 'draft'"/>
                                     </group>
-                                    <group>
+                                    <group class="o_form_label_fixed">
                                         <!-- <field name="noi_luu_tru"/> -->
                                         <field name="han_ket_thuc" readonly="tt_vb != 'draft'"/>
+                                    </group>
+                                    <!-- <field name="ho_so_cong_viec"/> -->
+                                    <group colspan="2" class="o_form_label_fixed">
+                                        <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'"/>
+                                    </group>
+                                    <group colspan="2" class="o_form_label_fixed">
+                                        <field name="note" readonly="tt_vb != 'draft'"/>
                                     </group>
                                 </group>
                             </page>
@@ -298,10 +301,8 @@
                         <!--                        </group>-->
                         <notebook>
                             <page string="Hồ sơ công việc">
-                                <group>
-                                    <group string="Chi tiết">
-                                        <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'"/>
-                                    </group>
+                                <group string="Chi tiết">
+                                    <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'" style="width: 100%;"/>
                                 </group>
                             </page>
                             <page string="Ý kiến chỉ đạo">
@@ -377,7 +378,7 @@
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','outgoing')]</field>
-            <field name="context">{'default_document_type': 'outgoing'}</field>
+            <field name="context">{'default_document_type': 'outgoing', 'create': False}</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_outgoing_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_outgoing_form')})]"/>
@@ -483,10 +484,8 @@
                         <!--                        </group>-->
                         <notebook>
                             <page string="Hồ sơ công việc">
-                                <group>
-                                    <group string="Chi tiết">
-                                        <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'"/>
-                                    </group>
+                                <group string="Chi tiết">
+                                    <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'" style="width: 100%;"/>
                                 </group>
                             </page>
                             <page string="Ý kiến chỉ đạo">
@@ -545,7 +544,7 @@
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','resolution')]</field>
-            <field name="context">{'default_document_type': 'resolution'}</field>
+            <field name="context">{'default_document_type': 'resolution', 'create': False}</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_resolution_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_resolution_form')})]"/>
@@ -646,10 +645,10 @@
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','outgoing_internal')]</field>
-            <field name="context">{'default_document_type': 'outgoing_internal'}</field>
+            <field name="context">{'default_document_type': 'outgoing_internal', 'create': False}</field>
             <field name="view_ids" eval="[(5, 0, 0),
-        (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_outgoing_tree')}),
-        (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_outgoing_form')})]"/>
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_outgoing_tree')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_outgoing_form')})]"/>
         </record>
 
 

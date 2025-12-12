@@ -118,19 +118,19 @@
             <!-- Trình duyệt: chỉ khi draft -->
             <button name="action_submit" type="object" string="Trình duyệt"
                     class="btn-primary"
-                    groups="quan_ly_tuyen_dung.group_recruitment_committee"
+                    groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_committee"
                     invisible="recruitment_status != 'draft'"/>
 
              <!-- Hoàn thành: chỉ Board -->
             <button name="action_board_approve" type="object" string="Phê duyệt"
                     class="btn-success"
-                    groups="quan_ly_tuyen_dung.group_recruitment_board "
+                    groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_board "
                     invisible="recruitment_status != 'board_approve' or is_applied_to_jobs"/>
 
             <!-- Hoàn thành: chỉ Director -->
             <button name="action_director_approve" type="object" string="Hoàn Thành"
                     class="btn-success"
-                    groups="quan_ly_tuyen_dung.group_recruitment_director "
+                    groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_director "
                     invisible="recruitment_status != 'director_approve' or is_applied_to_jobs"/>
 
           </header>

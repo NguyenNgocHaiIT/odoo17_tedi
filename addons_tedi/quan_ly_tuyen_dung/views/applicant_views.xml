@@ -58,7 +58,7 @@
               <group>
                 <group string="VỊ TRÍ ỨNG TUYỂN">
                   <field name="recruitment_plan_id" string="Đợt tuyển dụng"
-                         domain="[('recruitment_status', '=', 'complete')]"/>
+                         domain="[('recruitment_status', 'in', ['director_approve'])]"/>
                     <field name="available_job_ids" invisible="1"/>
                     <field name="job_id" string="Vị trí"
                            domain="[('id', 'in', available_job_ids)]"/>

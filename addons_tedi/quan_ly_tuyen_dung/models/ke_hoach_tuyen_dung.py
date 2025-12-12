@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, AccessError
+from datetime import datetime, date
 
 HR_OFFICER = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
 COMMITTEE = 'quan_ly_tuyen_dung.group_recruitment_committee'
@@ -24,9 +25,13 @@ class RecruitmentPlan(models.Model):
         string="Số kế hoạch", required=True, readonly=True, copy=False,
         default=lambda self: _('New'), tracking=True
     )
-    plan_execute_date = fields.Date(string="Ngày thực hiện", tracking=True)
+    plan_execute_date = fields.Date(string="Ngày thực hiện", tracking=True, default=fields.Date.today,)
     plan_name = fields.Char(string="Tên kế hoạch", tracking=True)
-    people_suggestion = fields.Many2one("hr.employee", string="Người đề nghị", ondelete="set null")
+    people_suggestion = fields.Many2one(
+        "hr.employee",
+        string="Người đề nghị",
+        ondelete="set null",
+        default=lambda self: self.env.user.employee_id.id,)
     plan_purpose = fields.Char(string="Mục đích")
 
     # --- FIELD MỚI: CHỌN ĐỢT KHẢO SÁT ---
@@ -55,7 +60,11 @@ class RecruitmentPlan(models.Model):
     ], string="Trạng thái", default="draft", index=True, required=True, tracking=True)
 
     is_applied_to_jobs = fields.Boolean(string="Đã áp dụng sang Job", default=False, readonly=True)
-    department_responsible = fields.Many2one("hr.department", string="Phòng ban phụ trách", ondelete="set null")
+    department_responsible = fields.Many2one(
+        "hr.department",
+        string="Phòng ban phụ trách",
+        ondelete="set null",
+        default=lambda self: self.env.user.employee_id.department_id.id,)
 
     recruitment_plan_detail_ids = fields.One2many(
         "recruitment.plan.detail", "plan_id", string="Thông tin chi tiết"
@@ -235,6 +244,20 @@ class RecruitmentPlan(models.Model):
         jobs = self.env['hr.job'].browse(list(totals.keys()))
         for job in jobs:
             job.no_of_recruitment = totals[job.id]
+
+
+    # Ngày thực hiện không chọn trong quá khứ
+    @api.constrains('plan_execute_date')
+    def _check_plan_execute_date(self):
+        for rec in self:
+            if rec.plan_execute_date:
+                # Chuyển str -> date nếu cần
+                if isinstance(rec.plan_execute_date, str):
+                    plan_date = datetime.strptime(rec.plan_execute_date, '%Y-%m-%d').date()
+                else:
+                    plan_date = rec.plan_execute_date
+                if plan_date < date.today():
+                    raise ValidationError("Ngày thực hiện không được nhỏ hơn ngày hiện tại.")
 
     # ----------------- Overrides -----------------
     @api.model

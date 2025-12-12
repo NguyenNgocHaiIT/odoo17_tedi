@@ -15,5 +15,10 @@ class RecruitmentJob(models.Model):
         help="Nhân viên phụ trách tuyển dụng cho vị trí này."
     )
 
+    dot_tuyen_dung = fields.Many2one(
+        "recruitment.plan",
+        string="Đợt tuyển dụng",
+        domain="[('recruitment_status', 'in', ['director_approve'])]")
+
 
 

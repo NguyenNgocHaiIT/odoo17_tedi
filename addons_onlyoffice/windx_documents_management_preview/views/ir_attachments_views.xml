@@ -42,11 +42,16 @@
             <field name="inherit_id" ref="base.view_attachment_search"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='create_date']" position="after">
-                    <field name="document_directory_id"/>
                     <field name="document_tag_ids"/>
                     <field name="directory_tag_ids"/>
+                    <field name="document_directory_id"/>
                     <searchpanel>
-                        <field name="document_directory_id" icon="fa-folder" enable_counters="1"/>
+                        <field name="document_directory_id"
+                               icon="fa-folder"
+                               enable_counters="1"
+                               hierarchical="1"
+                               expand="1"
+                               context="{'searchpanel_strict': True}"/>
                     </searchpanel>
                     <filter string="My Document" name="my_document" domain="[('create_uid', '=', uid)]"/>
                 </xpath>
@@ -60,12 +65,16 @@
             <field name="res_model">ir.attachment</field>
             <field name="view_mode">kanban,tree,form</field>
             <field name="search_view_id" ref="view_attachment_search_inherit_document_management"/>
+            <field name="domain">[('document_directory_id', '=', active_id)]</field>
             <field name="context">{
                 "searchpanel_default_document_directory_id": active_id,
+                "strict_directory_filter": True,
                 "default_document_directory_id": active_id,
                 "search_default_group_document_directory": 1,
-                "search_default_document_directory_id": active_id,
-                "expand": 1}
+                "expand": 1,
+                "hierarchical_naming": true,
+                "search_default_document_directory_strict": 1,
+                'strict_directory_mode': True,}
             </field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
@@ -81,8 +90,11 @@
             <field name="domain">[('document_directory_id', '!=', False)]</field>
             <field name="context">{
                 "search_default_group_document_directory": 1,
-                "act_type": "all_document"
-                "expand": 1}
+                "act_type": "all_document",
+                "expand": 1,
+                "hierarchical_naming": true,
+                "search_default_document_directory_strict": 1,
+                'strict_directory_mode': True,}
             </field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
@@ -98,8 +110,11 @@
             <field name="domain">[('document_directory_id', '!=', False), ('create_uid', '=', uid)]</field>
             <field name="context">{
                 "search_default_group_document_directory": 1,
-                "act_type": "my_document"
-                "expand": 1}
+                "act_type": "my_document",
+                "expand": 1,
+                "hierarchical_naming": true,
+                "search_default_document_directory_strict": 1,
+                'strict_directory_mode': True,}
             </field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
