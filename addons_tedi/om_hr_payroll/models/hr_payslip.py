@@ -775,7 +775,6 @@ class HrPayslip(models.Model):
         struct = contract.struct_id
         if pay_batch:
             struct = self.env['hr.payroll.structure'].sudo().search([('pay_batch', '=', pay_batch)], limit=1)
-            print('struct', struct)
         if not struct:
             return res
         res['value'].update({

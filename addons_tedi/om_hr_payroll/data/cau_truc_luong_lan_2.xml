@@ -21,21 +21,10 @@
             <field name="category_id" ref="om_hr_payroll.BASIC"/>
             <field name="amount_select">code</field>
             <field name="quantity">1</field>
-            <field name="amount_python_compute">att_codes = ['WORK_REAL', 'WORK110']
-att_real = 0
-for code in att_codes:
-    try:
-        att_real += getattr(worked_days, code).number_of_days or 0
-    except Exception:
-        # nếu attribute không tồn tại hoặc không có number_of_days thì bỏ qua
-        pass
-
-try:
-    work100 = getattr(worked_days, 'WORK100').number_of_days
-    result = (contract.salary_grade_id.luong_chuc_danh / work100) * att_real if work100 else 0
-except Exception:
-    result = 0
-</field>
+            <field name="amount_python_compute">att_real = worked_days.WORK_REAL.number_of_days
+if worked_days.WORK110:
+    att_real += worked_days.WORK110.number_of_days
+result = (contract.salary_grade_id.luong_chuc_danh/ worked_days.WORK100.number_of_days) * att_real</field>
 <!--            <field name="amount_percentage">45</field>-->
         </record>
 
@@ -46,20 +35,16 @@ except Exception:
             <field name="category_id" ref="om_hr_payroll.BASIC"/>
             <field name="amount_select">code</field>
             <field name="quantity">1</field>
-            <field name="amount_python_compute">leave_codes = ['LEAVE100','LEAVE105','LEAVE110','LEAVE120']
-leave_real = 0
-for code in leave_codes:
-    try:
-        leave_real += getattr(worked_days, code).number_of_days or 0
-    except Exception:
-        # nếu không tồn tại hoặc không có number_of_days thì bỏ qua
-        pass
-
-try:
-    work_days = getattr(worked_days, 'WORK100').number_of_days
-    result = (contract.salary_grade_id.luong_chuc_danh / work_days) * leave_real if work_days else 0
-except Exception:
-    result = 0</field>
+            <field name="amount_python_compute">leave_real = 0
+if worked_days.LEAVE100:
+    leave_real += worked_days.LEAVE100.number_of_days
+if worked_days.LEAVE105:
+    leave_real += worked_days.LEAVE105.number_of_days
+if worked_days.LEAVE110:
+    leave_real += worked_days.LEAVE110.number_of_days
+if worked_days.LEAVE120:
+    leave_real += worked_days.LEAVE120.number_of_days
+result = (contract.salary_grade_id.luong_chuc_danh/ worked_days.WORK100.number_of_days) * leave_real</field>
         </record>
 
         <record id="tns_rule" model="hr.salary.rule">
