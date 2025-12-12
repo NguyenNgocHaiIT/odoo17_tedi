@@ -2,6 +2,10 @@
 from odoo import models, fields, api, _
 from markupsafe import Markup
 from werkzeug.urls import url_encode
+from odoo.exceptions import UserError
+import base64
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class HrEmployeePrivate(models.Model):
@@ -146,3 +150,52 @@ class HrEmployeePrivate(models.Model):
                     line.sequence = idx
                 if hasattr(line, 'stt'):
                     line.stt = idx
+
+    def action_open_create_user(self):
+        self.ensure_one()
+
+        # --- Lấy view res.users ưu tiên ---
+        view = None
+        try:
+            view = self.env.ref('hr.res_users_view_form')
+        except Exception:
+            try:
+                view = self.env.ref('base.view_users_form')
+            except Exception:
+                view = self.env['ir.ui.view'].search([
+                    ('model', '=', 'res.users'),
+                    ('type', '=', 'form'),
+                    ('mode', '=', 'primary'),
+                ], limit=1)
+
+        _logger.info(f"Opening res.users form view ID: {view.id}")
+
+        # --- Chuẩn bị image base64 ---
+        default_image = False
+        if self.image_1920:
+            # Nếu image là bytes, chuyển sang base64 string
+            if isinstance(self.image_1920, bytes):
+                default_image = base64.b64encode(self.image_1920).decode('utf-8')
+            else:
+                default_image = self.image_1920
+
+        # --- Trả về action ---
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Tạo người dùng cho %s') % self.name,
+            'res_model': 'res.users',
+            'view_mode': 'form',
+            'views': [(view.id, 'form')],
+            'target': 'current',  # mở full page, không popup
+            'context': {
+                'default_name': self.name,
+                'default_login': self.work_email,
+                'default_email': self.work_email,
+                'default_image_1920': default_image,
+                'default_employee_ids': [(4, self.id)],
+                'defaylt_password': 1,
+                'form_view_initial_mode': 'edit',
+                # Đảm bảo avatar hiển thị ngay
+                'show_hr_icon_display': True,
+            },
+        }

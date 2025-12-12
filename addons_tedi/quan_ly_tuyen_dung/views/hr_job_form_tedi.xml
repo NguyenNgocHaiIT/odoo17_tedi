@@ -29,6 +29,7 @@
               <field name="interviewer_ids" string="Người phỏng vấn"
                      widget="many2many_tags_avatar"
                      options="{'no_create': True, 'no_create_edit': True}"/>
+              <field name="dot_tuyen_dung" string="Đợt tuyển dụng"/>
             </group>
           </group>
         </page>
