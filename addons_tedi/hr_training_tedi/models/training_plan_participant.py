@@ -1,15 +1,138 @@
 from odoo import models, api, fields, _
-from odoo.exceptions import AccessError
-HR_OFFICER          = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
-PARTICIPANT         = "hr_training_tedi.group_training_participant"
-UNIT_MANAGER        = "hr_training_tedi.group_training_unit_manager"
-GENERAL_DIRECTOR    = "hr_training_tedi.group_training_general_director"
-BASE                = "base.group_user"
+from odoo.exceptions import AccessError, ValidationError
 
 
 class TrainingPlanParticipation(models.Model):
     _name = 'training.plan.participation'
     _description = 'Training Plan Participation'
+    _rec_name = "training_plan_detail_id"
+
+    # =========================================================
+    # 1. LOGIC TRẠNG THÁI (CORE)
+    # =========================================================
+
+    # [MỚI] Field cờ đánh dấu đã bấm nút Kết thúc thủ công
+    is_manually_ended = fields.Boolean(
+        string="Đã kết thúc thủ công",
+        default=False,
+        copy=False
+    )
+
+    state = fields.Selection([
+        ('not_started', 'Chưa bắt đầu'),
+        ('in_progress', 'Đang diễn ra'),
+        ('finished', 'Đã kết thúc')
+    ], string="Trạng thái", compute="_compute_state", store=True, readonly=False)
+
+    plan_state = fields.Selection(
+        related='training_plan_id.state',
+        string="Trạng thái Plan",
+        readonly=True
+    )
+
+    # Thêm is_manually_ended vào depends để trigger tính toán lại
+    @api.depends('start_date', 'end_date', 'training_plan_id.state', 'is_manually_ended')
+    def _compute_state(self):
+        today = fields.Date.context_today(self)
+        for rec in self:
+            rec._update_state_logic(today)
+
+    def _update_state_logic(self, today_date):
+        self.ensure_one()
+
+        # 1. Ưu tiên cao nhất: Nếu Plan chưa duyệt -> Luôn là Chưa bắt đầu
+        if self.training_plan_id.state != 'approved':
+            self.state = 'not_started'
+            return
+
+        # 2. Ưu tiên nhì: Nếu đã bấm nút Kết thúc thủ công -> Finished ngay lập tức
+        # (Giúp xử lý trường hợp Start = End = Today mà bấm End vẫn về Finished)
+        if self.is_manually_ended:
+            self.state = 'finished'
+            return
+
+        # 3. Logic ngày tháng tự động
+        if not self.start_date:
+            self.state = 'not_started'
+        elif not self.end_date:
+            # Nếu chưa có ngày kết thúc, chỉ cần đến ngày bắt đầu là In Progress
+            self.state = 'in_progress' if today_date >= self.start_date else 'not_started'
+        else:
+            # Logic: Start <= Today <= End
+            if today_date < self.start_date:
+                self.state = 'not_started'
+            elif self.start_date <= today_date <= self.end_date:
+                self.state = 'in_progress'
+            else:
+                self.state = 'finished'
+
+    # =========================================================
+    # 2. RÀNG BUỘC DỮ LIỆU
+    # =========================================================
+
+    @api.constrains('start_date', 'end_date')
+    def _check_dates(self):
+        for rec in self:
+            # Cho phép start_date == end_date (chỉ raise lỗi khi start > end)
+            if rec.start_date and rec.end_date and rec.start_date > rec.end_date:
+                raise ValidationError(_("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!"))
+
+    # =========================================================
+    # 3. CRON JOB (CHẠY TỰ ĐỘNG)
+    # =========================================================
+
+    @api.model
+    def _cron_update_training_state(self):
+        """
+        Scheduled Action gọi hàm này mỗi ngày.
+        """
+        today = fields.Date.context_today(self)
+        # Chỉ quét các bản ghi chưa 'finished'
+        records = self.search([('state', '!=', 'finished')])
+        for rec in records:
+            rec._update_state_logic(today)
+
+    # =========================================================
+    # 4. ACTION BUTTONS (THỦ CÔNG)
+    # =========================================================
+
+    def action_start(self):
+        """Nút Bắt đầu"""
+        for rec in self:
+            if rec.training_plan_id.state != 'approved':
+                raise ValidationError(_("Không thể bắt đầu đào tạo khi Kế hoạch chưa được duyệt!"))
+
+        today = fields.Date.context_today(self)
+        for rec in self:
+            # [QUAN TRỌNG] Reset cờ thủ công để tính lại theo ngày tháng
+            rec.is_manually_ended = False
+
+            if rec.training_plan_detail_id:
+                rec.training_plan_detail_id.write({'start_date': today})
+
+    def action_end(self):
+        """Nút Kết thúc"""
+        today = fields.Date.context_today(self)
+        for rec in self:
+            if rec.training_plan_detail_id:
+                # Kiểm tra logic: Không cho phép kết thúc nếu ngày bắt đầu (dự kiến) nằm ở tương lai
+                # start_date > today: Lỗi
+                # start_date == today: OK (cho phép sáng bắt đầu, chiều kết thúc)
+                if rec.start_date and rec.start_date > today:
+                    raise ValidationError(_("Không thể kết thúc vì ngày bắt đầu (dự kiến) lớn hơn hôm nay."))
+
+                # Ghi ngày kết thúc
+                rec.training_plan_detail_id.write({'end_date': today})
+
+                # [QUAN TRỌNG] Đánh dấu đã kết thúc thủ công -> Để ép state về 'finished'
+                rec.is_manually_ended = True
+
+                # Gọi lại compute ngay lập tức để cập nhật giao diện
+                rec._compute_state()
+
+    # =========================================================
+    # 5. CÁC FIELDS KHÁC (GIỮ NGUYÊN)
+    # =========================================================
 
     training_plan_id = fields.Many2one(
         "training.plan",
@@ -30,17 +153,17 @@ class TrainingPlanParticipation(models.Model):
         readonly=True,
     )
 
-    # --- CÁC TRƯỜNG BỔ SUNG (Lấy từ Detail) ---
-
     start_date = fields.Date(
         string="Từ ngày",
         related='training_plan_detail_id.start_date',
+        store=True,
         readonly=True
     )
 
     end_date = fields.Date(
         string="Đến ngày",
         related='training_plan_detail_id.end_date',
+        store=True,
         readonly=True
     )
 
@@ -50,7 +173,6 @@ class TrainingPlanParticipation(models.Model):
         readonly=True
     )
 
-    # Cần trường này để hiển thị đơn vị tiền tệ (VND/USD)
     currency_id = fields.Many2one(
         'res.currency',
         related='training_plan_detail_id.currency_id',
@@ -72,17 +194,19 @@ class TrainingPlanParticipation(models.Model):
         readonly=True
     )
 
-    # -------------------------------------------
-
     participation_detail_ids = fields.One2many(
         "training.plan.participation.detail",
         "participation_id",
         string="Danh sách đăng ký",
     )
 
-    @api.model
-    def create(self, vals):
-        return super().create(vals)
+    def write(self, vals):
+        res = super(TrainingPlanParticipation, self).write(vals)
+        if 'state' in vals:
+            for rec in self:
+                for line in rec.participation_detail_ids:
+                    line._sync_to_history()
+        return res
 
 
 class TrainingPlanParticipationDetail(models.Model):
@@ -95,17 +219,22 @@ class TrainingPlanParticipationDetail(models.Model):
         ondelete="cascade",
     )
 
+    # Sử dụng compute + store để xử lý field này thay vì related trực tiếp
     training_plan_detail_id = fields.Many2one(
         'training.plan.detail',
         string="Khoá đào tạo",
-        related='participation_id.training_plan_detail_id',
+        compute='_compute_training_plan_detail_id',
         store=True,
-        readonly=True,
+        readonly=False
     )
+
+    @api.depends('participation_id.training_plan_detail_id')
+    def _compute_training_plan_detail_id(self):
+        for rec in self:
+            rec.training_plan_detail_id = rec.participation_id.training_plan_detail_id or False
 
     user_id = fields.Many2one('res.users', string="Họ và tên")
 
-    # --- 1. ĐƠN VỊ (Lấy từ phòng ban của User/Nhân viên) ---
     department_id = fields.Many2one(
         'hr.department',
         string="Đơn vị",
@@ -114,7 +243,6 @@ class TrainingPlanParticipationDetail(models.Model):
         readonly=True,
     )
 
-    # --- 2. HÌNH THỨC ĐÀO TẠO (Lấy từ Plan Detail) ---
     training_type = fields.Selection(
         [
             ("direct", "Trực tiếp"),
@@ -126,8 +254,6 @@ class TrainingPlanParticipationDetail(models.Model):
         readonly=True,
     )
 
-    # --- 3. THỜI GIAN (Lấy từ Plan Detail) ---
-    # Lấy text thời gian thực hiện
     training_time = fields.Char(
         string="Thời gian",
         related='training_plan_detail_id.time_of_execution',
@@ -135,11 +261,9 @@ class TrainingPlanParticipationDetail(models.Model):
         readonly=True,
     )
 
-    # Nếu muốn hiển thị rõ Từ ngày - Đến ngày thì dùng 2 field dưới (Tuỳ chọn)
     start_date = fields.Date(related='training_plan_detail_id.start_date', string="Từ ngày", readonly=True)
     end_date = fields.Date(related='training_plan_detail_id.end_date', string="Đến ngày", readonly=True)
 
-    # --- 4. KINH PHÍ (Lấy từ Plan Detail) ---
     currency_id = fields.Many2one(
         'res.currency',
         related='training_plan_detail_id.currency_id',
@@ -156,7 +280,6 @@ class TrainingPlanParticipationDetail(models.Model):
         readonly=True,
     )
 
-    # --- 5. GHI CHÚ (Lấy từ Plan Detail theo yêu cầu) ---
     note = fields.Char(
         string="Ghi chú",
         related='training_plan_detail_id.note',
@@ -166,4 +289,66 @@ class TrainingPlanParticipationDetail(models.Model):
 
     @api.model
     def create(self, vals):
-        return super().create(vals)
+        record = super(TrainingPlanParticipationDetail, self).create(vals)
+        record._sync_to_history()
+        return record
+
+    # 2. SỬA HỌC VIÊN (VÍ DỤ ĐỔI NGƯỜI) -> CẬP NHẬT LỊCH SỬ
+    def write(self, vals):
+        res = super(TrainingPlanParticipationDetail, self).write(vals)
+        for rec in self:
+            rec._sync_to_history()
+        return res
+
+    # 3. XÓA HỌC VIÊN -> XÓA LỊCH SỬ (Đã xử lý bằng ondelete='cascade' ở model đích, nhưng thêm cho chắc)
+    def unlink(self):
+        history_recs = self.env['hr.employee.training.tedi'].search([('source_detail_id', 'in', self.ids)])
+        history_recs.unlink()
+        return super(TrainingPlanParticipationDetail, self).unlink()
+
+    # --- HÀM ĐỒNG BỘ DỮ LIỆU (CORE) ---
+    def _sync_to_history(self):
+        History = self.env['hr.employee.training.tedi']
+        for rec in self:
+            # Check Plan Approved
+            if rec.training_plan_detail_id.plan_id.state != 'approved':
+                continue
+
+            # Check Employee
+            employee = rec.user_id.employee_id
+            if not employee:
+                continue
+
+            plan_detail = rec.training_plan_detail_id
+
+            # --- SỬA LOGIC MAPPING TRẠNG THÁI ---
+            # Lấy trạng thái của đợt đào tạo (TrainingPlanParticipation)
+            participation_state = rec.participation_id.state
+
+            target_status = 'planned'  # Mặc định là Chưa bắt đầu
+
+            if participation_state == 'finished':
+                target_status = 'completed'
+            elif participation_state == 'in_progress':
+                target_status = 'in_progress'
+            elif participation_state == 'not_started':
+                target_status = 'planned'
+            # ------------------------------------
+
+            data_vals = {
+                'employee_id': employee.id,
+                'name': plan_detail.course_id.name if plan_detail.course_id else (
+                            plan_detail.plan_id.name or 'Khóa học'),
+                'facility': plan_detail.training_location,
+                'date_from': plan_detail.start_date,
+                'date_to': plan_detail.end_date,
+                'training_form': plan_detail.training_type,
+                'status': target_status,  # <--- Gán trạng thái mới
+            }
+
+            existing = History.search([('source_detail_id', '=', rec.id)], limit=1)
+            if existing:
+                existing.write(data_vals)
+            else:
+                data_vals['source_detail_id'] = rec.id
+                History.create(data_vals)

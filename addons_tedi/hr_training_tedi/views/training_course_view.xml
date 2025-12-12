@@ -1,29 +1,28 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
-    <record id = "training_course_tree" model = "ir.ui.view">
-        <field name ="name" > training_course_tree</field>
-        <field name = "model">training.course</field>
-        <field name = "arch" type = "xml">
+    <record id="training_course_tree" model="ir.ui.view">
+        <field name="name">training_course_tree</field>
+        <field name="model">training.course</field>
+        <field name="arch" type="xml">
             <tree>
-                <field name = "name" string = "Tên khoá đào tạo"/>
-                <field name = "type" string = "Loại hình"/>
-                <field name = "training_field_ids" string = "Lĩnh vực" widget="many2many_tags"/>
+                <field name="name" string="Tên khoá đào tạo" class="text-start"/>
+                <field name="type" string="Loại hình" class="text-start"/>
+                <field name="training_field_ids" string="Lĩnh vực" widget="many2many_tags" class="text-start"/>
             </tree>
         </field>
-
     </record>
 
-    <record id = "training_course_form" model="ir.ui.view">
-        <field name = "name">training_course_form</field>
-        <field name = "model" >training.course</field>
-        <field name = "arch" type = "xml">
+    <record id="training_course_form" model="ir.ui.view">
+        <field name="name">training_course_form</field>
+        <field name="model">training.course</field>
+        <field name="arch" type="xml">
             <form>
                 <group>
-                    <field name = "name" string = "Tên khoá đào tạo"/>
-                    <field name = "type" string = "Loại hình"/>
+                    <field name="name" string="Tên khoá đào tạo" class="text-start"/>
+                    <field name="type" string="Loại hình" class="text-start"/>
                 </group>
                 <group>
-                    <field name = "training_field_ids" string = "Lĩnh vực" widget="many2many_tags"/>
+                    <field name="training_field_ids" string="Lĩnh vực" widget="many2many_tags" class="text-start"/>
                 </group>
             </form>
         </field>

@@ -2,107 +2,78 @@
 <odoo>
     <data>
 
-        <!-- TREE: Nhu cầu đào tạo (header ngoài list) -->
         <record id="view_trainings_needs_tree" model="ir.ui.view">
             <field name="name">trainings.needs.tree</field>
             <field name="model">trainings.needs</field>
             <field name="arch" type="xml">
                 <tree string="Nhu cầu đào tạo">
-                    <field name="name" string="Đợt khảo sát" class="text-center"/>
-                    <field name="create_date" string="Ngày đăng ký" class="text-center"/>
-                    <field name="user_id" string="Người đăng ký" class="text-center"/>
-                    <field name="approver_id" string="Người phê duyệt" class="text-center"/>
+                    <field name="name" string="Đợt khảo sát" class="text-start"/>
+                    <field name="create_date" string="Ngày đăng ký" class="text-start"/>
+                    <field name="user_id" string="Người đăng ký" class="text-start"/>
+                    <field name="approver_id" string="Người phê duyệt" class="text-start"/>
                     <field name="state" string="Trạng thái"
                            widget="badge"
                            decoration-warning="state == 'pending'"
                            decoration-success="state == 'approved'"
-                           class="text-center"/>
+                           class="text-start"/>
                 </tree>
             </field>
         </record>
 
+        <record id="view_trainings_needs_form" model="ir.ui.view">
+            <field name="name">trainings.needs.form</field>
+            <field name="model">trainings.needs</field>
+            <field name="arch" type="xml">
+                <form string="Nhu cầu đào tạo">
+                    <header>
+                        <button name="action_submit" string="Trình duyệt" type="object" class="btn-primary"
+                                groups="hr_training_tedi.group_training_participant" invisible="state != 'draft'"/>
+                        <button name="action_approve" string="Duyệt" type="object" class="btn-success"
+                                groups="hr_training_tedi.group_training_unit_manager" invisible="state != 'pending'"/>
+                        <button name="action_reject" string="Từ chối" type="object" class="btn-danger"
+                                groups="hr_training_tedi.group_training_unit_manager" invisible="state != 'pending'"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
+                    </header>
 
-        <!-- TREE: dòng chi tiết nhu cầu đào tạo -->
-       <record id="view_trainings_needs_form" model="ir.ui.view">
-        <field name="name">trainings.needs.form</field>
-        <field name="model">trainings.needs</field>
-        <field name="arch" type="xml">
-            <form string="Nhu cầu đào tạo">
-                <header>
-                    <!-- ĐĂNG KÝ (draft -> pending) -->
-                    <button name="action_submit"
-                            string="Đăng ký"
-                            type="object"
-                            class="btn-primary"
-                            groups="hr_training_tedi.group_training_participant"
-                            invisible="state != 'draft'"/>
-
-                    <!-- DUYỆT (pending -> approved) -->
-                    <button name="action_approve"
-                            string="Duyệt"
-                            type="object"
-                            class="btn-success"
-                            groups="hr_training_tedi.group_training_unit_manager"
-                            invisible="state != 'pending'"/>
-
-                    <!-- TỪ CHỐI (pending -> draft) -->
-                    <button name="action_reject"
-                            string="Từ chối"
-                            type="object"
-                            class="btn-danger"
-                            groups="hr_training_tedi.group_training_unit_manager"
-                            invisible="state != 'pending'"/>
-
-
-                    <!-- Thanh trạng thái -->
-                    <field name="state" widget="statusbar"
-                           statusbar_visible="draft,pending,approved"/>
-                </header>
-
-                <sheet>
-                    <group>
+                    <sheet>
                         <group>
-                            <field name="name" string="Đợt khảo sát"/>
-                            <!-- Người đăng ký: readonly, luôn hiển thị -->
-                            <field name="user_id" string="Người đăng ký" readonly="1"/>
+                            <group>
+                                <field name="name" string="Đợt khảo sát" class="text-start"/>
+                                <field name="user_id" string="Người đăng ký" readonly="1" class="text-start"/>
+                            </group>
+                            <group>
+                                <field name="create_date" string="Ngày đăng ký" readonly="1" class="text-start"/>
+                                <field name="approver_id" string="Người phê duyệt" readonly="1"
+                                       invisible="state == 'draft'" class="text-start"/>
+                            </group>
                         </group>
-                        <group>
-                            <field name="create_date" string="Ngày đăng ký" readonly="1"/>
-                            <!-- Người phê duyệt: readonly, ẩn khi state = draft -->
-                            <field name="approver_id"
-                                   string="Người phê duyệt"
-                                   readonly="1"
-                                   modifiers="{'invisible': [['state','=','draft']]}"/>
-                        </group>
-                    </group>
 
+                        <notebook>
+                            <page string="Nhu cầu đào tạo">
+                                <field name="line_ids" readonly="state == 'approved'">
+                                    <tree string="Nhu cầu đào tạo" editable="bottom">
+                                        <field name="course_id" class="text-start"/>
+                                        <field name="training_field_id" class="text-start"/>
+                                        <field name="note" class="text-start"/>
 
-                    <notebook>
-                        <page string="Nhu cầu đào tạo">
-                            <field name="line_ids"
-                                   options="{'no_open': True}"
-                                   readonly="state == 'approved'">
+                                        <field name="participation_state" column_invisible="1"/>
 
-                                <tree string="Nhu cầu đào tạo"
-                                      editable="bottom"
-                                      readonly="parent.state == 'approved'">
+                                        <button name="action_open_review"
+                                                string="Đánh giá"
+                                                type="object"
+                                                icon="fa-star"
+                                                class="btn-warning"
+                                                title="Đánh giá khoá học"
+                                                invisible="participation_state != 'finished'"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
 
-                                    <field name="course_id" class="text-center"/>
-                                    <field name="training_field_id" class="text-center"/>
-                                    <field name="note" class="text-center"/>
-
-                                </tree>
-                            </field>
-
-                        </page>
-                    </notebook>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-
-        <!-- ACTION -->
         <record id="action_trainings_needs" model="ir.actions.act_window">
             <field name="name">Nhu cầu đào tạo</field>
             <field name="res_model">trainings.needs</field>
@@ -113,7 +84,6 @@
                 (0, 0, {'view_id': ref('view_trainings_needs_form'), 'view_mode': 'form'}),
             ]"/>
         </record>
-
 
     </data>
 </odoo>

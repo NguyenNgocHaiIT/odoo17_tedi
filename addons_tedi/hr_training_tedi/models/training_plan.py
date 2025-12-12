@@ -215,7 +215,15 @@ class TrainingPlan(models.Model):
         for rec in self:
             if rec.state != "pending":
                 raise ValidationError(_("Chỉ có thể duyệt từ trạng thái 'Chờ duyệt'."))
+
             rec.state = "approved"
+
+            # --- MỚI: Kích hoạt đồng bộ sang hồ sơ nhân viên NGAY KHI DUYỆT ---
+            # Lý do: Trước khi duyệt, _sync_to_history bị chặn.
+            # Giờ duyệt xong phải gọi lại để nó tạo dữ liệu.
+            for detail in rec.detail_ids:
+                for part_detail in detail.participation_detail_ids:
+                    part_detail._sync_to_history()
 
     def action_reject(self):
         for rec in self:
@@ -343,3 +351,16 @@ class TrainingPlanDetail(models.Model):
     def create(self, vals):
         # self._check_participant()
         return super().create(vals)
+
+    def write(self, vals):
+        res = super(TrainingPlanDetail, self).write(vals)
+
+        # Nếu sửa thông tin quan trọng
+        if any(f in vals for f in ['start_date', 'end_date', 'training_location', 'training_type', 'course_id']):
+            for detail in self:
+                # Logic này sẽ gọi _sync_to_history của từng học viên.
+                # Nhờ có điều kiện chặn ở trên, nếu Plan chưa duyệt (ví dụ sửa lúc Draft),
+                # nó sẽ tự động bỏ qua, không gây lỗi.
+                for part_detail in detail.participation_detail_ids:
+                    part_detail._sync_to_history()
+        return res

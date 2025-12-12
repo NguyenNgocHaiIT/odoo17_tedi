@@ -150,26 +150,84 @@ class TrainingNeedsLine(models.Model):
     _name = 'trainings.needs.line'
     _description = 'Training Needs Line'
 
-    # line_selected = fields.Boolean(string="")
-
     training_needs_id = fields.Many2one(
         'trainings.needs',
         string='Phiếu nhu cầu',
         ondelete='cascade',
     )
 
-    course_id = fields.Many2one(
-        "training.course",
-        string="Tên khoá đào tạo"
-    )
-    training_field_id = fields.Many2one(
-        'training.field',
-        string="Lĩnh vực"
-    )
+    course_id = fields.Many2one("training.course", string="Tên khoá đào tạo")
+    training_field_id = fields.Many2one('training.field', string="Lĩnh vực")
+
+    # Link đến chi tiết tham gia (được update khi Plan được tạo)
     participation_detail_id = fields.Many2one(
         'training.plan.participation.detail',
         string="Dòng đăng ký kế hoạch",
         readonly=True,
     )
+
     note = fields.Char(string="Ghi chú")
 
+    # --- 1. FIELD CHECK TRẠNG THÁI ĐỂ HIỂN THỊ NÚT ---
+    # Lấy trạng thái từ bên Plan Participation sang đây
+    participation_state = fields.Selection(
+        related='participation_detail_id.participation_id.state',
+        string="Trạng thái đào tạo",
+        readonly=True
+    )
+
+    # --- 2. ACTION MỞ FORM ĐÁNH GIÁ ---
+    def action_open_review(self):
+        self.ensure_one()
+
+        # A. Check quyền: Chỉ người tạo phiếu nhu cầu mới được đánh giá
+        # user_id là người tạo phiếu (được set default=uid khi create)
+        if self.env.uid != self.training_needs_id.user_id.id:
+            raise ValidationError(
+                _("Chỉ người tạo phiếu đăng ký này (%s) mới có quyền đánh giá.") % self.training_needs_id.user_id.name)
+
+        # B. Check trạng thái: Phải kết thúc mới được đánh giá
+        if self.participation_state != 'finished':
+            raise ValidationError(_("Khoá đào tạo chưa kết thúc, bạn chưa thể đánh giá lúc này."))
+
+        # C. Check dữ liệu: Phải đã được xếp lớp
+        if not self.participation_detail_id:
+            raise ValidationError(_("Khoá học này chưa được xếp lớp vào kế hoạch đào tạo."))
+
+        # D. Logic mở form
+        Review = self.env['training.review']
+
+        # Tìm xem đã đánh giá chưa (dựa vào participation_detail_id)
+        existing_review = Review.search([
+            ('participation_detail_id', '=', self.participation_detail_id.id),
+            ('user_id', '=', self.env.uid)
+        ], limit=1)
+
+        if existing_review:
+            # Nếu có rồi -> Mở ra xem/sửa
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Đánh giá khoá học'),
+                'res_model': 'training.review',
+                'view_mode': 'form',
+                'res_id': existing_review.id,
+                'target': 'new',  # Mở popup
+            }
+        else:
+            # Nếu chưa có -> Mở form tạo mới (điền sẵn dữ liệu)
+            plan_detail = self.participation_detail_id.training_plan_detail_id
+
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Đánh giá khoá học'),
+                'res_model': 'training.review',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_user_id': self.env.uid,
+                    'default_participation_detail_id': self.participation_detail_id.id,  # Quan trọng để link
+                    'default_training_plan_detail_id': plan_detail.id,
+                    'default_training_plan_id': plan_detail.plan_id.id,
+                    # 'default_start_date': plan_detail.start_date, # Nếu review có field này
+                }
+            }

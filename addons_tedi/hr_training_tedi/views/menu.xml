@@ -35,12 +35,43 @@
                   action="action_training_participation"
                   sequence="40"/>
 
-        <menuitem id="menu_training_course"
-                  name="Khoá đào tạo"
+
+
+        <menuitem id="menu_training_review_root"
+                  name="Đánh giá"
                   parent="hr_training_tedi.training_tedi_root"
+                  sequence="60"/>
+
+        <menuitem id="menu_training_review_my"
+                  name="Đánh giá của tôi"
+                  parent="hr_training_tedi.menu_training_review_root"
+                  action="action_training_review_my"
+                  sequence="60"/>
+
+        <menuitem id="menu_training_review_all"
+                  name="Tất cả đánh giá"
+                  parent="hr_training_tedi.menu_training_review_root"
+                  action="action_training_review_all"
+                  groups="hr_training_tedi.group_training_unit_manager,hr_training_tedi.group_training_general_director"
+                  sequence="70"/>
+
+        <menuitem id="menu_training_configuration"
+                  name="Cấu hình"
+                  parent="hr_training_tedi.training_tedi_root"
+                  groups="hr_training_tedi.group_training_admin"
+                  sequence="70"/>
+
+        <menuitem id="menu_training_field"
+                  name="Lĩnh vực đào tạo"
+                  action="action_training_field"
+                  parent="hr_training_tedi.menu_training_configuration"
+                  sequence="10"/>
+
+         <menuitem id="menu_training_course"
+                  name="Khoá đào tạo"
+                  parent="hr_training_tedi.menu_training_configuration"
                   action="action_training_course"
-                  groups="quan_ly_tuyen_dung.group_recruitment_hr_officer"
-                  sequence="50"/>
+                  sequence="20"/>
 
 
 

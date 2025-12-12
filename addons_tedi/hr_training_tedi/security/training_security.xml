@@ -120,5 +120,37 @@
       <field name="perm_unlink" eval="1"/>
     </record>
 
+      <record id="rr_training_review_personal" model="ir.rule">
+        <field name="name">Training Review: Personal (Own Documents)</field>
+        <field name="model_id" ref="model_training_review"/>
+        <field name="groups" eval="[(4, ref('group_training_participant'))]"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+
+    <record id="rr_training_review_unit_manager" model="ir.rule">
+        <field name="name">Training Review: Unit Manager (Department Scope)</field>
+        <field name="model_id" ref="model_training_review"/>
+        <field name="groups" eval="[(4, ref('group_training_unit_manager'))]"/>
+        <field name="domain_force">['|', ('user_id', '=', user.id), ('user_id.employee_id.department_id', 'child_of', user.employee_id.department_id.id)]</field>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="0"/> <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+
+    <record id="rr_training_review_manager_all" model="ir.rule">
+        <field name="name">Training Review: Manager/Admin Full Access</field>
+        <field name="model_id" ref="model_training_review"/>
+        <field name="groups" eval="[(4, ref('group_training_manager')), (4, ref('group_training_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
     </data>
 </odoo>
