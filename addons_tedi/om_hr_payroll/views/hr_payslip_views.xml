@@ -81,7 +81,9 @@
                     <field name="date_to"/>
                     <field name="state"/>
                     <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
-                    <field name="payslip_run_id" invisible="1"/>
+                    <field name="payslip_run_id" column_invisible="1"/>
+                    <field name="net_pay"/>
+                    <field name="currency_id" column_invisible="1"/>
                 </tree>
             </field>
         </record>
@@ -183,6 +185,8 @@
                             <field name="struct_id" required="contract_id != False" readonly="state != 'draft'"/>
                             <field name="name" readonly="state != 'draft'"/>
                             <field name="credit_note" readonly="state != 'draft'"/>
+                            <field name="net_pay"/>
+                            <field name="currency_id" invisible="1"/>
                         </group>
                         <notebook>
                             <page string="Worked Days &amp; Inputs">
@@ -193,8 +197,8 @@
                                         <field name="code"/>
                                         <field name="number_of_days" sum="Total Working Days"/>
                                         <field name="number_of_hours"/>
-                                        <field name="contract_id"/>
-                                        <field name="sequence" invisible="True"/>
+                                        <field name="contract_id" column_invisible="True"/>
+                                        <field name="sequence" column_invisible="True"/>
                                     </tree>
                                     <form string="Worked Day">
                                         <group col="4">
@@ -213,8 +217,8 @@
                                         <field name="name"/>
                                         <field name="code"/>
                                         <field name="amount"/>
-                                        <field name="contract_id"/>
-                                        <field name="sequence" invisible="True"/>
+                                        <field name="contract_id" column_invisible="True"/>
+                                        <field name="sequence" column_invisible="True"/>
                                     </tree>
                                     <form string="Payslip Line">
                                         <group col="4">
@@ -233,10 +237,10 @@
                                         <field name="name"/>
                                         <field name="code"/>
                                         <field name="category_id"/>
-                                        <field name="sequence" invisible="1"/>
+                                        <field name="sequence" column_invisible="1"/>
                                         <field name="quantity"/>
                                         <field name="rate"/>
-                                        <field name="salary_rule_id"/>
+                                        <field name="salary_rule_id" optional="hide"/>
                                         <field name="amount"/>
                                         <field name="total"/>
                                     </tree>
@@ -425,13 +429,14 @@
                             <field name="name" readonly="state != 'draft'"/>
                         </h1>
                         <group col="4">
+                            <field name="pay_batch"/>
                             <label for="date_start" string="Period"/>
                             <div>
                                 <field name="date_start" class="oe_inline" readonly="state != 'draft'"/>
                                 -
                                 <field name="date_end" class="oe_inline" readonly="state != 'draft'"/>
                             </div>
-                            <field name="credit_note" readonly="state != 'draft'"/>
+                            <field name="credit_note" readonly="state != 'draft'" invisible="1"/>
                         </group>
                         <separator string="Payslips"/>
                         <field name="slip_ids" readonly="state != 'draft'"/>

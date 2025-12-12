@@ -31,7 +31,7 @@ class HrContract(models.Model):
     medical_allowance = fields.Monetary(string="Medical Allowance", help="Medical allowance")
     other_allowance = fields.Monetary(string="Other Allowance", help="Other allowances")
     type_id = fields.Many2one('hr.contract.type', string="Employee Category",
-                              required=True, help="Employee category",
+                              required=True, help="Loại hợp đồng",
                               default=lambda self: self.env['hr.contract.type'].search([], limit=1))
     salary_grade_id = fields.Many2one('hr.salary.grade', string='Bậc lương')
 

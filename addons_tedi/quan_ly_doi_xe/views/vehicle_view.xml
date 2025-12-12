@@ -33,24 +33,24 @@
                         <field name="currency_id" invisible="1"/>
 
                         <div class="oe_button_box" name="button_box">
-                            <!-- Button xem lịch sử Odometer -->
-                            <button name="return_action_to_open"
+
+                            <button name="action_open_custom_odometer"
                                 type="object"
                                 class="oe_stat_button"
                                 icon="fa-tachometer"
-                                context="{'xml_id':'fleet_vehicle_odometer_action'}"
+                                context="{'xml_id':'quan_ly_doi_xe.action_fleet_vehicle_odometer_monthly_report'}"
                                 help="Nhật ký Odometer">
                                 <field name="odometer" widget="statinfo" string="Odometer"/>
                             </button>
 
-                            <button name="return_action_to_open"
-                                type="object"
-                                class="oe_stat_button"
-                                icon="fa-book"
-                                context="{'xml_id':'fleet_vehicle_log_contract_action'}"
-                                help="Hợp đồng">
-                                <field name="contract_count" widget="statinfo" string="Hợp đồng"/>
-                            </button>
+<!--                            <button name="return_action_to_open"-->
+<!--                                type="object"-->
+<!--                                class="oe_stat_button"-->
+<!--                                icon="fa-book"-->
+<!--                                context="{'xml_id':'fleet_vehicle_log_contract_action'}"-->
+<!--                                help="Hợp đồng">-->
+<!--                                <field name="contract_count" widget="statinfo" string="Hợp đồng"/>-->
+<!--                            </button>-->
                             <button name="return_action_to_open"
                                 type="object"
                                 class="oe_stat_button"
@@ -63,8 +63,10 @@
 
                         <group>
                             <group>
-                                <field name="driver_id" string="Tài xế"/>
-                                <field name="future_driver_id" string="Tài xế tiếp theo"/>
+                                <field name="tedi_driver_employee_id" string="Tài xế (Nhân viên)"/>
+                                <field name="driver_id" invisible="1" force_save="1"/>
+
+                                <field name="future_driver_id" string="Tài xế tiếp theo" invisible="1"/>
 
                                 <field name="country_of_manufacture"/>
                                 <field name="model_id"/>

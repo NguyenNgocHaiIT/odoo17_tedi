@@ -8,3 +8,5 @@ from . import hr_salary_rule
 from . import hr_payslip
 from . import resource_mixin
 from . import hr_salary_grade
+from . import hr_insurance
+from . import hr_employee_allowance

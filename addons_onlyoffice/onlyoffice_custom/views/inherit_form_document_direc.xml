@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+     <record id="wind_kanban_inherit_directory" model="ir.ui.view">
+        <field name="name">directory.view.kanban.inherit</field>
+        <field name="model">document.directory</field>
+        <field name="inherit_id" ref="windx_documents_management_preview.document_directory_view_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//a[@t-if='widget.editable']" position="after">
+                <button name="share_onlyoffice_document" role="menuitem" type="object"
+                        class="dropdown-item onlyoffice-create-action">Share with OnlyOffice
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

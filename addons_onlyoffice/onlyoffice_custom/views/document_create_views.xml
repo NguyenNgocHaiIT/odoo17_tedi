@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="documents_create_view_form" model="ir.ui.view">
+            <field name="name">documents_create_view_form</field>
+            <field name="model">documents.create</field>
+            <field name="arch" type="xml">
+                <form string="Document Create">
+                    <sheet>
+                        <div class="oe_title">
+                            <label for="name" class="Document Name"/>
+                            <h1>
+                                <field name="name" placeholder="e.g. Name Document" required="1"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="type" required="1" widget="radio" options="{'horizontal': True}"/>
+                                <field name="document_directory_id" required="1"/>
+                            </group>
+                        </group>
+                        <footer>
+                            <button name="action_document_create" type="object"
+                                    class="btn-primary" data-hotkey="c">Create Document
+                            </button>
+                            <button special="cancel" data-hotkey="q" class="btn-secondary">Cancel</button>
+                        </footer>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="document_directory_inherit_js_class" model="ir.ui.view">
+            <field name="name">document.directory.tree.inherit</field>
+            <field name="model">document.directory</field>
+            <field name="inherit_id" ref="windx_documents_management_preview.document_directory_view_kanban"/>
+            <field name="arch" type="xml">
+                <xpath expr="//kanban" position="attributes">
+                    <attribute name="js_class">button_in_kanban</attribute>
+                </xpath>
+            </field>
+        </record>
+
+
+        <record id="attachment_inherit_js_class" model="ir.ui.view">
+            <field name="name">ir.attachment.tree.inherit</field>
+            <field name="model">ir.attachment</field>
+            <field name="inherit_id" ref="mail.view_document_file_kanban"/>
+            <field name="arch" type="xml">
+                <xpath expr="//kanban" position="attributes">
+                    <attribute name="js_class">button_in_kanban</attribute>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

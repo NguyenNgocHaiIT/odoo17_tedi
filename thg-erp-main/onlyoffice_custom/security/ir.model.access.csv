@@ -1,6 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_field_document_user,access_field_document_user,onlyoffice_custom.model_field_documentation,,1,1,1,1
-access_onlyoffice_odoo_documents_access_user,onlyoffice.odoo.documents.access.user,model_onlyoffice_odoo_documents_access_user,base.group_user,1,1,1,1
-access_onlyoffice_odoo_documents_access,onlyoffice.odoo.documents.access,model_onlyoffice_odoo_documents_access,base.group_user,1,1,1,1
-access_document_share,document.share,model_document_share,base.group_user,1,1,1,1
-access_document_role_access,role.access.onlyoffice,model_role_onlyoffice,base.group_user,1,1,1,1

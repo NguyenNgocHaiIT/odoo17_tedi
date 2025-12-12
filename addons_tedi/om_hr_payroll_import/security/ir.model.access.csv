@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_tedi_payroll_allowance_import_wizard,access_tedi_payroll_allowance_import_wizard,model_tedi_allowance_import_wizard,base.group_user,1,1,1,1
+access_tedi_payroll_insurance_import_wizard,access_tedi_payroll_insurance_import_wizard,model_tedi_insurance_import_wizard,base.group_user,1,1,1,1

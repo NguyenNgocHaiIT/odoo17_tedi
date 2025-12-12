@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <record id="TT_01" model="hr.salary.rule.category">
+            <field name="name">Thanh toán lần 1 hàng tháng</field>
+            <field name="code">TT_01</field>
+        </record>
+
+        <record id="TN" model="hr.salary.rule.category">
+            <field name="name">Lương thực nhận</field>
+            <field name="code">TN</field>
+        </record>
+
+        <record id="thanh_toan_lan_1_hang_thang_rule" model="hr.salary.rule">
+            <field name="name">Lương thanh toán lần 1 hàng tháng</field>
+            <field name="sequence" eval="15"/>
+            <field name="code">TT_01</field>
+            <field name="category_id" ref="om_hr_payroll.TT_01"/>
+            <field name="amount_select">percentage</field>
+            <field name="quantity">1</field>
+            <field name="amount_percentage_base">contract.salary_grade_id.luong_chuc_danh</field>
+            <field name="amount_percentage">45</field>
+        </record>
+
+        <record id="tn_rule" model="hr.salary.rule">
+            <field name="name">Lương thực nhận</field>
+            <field name="sequence" eval="10000"/>
+            <field name="code">TN</field>
+            <field name="category_id" ref="om_hr_payroll.TN"/>
+            <field name="amount_select">code</field>
+            <field name="quantity">1</field>
+            <field name="amount_python_compute">if payslip.struct_id.pay_batch == '1':
+    result = categories.TT_01
+elif payslip.struct_id.pay_batch == '2':
+    result = categories.BASIC - categories.TT_01 - categories.INSURANCE - categories.CĐP + categories.ALW
+else:
+    result = 0</field>
+        </record>
+
+        <record id="thanh_toan_lan_1_hang_thang_structure" model="hr.payroll.structure">
+            <field name="code">TT.01</field>
+            <field name="pay_batch">1</field>
+            <field name="name">Cấu trúc lương thanh toán lần 1 hàng tháng</field>
+            <field eval="[(6, 0, [ref('thanh_toan_lan_1_hang_thang_rule'), ref('tn_rule')])]" name="rule_ids"/>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+    </data>
+</odoo>
