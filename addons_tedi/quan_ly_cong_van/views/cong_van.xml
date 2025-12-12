@@ -378,7 +378,7 @@
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','outgoing')]</field>
-            <field name="context">{'default_document_type': 'outgoing'}</field>
+            <field name="context">{'default_document_type': 'outgoing', 'create': False}</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_outgoing_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_outgoing_form')})]"/>
@@ -544,7 +544,7 @@
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','resolution')]</field>
-            <field name="context">{'default_document_type': 'resolution'}</field>
+            <field name="context">{'default_document_type': 'resolution', 'create': False}</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_resolution_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_resolution_form')})]"/>
@@ -645,10 +645,10 @@
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','outgoing_internal')]</field>
-            <field name="context">{'default_document_type': 'outgoing_internal'}</field>
+            <field name="context">{'default_document_type': 'outgoing_internal', 'create': False}</field>
             <field name="view_ids" eval="[(5, 0, 0),
-        (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_outgoing_tree')}),
-        (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_outgoing_form')})]"/>
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_outgoing_tree')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_outgoing_form')})]"/>
         </record>
 
 
