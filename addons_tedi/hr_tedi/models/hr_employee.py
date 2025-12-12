@@ -32,6 +32,20 @@ class HrEmployeePrivate(models.Model):
     experience_ids        = fields.One2many("hr.employee.experience",       "employee_id", string="Kinh nghiệm công việc liên quan")
     reward_discipline_ids = fields.One2many("hr.employee.reward.discipline","employee_id", string="Khen thưởng - Kỷ luật")
     training_ids = fields.One2many("hr.employee.training", "employee_id", string="Quá trình đào tạo")
+
+    tedi_training_history_ids = fields.One2many(
+        "hr.employee.training.tedi",
+        "employee_id",
+        string="Quá trình đào tạo tại TEDI"
+    )
+
+    # Onchange để đánh số lại STT khi giao diện thay đổi (giống logic bạn gửi trước đó)
+    @api.onchange('tedi_training_history_ids')
+    def _onchange_tedi_training_seq(self):
+        for rec in self:
+            for idx, line in enumerate(rec.tedi_training_history_ids, start=1):
+                line.stt = idx
+
     # ==== Đảng – Đoàn thể (liên kết với hr.party.cell / hr.party.title) ====
     party_member = fields.Boolean(string="Là Đảng viên?")
     party_join_date = fields.Date(string="Ngày kết nạp Đảng")
@@ -53,6 +67,8 @@ class HrEmployeePrivate(models.Model):
 
     # ==== Mã nhân viên ====
     employee_code = fields.Char(string="Employee Code", readonly=False, copy=False)
+
+
 
     @api.onchange('name')
     def _onchange_name_generate_code(self):
@@ -199,3 +215,5 @@ class HrEmployeePrivate(models.Model):
                 'show_hr_icon_display': True,
             },
         }
+
+
