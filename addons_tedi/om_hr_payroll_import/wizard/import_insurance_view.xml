@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <record id="view_tedi_insurance_import_wizard" model="ir.ui.view">
+            <field name="name">tedi.insurance.import.wizard.form</field>
+            <field name="model">tedi.insurance.import.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Import Lương BHXH từ Excel">
+                    <div class="alert alert-info" role="alert">
+                        <strong>Lưu ý định dạng Excel (không cần tiêu đề cột chính xác, chỉ cần đúng thứ tự):</strong><br/>
+                        - Cột A: Tháng (VD: 1, 2... 12)<br/>
+                        - Cột B: Năm (VD: 2024)<br/>
+                        - Cột C: Mã nhân viên (Bắt buộc)<br/>
+                        - Cột D: Mức lương đóng BHXH<br/>
+                        <i>Nếu dữ liệu (Tháng + Năm + NV) đã tồn tại, hệ thống sẽ cập nhật mức lương mới.</i>
+                    </div>
+                    <group>
+                        <field name="file" filename="filename"/>
+                        <field name="filename" invisible="1"/>
+                    </group>
+                    <footer>
+                        <button name="action_import"
+                                type="object"
+                                string="Import dữ liệu"
+                                class="btn-primary"/>
+                        <button string="Đóng" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_tedi_insurance_import" model="ir.actions.act_window">
+            <field name="name">Import Lương BHXH</field>
+            <field name="res_model">tedi.insurance.import.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+<!--        <menuitem-->
+<!--                id="menu_action_tedi_insurance_import"-->
+<!--                name="Import Excel"-->
+<!--                action="action_tedi_insurance_import"-->
+<!--                parent="om_hr_payroll.menu_hr_payroll_root"-->
+<!--                sequence="15"/>-->
+    </data>
+</odoo>

@@ -13,8 +13,8 @@ class FleetVehicleOdometer(models.Model):
 
     # --- 1. PHÂN LOẠI RECORD ---
     report_type = fields.Selection([
-        ('log', 'Nhật ký thường'),
-        ('monthly', 'Báo cáo tháng')
+        ('log', 'Khởi tạo'),
+        ('monthly', 'Báo cáo theo Đăng ký')
     ], string='Loại bản ghi', default='log', required=True)
 
     # --- 2. CÁC TRƯỜNG CHO BÁO CÁO THÁNG ---

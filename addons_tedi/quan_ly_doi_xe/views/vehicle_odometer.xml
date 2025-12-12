@@ -72,17 +72,25 @@
             <field name="name">fleet.vehicle.odometer.monthly.report.tree</field>
             <field name="model">fleet.vehicle.odometer</field>
             <field name="arch" type="xml">
-                <tree string="Báo cáo số km từng xe" editable="bottom"
+                <tree string="Báo cáo số km từng xe"
+                      editable="bottom"
+                      create="0"
+                      import="0"
                       decoration-info="report_type == 'monthly'">
-                    <field name="report_type" column_invisible="1"/>
-                    <field name="vehicle_id" options="{'no_create': True}"/>
-                    <field name="month"/>
-                    <field name="year" widget="integer" options="{'format': 0}"/>
-                    <field name="odometer_start" optional="show" string="Km đầu"/>
+
+<!--                    <field name="report_type" column_invisible="1"/>-->
+                    <field name="vehicle_id" options="{'no_create': True}" readonly="1"/>
+                    <field name="month" readonly="1"/>
+                    <field name="year" widget="integer" options="{'format': 0}" readonly="1"/>
+
+                    <field name="odometer_start" optional="show" string="Km đầu" readonly="1"/>
                     <field name="odometer_total" readonly="1" force_save="1" decoration-bf="1" sum="Tổng hoạt động" string="Km trong tháng"/>
                     <field name="value" string="Số cuối kỳ" readonly="1" force_save="1"/>
+
+                    <field name="report_type"/>
                     <field name="unit" optional="hide"/>
-                    <button name="action_calculate_data" type="object" icon="fa-refresh" title="Đồng bộ lại"/>
+
+                    <button name="action_calculate_data" type="object" icon="fa-refresh" title="Tính lại"/>
                 </tree>
             </field>
         </record>
@@ -92,8 +100,10 @@
             <field name="name">Báo cáo chốt Km tháng</field>
             <field name="res_model">fleet.vehicle.odometer</field>
             <field name="view_mode">tree,form</field>
-            <field name="view_id" ref="view_fleet_vehicle_odometer_monthly_report_tree"/>
             <field name="search_view_id" ref="view_fleet_vehicle_odometer_monthly_report_search"/>
+             <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_fleet_vehicle_odometer_monthly_report_tree')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('fleet_vehicle_odometer_view_form_inherit_tedi')})]"/>
             <field name="domain">[('report_type', '=', 'monthly')]</field>
             <field name="context">
                 {
@@ -103,6 +113,7 @@
                 }
             </field>
         </record>
+
 
         <menuitem id="menu_fleet_vehicle_odometer_monthly_report"
                   name="Báo cáo Km tháng"
