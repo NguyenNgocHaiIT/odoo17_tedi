@@ -5,6 +5,7 @@ from odoo.exceptions import UserError
 
 class FleetVehicleLogServices(models.Model):
     _inherit = 'fleet.vehicle.log.services'
+    _rec_name = 'code'
 
     # --- 1. MAPPING CÁC TRƯỜNG CUSTOM ---
     code = fields.Char(string="Mã phiếu", default='New', copy=False, readonly=True)
@@ -18,9 +19,8 @@ class FleetVehicleLogServices(models.Model):
 
     # --- QUAN TRỌNG: Cần set default cho service_type_id vì XML đã ẩn nó đi ---
     service_type_id = fields.Many2one(
-        'fleet.service.type', 'Service Type', required=True,
-        default=lambda self: self.env.ref('fleet.type_service_service_7', raise_if_not_found=False) or self.env[
-            'fleet.service.type'].search([], limit=1)
+        'fleet.service.type', 'Loại dịch vụ', required=True,
+        default=lambda self: self.env['fleet.service.type'].search([], limit=1)
     )
 
     # --- 2. LOGIC TÍNH TOÁN ---
@@ -64,7 +64,7 @@ class FleetServiceLine(models.Model):
     sequence = fields.Integer(string='STT', default=10)
 
     # 1. Thêm trường trỏ đến danh mục dịch vụ của Odoo
-    service_type_id = fields.Many2one('fleet.service.type', string="Loại dịch vụ", required=True)
+    service_type = fields.Char("Hạng mục")
 
     price_unit = fields.Float(string="Thành tiền")
 
