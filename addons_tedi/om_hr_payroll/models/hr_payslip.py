@@ -393,12 +393,17 @@ class HrPayslip(models.Model):
             for day, hours, leave in day_leave_intervals:
                 holiday = leave.holiday_id
                 code = 'GLOBAL'
+                name = 'Ngày nghỉ chung'
+                if leave.work_entry_type_id.code:
+                    code = leave.work_entry_type_id.code
+                    name = leave.name
                 if holiday.holiday_status_id.work_entry_type_id and holiday.holiday_status_id.work_entry_type_id.code:
                     code = holiday.holiday_status_id.work_entry_type_id.code
+                    name = holiday.holiday_status_id.name
                 elif holiday.holiday_status_id and holiday.holiday_status_id.code:
-                    code = holiday.holiday_status_id.code
+                    name = holiday.holiday_status_id.name
                 current_leave_struct = leaves.setdefault(holiday.holiday_status_id, {
-                    'name': holiday.holiday_status_id.name or 'Ngày nghỉ chung',
+                    'name': name,
                     'sequence': 5,
                     'code': code,
                     'number_of_days': 0.0,
@@ -637,18 +642,18 @@ class HrPayslip(models.Model):
         payslips = Payslips(payslip.employee_id.id, payslip, self.env)
         rules = BrowsableObject(payslip.employee_id.id, rules_dict, self.env)
         employee_insurance = self.env['hr.employee.insurance'].sudo().search(
-            [('employee_id', '=', self.employee_id.id), ('year', '=', self.date_to.year),
-             ('month', '=', self.date_to.month)])
+            [('employee_id', '=', payslip.employee_id.id), ('year', '=', payslip.date_to.year),
+             ('month', '=', payslip.date_to.month)])
         baselocaldict = {'categories': categories, 'rules': rules, 'payslip': payslips, 'worked_days': worked_days, 'inputs': inputs, 'employee_insurance': employee_insurance.salary_bhxh or 0}
-        if self.struct_id.pay_batch == '2':
-            y = fields.Date.to_date(self.date_from).year
-            m = fields.Date.to_date(self.date_from).month
+        if payslip.struct_id.pay_batch == '2':
+            y = fields.Date.to_date(payslip.date_from).year
+            m = fields.Date.to_date(payslip.date_from).month
             month_start = date(y, m, 1)
             last_day = calendar.monthrange(y, m)[1]
             month_end = date(y, m, last_day)
 
             prev = self.env['hr.payslip'].sudo().search([
-                ('employee_id', '=', self.employee_id.id),
+                ('employee_id', '=', payslip.employee_id.id),
                 ('state', '=', 'done'),
                 ('date_from', '>=', month_start),
                 ('date_from', '<=', month_end),
