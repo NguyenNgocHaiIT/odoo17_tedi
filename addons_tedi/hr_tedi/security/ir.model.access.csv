@@ -11,3 +11,7 @@ access_hr_party_title,access.hr.party.title,model_hr_party_title,base.group_user
 access_hr_employee_training,access.hr.employee.training,model_hr_employee_training,base.group_user,1,1,1,1
 access_hr_decision_user,access.hr.decision.user,model_hr_decision,base.group_user,1,0,0,0
 access_hr_decision_manager,access.hr.decision.manager,model_hr_decision,hr.group_hr_manager,1,1,1,1
+
+access_hr_training_tedi,access_hr_training_tedi,model_hr_employee_training_tedi,base.group_user,1,1,1,1
+
+access_hr_experience_position,access_hr_experience_position,model_hr_experience_position,base.group_user,1,1,1,1

@@ -1,11 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <data>
+        <record id="fleet.fleet_vehicle_log_services_action" model="ir.actions.act_window">
+            <field name="name">Phiếu sửa chữa</field>
+
+            <field name="context">{}</field>
+
+            <field name="view_mode">tree,form,kanban,activity</field>
+        </record>
+
+
         <record id="seq_fleet_repair" model="ir.sequence">
             <field name="name">Mã phiếu sửa chữa xe</field>
             <field name="code">fleet.vehicle.log.services.repair</field>
-            <field name="prefix">SC</field>
-            <field name="padding">3</field>
-            <field name="company_id" eval="False"/>
+            <field name="prefix">SC/</field> <field name="padding">4</field> <field name="company_id" eval="False"/>
         </record>
 
         <record id="fleet_vehicle_log_services_view_tree_inherit_repair" model="ir.ui.view">
@@ -13,14 +21,14 @@
             <field name="model">fleet.vehicle.log.services</field>
             <field name="inherit_id" ref="fleet.fleet_vehicle_log_services_view_tree"/>
             <field name="arch" type="xml">
-                <xpath expr="//tree" position="attributes">
-                    <attribute name="decoration-info">state == 'new'</attribute>
-                    <attribute name="decoration-success">state == 'done'</attribute>
-                    <attribute name="decoration-muted">state == 'cancelled'</attribute>
+                 <xpath expr="//tree" position="attributes">
+                    <attribute name="string">Phiếu sửa chữa</attribute>
                 </xpath>
-
                 <xpath expr="//tree" position="replace">
-                    <tree string="Phiếu sửa chữa xe" sample="1">
+                    <tree string="Phiếu sửa chữa xe" sample="1"
+                          decoration-info="state == 'new'"
+                          decoration-success="state == 'done'"
+                          decoration-muted="state == 'cancelled'">
                         <field name="code" string="Mã phiếu"/>
                         <field name="date" string="Ngày đề nghị"/>
                         <field name="vehicle_id" widget="many2one_avatar"/>
@@ -36,68 +44,48 @@
             </field>
         </record>
 
-        <record id="fleet_vehicle_log_services_view_form_inherit_repair" model="ir.ui.view">
+         <record id="fleet_vehicle_log_services_view_form_inherit_repair" model="ir.ui.view">
             <field name="name">fleet.vehicle.log.services.form.inherit.repair</field>
             <field name="model">fleet.vehicle.log.services</field>
             <field name="inherit_id" ref="fleet.fleet_vehicle_log_services_view_form"/>
             <field name="arch" type="xml">
-
+                <xpath expr="//form" position="attributes">
+                    <attribute name="string">Phiếu sửa chữa</attribute>
+                </xpath>
                 <xpath expr="//header" position="replace">
                     <header>
-                        <button name="action_approve"
-                                string="Hoàn thành / Duyệt"
-                                type="object"
-                                class="oe_highlight"
-                                invisible="state != 'new'"/>
-
-                        <button name="action_reopen"
-                                string="Mở lại"
-                                type="object"
-                                invisible="state != 'cancelled'"/>
-
-                        <button name="action_cancel"
-                                string="Hủy phiếu"
-                                type="object"
-                                invisible="state not in ['new']"/>
-
+                        <button name="action_approve" string="Hoàn thành / Duyệt" type="object" class="oe_highlight" invisible="state != 'new'"/>
+                        <button name="action_reopen" string="Mở lại" type="object" invisible="state != 'cancelled'"/>
+                        <button name="action_cancel" string="Hủy phiếu" type="object" invisible="state not in ['new']"/>
                         <field name="state" widget="statusbar" statusbar_visible="new,done"/>
                     </header>
                 </xpath>
-
                 <xpath expr="//sheet" position="replace">
                     <sheet>
-
+                        <div class="oe_title">
+                            <h1><field name="code"/></h1>
+                        </div>
                         <group>
                             <group>
-                                <field name="code" readonly="1" placeholder="New"/>
                                 <field name="vehicle_id" string="Xe sửa chữa" readonly="state != 'new'"/>
                                 <field name="odometer" string="Số km hiện tại" readonly="state != 'new'"/>
                                 <field name="amount" force_save="1" string="Tổng chi phí" decoration-bf="1" readonly="1"/>
                             </group>
-
                             <group>
                                 <field name="requester_id" string="Người đề nghị" readonly="1"/>
                                 <field name="date" string="Ngày đề nghị" readonly="state != 'new'"/>
-                                <field name="vendor_id" string="Garage / Nhà cung cấp" readonly="state != 'new'"/>
                                 <field name="attachment_ids" widget="many2many_binary" string="Tệp đính kèm"/>
                                 <field name="service_type_id" invisible="1"/>
                             </group>
                         </group>
-
                         <label for="notes" string="Ghi chú thêm" />
                         <field name="notes" placeholder="Mô tả nguyên nhân hỏng hóc..." nolabel="1"/>
-
                         <notebook>
                             <page string="Nội dung sửa chữa">
                                 <field name="repair_line_ids" readonly="state != 'new'" widget="section_and_note_one2many">
                                     <tree editable="bottom">
                                         <field name="sequence" widget="handle"/>
-
-                                        <field name="service_type_id"
-                                               string="Hạng mục / Loại"
-                                               options="{'no_create': True, 'no_open': True}"
-                                               width="30%"/>
-
+                                        <field name="service_type" string="Hạng mục / Loại" required="1"/>
                                         <field name="price_unit" string="Chi phí" sum="Tổng cộng"/>
                                         <field name="note" string="Ghi chú"/>
                                     </tree>
@@ -106,8 +94,12 @@
                         </notebook>
                     </sheet>
                 </xpath>
-
             </field>
         </record>
+
+        <function model="ir.actions.act_window" name="write" context="{'lang': 'vi_VN'}">
+            <value eval="[ref('fleet.fleet_vehicle_log_services_action')]"/>
+            <value eval="{'name': 'Phiếu sửa chữa'}"/>
+        </function>
     </data>
 </odoo>

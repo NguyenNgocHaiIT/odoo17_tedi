@@ -2,7 +2,6 @@
 <odoo>
     <data>
 
-        <!-- TREE VIEW CUSTOM -->
         <record id="view_employee_tree_tedi" model="ir.ui.view">
             <field name="name">hr.employee.tree.tedi</field>
             <field name="model">hr.employee</field>
@@ -18,14 +17,22 @@
             </field>
         </record>
 
-        <!-- FORM OVERRIDE -->
-       <record id="hr_employee_view_form_inherit_profile_tedi" model="ir.ui.view">
+        <record id="hr_employee_view_form_inherit_profile_tedi" model="ir.ui.view">
             <field name="name">hr.employee.view.form.inherit.profile.tedi</field>
             <field name="model">hr.employee</field>
             <field name="inherit_id" ref="hr.view_employee_form"/>
             <field name="priority" eval="50000"/>
 
             <field name="arch" type="xml">
+
+                <xpath expr="//header" position="inside">
+                    <button name="action_open_create_user"
+                            string="Tạo tài khoản hệ thống"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="user_id"
+                            groups="hr.group_hr_manager"/>
+                </xpath>
 
                 <xpath expr="//div[hasclass('row', 'justify-content-between', 'position-relative')]" position="replace">
                     <div class="d-flex w-100 mb-3">
@@ -120,12 +127,9 @@
                                     <field name="birthday" string="Sinh ngày"/>
                                     <field name="country_id" string="Quốc tịch"/>
                                     <field name="ethnicity"/>
-<!--                                    <field name="occupation"/>-->
                                     <field name="household_address"/>
                                     <field name="bank_account_id"/>
-<!--                                    <field name="bank_account" string="Tài khoản số"/>-->
-<!--                                    <field name="bank_name"/>-->
-                                </group>
+                                 </group>
 
                                 <group string="Hồ sơ nhân sự">
                                     <field name="user_id" string="Tài khoản liên kết" widget="many2one_avatar_user"/>
@@ -284,7 +288,25 @@
                                            decoration-danger="status == 'canceled'"/>
                                 </tree>
                             </field>
+
+                            <separator string="QUÁ TRÌNH ĐÀO TẠO TẠI TEDI"/>
+                            <field name="tedi_training_history_ids" readonly="1" nolabel="1" colspan="2">
+                                <tree editable="bottom">
+                                    <field name="stt" readonly="1"/>
+                                    <field name="name"/>
+                                    <field name="training_type"/>
+                                    <field name="facility"/>
+                                    <field name="date_from"/>
+                                    <field name="date_to"/>
+                                    <field name="training_form"/>
+                                    <field name="status" widget="badge"
+                                           decoration-success="status == 'completed'"
+                                           decoration-info="status == 'in_progress'"
+                                           decoration-danger="status == 'canceled'"/>
+                                </tree>
+                            </field>
                         </page>
+
 
                     </notebook>
                 </xpath>
@@ -292,7 +314,6 @@
             </field>
         </record>
 
-        <!-- ACTION -->
         <record id="hr.open_view_employee_list_my" model="ir.actions.act_window">
             <field name="name">Employees</field>
             <field name="res_model">hr.employee</field>
@@ -304,6 +325,19 @@
                 (0, 0, {'view_mode': 'form', 'view_id': ref('hr_employee_view_form_inherit_profile_tedi')})
             ]"/>
         </record>
+
+
+        <delete model="ir.ui.menu" id="hr.menu_view_hr_contract_type"/>
+
+        <menuitem
+            id="menu_view_hr_contract_type_tedi"
+            name="Loại hình công việc"
+            action="hr.hr_contract_type_action"
+            parent="hr.menu_human_resources_configuration"
+            sequence="2"
+            groups="hr.group_hr_user"/>
+
+
 
     </data>
 </odoo>

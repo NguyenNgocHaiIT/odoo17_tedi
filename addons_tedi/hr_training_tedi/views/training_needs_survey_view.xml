@@ -1,34 +1,31 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
-    <!-- TREE GIỮ NGUYÊN -->
     <record id="training_needs_survey_tree" model="ir.ui.view">
         <field name="name">training_needs_survey_tree</field>
         <field name="model">training.needs.survey</field>
         <field name="arch" type="xml">
             <tree string="Khảo sát nhu cầu đào tạo">
-                <field name="name" string="Tên đợt khảo sát" class="text-center"/>
-                <field name="create_date" string="Ngày tạo" class="text-center"/>
-                <field name="start_date" string="Từ ngày" class="text-center"/>
-                <field name="end_date" string="Đến ngày" class="text-center"/>
-                <field name="user_id" string="Người tạo" class="text-center"/>
+                <field name="name" string="Tên đợt khảo sát" class="text-start"/>
+                <field name="create_date" string="Ngày tạo" class="text-start"/>
+                <field name="start_date" string="Từ ngày" class="text-start"/>
+                <field name="end_date" string="Đến ngày" class="text-start"/>
+                <field name="user_id" string="Người tạo" class="text-start"/>
                 <field name="state"
                        string="Trạng thái"
                        widget="badge"
                        decoration-danger="state == 'draft'"
                        decoration-warning="state == 'in_process'"
                        decoration-success="state == 'end'"
-                       class="text-center"/>
+                       class="text-start"/>
             </tree>
         </field>
     </record>
 
-    <!-- FORM -->
     <record id="training_needs_survey_form" model="ir.ui.view">
         <field name="name">training_needs_survey_form</field>
         <field name="model">training.needs.survey</field>
         <field name="arch" type="xml">
             <form string="Khảo sát nhu cầu đào tạo">
-                <!-- state ẩn để dùng cho statusbar -->
                 <field name="state" invisible="1"/>
 
                 <header>
@@ -36,7 +33,6 @@
                            widget="statusbar"
                            statusbar_visible="draft,confirmed,in_process,end"/>
 
-                    <!-- Nút xác nhận: từ draft -> in_process, set start_date = hôm nay -->
                     <button name="action_submit"
                             type="object"
                             string="Xác nhận"
@@ -59,21 +55,20 @@
                         invisible="state != 'confirmed'"/>
                 </header>
 
-                  <sheet>
-                <!-- KHÓA TOÀN BỘ FORM KHI state = end -->
+                <sheet>
                     <group readonly="state == 'end'">
                         <group>
-                            <field name="name" required="1" readonly="state != 'draft'"/>
-                            <field name="user_id" required="1" readonly="1"/>
+                            <field name="name" required="1" readonly="state != 'draft'" class="text-start"/>
+                            <field name="user_id" required="1" readonly="1" class="text-start"/>
                         </group>
 
                         <group>
-                            <field name="create_date" readonly="1" widget="date" />
+                            <field name="create_date" readonly="1" widget="date" class="text-start"/>
                             <label for="start_date" string="Thời gian khảo sát" readonly="state == 'end'"/>
                             <div class="o_row">
-                                <field name="start_date" widget="date" readonly="state != 'draft'"/>
+                                <field name="start_date" widget="date" readonly="state != 'draft'" class="text-start"/>
                                 <span style="margin: 0 10px;">→</span>
-                                <field name="end_date" widget="date" readonly="state != 'draft'"/>
+                                <field name="end_date" widget="date" readonly="state != 'draft'" class="text-start"/>
                             </div>
                         </group>
                     </group>
@@ -83,7 +78,6 @@
         </field>
     </record>
 
-    <!-- ACTION: GẮN SẴN TREE + FORM -->
     <record id="action_training_needs_survey" model="ir.actions.act_window">
         <field name="name">Khảo sát nhu cầu đào tạo</field>
         <field name="type">ir.actions.act_window</field>

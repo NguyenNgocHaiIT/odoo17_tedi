@@ -1,5 +1,15 @@
-
 from odoo import models, fields
+
+
+class HrExperiencePosition(models.Model):
+    _name = "hr.experience.position"
+    _description = "Danh mục Chức danh Kinh nghiệm"
+    _rec_name = 'name'
+
+    name = fields.Char(string="Tên chức danh", required=True)
+    description = fields.Text(string="Mô tả")
+    active = fields.Boolean(default=True, string="Đang dùng")
+
 
 class HREmployeeExperience(models.Model):
     _name = "hr.employee.experience"
@@ -12,7 +22,14 @@ class HREmployeeExperience(models.Model):
     project_type = fields.Char(string="Loại dự án")
     date_from = fields.Date(string="Từ ngày")
     date_to = fields.Date(string="Đến ngày")
-    position = fields.Char(string="Vị trí/Chức danh")
+
+    # --- ĐÃ SỬA: Thay Char bằng Many2one ---
+    position = fields.Many2one(
+        "hr.experience.position",
+        string="Vị trí/Chức danh",
+        required=True
+    )
+
     status = fields.Selection([
         ('completed', 'Hoàn thành'),
         ('in_progress', 'Đang thực hiện'),

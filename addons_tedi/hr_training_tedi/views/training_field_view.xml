@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_training_field_tree" model="ir.ui.view">
+            <field name="name">training.field.tree</field>
+            <field name="model">training.field</field>
+            <field name="arch" type="xml">
+                <tree string="Lĩnh vực đào tạo" editable="bottom">
+                    <field name="name" class="text-start"/>
+                    <field name="active" widget="boolean_toggle" optional="show" class="text-start"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_training_field_form" model="ir.ui.view">
+            <field name="name">training.field.form</field>
+            <field name="model">training.field</field>
+            <field name="arch" type="xml">
+                <form string="Lĩnh vực đào tạo">
+                    <sheet>
+                        <widget name="web_ribbon" title="Đã lưu trữ" bg_color="bg-danger" invisible="active"/>
+                        <field name="active" invisible="1"/>
+
+                        <group>
+                            <group>
+                                <field name="name" class="text-start"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_training_field_search" model="ir.ui.view">
+            <field name="name">training.field.search</field>
+            <field name="model">training.field</field>
+            <field name="arch" type="xml">
+                <search string="Tìm kiếm lĩnh vực">
+                    <field name="name"/>
+                    <separator/>
+                    <filter string="Đã lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_training_field" model="ir.actions.act_window">
+            <field name="name">Lĩnh vực đào tạo</field>
+            <field name="res_model">training.field</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+              <p class="o_view_nocontent_smiling_face">
+                Tạo lĩnh vực đào tạo mới
+              </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

@@ -90,6 +90,7 @@ class Applicant(models.Model):
         "applicant_id", "attachment_id",
         string="Link hồ sơ"
     )
+    attachment=fields.Char(string="Link hồ sơ")
 
     isEmp = fields.Boolean(string="Is Emp", default=False)
 

@@ -4,57 +4,76 @@
         <field name="name">training.plan.participation.tree</field>
         <field name="model">training.plan.participation</field>
         <field name="arch" type="xml">
-            <tree string="Đợt đăng ký đào tạo">
-                <field name="training_plan_id" class="text-center"/>
-                <field name="training_plan_detail_id" class="text-center"/>
+            <tree string="Đợt đăng ký đào tạo"
+                  decoration-muted="state == 'not_started'"
+                  decoration-success="state == 'in_progress'"
+                  decoration-info="state == 'finished'">
 
-                <field name="start_date" optional="show"/>
-                <field name="end_date" optional="hide"/>
-                <field name="training_location" optional="hide"/>
-                <field name="training_total_fee" sum="Tổng cộng" widget="monetary"/>
+                <field name="training_plan_id" class="text-start"/>
+                <field name="training_plan_detail_id" class="text-start"/>
 
-                <field name="open_date" class="text-center" optional="hide"/>
+                <field name="start_date" optional="show" class="text-start"/>
+                <field name="end_date" optional="hide" class="text-start"/>
+
+                <field name="training_total_fee" sum="Tổng cộng" widget="monetary" class="text-start"/>
+
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'not_started'"
+                       decoration-success="state == 'in_progress'"
+                       decoration-info="state == 'finished'"
+                       class="text-start"/>
+
                 <field name="currency_id" column_invisible="1"/>
             </tree>
         </field>
     </record>
 
-     <record id="view_training_participation_form" model="ir.ui.view">
+    <record id="view_training_participation_form" model="ir.ui.view">
         <field name="name">training.plan.participation.form</field>
         <field name="model">training.plan.participation</field>
         <field name="arch" type="xml">
             <form string="Đợt đăng ký đào tạo">
+                <header>
+                    <button name="action_start"
+                            string="Bắt đầu ngay"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'not_started' or plan_state != 'approved'"/>
+
+                    <button name="action_end"
+                            string="Kết thúc đào tạo"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'in_progress'"
+                            confirm="Xác nhận kết thúc khoá đào tạo hôm nay?"/>
+
+                    <field name="state" widget="statusbar" statusbar_visible="not_started,in_progress,finished"/>
+                </header>
                 <sheet>
                     <group>
                         <group string="Thông tin chung">
-                            <field name="training_plan_id" required="1"/>
-                            <field name="training_plan_detail_id" required="1"/>
-                            <field name="currency_id" invisible="1"/>
-                            <field name="training_location"/>
+                            <field name="plan_state" invisible="1"/>
+
+                            <field name="training_plan_id" readonly="1" class="text-start"/>
+                            <field name="training_plan_detail_id" readonly="1" class="text-start"/>
+                            <field name="training_location" class="text-start"/>
                         </group>
-                        <group string="Chi tiết đào tạo">
-                            <field name="start_date" widget="date" />
-                            <field name="end_date" widget="date"/>
-                            <field name="training_fee_per_person" widget="monetary"/>
-                            <field name="training_total_fee" widget="monetary" decoration-bf="1"/>
+                        <group string="Chi tiết thời gian">
+                            <field name="start_date" class="text-start"/>
+                            <field name="end_date" class="text-start"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="training_total_fee" widget="monetary" class="text-start"/>
                         </group>
                     </group>
-
                     <notebook>
                         <page string="Danh sách đăng ký">
                             <field name="participation_detail_ids">
-                                <tree editable="bottom" string="Đăng ký tham gia">
-                                    <field name="user_id" width="200px"/>
-                                    <field name="department_id" width="150px"/>
-
-                                    <field name="training_time" optional="show"/>
-
-                                    <field name="training_type" optional="show"/>
-
-                                    <field name="training_fee_per_person" widget="monetary" sum="Tổng" optional="show"/>
+                                <tree editable="bottom">
+                                    <field name="user_id" class="text-start"/>
+                                    <field name="department_id" class="text-start"/>
+                                    <field name="training_fee_per_person" widget="monetary" sum="Tổng" class="text-start"/>
                                     <field name="currency_id" column_invisible="1"/>
-
-                                    <field name="note" optional="show"/>
+                                    <field name="note" class="text-start"/>
                                 </tree>
                             </field>
                         </page>
@@ -74,5 +93,4 @@
                 (0, 0, {'view_id': ref('view_training_participation_form'), 'view_mode': 'form'}),
             ]"/>
     </record>
-
 </odoo>

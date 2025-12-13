@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <data>
+        <record id="fleet.fleet_vehicle_log_services_action" model="ir.actions.act_window">
+            <field name="name">Phiếu sửa chữa</field>
+        </record>
+
         <record id="fleet.menu_root" model="ir.ui.menu">
             <field name="groups_id" eval="[(4, ref('base.group_user'))]"/>
         </record>
@@ -12,6 +16,13 @@
                   sequence="10"
                   groups="base.group_user"/>
 
+        <menuitem id="menu_fleet_vehicle_repair_custom"
+                  name="Sửa chữa xe"
+                  parent="fleet.menu_root"
+                  action="fleet.fleet_vehicle_log_services_action"
+                  sequence="11"
+                  groups="base.group_user"/>
+
         <menuitem id="menu_fleet_vehicle_odometer_monthly_report"
                   name="Báo cáo Km tháng"
                   parent="fleet.menu_fleet_reporting"
@@ -19,7 +30,44 @@
                   sequence="15"
                   groups="base.group_user"/>
 
+
+        <menuitem action="fleet.fleet_vehicle_action"
+                  name="Đội xe"
+                  parent="fleet.menu_root"
+                  id="tedi_fleet_vehicle_menu"
+                  groups="fleet.fleet_group_user"
+                  sequence="1"/>
+
+        <menuitem action="fleet.fleet_vehicle_model_brand_action"
+                  name="Hãng xe"
+                  parent="fleet.fleet_models_configuration"
+                  id="tedi_fleet_vehicle_model_brand_menu"
+                  sequence="1"/>
+
+
+<!--        <menuitem action="fleet_vehicle_action" parent="fleet_vehicles" name="Fleet"-->
+<!--                  id="fleet_vehicle_menu" groups="fleet_group_user" sequence="0"/>-->
+
         <record id="fleet.fleet_vehicle_odometer_menu" model="ir.ui.menu">
+            <field name="active" eval="False"/>
+        </record>
+
+        <record id="fleet.fleet_vehicle_model_brand_menu" model="ir.ui.menu">
+            <field name="active" eval="False"/>
+        </record>
+
+        <record id="fleet.fleet_services_configuration" model="ir.ui.menu">
+            <field name="active" eval="False"/>
+        </record>
+
+
+
+        <record id="fleet.fleet_vehicle_menu" model="ir.ui.menu">
+            <field name="active" eval="False"/>
+        </record>
+
+
+        <record id="fleet.fleet_vehicle_log_services_menu" model="ir.ui.menu">
             <field name="active" eval="False"/>
         </record>
 
