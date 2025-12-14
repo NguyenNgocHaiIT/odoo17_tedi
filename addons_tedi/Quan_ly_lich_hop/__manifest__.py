@@ -5,6 +5,7 @@
 	'author': 'Duong',
 	'sequence': '2',
 	'summary': '',
+    'icon': '/Quan_ly_lich_hop/static/description/icon.png',
 	'depends': [ 'base', 'mail', 'hr', 'project', 'web', 'calendar'],
 	'data': [
 		'security/ir.model.access.csv',

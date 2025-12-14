@@ -6,6 +6,7 @@
 	'author': 'HaiNN',
 	'sequence': '1',
 	'summary': '',
+    'icon': '/quan_ly_cong_van/static/description/icon.png',
 	'depends': [ 'base', 'mail', 'hr', 'project', 'web'],
 	'data': [
 		'security/office_document_security.xml',
