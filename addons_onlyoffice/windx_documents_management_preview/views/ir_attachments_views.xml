@@ -45,11 +45,13 @@
                     <field name="document_tag_ids"/>
                     <field name="directory_tag_ids"/>
                     <field name="document_directory_id"/>
-                    <searchpanel>
+                    <searchpanel class="o_search_panel_attachment">
                         <field name="document_directory_id"
+                               class="document-directory-searchpanel"
                                icon="fa-folder"
                                enable_counters="1"
                                hierarchical="1"
+                               strict="1"
                                expand="1"
                                context="{'searchpanel_strict': True}"/>
                     </searchpanel>

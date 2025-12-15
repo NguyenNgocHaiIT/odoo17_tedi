@@ -8,6 +8,7 @@
                 name="Quản lý lịch họp"
                 sequence="10"
                 groups="base.group_user"
+                web_icon="Quan_ly_lich_hop,static/description/icon.png"
         />
 
         <!-- Menu con: Lịch họp -->

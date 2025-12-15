@@ -5,7 +5,8 @@
         <menuitem
                 id="office_document_menu_root"
                 name="Quản lý công văn"
-                sequence="0"/>
+                sequence="0"
+                web_icon="quan_ly_cong_van,static/description/icon.png"/>
 
         <!-- Menu Công văn đến -->
         <menuitem

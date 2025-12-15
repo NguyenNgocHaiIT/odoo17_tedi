@@ -5,6 +5,7 @@
 	'author': 'Duong',
 	'sequence': '3',
 	'summary': '',
+    'icon': '/tin_tuc_su_kien/static/description/icon.png',
 	'depends': [ 'base', 'mail', 'hr', 'project', 'web', 'event'],
 	'data': [
 		'security/ir.model.access.csv',
