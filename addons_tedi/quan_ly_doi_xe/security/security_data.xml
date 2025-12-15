@@ -1,15 +1,8 @@
 <odoo>
     <data>
-        <record id="fleet_rule_vehicle_visibility_user_custom_allow_all" model="ir.rule">
-            <field name="name">TEDI: Allow User Modify ALL Vehicles</field>
-            <field name="model_id" ref="fleet.model_fleet_vehicle"/>
-            <field name="groups" eval="[(4, ref('fleet.fleet_group_user'))]"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
-
-            <field name="perm_read" eval="1"/>
-            <field name="perm_write" eval="1"/>
-            <field name="perm_create" eval="1"/>
-            <field name="perm_unlink" eval="1"/>
-        </record>
+        <function model="res.groups" name="write" context="{'lang': 'vi_VN'}">
+            <value eval="[ref('fleet.fleet_group_user')]"/>
+            <value eval="{'name': 'Tài xế'}"/>
+        </function>
     </data>
 </odoo>

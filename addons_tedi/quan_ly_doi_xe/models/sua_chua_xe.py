@@ -26,6 +26,22 @@ class FleetVehicleLogServices(models.Model):
     # --- 2. LOGIC TÍNH TOÁN ---
     amount = fields.Monetary(string='Tổng chi phí', compute='_compute_total_cost', store=True, readonly=False)
 
+    @api.onchange('vehicle_id')
+    def _onchange_vehicle_id(self):
+        """
+        Khi người dùng chọn xe, tự động lấy số Odometer (Công tơ mét)
+        hiện tại của xe đó điền vào phiếu.
+        """
+        if self.vehicle_id:
+            self.odometer = self.vehicle_id.odometer
+
+            # (Tùy chọn) Nếu bạn muốn lấy cả đơn vị (km/dặm) thì bỏ comment dòng dưới:
+            # self.odometer_unit = self.vehicle_id.odometer_unit
+
+    # -------------------------
+
+    # ... (Các phần logic cũ: amount, create, buttons... giữ nguyên) .
+
     @api.depends('repair_line_ids.price_unit')
     def _compute_total_cost(self):
         for rec in self:

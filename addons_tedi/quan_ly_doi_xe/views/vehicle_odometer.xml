@@ -87,7 +87,7 @@
                     <field name="odometer_total" readonly="1" force_save="1" decoration-bf="1" sum="Tổng hoạt động" string="Km trong tháng"/>
                     <field name="value" string="Số cuối kỳ" readonly="1" force_save="1"/>
 
-                    <field name="report_type"/>
+                    <field name="report_type" readonly="1"/>
                     <field name="unit" optional="hide"/>
 
                     <button name="action_calculate_data" type="object" icon="fa-refresh" title="Tính lại"/>
