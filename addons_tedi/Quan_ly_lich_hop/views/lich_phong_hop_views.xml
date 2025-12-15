@@ -14,7 +14,6 @@
             </field>
         </record>
 
-        <!-- TREE VIEW -->
         <record id="view_calendar_event_room_tree" model="ir.ui.view">
             <field name="name">calendar.event.room.tree</field>
             <field name="model">calendar.event</field>
@@ -26,55 +25,83 @@
                     <field name="stop" string="Thời gian kết thúc"/>
                     <field name="chu_tri" string="Người chủ trì"/>
                     <field name="employee_ids" string="Thành phần tham gia" widget="many2many_tags"/>
+
+                    <field name="state"
+                           widget="badge"
+                           decoration-info="state == 'draft'"
+                           decoration-warning="state == 'pending'"
+                           decoration-success="state == 'approved'"
+                           decoration-primary="state == 'completed'"
+                           decoration-muted="state == 'canceled'"/>
                 </tree>
             </field>
         </record>
 
-        <!-- FORM VIEW -->
         <record id="view_calendar_event_room_form" model="ir.ui.view">
             <field name="name">calendar.event.room.form</field>
             <field name="model">calendar.event</field>
             <field name="arch" type="xml">
                 <form delete="false" duplicate="false">
+                    <field name="can_approve_room" invisible="1"/>
+                    <field name="room_sign" invisible="1"/>
+                    <field name="state" invisible="1"/>
+
                     <header>
-                        <button name="approve" string="Duyệt" type="object"
-                                groups="base.group_system"/>
-                        <button string="Huỷ" class="btn btn-secondary" special="cancel"
-                                groups="base.group_system"/>
-                        <button name="on_TV" string="Xem lịch trên TV" type="object"
-                                groups="base.group_system"/>
+                        <button name="action_approve_room"
+                                string="Duyệt Phòng"
+                                type="object"
+                                class="btn-success"
+                                invisible="not can_approve_room"/>
+
+                         <button name="action_reject_room"
+                                    string="Từ chối Phòng"
+                                    type="object"
+                                    class="btn-danger"
+                                    invisible="not can_approve_room"/>
+
+                        <button name="action_complete"
+                                string="Hoàn thành"
+                                type="object"
+                                class="btn-primary"
+                                groups="Quan_ly_lich_hop.group_meeting_room_manager"
+                                invisible="state != 'approved'"
+                                confirm="Xác nhận cuộc họp đã kết thúc và phòng đã được trả?"/>
+
+                        <button name="on_TV" string="Xem lịch trên TV" type="object"/>
+
+                        <field name="state" widget="statusbar" statusbar_visible="approved,completed"/>
                     </header>
 
                     <sheet>
+                        <widget name="web_ribbon" title="Đã hoàn thành" bg_color="bg-info" invisible="state != 'completed'"/>
+                        <widget name="web_ribbon" title="Đã duyệt phòng" bg_color="bg-success" invisible="room_sign != 'have_sign' or state == 'completed'"/>
+
                         <div class="oe_title">
                             <label for="name" string="Chủ đề cuộc họp"/>
                             <h1>
-                                <field name="name"/>
+                                <field name="name" readonly="state == 'completed'"/>
                             </h1>
                         </div>
 
                         <group>
-                            <!-- Cột bên trái -->
                             <group>
-                                <field name="room" string="Phòng"/>
-                                <!-- Dòng thời gian -->
+                                <field name="room" string="Phòng" readonly="state == 'completed'"/>
                                 <label for="start" string="Thời gian" />
                                 <div style="display: flex;" >
-                                    <field name="start" class="oe_inline" style="flex:1;"/>
+                                    <field name="start" class="oe_inline" style="flex:1;" readonly="state == 'completed'"/>
                                     <span class="o_form_label" style="padding: 0 4px;">→</span>
-                                    <field name="stop" class="oe_inline" style="flex:1;"/>
+                                    <field name="stop" class="oe_inline" style="flex:1;" readonly="state == 'completed'"/>
                                 </div>
 
-                                <field name="name" string="Nội dung"/>
-                                <field name="room_materials" widget="many2many_tags" string="Thông tin khác"/>
+                                <field name="name" string="Nội dung" readonly="state == 'completed'"/>
+                                <field name="room_materials" widget="many2many_tags" string="Thông tin khác" readonly="state == 'completed'"/>
                             </group>
 
-                            <!-- Cột bên phải -->
                             <group>
-                                <field name="chu_tri" string="Người chủ trì" />
-                                <field name="lanh_dao" string="Lãnh đạo"/>
-                                <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia"/>
-                                <field name="employee_ids" widget="many2many_tags" string="Người tham gia"/>
+                                <field name="chu_tri" string="Người chủ trì" readonly="state == 'completed'"/>
+                                <field name="lanh_dao" string="Lãnh đạo" readonly="state == 'completed'"/>
+                                <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia" readonly="state == 'completed'"/>
+                                <field name="employee_ids" widget="many2many_tags" string="Người tham gia" readonly="state == 'completed'"/>
                             </group>
                         </group>
                     </sheet>
@@ -82,7 +109,6 @@
             </field>
         </record>
 
-        <!-- ACTION -->
         <record id="action_open_calendar_room_event" model="ir.actions.act_window">
             <field name="name">Lịch phòng họp</field>
             <field name="res_model">calendar.event</field>
@@ -94,47 +120,5 @@
             <field name="domain">[('room','!=',False)]</field>
         </record>
 
-        <record id="view_dashboard_today_form" model="ir.ui.view">
-            <field name="name">calendar.dashboard.today.form</field>
-            <field name="model">calendar.dashboard</field>
-            <field name="arch" type="xml">
-                <form string="Dashboard hôm nay">
-                    <sheet>
-                        <field name="date_today" invisible="1"/>
-                        <!-- Lịch công tác -->
-                        <group>
-                            <field name="event_ids"
-                                   context="{'default_date': context_today}"
-                                   domain="[('start','&gt;=', date_today), ('start','&lt;', date_today + 1)]">
-                                <tree string="Lịch công tác" class="table_tree_view" options="{'no_open': True}">
-                                    <field name="date_only" string="Ngày"/>
-                                    <field name="name" string="Nội dung công việc"/>
-                                    <field name="chu_tri" string="Chủ trì"/>
-                                    <field name="employee_ids" widget="many2many_tags" string="Thành phần tham gia"/>
-                                    <field name="start_stop" string="Thời gian"/>
-                                    <field name="location" string="Địa điểm"/>
-                                </tree>
-                            </field>
-                        </group>
-
-                        <!-- Lịch phòng họp -->
-                        <group style="margin-top:20px;">
-                            <field name="meeting_room_event_ids"
-                                   context="{'default_date': context_today}"
-                                   domain="[('start','&gt;=', date_today), ('start','&lt;', date_today + 1), ('room', '!=', False)]">
-                                <tree string="Lịch phòng họp" class="table_tree_view" options="{'no_open': True}">
-                                    <field name="date_only" string="Ngày"/>
-                                    <field name="name" string="Nội dung công việc"/>
-                                    <field name="chu_tri" string="Chủ trì"/>
-                                    <field name="employee_ids" widget="many2many_tags" string="Thành phần tham gia"/>
-                                    <field name="room" string="Phòng"/>
-                                    <field name="start_stop" string="Thời gian"/>
-                                </tree>
-                            </field>
-                        </group>
-                    </sheet>
-                </form>
-            </field>
-        </record>
-    </data>
+        </data>
 </odoo>

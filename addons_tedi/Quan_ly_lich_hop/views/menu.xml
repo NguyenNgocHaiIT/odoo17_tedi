@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data>
-
-        <!-- Menu gốc: Quản lý lịch họp -->
         <menuitem
                 id="menu_calendar_root"
                 name="Quản lý lịch họp"
@@ -11,7 +9,6 @@
                 web_icon="Quan_ly_lich_hop,static/description/icon.png"
         />
 
-        <!-- Menu con: Lịch họp -->
         <menuitem
                 id="menu_calendar_event"
                 name="Lịch họp"
@@ -36,7 +33,8 @@
                 parent="menu_calendar_root"
                 action="action_open_calendar_outside_event"
                 sequence="3"
-                groups="base.group_user"
+                groups="Quan_ly_lich_hop.group_meeting_room_manager"
+
         />
 
         <menuitem
@@ -44,27 +42,24 @@
                 name="Cấu hình"
                 parent="menu_calendar_root"
                 sequence="10"
-                groups="base.group_user"
+                groups="Quan_ly_lich_hop.group_meeting_room_manager"
         />
-
-        <!-- MENU cho RoomMaterials -->
         <menuitem
                 id="menu_room_materials"
                 name="Vật dụng phòng họp"
                 parent="menu_calendar_setting"
                 action="action_room_materials"
                 sequence="10"
-                groups="base.group_user"
+                groups="Quan_ly_lich_hop.group_meeting_room_manager"
         />
 
-        <!-- MENU cho RoomRoom -->
         <menuitem
                 id="menu_room_room"
                 name="Phòng họp"
                 parent="menu_calendar_setting"
                 action="action_room_room"
                 sequence="11"
-                groups="base.group_user"
+                groups="Quan_ly_lich_hop.group_meeting_room_manager"
         />
 
         <menuitem
@@ -73,7 +68,7 @@
                 parent="menu_calendar_setting"
                 action="action_calendar_location"
                 sequence="12"
-                groups="base.group_user"
+                groups="Quan_ly_lich_hop.group_meeting_room_manager"
         />
     </data>
 </odoo>

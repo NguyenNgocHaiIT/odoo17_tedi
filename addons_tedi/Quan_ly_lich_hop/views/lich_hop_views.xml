@@ -6,7 +6,6 @@
             <field name="model">calendar.event</field>
             <field name="arch" type="xml">
                 <calendar string="Lịch họp" date_start="start" date_stop="stop" color="color">
-                    <!-- Hiển thị giờ bắt đầu và nội dung -->
                     <field name="name" string="Nội dung"/>
                     <field name="chu_tri" string="Người chủ trì"/>
                     <field name="employee_ids" widget="many2many_tags" string="Người tham gia"/>
@@ -14,8 +13,6 @@
             </field>
         </record>
 
-
-        <!-- TREE VIEW -->
         <record id="view_calendar_event_tree" model="ir.ui.view">
             <field name="name">calendar.event.tree</field>
             <field name="model">calendar.event</field>
@@ -30,7 +27,6 @@
             </field>
         </record>
 
-        <!-- FORM VIEW -->
         <record id="view_calendar_event_form" model="ir.ui.view">
             <field name="name">calendar.event.form</field>
             <field name="model">calendar.event</field>
@@ -38,21 +34,49 @@
             <field name="arch" type="xml">
                 <form delete="false" duplicate="false">
                     <header>
-                        <button name="approve" string="Duyệt" type="object"
-                                groups="base.group_system"/>
-                        <button string="Huỷ" class="btn btn-secondary" special="cancel"
-                                groups="base.group_system"/>
+                        <field name="can_approve_meeting" invisible="1"/>
+                        <field name="state"
+                               widget="statusbar"
+                               statusbar_visible="draft,pending,approved"/>
+                        <field name="room_sign" invisible="1"/>
+
+                        <button name="action_send_request"
+                                string="Gửi duyệt"
+                                type="object"
+                                class="btn-primary"
+                                invisible="state != 'draft'"/>
+
+                        <button name="approve"
+                                string="Duyệt"
+                                type="object"
+                                class="btn-primary"
+                                invisible="not can_approve_meeting or state != 'pending'"/>
+
+
+                        <button name="action_cancel"
+                                string="Huỷ"
+                                type="object"
+                                class="btn-secondary"
+                                confirm="Bạn có chắc chắn muốn hủy lịch họp này không?"
+                                invisible="state not in ['draft','pending']" />
+
                         <button name="open_room_booking_wizard"
                                 string="Đăng ký phòng họp"
                                 type="object"
-                                class="btn-primary"/>
+                                class="btn-primary"
+                                invisible="room_sign != 'no_sign' or state != 'approved'"/>
+
                         <button name="action_add_participants"
                                 string="Thêm người tham gia"
                                 type="object"
+                                invisible="room_sign != 'no_sign' or state =='canceled'"
                                 class="btn-primary"/>
                     </header>
 
                     <sheet>
+                        <widget name="web_ribbon" title="Đã duyệt phòng" bg_color="bg-success" invisible="room_sign != 'have_sign'"/>
+                        <widget name="web_ribbon" title="Chờ duyệt phòng" bg_color="bg-warning" invisible="room_sign != 'pending'"/>
+
                         <div class="oe_title">
                             <label for="name" string="Chủ đề cuộc họp"/>
                             <h1>
@@ -61,9 +85,7 @@
                         </div>
 
                         <group>
-                            <!-- Cột bên trái -->
                             <group>
-                                <!-- Dòng thời gian -->
                                 <label for="start" string="Thời gian" />
                                 <div style="display: flex;" >
                                     <field name="start" class="oe_inline" style="flex:1;"/>
@@ -74,7 +96,6 @@
                                 <field name="name" string="Nội dung"/>
                             </group>
 
-                            <!-- Cột bên phải -->
                             <group>
                                 <field name="chu_tri" string="Người chủ trì"/>
                                 <field name="lanh_dao" string="Lãnh đạo" />
@@ -89,7 +110,6 @@
             </field>
         </record>
 
-        <!-- ACTION -->
         <record id="action_open_calendar" model="ir.actions.act_window">
             <field name="name">Lịch họp</field>
             <field name="res_model">calendar.event</field>
@@ -121,7 +141,6 @@
             </field>
         </record>
 
-        <!-- VIEW phải được định nghĩa trước -->
         <record id="view_meeting_invitation_wizard_form" model="ir.ui.view">
             <field name="name">meeting.invitation.wizard.form</field>
             <field name="model">meeting.invitation.wizard</field>
@@ -143,7 +162,6 @@
             </field>
         </record>
 
-        <!-- ACTION tham chiếu tới view -->
         <record id="action_meeting_invitation_popup" model="ir.actions.act_window">
             <field name="name">Lời mời họp</field>
             <field name="res_model">meeting.invitation.wizard</field>
