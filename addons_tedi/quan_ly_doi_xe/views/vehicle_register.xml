@@ -9,22 +9,19 @@
                       decoration-muted="state == 'cancel'"
                       decoration-info="state == 'draft'"
                       decoration-success="state == 'done'"
+                      decoration-primary="state == 'assigned'"
+                      decoration-warning="state == 'waiting_return'"
                       decoration-danger="state == 'refused'">
                     <field name="code"/>
                     <field name="requester_id"/>
                     <field name="start_date"/>
-                    <field name="end_date"/>
-                    <field name="trip_type"/>
-                    <field name="destination"/>
                     <field name="assigned_vehicle_id"/>
-
-                    <field name="tedi_driver_employee_id" string="Tài xế" widget="many2one_avatar"/>
-
-                    <field name="work_content" optional="hide"/>
+                    <field name="tedi_driver_employee_id" widget="many2one_avatar"/>
+                    <field name="rating" widget="priority" optional="show" readonly="1"/>
                     <field name="state" widget="badge"
                            decoration-success="state == 'approved'"
-                           decoration-warning="state == 'submitted'"
-                           decoration-info="state == 'assigned'"
+                           decoration-primary="state == 'assigned'"
+                           decoration-warning="state == 'waiting_return'"
                            decoration-danger="state == 'refused'"/>
                 </tree>
             </field>
@@ -37,22 +34,33 @@
                 <form string="Phiếu đăng ký xe">
                     <header>
                         <button name="action_submit" string="Gửi duyệt" type="object" class="oe_highlight" invisible="state != 'draft'"/>
-                        <button name="action_manager_approve" string="Lãnh đạo Duyệt" type="object" class="oe_highlight" invisible="state != 'submitted'"/>
-                        <button name="action_manager_refuse" string="Từ chối" type="object" invisible="state != 'submitted'"/>
+                        <button name="action_fleet_approve" string="Duyệt yêu cầu" type="object" class="oe_highlight" groups="fleet.fleet_group_user" invisible="state != 'submitted'"/>
+                        <button name="action_fleet_refuse" string="Từ chối" type="object" groups="fleet.fleet_group_user" invisible="state != 'submitted'"/>
 
                         <button name="action_office_assign" string="Phân phối xe" type="object" class="oe_highlight" groups="fleet.fleet_group_user" invisible="state != 'approved'"/>
                         <button name="action_office_no_car" string="Báo hết xe" type="object" class="btn-warning" groups="fleet.fleet_group_user" invisible="state != 'approved'"/>
-                        <button name="action_done" string="Xác nhận hoàn thành" type="object" class="oe_highlight" groups="fleet.fleet_group_user" invisible="state != 'assigned'"/>
+
+                        <button name="action_send_feedback"
+                                string="Gửi đánh giá và xác nhận hoàn thành(Trả xe)"
+                                type="object"
+                                class="oe_highlight"
+                                invisible="state != 'assigned'"/>
+
+                        <button name="action_confirm_return"
+                                string="Xác nhận xe về kho (Hoàn tất)"
+                                type="object"
+                                class="oe_highlight"
+                                groups="fleet.fleet_group_user"
+                                invisible="state != 'waiting_return'"/>
 
                         <button name="action_draft" string="Về nháp" type="object" invisible="state != 'submitted'"/>
-                        <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,assigned,done"/>
+
+                        <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,assigned,waiting_return,done"/>
                     </header>
 
                     <sheet>
                         <div class="oe_title">
-                            <h1>
-                                <field name="code" readonly="1"/>
-                            </h1>
+                            <h1><field name="code" readonly="1"/></h1>
                         </div>
 
                         <group>
@@ -63,39 +71,44 @@
                                 <field name="assigned_vehicle_id"
                                        domain="[('state_id.name', '=', 'Đã đăng kiểm')]"
                                        context="{'show_driver': True}"
-                                       readonly="state not in ['approved']"
-                                />
+                                       readonly="state !='approved'"/>
 
-                                <field name="tedi_driver_employee_id"
-                                       string="Tài xế (Nhân viên)"
-                                       readonly="state == 'done'"
-                                       invisible="1"
-                                />
-
+                                <field name="tedi_driver_employee_id" string="Tài xế" readonly="state == 'done'" invisible="1"/>
                                 <field name="driver_id" invisible="1" force_save="1"/>
 
                                 <field name="num_passengers" readonly="state != 'draft'"/>
                                 <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
-                                <field name="work_content" placeholder="Mô tả chi tiết..." readonly="state != 'draft'"/>
+                                <field name="work_content" placeholder="Mô tả..." readonly="state != 'draft'"/>
                             </group>
-
                             <group>
                                 <label for="start_date" string="Thời gian"/>
                                 <div class="o_row">
                                     <field name="start_date" widget="daterange" options="{'related_end_date': 'end_date'}" readonly="state != 'draft'"/>
-                                    <i class="fa fa-long-arrow-right mx-2" aria-label="Arrow icon" title="Arrow"/>
+                                    <i class="fa fa-long-arrow-right mx-2"/>
                                     <field name="end_date" widget="daterange" options="{'related_start_date': 'start_date'}" readonly="state != 'draft'"/>
                                 </div>
                                 <field name="destination" readonly="state != 'draft'"/>
 
                                 <field name="distance_km"
                                        string="Số Km thực tế"
-                                       readonly="state != 'assigned'"
+                                       readonly="state != 'waiting_return'"
                                        class="fw-bold text-primary"/>
                             </group>
                         </group>
-                    </sheet>
 
+                        <separator string="Đánh giá sau chuyến đi" invisible="state not in ['assigned', 'waiting_return', 'done']"/>
+                        <group invisible="state not in ['assigned', 'waiting_return', 'done']">
+                            <group>
+                                <field name="rating" widget="priority" readonly="state != 'assigned'"/>
+                            </group>
+                            <group></group>
+                            <field name="feedback_comment"
+                                   placeholder="Đánh giá của bạn..."
+                                   nolabel="1"
+                                   colspan="2"
+                                   readonly="state != 'assigned'"/>
+                        </group>
+                    </sheet>
                     <div class="oe_chatter">
                         <field name="message_follower_ids"/>
                         <field name="activity_ids"/>
@@ -113,9 +126,7 @@
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_hr_tedi_vehicle_registration_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('view_hr_tedi_vehicle_registration_form')})]"/>
             <field name="help" type="html">
-                <p class="o_view_nocontent_smiling_face">
-                    Tạo phiếu đăng ký xe mới
-                </p>
+                <p class="o_view_nocontent_smiling_face">Tạo phiếu đăng ký xe mới</p>
             </field>
         </record>
     </data>
