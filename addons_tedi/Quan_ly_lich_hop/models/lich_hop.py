@@ -30,6 +30,7 @@ class Calendar(models.Model):
         ('draft', 'Nháp'),
         ('pending', 'Chờ duyệt'),
         ('approved', 'Đã duyệt'),
+        ('completed', 'Đã hoàn thành'),
         ('canceled', 'Đã hủy')
     ], string='Trạng thái', default='draft', tracking=True)
 
@@ -164,6 +165,15 @@ class Calendar(models.Model):
         return res
 
     # --- 5. BUTTON ACTIONS ---
+    def action_complete(self):
+        """Chuyển trạng thái sang Hoàn thành (Dành cho Quản lý phòng)"""
+        self.ensure_one()
+
+        # Kiểm tra quyền (Dù đã ẩn ở XML nhưng check thêm ở Python cho chắc)
+        if not self.env.user.has_group('Quan_ly_lich_hop.group_meeting_room_manager'):
+            raise UserError("Chỉ có Quản lý phòng họp mới được xác nhận hoàn thành.")
+
+        self.write({'state': 'completed'})
 
     def action_send_request(self):
         """Nhân viên gửi duyệt"""

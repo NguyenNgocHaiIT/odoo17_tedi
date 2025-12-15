@@ -53,7 +53,12 @@
                                 invisible="not can_approve_meeting or state != 'pending'"/>
 
 
-                        <button string="Huỷ" class="btn btn-secondary" special="cancel" invisible="state != 'draft'" />
+                        <button name="action_cancel"
+                                string="Huỷ"
+                                type="object"
+                                class="btn-secondary"
+                                confirm="Bạn có chắc chắn muốn hủy lịch họp này không?"
+                                invisible="state not in ['draft','pending']" />
 
                         <button name="open_room_booking_wizard"
                                 string="Đăng ký phòng họp"
@@ -64,7 +69,7 @@
                         <button name="action_add_participants"
                                 string="Thêm người tham gia"
                                 type="object"
-                                invisible="room_sign != 'no_sign'"
+                                invisible="room_sign != 'no_sign' or state =='canceled'"
                                 class="btn-primary"/>
                     </header>
 
