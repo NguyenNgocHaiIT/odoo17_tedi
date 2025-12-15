@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="group_calendar_department_manager" model="res.groups">
+            <field name="name">Quản trị Lịch họp (Chỉ duyệt nội bộ)</field>
+            <field name="category_id" ref="base.module_category_human_resources_employees"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Người dùng thuộc nhóm này chỉ được duyệt lịch họp của nhân viên CÙNG phòng ban.</field>
+        </record>
+
+        <record id="group_meeting_room_manager" model="res.groups">
+            <field name="name">Quản lý phòng họp (Duyệt toàn bộ)</field>
+            <field name="category_id" ref="base.module_category_human_resources_employees"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Người dùng thuộc nhóm này có quyền duyệt tất cả các đơn đăng ký phòng họp bất kể phòng ban.</field>
+        </record>
+    </data>
+</odoo>

@@ -36,13 +36,23 @@
             <field name="model">calendar.event</field>
             <field name="arch" type="xml">
                 <form delete="false" duplicate="false">
+                    <field name="can_approve_room" invisible="1"/>
+
                     <header>
-                        <button name="approve" string="Duyệt" type="object"
-                                groups="base.group_system"/>
-                        <button string="Huỷ" class="btn btn-secondary" special="cancel"
-                                groups="base.group_system"/>
+                        <button name="action_approve_room"
+                                string="Duyệt Phòng"
+                                type="object"
+                                class="btn-success"
+                                invisible="not can_approve_room"/>
+
+                         <button name="action_reject_room"
+                                    string="Từ chối Phòng"
+                                    type="object"
+                                    class="btn-danger"
+                                    invisible="not can_approve_room"/>
+
                         <button name="on_TV" string="Xem lịch trên TV" type="object"
-                                groups="base.group_system"/>
+                                    />
                     </header>
 
                     <sheet>
@@ -54,10 +64,8 @@
                         </div>
 
                         <group>
-                            <!-- Cột bên trái -->
                             <group>
                                 <field name="room" string="Phòng"/>
-                                <!-- Dòng thời gian -->
                                 <label for="start" string="Thời gian" />
                                 <div style="display: flex;" >
                                     <field name="start" class="oe_inline" style="flex:1;"/>
@@ -69,7 +77,6 @@
                                 <field name="room_materials" widget="many2many_tags" string="Thông tin khác"/>
                             </group>
 
-                            <!-- Cột bên phải -->
                             <group>
                                 <field name="chu_tri" string="Người chủ trì" />
                                 <field name="lanh_dao" string="Lãnh đạo"/>
