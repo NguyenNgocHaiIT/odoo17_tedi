@@ -10,6 +10,7 @@
     'depends': ['base', 'mail', 'hr', 'project', 'web', 'fleet'],
 
     'data': [
+        'security/security_data.xml',
         'data/ir_sequence_data.xml',
         'security/ir.model.access.csv',
 
