@@ -122,7 +122,7 @@ class HrTediVehicleRegistration(models.Model):
 
     def action_office_assign(self):
         self.ensure_one()
-        if not self.env.user.has_group('fleet.fleet_group_manager') and not self.env.user.has_group(
+        if not self.env.user.has_group('fleet.fleet_group_user') and not self.env.user.has_group(
                 'base.group_system'):
             raise AccessError("Quyền hạn không hợp lệ.")
         if self.state != 'approved': raise ValidationError("Phiếu chưa được duyệt.")
