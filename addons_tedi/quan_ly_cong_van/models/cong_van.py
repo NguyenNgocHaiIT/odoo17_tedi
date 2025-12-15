@@ -891,6 +891,33 @@ class OfficeDocument(models.Model):
             'tag': 'history_back',
         }
 
+    is_van_thu = fields.Boolean(
+        compute='_compute_edit_permission',
+        store=False
+    )
+    not_is_van_thu = fields.Boolean(
+        compute='_compute_edit_permission',
+        store=False
+    )
+
+    @api.depends('tt_vb')
+    def _compute_edit_permission(self):
+        user = self.env.user
+        is_van_thu_user = user.has_group('quan_ly_cong_van.group_van_thu')
+
+        for rec in self:
+            # Văn thư: draft hoặc chờ duyệt thì sửa được
+            rec.is_van_thu = (
+                    is_van_thu_user and
+                    rec.tt_vb in ('draft', 'cho_duyet')
+            )
+
+            # Không phải văn thư: chỉ draft mới sửa được
+            rec.not_is_van_thu = (
+                    not is_van_thu_user and
+                    rec.tt_vb == 'draft'
+            )
+
 
 class AssignTaskWizard(models.TransientModel):
     _name = 'assign.task.wizard'
