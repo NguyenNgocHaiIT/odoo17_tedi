@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <data>
-        <record id="view_hr_tedi_vehicle_registration_tree" model="ir.ui.view">
+      <record id="view_hr_tedi_vehicle_registration_tree" model="ir.ui.view">
             <field name="name">hr.tedi.vehicle.registration.tree</field>
             <field name="model">hr_tedi.vehicle.registration</field>
             <field name="arch" type="xml">
                 <tree string="Phiếu đăng ký xe"
+                      default_order="create_date desc"
                       decoration-muted="state == 'cancel'"
                       decoration-info="state == 'draft'"
                       decoration-success="state == 'done'"
@@ -13,6 +14,7 @@
                       decoration-warning="state == 'waiting_return'"
                       decoration-danger="state == 'refused'">
                     <field name="code"/>
+                    <field name="create_date" string="Ngày tạo" optional="show"/>
                     <field name="requester_id"/>
                     <field name="start_date"/>
                     <field name="assigned_vehicle_id"/>
@@ -41,13 +43,13 @@
                         <button name="action_office_no_car" string="Báo hết xe" type="object" class="btn-warning" groups="fleet.fleet_group_manager" invisible="state != 'approved'"/>
 
                         <button name="action_send_feedback"
-                                string="Gửi đánh giá"
+                                string="Hoàn thành công tác"
                                 type="object"
                                 class="oe_highlight"
                                 invisible="state != 'assigned'"/>
 
                         <button name="action_confirm_return"
-                                string="Hoàn thành"
+                                string="Xác nhận"
                                 type="object"
                                 class="oe_highlight"
                                 groups="fleet.fleet_group_manager"

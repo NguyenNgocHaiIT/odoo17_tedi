@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+from dateutil.utils import today
+
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, AccessError
-
+from datetime import date
 
 class HrTediVehicleRegistration(models.Model):
     _name = "hr_tedi.vehicle.registration"
@@ -14,6 +16,8 @@ class HrTediVehicleRegistration(models.Model):
     # 1. CÁC TRƯỜNG DỮ LIỆU
     # ========================================================
     code = fields.Char(string="Mã phiếu", default="New", readonly=True)
+
+    request_date = fields.Date(string="Ngày tạo", default=fields.Date.context_today)
 
     requester_id = fields.Many2one(
         'hr.employee',
