@@ -108,23 +108,16 @@ class HrTediVehicleRegistration(models.Model):
 
     def action_fleet_approve(self):
         self.ensure_one()
-        if not self.env.user.has_group('fleet.fleet_group_user') and not self.env.user.has_group('base.group_system'):
-            raise AccessError("Quyền hạn không hợp lệ.")
         self.state = 'approved'
         self.message_post(body=f"Đã tiếp nhận bởi {self.env.user.name}.")
 
     def action_fleet_refuse(self):
         self.ensure_one()
-        if not self.env.user.has_group('fleet.fleet_group_user') and not self.env.user.has_group('base.group_system'):
-            raise AccessError("Quyền hạn không hợp lệ.")
         self.state = 'refused'
         self.message_post(body=f"Từ chối bởi {self.env.user.name}.")
 
     def action_office_assign(self):
         self.ensure_one()
-        if not self.env.user.has_group('fleet.fleet_group_user') and not self.env.user.has_group(
-                'base.group_system'):
-            raise AccessError("Quyền hạn không hợp lệ.")
         if self.state != 'approved': raise ValidationError("Phiếu chưa được duyệt.")
         if not self.assigned_vehicle_id: raise ValidationError("Chưa chọn xe.")
 
@@ -160,31 +153,30 @@ class HrTediVehicleRegistration(models.Model):
         self.message_post(body=f"Người dùng đã đánh giá: {rating_label}. Đang chờ Văn phòng xác nhận xe về.")
 
     def action_confirm_return(self):
-        """Bước 2: Admin xác nhận xe về -> Ghi nhận log & báo cáo -> Hoàn tất"""
         self.ensure_one()
+        # 1. Check quyền
         if not self.env.user.has_group('fleet.fleet_group_user') and not self.env.user.has_group('base.group_system'):
             raise AccessError("Chỉ bộ phận Quản lý đội xe mới được xác nhận hoàn thành.")
 
         if self.distance_km <= 0:
             raise ValidationError("Vui lòng nhập 'Số km thực tế đi được' trước khi xác nhận.")
 
-        # 1. Ghi Odometer Log
+        # ==========================================================================
+        # 2. TÍNH TOÁN SỐ LIỆU
+        # ==========================================================================
+        # Lấy số Odometer hiện tại trên hệ thống (coi như là số đầu của chuyến này)
         current_odometer = self.assigned_vehicle_id.odometer
+
+        # Số Odometer mới (Sau khi cộng chuyến này)
         new_odometer_value = current_odometer + self.distance_km
 
-        self.env['fleet.vehicle.odometer'].create({
-            'vehicle_id': self.assigned_vehicle_id.id,
-            'value': new_odometer_value,
-            'date': self.end_date.date(),
-            'driver_id': self.driver_id.id,
-            'unit': 'kilometers',
-            'report_type': 'log'
-        })
-
-        # 2. LOGIC BÁO CÁO THÁNG (ĐÃ BỔ SUNG LẠI)
         trip_month = self.end_date.month
         trip_year = self.end_date.year
-        # Tìm báo cáo tháng tồn tại
+
+        # ==========================================================================
+        # 3. CẬP NHẬT BÁO CÁO THÁNG
+        # ==========================================================================
+        # Tìm báo cáo tháng hiện tại
         report = self.env['fleet.vehicle.odometer'].search([
             ('vehicle_id', '=', self.assigned_vehicle_id.id),
             ('month', '=', trip_month),
@@ -192,24 +184,52 @@ class HrTediVehicleRegistration(models.Model):
             ('report_type', '=', 'monthly')
         ], limit=1)
 
-        # Nếu chưa có thì tạo mới
         if not report:
+            # === TRƯỜNG HỢP 1: TẠO MỚI (Chưa có báo cáo tháng này) ===
+            # Km chạy trong tháng = Chính là km của chuyến này
+            km_total_month = self.distance_km
+
+            # Số đầu kỳ của báo cáo = Số hiện tại (trước khi cộng chuyến này)
+            # Lưu ý: Logic này đúng nếu đây là chuyến đầu tiên trong tháng được ghi nhận
+            start_val = current_odometer
+
             report = self.env['fleet.vehicle.odometer'].create({
                 'vehicle_id': self.assigned_vehicle_id.id,
                 'month': trip_month,
                 'year': trip_year,
                 'report_type': 'monthly',
                 'date': self.end_date.date(),
-                'odometer_start': current_odometer
+                'driver_id': self.driver_id.id,
+
+                'odometer_start': start_val,  # Số đầu kỳ
+                'value': new_odometer_value,  # Số cuối kỳ
+
+                # --- SỬA TÊN TRƯỜNG KHỚP VỚI CODE BẠN GỬI ---
+                'odometer_total': km_total_month,  # Tổng km hoạt động
+            })
+        else:
+            # === TRƯỜNG HỢP 2: CẬP NHẬT (Đã có báo cáo) ===
+            # Logic: Tổng km tháng = (Số cuối mới) - (Số đầu kỳ đã lưu)
+            # Ta không cộng dồn thủ công mà lấy (Cuối - Đầu) cho chính xác tuyệt đối
+            km_total_month = new_odometer_value - report.odometer_start
+
+            report.write({
+                'value': new_odometer_value,  # Cập nhật số cuối
+                'odometer_total': km_total_month,  # Cập nhật tổng chạy
+                'date': self.end_date.date(),  # Cập nhật ngày mới nhất
+                'driver_id': self.driver_id.id
             })
 
-        # Gọi hàm tính toán lại dữ liệu (nếu module custom của bạn có hàm này)
+        # Bước 4: Chuyển trạng thái phiếu về Done
+        self.state = 'done'
+
+        # Bước 5 (Tùy chọn): Gọi hàm tính toán lại của Odoo để đồng bộ hóa nếu cần
+        # Hàm này trong model fleet.vehicle.odometer sẽ quét lại toàn bộ các phiếu 'done' để tính tổng
+        # Việc gọi lại ở đây giúp đảm bảo số liệu chắc chắn khớp với danh sách phiếu
         if hasattr(report, 'action_calculate_data'):
             report.action_calculate_data()
 
-        # 3. Hoàn tất
-        self.state = 'done'
-        self.message_post(body=f"Xe đã về kho. KM thực tế: {self.distance_km}. Phiếu hoàn tất.")
+        self.message_post(body=f"Xe về kho. Odoo mới: {new_odometer_value}. Tổng tháng: {km_total_month}.")
 
     def action_office_no_car(self):
         self.ensure_one()
