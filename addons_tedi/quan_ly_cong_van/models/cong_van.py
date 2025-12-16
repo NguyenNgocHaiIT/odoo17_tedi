@@ -457,7 +457,9 @@ class OfficeDocument(models.Model):
         ('2', 'Tờ trình'),
         ('3', 'Quy chế')
     ], string='Loại văn bản')
-    lanh_dao_xu_ly = fields.Many2one('hr.employee', string='Lãnh đạo xử lý')
+    lanh_dao_xu_ly = fields.Many2many(
+        'hr.employee',
+        string='Lãnh đạo xử lý')
     lanh_dao_theo_doi = fields.Many2one('hr.employee', string='Lãnh đạo theo dõi')
     ngay_den = fields.Date('Ngày đến')
     phan_loai_van_ban = fields.Many2one('office.document.category', string='Phân loại văn bản')
@@ -468,9 +470,10 @@ class OfficeDocument(models.Model):
     noi_gui = fields.Char('Nơi gửi')
     nguoi_ky = fields.Many2one('res.users', string='Người ký')
     do_khan = fields.Selection([
+        ('thuong', 'Thường'),
         ('khan', 'Khẩn'),
         ('mat', 'Mật'),
-        ('hoa_toc', 'Hỏa tốc')], string='Độ khẩn', default='khan')
+        ('hoa_toc', 'Hỏa tốc')], string='Độ khẩn', default='thuong')
     vb_nhan = fields.Char('Văn bản nhận')
     tt_vb = fields.Selection([
         ('draft', 'Nhập thông tin'),#thường
@@ -509,7 +512,7 @@ class OfficeDocument(models.Model):
     so_den_theo_so = fields.Char('Số đến theo sổ')
     so_di_theo_so = fields.Char('Số đi theo sổ')
     so_vb = fields.Char('Số văn bản')
-    ngay_hieu_luc = fields.Date('Ngày hiệu lực')
+    ngay_hieu_luc = fields.Date('Ngày hiệu lực', default=fields.Date.context_today)
     ngay_ky = fields.Date('Ngày ký')
     chuc_vu = fields.Char('Chức vụ')
     do_quan_trong = fields.Char('Độ quan trọng')
@@ -546,9 +549,15 @@ class OfficeDocument(models.Model):
         domain="[('document_type','in',['outgoing_internal'])]"
     )
     can_duyet = fields.Boolean(string='Văn bản có cần duyệt không ?', default=True)
-    co_the_but_phe = fields.Boolean(
+    co_the_but_phe_cong_van_di = fields.Boolean(
         string='Có thể bút phê',
-        compute='_compute_co_the_but_phe',
+        compute='_compute_co_the_but_phe_cong_van_di',
+        store=False  # Không lưu vào database, tính toán real-time
+    )
+
+    co_the_but_phe_cong_van_den = fields.Boolean(
+        string='Có thể bút phê',
+        compute='_compute_co_the_but_phe_cong_van_den',
         store=False  # Không lưu vào database, tính toán real-time
     )
 
@@ -576,16 +585,15 @@ class OfficeDocument(models.Model):
             'res_model': 'office.document.but.phe',
             'target': 'new'
         }
-
-    def trinh_lanh_dao_cong_van_den(self):
+    def trinh_lanh_dao_cong_van_di_but_phe(self):
         self.ensure_one()
-        if not self.lanh_dao_xu_ly:
+        if not self.lanh_dao_theo_doi:
             raise UserError("Vui lòng chọn lãnh đạo xử lý trước khi trình.")
 
         self.tt_vb = 'cho_but_phe'
 
         doc_url = self.get_form_url()
-        employees_to_notify = [self.lanh_dao_xu_ly]
+        employees_to_notify = [self.lanh_dao_theo_doi]
 
         for emp in employees_to_notify:
             # 1. Gửi email
@@ -627,6 +635,62 @@ class OfficeDocument(models.Model):
                     )
                 except Exception as e:
                     _logger.warning(f"Gửi notification thất bại cho {emp.name}: {str(e)}")
+
+
+    def trinh_lanh_dao_cong_van_den(self):
+        self.ensure_one()
+
+        if not self.lanh_dao_xu_ly or not self.lanh_dao_xu_ly.ids:
+            raise UserError("Vui lòng chọn lãnh đạo xử lý trước khi trình.")
+
+        self.tt_vb = 'cho_but_phe'
+
+        doc_url = self.get_form_url()
+        employees_to_notify = self.lanh_dao_xu_ly
+
+        for emp in employees_to_notify:
+            # 1. Gửi email
+            try:
+                email = emp.user_id.email or emp.work_email
+                if email:
+                    body_html = f"""
+                        <p>Xin chào {emp.name},</p>
+                        <p>Văn bản <b>{self.trich_yeu}</b> cần xử lý.</p>
+                        <p>
+                            <a href="{doc_url}"
+                               style="background:#E57373;color:white;padding:6px 12px;
+                                      text-decoration:none;border-radius:4px;font-size:12px;">
+                                Xem chi tiết văn bản
+                            </a>
+                        </p>
+                        <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
+                    """
+                    self.env['mail.mail'].sudo().create({
+                        'subject': f"[Văn bản mới] {self.trich_yeu}",
+                        'email_to': email,
+                        'email_from': self.env.user.email or 'no-reply@company.com',
+                        'body_html': body_html,
+                    }).send()
+            except Exception as e:
+                _logger.warning(f"Gửi mail thất bại cho {emp.name}: {str(e)}")
+
+            # 2. Gửi popup/notification
+            if emp.user_id:
+                try:
+                    partner = emp.user_id.partner_id
+                    self.env['bus.bus']._sendone(
+                        partner,
+                        'simple_notification',
+                        {
+                            'title': 'Phân công xử lý văn bản',
+                            'message': f"Bạn vừa được giao xử lý văn bản: {self.trich_yeu}",
+                            'sticky': False,
+                            'type': 'info',
+                        }
+                    )
+                except Exception as e:
+                    _logger.warning(f"Gửi notification thất bại cho {emp.name}: {str(e)}")
+
 
     def approve(self):
         self.ensure_one()
@@ -806,14 +870,14 @@ class OfficeDocument(models.Model):
     def trinh_lanh_dao_cong_van_di(self):
         self.ensure_one()
 
-        if not self.lanh_dao_xu_ly:
+        if not self.lanh_dao_theo_doi:
             raise UserError("Vui lòng chọn lãnh đạo xử lý trước khi trình.")
 
         # Cập nhật trạng thái
         self.tt_vb = 'cho_duyet'
 
         doc_url = self.get_form_url()
-        employees_to_notify = [self.lanh_dao_xu_ly]
+        employees_to_notify = [self.lanh_dao_theo_doi]
 
         for emp in employees_to_notify:
             # 1. Gửi email
@@ -869,8 +933,8 @@ class OfficeDocument(models.Model):
         self.tt_vb = 'phat_hanh'
         return True
 
-    @api.depends('lanh_dao_xu_ly')
-    def _compute_co_the_but_phe(self):
+    @api.depends('lanh_dao_theo_doi')
+    def _compute_co_the_but_phe_cong_van_di(self):
         """Tính toán xem người dùng hiện tại có phải là lãnh đạo xử lý không"""
         current_user = self.env.user
         current_employee = self.env['hr.employee'].search(
@@ -879,10 +943,19 @@ class OfficeDocument(models.Model):
 
         for record in self:
             # Nếu có lãnh đạo xử lý và người dùng hiện tại là lãnh đạo đó
-            if record.lanh_dao_xu_ly and current_employee:
-                record.co_the_but_phe = (record.lanh_dao_xu_ly.id == current_employee.id)
+            if record.lanh_dao_theo_doi and current_employee:
+                record.co_the_but_phe_cong_van_di = (record.lanh_dao_theo_doi.id == current_employee.id)
             else:
-                record.co_the_but_phe = False
+                record.co_the_but_phe_cong_van_di = False
+
+    @api.depends('lanh_dao_xu_ly')
+    def _compute_co_the_but_phe_cong_van_den(self):
+        current_employee = self.env.user.employee_id
+        for record in self:
+            if not current_employee:
+                record.co_the_but_phe_cong_van_den = False
+            else:
+                record.co_the_but_phe_cong_van_den = current_employee in record.lanh_dao_xu_ly
 
     def xac_nhan(self):
         self.ensure_one()
