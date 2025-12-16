@@ -461,7 +461,7 @@ class OfficeDocument(models.Model):
         'hr.employee',
         string='Lãnh đạo xử lý')
     lanh_dao_theo_doi = fields.Many2one('hr.employee', string='Lãnh đạo theo dõi')
-    ngay_den = fields.Date('Ngày đến')
+    ngay_den = fields.Date('Ngày đến', default=fields.Date.context_today)
     phan_loai_van_ban = fields.Many2one('office.document.category', string='Phân loại văn bản')
     so_den_tong_hop = fields.Char('Số đến tổng hợp')
     so_di_tong_hop = fields.Char('Số công văn')
@@ -560,6 +560,8 @@ class OfficeDocument(models.Model):
         compute='_compute_co_the_but_phe_cong_van_den',
         store=False  # Không lưu vào database, tính toán real-time
     )
+
+    ngay_xuat = fields.Date(string='Ngày xuất')
 
     task_id = fields.Many2one('project.task', string="Công việc liên quan")
 
