@@ -61,6 +61,19 @@ STAGE_ACL = {
     ],
 }
 
+class ResEthnic(models.Model):
+    _name = 'res.ethnic'
+    _description = 'Danh mục Dân tộc'
+    _order = 'name'
+
+    name = fields.Char(string="Tên dân tộc", required=True)
+    code = fields.Char(string="Mã", help="Ví dụ: KINH, TAY, THAI...")
+    active = fields.Boolean(string="Đang sử dụng", default=True)
+
+    _sql_constraints = [
+        ('name_uniq', 'unique (name)', 'Tên dân tộc đã tồn tại!'),
+        ('code_uniq', 'unique (code)', 'Mã dân tộc phải là duy nhất!')
+    ]
 
 class Applicant(models.Model):
     _inherit = 'hr.applicant'
@@ -74,17 +87,11 @@ class Applicant(models.Model):
         default=lambda self: self.env['res.country'].search([('code', '=', 'VN')], limit=1)
     )
 
-    folk = fields.Selection([
-        ('kinh', 'Kinh'),
-        ('tay', 'Tày'),
-        ('thai', 'Thái'),
-        ('muong', 'Mường'),
-        ('khmer', 'Khmer'),
-        ('hoa', 'Hoa'),
-        ('nung', 'Nùng'),
-        ('hmong', 'H\'Mông'),
-        ('other', 'Khác')
-    ], string="Dân tộc", default='kinh')
+    folk_id = fields.Many2one(
+        'res.ethnic',
+        string="Dân tộc",
+        help="Chọn dân tộc từ danh mục"
+    )
     current_job = fields.Char(string="Nghề nghiệp")
     address = fields.Char(string="Địa chỉ")
     suitability = fields.Selection(

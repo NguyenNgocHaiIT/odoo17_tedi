@@ -5,6 +5,40 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, AccessError
 from datetime import date
 
+
+class VehicleNoCarWizard(models.TransientModel):
+    _name = 'vehicle.no.car.wizard'
+    _description = 'Wizard báo hết xe'
+
+    booking_option = fields.Selection([
+        ('manager', 'Quản lý đặt xe bên ngoài'),
+        ('unit', 'Đơn vị tự đặt xe bên ngoài')
+    ], string="Phương án xử lý", required=True, default='manager')
+
+    note = fields.Text(string="Ghi chú thêm")
+
+    def action_confirm(self):
+        """Xử lý khi ấn nút Xác nhận trên Popup"""
+        self.ensure_one()
+        # Lấy ID của phiếu đăng ký đang mở
+        active_id = self.env.context.get('active_id')
+        if active_id:
+            record = self.env['hr_tedi.vehicle.registration'].browse(active_id)
+
+            # Cập nhật thông tin vào phiếu
+            record.write({
+                'state': 'no_car',
+                'external_booking_type': self.booking_option,
+                'no_car_note': self.note
+            })
+
+            # Ghi log vào chatter
+            option_label = dict(self._fields['booking_option'].selection).get(self.booking_option)
+            record.message_post(body=f"Báo hết xe. Phương án: {option_label}. Ghi chú: {self.note or 'Không'}")
+
+        return {'type': 'ir.actions.act_window_close'}
+
+
 class HrTediVehicleRegistration(models.Model):
     _name = "hr_tedi.vehicle.registration"
     _description = "Phiếu đăng ký xe"
@@ -23,8 +57,27 @@ class HrTediVehicleRegistration(models.Model):
         'hr.employee',
         string="Người đề nghị",
         default=lambda self: self.env.user.employee_id,
-        required=True, tracking=True, readonly=True
+        required=True,
+        tracking=True
+        # Đã xóa readonly=True để có thể xử lý điều kiện bên XML
     )
+
+
+    def _default_can_edit_requester(self):
+        return self.env.user.has_group('fleet.fleet_group_manager')
+
+    # 2. Thêm default vào field boolean
+    can_edit_requester = fields.Boolean(
+        compute='_compute_can_edit_requester',
+        default=_default_can_edit_requester, # <--- QUAN TRỌNG: Thêm dòng này
+        store=False
+    )
+
+    @api.depends_context('uid')
+    def _compute_can_edit_requester(self):
+        is_manager = self.env.user.has_group('fleet.fleet_group_manager')
+        for rec in self:
+            rec.can_edit_requester = is_manager
 
     start_date = fields.Datetime(string="Thời gian bắt đầu", required=True, tracking=True)
     end_date = fields.Datetime(string="Thời gian kết thúc", required=True, tracking=True)
@@ -61,6 +114,13 @@ class HrTediVehicleRegistration(models.Model):
         ('done', 'Hoàn thành'),
         ('cancel', 'Hủy'),
     ], string='Trạng thái', default='draft', tracking=True)
+
+    external_booking_type = fields.Selection([
+        ('manager', 'Quản lý đặt xe bên ngoài'),
+        ('unit', 'Đơn vị tự đặt xe bên ngoài')
+    ], string="Phương án khi hết xe", readonly=True)
+
+    no_car_note = fields.Text(string="Ghi chú báo hết xe", readonly=True)
 
     # ========================================================
     # 2. LOGIC TỰ ĐỘNG
@@ -237,9 +297,18 @@ class HrTediVehicleRegistration(models.Model):
 
     def action_office_no_car(self):
         self.ensure_one()
-        if not self.env.user.has_group('fleet.fleet_group_user'): raise AccessError("Quyền hạn không hợp lệ.")
-        self.state = 'no_car'
-        self.message_post(body="Văn phòng báo hết xe.")
+        if not self.env.user.has_group('fleet.fleet_group_user'):
+            raise AccessError("Quyền hạn không hợp lệ.")
+
+        # Mở Wizard thay vì đổi state ngay lập tức
+        return {
+            'name': 'Xác nhận báo hết xe',
+            'type': 'ir.actions.act_window',
+            'res_model': 'vehicle.no.car.wizard',
+            'view_mode': 'form',
+            'target': 'new',  # Quan trọng: Mở dạng Popup
+            'context': {'active_id': self.id}  # Truyền ID phiếu sang Wizard
+        }
 
     def action_draft(self):
         self.state = 'draft'

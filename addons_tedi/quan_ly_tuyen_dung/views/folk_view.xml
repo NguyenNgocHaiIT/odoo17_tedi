@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="view_res_ethnic_tree" model="ir.ui.view">
+            <field name="name">res.ethnic.tree</field>
+            <field name="model">res.ethnic</field>
+            <field name="arch" type="xml">
+                <tree string="Danh mục Dân tộc" editable="bottom">
+                    <field name="code" width="100px"/>
+                    <field name="name"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_res_ethnic_form" model="ir.ui.view">
+            <field name="name">res.ethnic.form</field>
+            <field name="model">res.ethnic</field>
+            <field name="arch" type="xml">
+                <form string="Dân tộc">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                            </group>
+                            <group>
+                                <field name="code"/>
+                                <field name="active"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_res_ethnic_search" model="ir.ui.view">
+            <field name="name">res.ethnic.search</field>
+            <field name="model">res.ethnic</field>
+            <field name="arch" type="xml">
+                <search string="Tìm kiếm">
+                    <field name="name"/>
+                    <field name="code"/>
+                    <filter string="Đã lưu trữ" name="archived" domain="[('active', '=', False)]"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_res_ethnic" model="ir.actions.act_window">
+            <field name="name">Dân tộc</field>
+            <field name="res_model">res.ethnic</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+              <p class="o_view_nocontent_smiling_face">
+                Tạo mới một dân tộc
+              </p>
+            </field>
+        </record>
+
+        <menuitem
+            id="menu_res_ethnic"
+            name="Dân tộc"
+            parent="hr_recruitment.menu_hr_recruitment_configuration"
+            action="action_res_ethnic"
+            sequence="100"
+        />
+
+
+    </data>
+</odoo>
