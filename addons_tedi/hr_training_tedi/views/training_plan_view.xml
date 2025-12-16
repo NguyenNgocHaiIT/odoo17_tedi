@@ -80,10 +80,12 @@
                 <page string="Chi tiết kế hoạch">
                  <field name="detail_ids" readonly="state == 'approved'">
                     <tree editable="bottom" string="Chi tiết kế hoạch">
+                        <field name="plan_state" column_invisible="True"/>
                         <button name="open_participants"
                                 type="object"
                                 string="Học viên"
                                 class="btn-link"
+                                invisible="plan_state != 'approved'"
                                 icon="fa-users"/>
 
                         <field name="course_id" class="text-start"/>
