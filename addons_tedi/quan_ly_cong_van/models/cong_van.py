@@ -729,17 +729,26 @@ class OfficeDocument(models.Model):
         document_type = vals.get('document_type') or self._context.get('default_document_type') or (
             self.document_type if self else None)
 
-        current_date_str = fields.Date.today().strftime('%y%m%d')  # YYMMDD
+        current_date = fields.Date.today()
+        current_date_str = current_date.strftime('%y%m%d')  # YYMMDD
 
-        def get_or_create_sequence(code, name, prefix):
-            seq = self.env['ir.sequence'].sudo().search([('code', '=', code)], limit=1)
-            if not seq:
+        def get_daily_sequence(seq_code_base, name_base, prefix_without_date):
+            seq_code = f"{seq_code_base}.{current_date_str}"
+            expected_prefix = f"{current_date_str}-{prefix_without_date}"
+
+            seq = self.env['ir.sequence'].sudo().search([('code', '=', seq_code)], limit=1)
+            if seq:
+                # ⚠️ cập nhật prefix nếu sai
+                if seq.prefix != expected_prefix:
+                    seq.write({'prefix': expected_prefix})
+            else:
                 seq = self.env['ir.sequence'].sudo().create({
-                    'name': name,
-                    'code': code,
-                    'prefix': prefix,
+                    'name': f"{current_date_str} - {name_base}",
+                    'code': seq_code,
+                    'prefix': expected_prefix,
                     'padding': 4,
                     'company_id': False,
+                    'use_date_range': False,
                 })
             return seq
 
@@ -748,37 +757,35 @@ class OfficeDocument(models.Model):
             phan_loai = self.env['office.document.category'].browse(phan_loai_id)
             if not phan_loai.exists() or not phan_loai.code:
                 raise UserError("Phân loại văn bản chưa có mã (code)!")
+
             code = phan_loai.code
-            seq_code_den = f'den.{code}'
-            seq_den = get_or_create_sequence(
-                seq_code_den,
+            seq_den = get_daily_sequence(
+                f'den.{code}',
                 f'Số đến - {code}',
-                f'{current_date_str}-{code}-'
+                f'{code}-'
             )
             if not vals.get('so_den_tong_hop'):
-                vals['so_den_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_code_den)
+                vals['so_den_tong_hop'] = seq_den.next_by_id()
 
         # ========== SỐ ĐI ==========
         if document_type == 'resolution':
-            seq_code_qd = 'di.resolution'
-            seq_qd = get_or_create_sequence(
-                seq_code_qd,
+            seq_qd = get_daily_sequence(
+                'di.resolution',
                 'Số đi - Quyết định',
-                f'{current_date_str}-QĐ-'
+                'QĐ-'
             )
             if not vals.get('so_di_tong_hop'):
-                vals['so_di_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_code_qd)
+                vals['so_di_tong_hop'] = seq_qd.next_by_id()
         else:
             if phan_loai_id:
                 code = self.env['office.document.category'].browse(phan_loai_id).code
-                seq_code_di = f'di.{code}'
-                seq_di = get_or_create_sequence(
-                    seq_code_di,
+                seq_di = get_daily_sequence(
+                    f'di.{code}',
                     f'Số đi - {code}',
-                    f'{current_date_str}-{code}-'
+                    f'{code}-'
                 )
                 if not vals.get('so_di_tong_hop'):
-                    vals['so_di_tong_hop'] = self.env['ir.sequence'].next_by_code(seq_code_di)
+                    vals['so_di_tong_hop'] = seq_di.next_by_id()
 
         return vals
 
