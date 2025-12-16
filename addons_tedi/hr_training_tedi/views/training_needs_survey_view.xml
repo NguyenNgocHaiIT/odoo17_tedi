@@ -41,18 +41,20 @@
                             invisible="state != 'draft'"/>
 
                     <button name="action_end"
-                        string="Kết thúc"
-                        type="object"
-                        class="btn-secondary"
-                        confirm="Bạn có chắc chắn muốn kết thúc khảo sát này ngay lập tức?"
-                        invisible="state != 'in_process'"/>
+                            string="Kết thúc"
+                            type="object"
+                            class="btn-secondary"
+                            groups="hr_training_tedi.group_training_manager"
+                            confirm="Bạn có chắc chắn muốn kết thúc khảo sát này ngay lập tức?"
+                            invisible="state != 'in_process'"/>
 
                     <button name="action_start_survey"
-                        string="Bắt đầu"
-                        type="object"
-                        class="btn-primary"
-                        confirm="Bạn có chắc chắn muốn bắt đầu khảo sát này ngay lập tức?"
-                        invisible="state != 'confirmed'"/>
+                            string="Bắt đầu"
+                            type="object"
+                            class="btn-primary"
+                            confirm="Bạn có chắc chắn muốn bắt đầu khảo sát này ngay lập tức?"
+                            groups="hr_training_tedi.group_training_manager"
+                            invisible="state != 'confirmed'"/>
                 </header>
 
                 <sheet>

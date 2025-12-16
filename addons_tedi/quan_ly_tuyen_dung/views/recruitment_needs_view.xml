@@ -43,7 +43,7 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="name" string="Đợt khảo sát"/>
+                            <field name="name" string="Đợt khảo sát" readonly="state == 'confirmed'"/>
                             <!-- Người đăng ký: readonly, luôn hiển thị -->
                             <field name="department_id" string="Phòng ban đăng ký" readonly="1"/>
                         </group>

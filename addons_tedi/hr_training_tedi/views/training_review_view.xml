@@ -1,16 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+
     <record id="view_training_review_tree" model="ir.ui.view">
         <field name="name">training.review.tree</field>
         <field name="model">training.review</field>
         <field name="arch" type="xml">
             <tree string="Đánh giá khoá đào tạo">
+                <field name="participation_id" class="text-start"/>
                 <field name="training_plan_id" class="text-start"/>
-                <field name="training_plan_detail_id" class="text-start"/>
                 <field name="training_center" class="text-start"/>
                 <field name="start_date" class="text-start"/>
                 <field name="end_date" class="text-start"/>
                 <field name="user_id" class="text-start"/>
+                <field name="state"
+                       decoration-info="state == 'draft'"
+                       decoration-success="state == 'done'"
+                       widget="badge"/>
             </tree>
         </field>
     </record>
@@ -20,36 +25,41 @@
         <field name="model">training.review</field>
         <field name="arch" type="xml">
             <form string="Đánh giá khoá đào tạo">
+                <header>
+                    <button name="action_confirm"
+                            string="Xác nhận"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'draft'"/>
+
+                    <field name="state" widget="statusbar" statusbar_visible="draft,done"/>
+                </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="training_plan_id" required="1" class="text-start"/>
-                            <field name="training_plan_detail_id" required="1" class="text-start"/>
-                            <field name="training_center" readonly="1" class="text-start"/>
+                            <field name="participation_id"
+                                   options="{'no_create': True, 'no_open': True}"
+                                   class="text-start"
+                                   readonly="state == 'done'"/>
+
+                            <field name="training_plan_id" class="text-start"/>
+                            <field name="training_center" class="text-start"/>
                         </group>
                         <group>
                             <field name="start_date" class="text-start"/>
                             <field name="end_date" class="text-start"/>
-                            <field name="user_id" readonly="1" class="text-start"/>
+                            <field name="user_id" class="text-start"/>
                         </group>
                     </group>
 
                     <notebook>
                         <page string="Nội dung đánh giá">
-                            <field name="review_detail_ids">
+                            <field name="review_detail_ids" readonly="state == 'done'">
                                 <tree editable="bottom" string="Đánh giá chi tiết">
                                     <field name="review_content" class="text-start"/>
                                     <field name="training_rating" class="text-start"/>
                                     <field name="note" class="text-start"/>
                                 </tree>
-
-                                <form string="Đánh giá chi tiết">
-                                    <group>
-                                        <field name="review_content" class="text-start"/>
-                                        <field name="training_rating" class="text-start"/>
-                                        <field name="note" class="text-start"/>
-                                    </group>
-                                </form>
                             </field>
                         </page>
                     </notebook>
@@ -62,15 +72,10 @@
         <field name="name">Đánh giá khoá đào tạo</field>
         <field name="res_model">training.review</field>
         <field name="view_mode">tree,form</field>
-        <field name="view_ids" eval="[
-            (5, 0, 0),
-            (0, 0, {'view_id': ref('view_training_review_tree'), 'view_mode': 'tree'}),
-            (0, 0, {'view_id': ref('view_training_review_form'), 'view_mode': 'form'}),
-        ]"/>
     </record>
 
     <record id="action_training_review_my" model="ir.actions.act_window">
-        <field name="name">Đánh giá của tôi</field>
+        <field name="name">Đánh giá đào tạo</field>
         <field name="res_model">training.review</field>
         <field name="view_mode">tree,form</field>
         <field name="domain">[('user_id', '=', uid)]</field>

@@ -30,7 +30,7 @@
 
 
         <menuitem id="menu_training_participation"
-                  name="Danh sách học viên"
+                  name="Lớp đào tạo"
                   parent="hr_training_tedi.training_tedi_root"
                   action="action_training_participation"
                   sequence="40"/>
@@ -43,7 +43,7 @@
                   sequence="60"/>
 
         <menuitem id="menu_training_review_my"
-                  name="Đánh giá của tôi"
+                  name="Đánh giá khoá đào tạo"
                   parent="hr_training_tedi.menu_training_review_root"
                   action="action_training_review_my"
                   sequence="60"/>

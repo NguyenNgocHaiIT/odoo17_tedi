@@ -147,7 +147,7 @@
                                 <tree editable="bottom">
                                     <field name="stt" readonly="1"/>
                                     <field name="school"/>
-                                    <field name="major"/>
+                                    <field name="major_id"/>
                                     <field name="years"/>
                                     <field name="degree"/>
                                     <field name="issue_date"/>
@@ -206,13 +206,13 @@
                                     <field name="work_address"/>
                                     <field name="date_from"/>
                                     <field name="date_to"/>
-                                    <field name="position"/>
+                                    <field name="work_position"/>
                                 </tree>
                             </field>
                         </page>
 
                         <page string="Kinh nghiệm công việc" name="exp_vn">
-                            <separator string="KINH NGHIỆM CÔNG VIỆC LIÊN QUAN"/>
+                            <separator string="KINH NGHIỆM CÔNG VIỆC TẠI TEDI"/>
                             <field name="experience_ids" nolabel="1" colspan="2">
                                 <tree editable="bottom">
                                     <field name="project_name"/>
@@ -226,6 +226,21 @@
                                            decoration-warning="status == 'pending'"/>
                                 </tree>
                             </field>
+
+                            <separator string="KINH NGHIỆM CÔNG VIỆC KHÁC"/>
+                            <field name="external_experience_ids">
+                                <tree editable="bottom">
+                                    <field name="company_name" style="font-weight: bold;"/>
+                                    <field name="project_name"/>
+                                    <field name="project_type"/>
+                                    <field name="position"/>
+                                    <field name="date_from"/>
+                                    <field name="date_to"/>
+                                    <field name="status" widget="badge"
+                                           decoration-success="status == 'completed'"/>
+                                </tree>
+                            </field>
+
                         </page>
 
                         <page string="Khen thưởng - Kỷ luật" name="reward_vn">
@@ -327,7 +342,7 @@
         </record>
 
 
-        <delete model="ir.ui.menu" id="hr.menu_view_hr_contract_type"/>
+<!--        <delete model="ir.ui.menu" id="hr.menu_view_hr_contract_type"/>-->
 
         <menuitem
             id="menu_view_hr_contract_type_tedi"
@@ -336,6 +351,8 @@
             parent="hr.menu_human_resources_configuration"
             sequence="2"
             groups="hr.group_hr_user"/>
+
+
 
 
 

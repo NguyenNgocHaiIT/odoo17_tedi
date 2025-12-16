@@ -42,6 +42,50 @@ class TrainingNeeds(models.Model):
         'training_needs_id',
         string='Chi tiết nhu cầu',
     )
+    is_valid_approver = fields.Boolean(
+        string="Là người được duyệt",
+        compute='_compute_is_valid_approver',
+        store=False  # Bắt buộc False để luôn tính lại mỗi khi mở form
+    )
+
+    @api.depends('user_id')
+    @api.depends('user_id', 'state')
+    def _compute_is_valid_approver(self):
+        # Lấy user đang login
+        current_user = self.env.user
+        current_dept = current_user.employee_id.department_id
+
+        for rec in self:
+            rec.is_valid_approver = False
+
+            # 1. Nếu không phải trạng thái chờ duyệt -> False luôn
+            if rec.state != 'pending':
+                continue
+
+            # 2. Nếu User không có quyền Trưởng đơn vị -> False
+            if not current_user.has_group('hr_training_tedi.group_training_unit_manager'):
+                continue
+
+            # 3. LOGIC CỐT LÕI: SO SÁNH PHÒNG BAN
+            # Lấy phòng ban của người tạo đơn
+            owner_dept = rec.user_id.employee_id.department_id
+
+            if current_dept and owner_dept:
+                # Kiểm tra: Phòng ban người tạo (owner) có thuộc nhánh con (hoặc chính nó)
+                # của phòng ban User đang login (current) không?
+                # Toán tử 'child_of' trong domain xử lý việc này.
+                is_sub_branch = self.env['hr.department'].search_count([
+                    ('id', '=', owner_dept.id),
+                    ('id', 'child_of', current_dept.id)
+                ])
+
+                if is_sub_branch > 0:
+                    rec.is_valid_approver = True
+
+            # (Tùy chọn) Nếu là Admin hệ thống (id=1 hoặc group Admin) thì luôn cho duyệt?
+            # Nếu bạn muốn Admin cũng bị chặn nếu khác phòng ban thì bỏ đoạn dưới đi.
+            if current_user.has_group('base.group_system'):
+                rec.is_valid_approver = True
 
     @api.constrains('line_ids')
     def _check_lines_unique_course(self):
@@ -103,13 +147,21 @@ class TrainingNeeds(models.Model):
 
             rec.state = 'pending'
 
-
     def action_approve(self):
         for rec in self:
             if rec.state != 'pending':
                 raise UserError(_("Chỉ được duyệt khi phiếu đang ở trạng thái 'Chờ duyệt'."))
             if not rec.line_ids:
                 raise UserError(_("Bạn phải nhập ít nhất 1 dòng nhu cầu đào tạo trước khi duyệt."))
+
+            # CHECK QUYỀN TRƯỞNG ĐƠN VỊ
+            # Nếu chỉ có quyền Unit Manager mà không phải Manager cấp cao
+            if self.env.user.has_group('hr_training_tedi.group_training_unit_manager') and \
+                    not self.env.user.has_group('hr_training_tedi.group_training_manager'):
+
+                if not rec.is_valid_approver:
+                    raise UserError(_("Bạn không có quyền duyệt yêu cầu của phòng ban khác."))
+
             rec.state = "approved"
             rec.approver_id = self.env.user.id
 
@@ -120,6 +172,13 @@ class TrainingNeeds(models.Model):
         for rec in self:
             if rec.state != 'pending':
                 raise UserError(_("Chỉ được từ chối khi phiếu đang ở trạng thái 'Chờ duyệt'."))
+
+            # CHECK QUYỀN TƯƠNG TỰ DUYỆT
+            if self.env.user.has_group('hr_training_tedi.group_training_unit_manager') and \
+                    not self.env.user.has_group('hr_training_tedi.group_training_manager'):
+                if not rec.is_valid_approver:
+                    raise UserError(_("Bạn không có quyền từ chối yêu cầu của phòng ban khác."))
+
             rec.state = "draft"
 
     # def unlink(self):

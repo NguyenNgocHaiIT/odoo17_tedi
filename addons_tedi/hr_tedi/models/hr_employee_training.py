@@ -42,6 +42,11 @@ class HrEmployeeTrainingTedi(models.Model):
 
     name = fields.Char(string="Tên khóa đào tạo", required=True)
 
+    training_result = fields.Selection([
+        ('pass', 'Đạt'),
+        ('fail', 'Không đạt')
+    ], string="Kết quả đào tạo")
+
     training_type = fields.Selection([
         ('planned', 'Chưa bắt đầu'),
         ('short_term', 'Ngắn hạn'),
@@ -63,6 +68,7 @@ class HrEmployeeTrainingTedi(models.Model):
     status = fields.Selection([
         ('completed', 'Hoàn thành'),
         ('in_progress', 'Đang học'),
+        ('planned', 'Chưa bắt đầu'),
         ('canceled', 'Hủy')
     ], string="Trạng thái", default='in_progress')
 

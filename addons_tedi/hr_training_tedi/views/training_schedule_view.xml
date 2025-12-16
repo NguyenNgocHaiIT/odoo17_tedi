@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_training_schedule_popup_form" model="ir.ui.view">
+        <field name="name">training.plan.participation.schedule.popup</field>
+        <field name="model">training.plan.participation</field>
+        <field name="priority">1000</field> <field name="arch" type="xml">
+            <form string="Lịch đào tạo">
+                <sheet>
+                    <field name="schedule_ids" nolabel="1">
+                        <tree editable="bottom">
+                            <field name="date" width="40%"/>
+                            <field name="start_hour" widget="float_time" width="30%" string="Từ"/>
+                            <field name="end_hour" widget="float_time" width="30%" string="Đến"/>
+                        </tree>
+                    </field>
+                </sheet>
+
+                <footer>
+                    <button string="XÁC NHẬN"
+                            special="save"
+                            class="btn-success"/>
+
+                    <button string="HUỶ"
+                            special="cancel"
+                            class="btn-danger"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+
+    <record id="view_schedule_tree_select" model="ir.ui.view">
+        <field name="name">training.plan.schedule.tree.select</field>
+        <field name="model">training.plan.schedule</field>
+        <field name="arch" type="xml">
+            <tree string="Chọn ngày" create="0" delete="0">
+                <field name="date"/>
+                <field name="start_hour" widget="float_time"/>
+                <field name="end_hour" widget="float_time"/>
+                <field name="attendance_ids" string="Đã điểm danh" widget="many2many_tags"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_training_attendance_wizard_form" model="ir.ui.view">
+        <field name="name">training.attendance.wizard.form</field>
+        <field name="model">training.attendance.wizard</field>
+        <field name="arch" type="xml">
+            <form string="DANH SÁCH ĐIỂM DANH">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="participation_id" invisible="1"/>
+                            <field name="schedule_id" options="{'no_create': True, 'no_open': True}"/>
+                        </group>
+                    </group>
+
+                    <field name="line_ids" nolabel="1">
+                        <tree editable="bottom" create="0" delete="0">
+                            <field name="student_id" width="30%" />
+
+                            <field name="status"
+                                   widget="radio"
+                                   options="{'horizontal': true}"
+                                   width="40%"/>
+                        </tree>
+                    </field>
+                </sheet>
+
+                <footer>
+                    <button name="action_confirm"
+                            string="XÁC NHẬN"
+                            type="object"
+                            class="btn-success"/>
+
+                    <button string="HUỶ"
+                            class="btn-danger"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+
+</odoo>

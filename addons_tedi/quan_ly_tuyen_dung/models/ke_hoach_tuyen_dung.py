@@ -76,66 +76,52 @@ class RecruitmentPlan(models.Model):
         """
         Khi chọn Đợt khảo sát:
         1. Tìm các phiếu Nhu cầu (recruitment.needs) thuộc đợt này & đã Confirmed.
-        2. Gom nhóm theo (Phòng ban, Vị trí).
-        3. Cộng dồn số lượng.
-        4. Đẩy vào recruitment_plan_detail_ids.
+        2. Duyệt qua từng dòng chi tiết của từng phiếu.
+        3. Đẩy thẳng vào recruitment_plan_detail_ids (KHÔNG cộng dồn/gom nhóm).
         """
         if not self.survey_id:
             return
 
         # 1. Tìm các phiếu nhu cầu hợp lệ
-        # Lưu ý: Trong recruitment.needs, field 'name' là Many2one trỏ tới recruitment.survey
         needs = self.env['recruitment.needs'].search([
             ('name', '=', self.survey_id.id),
             ('state', '=', 'confirmed')
         ])
 
+        # Xóa dữ liệu cũ trên giao diện trước khi load mới
+        # (Lệnh (5, 0, 0) xóa sạch các dòng trong One2many)
         if not needs:
-            # Nếu không có phiếu nào, có thể cảnh báo hoặc xóa dòng cũ
             self.recruitment_plan_detail_ids = [(5, 0, 0)]
             return
 
-        # 2. Dictionary để gom nhóm: Key = (department_id, job_id)
-        grouped_data = {}
+        new_lines = []
 
+        # 2. Duyệt qua từng phiếu nhu cầu
         for need in needs:
-            # Lấy phòng ban từ header của phiếu nhu cầu (theo code bạn cung cấp trước đó)
             dept = need.department_id
             if not dept:
                 continue
 
+            # 3. Duyệt qua từng dòng chi tiết trong phiếu (Line)
             for line in need.line_ids:
                 if not line.job_id:
                     continue
 
-                # Key duy nhất để gom nhóm
-                key = (dept.id, line.job_id.id)
+                # Tạo dòng dữ liệu tương ứng 1-1
+                val = {
+                    'department_request': dept.id,
+                    'recruitment_job': line.job_id.id,
+                    'requested_quantity': line.amount or 0,
+                    'experient_request_id': line.experience_id.id if line.experience_id else False,
+                    'professional_qualification': line.professional_qualification,
+                    'note': line.note or '',
+                }
 
-                if key not in grouped_data:
-                    # Nếu chưa có thì tạo mới
-                    grouped_data[key] = {
-                        'department_request': dept.id,
-                        'recruitment_job': line.job_id.id,
-                        'requested_quantity': 0,
-                        # Lấy thông tin phụ từ dòng đầu tiên tìm thấy
-                        'experient_request_id': line.experience_id.id,
-                        'professional_qualification': line.professional_qualification,
-                        'note': line.note or '',
-                    }
+                # Thêm vào danh sách lệnh tạo mới (0, 0, {values})
+                new_lines.append((0, 0, val))
 
-                # Cộng dồn số lượng
-                grouped_data[key]['requested_quantity'] += (line.amount or 0)
-
-                # (Tuỳ chọn) Gộp ghi chú nếu cần
-                # if line.note and line.note not in grouped_data[key]['note']:
-                #     grouped_data[key]['note'] += f"; {line.note}"
-
-        # 3. Chuyển đổi sang format One2many để cập nhật giao diện
-        new_lines = []
-        for val in grouped_data.values():
-            new_lines.append((0, 0, val))
-
-        # Xóa hết dòng cũ (5,0,0) và thêm dòng mới
+        # 4. Cập nhật vào One2many
+        # [(5, 0, 0)] để xóa dòng cũ, sau đó nối với danh sách dòng mới
         self.recruitment_plan_detail_ids = [(5, 0, 0)] + new_lines
 
     # ----------------- Quyền cơ bản -----------------
