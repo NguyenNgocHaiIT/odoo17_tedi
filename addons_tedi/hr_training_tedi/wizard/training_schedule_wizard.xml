@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_training_schedule_wizard_form" model="ir.ui.view">
+        <field name="name">training.schedule.wizard.form</field>
+        <field name="model">training.schedule.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Tạo lịch đào tạo">
+                <sheet>
+                    <group>
+                        <field name="participation_id" invisible="1"/>
+                        <field name="training_date"/>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="start_hour" widget="float_time"/>
+                        </group>
+                        <group>
+                            <field name="end_hour" widget="float_time"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_create_schedule" string="Tạo lịch" type="object" class="btn-primary"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

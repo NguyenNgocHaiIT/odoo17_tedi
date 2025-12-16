@@ -140,8 +140,9 @@
               <group>
                 <field name="plan_code" required="1" readonly="1"/>
                 <field name="plan_execute_date" required="1" readonly="recruitment_status != 'draft'"/>
-                <field name="plan_name" required="1" readonly="recruitment_status != 'draft'"/>
                 <field name="survey_id"   readonly="recruitment_status != 'draft'"/>
+                <field name="plan_name" required="1" readonly="recruitment_status != 'draft'"/>
+
               </group>
               <group>
                 <field name="plan_purpose" readonly="recruitment_status != 'draft'"/>

@@ -15,3 +15,10 @@ access_hr_decision_manager,access.hr.decision.manager,model_hr_decision,hr.group
 access_hr_training_tedi,access_hr_training_tedi,model_hr_employee_training_tedi,base.group_user,1,1,1,1
 
 access_hr_experience_position,access_hr_experience_position,model_hr_experience_position,base.group_user,1,1,1,1
+
+
+access_hr_education.major,access_hr_education.major,model_hr_education_major,base.group_user,1,1,1,1
+
+access_hr_experience_project_type.major,access_hr_experience_project_type,model_hr_experience_project_type,base.group_user,1,1,1,1
+
+access_hr_external_experience,access_hr_external_experience,model_hr_external_experience,base.group_user,1,1,1,1

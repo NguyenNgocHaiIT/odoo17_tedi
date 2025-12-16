@@ -5,7 +5,7 @@
         <field name="arch" type="xml">
             <tree editable="bottom">
                 <field name="school"/>
-                <field name="major"/>
+                <field name="major_id"/>
                 <field name="years"/>
                 <field name="degree"/>
                 <field name="issue_date"/>
@@ -22,7 +22,7 @@
                 <group>
                     <field name="employee_id" readonly="1" context="{'default_employee_id': active_id}"/>
                     <field name="school"/>
-                    <field name="major"/>
+                    <field name="major_id"/>
                     <field name="years"/>
                     <field name="degree"/>
                     <field name="issue_date"/>

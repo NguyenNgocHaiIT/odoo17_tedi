@@ -30,6 +30,24 @@ class TrainingPlanParticipation(models.Model):
         readonly=True
     )
 
+    def action_open_result_wizard_bulk(self):
+        """Mở Wizard cập nhật hàng loạt từ Header"""
+        self.ensure_one()
+        if not self.participation_detail_ids:
+            raise ValidationError(_("Không có học viên nào để cập nhật kết quả."))
+
+        return {
+            'name': 'Cập nhật kết quả đào tạo',
+            'type': 'ir.actions.act_window',
+            'res_model': 'training.result.wizard',
+            'view_mode': 'form',
+            'target': 'new',  # Popup
+            'context': {
+                'active_id': self.id,  # Truyền ID của đợt này sang wizard
+                'active_model': 'training.plan.participation'
+            }
+        }
+
     # Thêm is_manually_ended vào depends để trigger tính toán lại
     @api.depends('start_date', 'end_date', 'training_plan_id.state', 'is_manually_ended')
     def _compute_state(self):
@@ -208,6 +226,52 @@ class TrainingPlanParticipation(models.Model):
                     line._sync_to_history()
         return res
 
+    schedule_ids = fields.One2many(
+        'training.plan.schedule',
+        'participation_id',
+        string="Lịch trình chi tiết"
+    )
+
+    def action_open_schedule_popup(self):
+
+        self.ensure_one()
+
+        # Kiểm tra trước khi mở
+        if not self.start_date or not self.end_date:
+            raise ValidationError("Vui lòng cập nhật Từ ngày - Đến ngày cho khoá học trước khi tạo lịch.")
+
+        view_id = self.env.ref('hr_training_tedi.view_training_schedule_popup_form').id
+
+        return {
+            'name': 'Lịch đào tạo',
+            'type': 'ir.actions.act_window',
+            'res_model': 'training.plan.participation',  # Mở chính model này
+            'res_id': self.id,  # Mở đúng bản ghi này
+            'view_mode': 'form',
+            'views': [(view_id, 'form')],  # Ép dùng view popup mình tạo bên dưới
+            'target': 'new',  # Mở dạng Popup
+            'flags': {'mode': 'edit'},  # Mở ở chế độ Sửa luôn
+        }
+
+    def action_open_attendance_popup(self):
+        """Hàm mở popup giống hình"""
+        self.ensure_one()
+
+        # Kiểm tra điều kiện
+        if not self.schedule_ids:
+            raise ValidationError("Chưa có lịch học nào để điểm danh. Vui lòng tạo Lịch đào tạo trước!")
+
+        # Mở Wizard
+        return {
+            'name': 'DANH SÁCH ĐIỂM DANH',
+            'type': 'ir.actions.act_window',
+            'res_model': 'training.attendance.wizard',
+            'view_mode': 'form',
+            'target': 'new',  # Mở dạng Popup
+            'context': {'default_participation_id': self.id}
+        }
+
+
 
 class TrainingPlanParticipationDetail(models.Model):
     _name = 'training.plan.participation.detail'
@@ -286,6 +350,70 @@ class TrainingPlanParticipationDetail(models.Model):
         store=True,
         readonly=True
     )
+    training_result = fields.Selection([
+        ('pass', 'Đạt'),
+        ('fail', 'Không đạt')
+    ], string="Kết quả")
+
+    # Hàm mở Popup
+    def action_open_result_wizard(self):
+        self.ensure_one()
+        view_id = self.env.ref('hr_training_tedi.view_training_result_wizard_form').id
+        return {
+            'name': 'Cập nhật kết quả đào tạo',
+            'type': 'ir.actions.act_window',
+            'res_model': 'training.result.wizard',
+            'view_mode': 'form',
+            'view_id': view_id,
+            'target': 'new',
+            'context': {
+                'default_participation_detail_id': self.id,
+                'default_training_result': self.training_result  # Load giá trị cũ nếu có
+            }
+        }
+
+    # CẬP NHẬT HÀM ĐỒNG BỘ (_sync_to_history) ĐỂ ĐẨY KẾT QUẢ SANG TAB QUÁ TRÌNH ĐÀO TẠO
+    def _sync_to_history(self):
+        History = self.env['hr.employee.training.tedi']
+        for rec in self:
+            if rec.training_plan_detail_id.plan_id.state != 'approved':
+                continue
+
+            employee = rec.user_id.employee_id
+            if not employee:
+                continue
+
+            plan_detail = rec.training_plan_detail_id
+            participation_state = rec.participation_id.state
+
+            target_status = 'planned'
+            if participation_state == 'finished':
+                target_status = 'completed'
+            elif participation_state == 'in_progress':
+                target_status = 'in_progress'
+            elif participation_state == 'not_started':
+                target_status = 'planned'
+
+            data_vals = {
+                'employee_id': employee.id,
+                'name': plan_detail.course_id.name if plan_detail.course_id else (
+                            plan_detail.plan_id.name or 'Khóa học'),
+                'facility': plan_detail.training_location,
+                'date_from': plan_detail.start_date,
+                'date_to': plan_detail.end_date,
+                'training_form': plan_detail.training_type,
+                'status': target_status,
+                'source_detail_id': rec.id,
+                # --- MỚI: Đồng bộ kết quả ---
+                'training_result': rec.training_result
+            }
+
+            existing = History.search([('source_detail_id', '=', rec.id)], limit=1)
+            if existing:
+                existing.write(data_vals)
+            else:
+                data_vals['source_detail_id'] = rec.id
+                History.create(data_vals)
 
     @api.model
     def create(self, vals):
@@ -306,49 +434,4 @@ class TrainingPlanParticipationDetail(models.Model):
         history_recs.unlink()
         return super(TrainingPlanParticipationDetail, self).unlink()
 
-    # --- HÀM ĐỒNG BỘ DỮ LIỆU (CORE) ---
-    def _sync_to_history(self):
-        History = self.env['hr.employee.training.tedi']
-        for rec in self:
-            # Check Plan Approved
-            if rec.training_plan_detail_id.plan_id.state != 'approved':
-                continue
 
-            # Check Employee
-            employee = rec.user_id.employee_id
-            if not employee:
-                continue
-
-            plan_detail = rec.training_plan_detail_id
-
-            # --- SỬA LOGIC MAPPING TRẠNG THÁI ---
-            # Lấy trạng thái của đợt đào tạo (TrainingPlanParticipation)
-            participation_state = rec.participation_id.state
-
-            target_status = 'planned'  # Mặc định là Chưa bắt đầu
-
-            if participation_state == 'finished':
-                target_status = 'completed'
-            elif participation_state == 'in_progress':
-                target_status = 'in_progress'
-            elif participation_state == 'not_started':
-                target_status = 'planned'
-            # ------------------------------------
-
-            data_vals = {
-                'employee_id': employee.id,
-                'name': plan_detail.course_id.name if plan_detail.course_id else (
-                            plan_detail.plan_id.name or 'Khóa học'),
-                'facility': plan_detail.training_location,
-                'date_from': plan_detail.start_date,
-                'date_to': plan_detail.end_date,
-                'training_form': plan_detail.training_type,
-                'status': target_status,  # <--- Gán trạng thái mới
-            }
-
-            existing = History.search([('source_detail_id', '=', rec.id)], limit=1)
-            if existing:
-                existing.write(data_vals)
-            else:
-                data_vals['source_detail_id'] = rec.id
-                History.create(data_vals)

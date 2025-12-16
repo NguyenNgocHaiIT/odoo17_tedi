@@ -12,7 +12,8 @@
         "views/employee_certificate_views.xml",
         "views/employee_trip_views.xml",
         'views/hr_employee_views.xml',
-        "views/experience_position_view.xml"
+        "views/experience_position_view.xml",
+        "views/employee_experience_view.xml"
     ],
     'installable': True,
     'application': True,

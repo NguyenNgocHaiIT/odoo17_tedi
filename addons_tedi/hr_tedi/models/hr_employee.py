@@ -32,7 +32,9 @@ class HrEmployeePrivate(models.Model):
     experience_ids        = fields.One2many("hr.employee.experience",       "employee_id", string="Kinh nghiệm công việc liên quan")
     reward_discipline_ids = fields.One2many("hr.employee.reward.discipline","employee_id", string="Khen thưởng - Kỷ luật")
     training_ids = fields.One2many("hr.employee.training", "employee_id", string="Quá trình đào tạo")
-
+    external_experience_ids = fields.One2many(
+        "hr.external.experience", "employee_id", string="Kinh nghiệm Bên ngoài"
+    )
     tedi_training_history_ids = fields.One2many(
         "hr.employee.training.tedi",
         "employee_id",
@@ -68,6 +70,10 @@ class HrEmployeePrivate(models.Model):
     # ==== Mã nhân viên ====
     employee_code = fields.Char(string="Employee Code", readonly=False, copy=False)
 
+    attachment_ids = fields.Many2many(
+        'ir.attachment',
+        string="Tài liệu đính kèm"
+    )
 
 
     @api.onchange('name')
