@@ -233,11 +233,14 @@
                                 invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly'))"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
                                 invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_di"/>
+                        <button name="skip" string="Bỏ qua" type="object"
+                                invisible="not show_skip_button"/>
                         <button name="phan_phat" string="Phân phát" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh'))"/>
                     </header>
                     <sheet>
+                        <field name="show_skip_button" invisible="1"/>
                         <field name="co_the_but_phe_cong_van_di" invisible="1"/>
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu" readonly="tt_vb != 'draft'" required="1"/>
@@ -422,11 +425,14 @@
                                 invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly'))"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
                                 invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_di"/>
+                        <button name="skip" string="Bỏ qua" type="object"
+                                invisible="not show_skip_button"/>
                         <button name="phan_phat" string="Phân phát" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="not (tt_vb in ('cho_phan_phat', 'phat_hanh'))"/>
                     </header>
                     <sheet>
+                        <field name="show_skip_button" invisible="1"/>
                         <field name="co_the_but_phe_cong_van_di" invisible="1"/>
                         <field name="tt_vb" invisible="1"/>
                         <label for="trich_yeu" string="Trích yếu"/>

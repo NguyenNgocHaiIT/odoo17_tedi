@@ -998,6 +998,31 @@ class OfficeDocument(models.Model):
                     rec.tt_vb == 'draft'
             )
 
+    show_skip_button = fields.Boolean(
+        compute='_compute_show_skip_button',
+        store=False
+    )
+
+    def skip(self):
+        self.ensure_one()
+        # Cập nhật trạng thái
+        self.tt_vb = 'cho_phan_phat'
+
+
+    @api.depends('tt_vb', 'co_the_but_phe_cong_van_di')
+    def _compute_show_skip_button(self):
+        user = self.env.user
+        is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
+
+        for record in self:
+            if record.tt_vb == 'cho_but_phe':
+                if is_van_thu:
+                    record.show_skip_button = True
+                else:
+                    record.show_skip_button = record.co_the_but_phe_cong_van_di
+            else:
+                record.show_skip_button = False
+
 
 class AssignTaskWizard(models.TransientModel):
     _name = 'assign.task.wizard'
