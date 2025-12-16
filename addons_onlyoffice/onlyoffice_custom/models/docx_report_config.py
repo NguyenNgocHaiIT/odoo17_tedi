@@ -38,6 +38,15 @@ class DocxReportConfig(models.Model):
         help='Enter field name to filter (wildcard * allowed)',
         store=False
     )
+    binary_id = fields.Many2one(
+        'ir.model.fields',
+        string='Field Name',
+        required=False,
+        ondelete='cascade',
+        domain="[('model_id', '=', model_id), ('relation', '=', 'ir.attachment'), '|',('ttype', '=', 'many2many'), ('ttype', '=', 'many2one')]",
+        readonly=False,
+        help="Field file report"
+    )
 
     @api.depends('attachment_ids')
     def compute_attachment_binary(self):

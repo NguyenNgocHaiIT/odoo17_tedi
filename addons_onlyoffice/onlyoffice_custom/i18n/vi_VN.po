@@ -38,6 +38,7 @@ msgstr "Tệp đính kèm"
 #. module: onlyoffice_custom
 #: model:ir.model.fields,field_description:onlyoffice_custom.field_docx_report_config__attachment_ids
 #: model:ir.model.fields,field_description:onlyoffice_custom.field_hr_employee__attachment_ids
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_report_preview__attachment_ids
 #: model:ir.model.fields,field_description:onlyoffice_custom.field_xlsx_report_config__attachment_ids
 msgid "Attachments"
 msgstr "Các tệp đính kèm"
@@ -45,6 +46,7 @@ msgstr "Các tệp đính kèm"
 #. module: onlyoffice_custom
 #: model_terms:ir.ui.view,arch_db:onlyoffice_custom.document_share_view_form_folder
 #: model_terms:ir.ui.view,arch_db:onlyoffice_custom.documents_create_view_form
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.report_preview_view_form
 msgid "Cancel"
 msgstr "Hủy"
 
@@ -239,7 +241,9 @@ msgid "Field Documentation Storage"
 msgstr "Kho lưu trữ tài liệu Field"
 
 #. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_docx_report_config__binary_id
 #: model:ir.model.fields,field_description:onlyoffice_custom.field_field_documentation__field_name
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_xlsx_report_config__binary_id
 msgid "Field Name"
 msgstr "Tên Field"
 
@@ -1151,3 +1155,319 @@ msgstr "Mô tả"
 #: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
 msgid "Field Naming Convention"
 msgstr "Quy ước"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+msgid ""
+"<strong>Useful Functions (Indonesian Language by default)</strong><br/>\n"
+"                                            {{spelled_out(docs.numeric_field)}}: Spell out numbers<br/>\n"
+"                                            {{formatdate(docs.date_field)}}: Format dates<br/>\n"
+"                                            {{parsehtml(docs.html_field)}}: Render HTML content as plain text<br/>\n"
+"                                            {{p html2docx(docs.html_field)}}: Render HTML as subdocument<br/>\n"
+"                                            {{convert_currency(docs.monetary_field, docs.currency_id)}}: Show monetary field<br/>\n"
+"                                            {{render_image(docs.image_field)}} or : Render image in millimeters{{render_image(docs.image_field, width=10, height=10)}}<br/>\n"
+"                                            {{r rich_text(docs.text_field)}}: Show Rich Text<br/>\n"
+"                                            {{p add_subdoc(docs.docx_binary_field)}}: Add Subdocument<br/>\n"
+"                                            {{replace_image('file_name_in_word', docs.image_field)}}: Replace the dummy picture in word document with another one<br/>\n"
+"                                            {{replace_media('file_name_in_word', docs.image_field)}}: Unlike replace_pic() method, dummy_header_pic.jpg MUST exist in the template directory when rendering and saving the generated docx.<br/>\n"
+"                                            {{replace_embedded('file_name_in_word', docs.binary_field)}}: It works like medias replacement, except it is for embedded objects like embedded docx<br/>\n"
+"                                            {{replace_zipname('file_path_in_word', docs.binary_field)}}: replace_embedded() may not work on other documents than embedded docx. Instead, you should use zipname replacement<br/>\n"
+"                                            Note: These functions will be updated as needed."
+msgstr ""
+"<strong>Các Hàm Hữu Ích (Ngôn ngữ mặc định là tiếng Indonesia)</strong><br/>\n"
+"                                            {{spelled_out(docs.numeric_field)}}: Viết số thành chữ<br/>\n"
+"                                            {{formatdate(docs.date_field)}}: Định dạng ngày tháng<br/>\n"
+"                                            {{parsehtml(docs.html_field)}}: Hiển thị nội dung HTML dưới dạng văn bản thuần<br/>\n"
+"                                            {{p html2docx(docs.html_field)}}: Hiển thị HTML dưới dạng tài liệu con<br/>\n"
+"                                            {{convert_currency(docs.monetary_field, docs.currency_id)}}: Hiển thị trường tiền tệ<br/>\n"
+"                                            {{render_image(docs.image_field)}} hoặc : Hiển thị ảnh theo đơn vị milimét{{render_image(docs.image_field, width=10, height=10)}}<br/>\n"
+"                                            {{r rich_text(docs.text_field)}}: Hiển thị Văn bản Định dạng Phong phú<br/>\n"
+"                                            {{p add_subdoc(docs.docx_binary_field)}}: Thêm Tài liệu Con<br/>\n"
+"                                            {{replace_image('file_name_in_word', docs.image_field)}}: Thay thế hình ảnh mẫu trong tài liệu Word bằng hình ảnh khác<br/>\n"
+"                                            {{replace_media('file_name_in_word', docs.image_field)}}: Không giống phương thức replace_pic(), dummy_header_pic.jpg PHẢI tồn tại trong thư mục mẫu khi hiển thị và lưu tài liệu docx được tạo.<br/>\n"
+"                                            {{replace_embedded('file_name_in_word', docs.binary_field)}}: Hoạt động tương tự như thay thế media, ngoại trừ nó dành cho các đối tượng nhúng như docx nhúng<br/>\n"
+"                                            {{replace_zipname('file_path_in_word', docs.binary_field)}}: replace_embedded() có thể không hoạt động trên các tài liệu khác ngoài docx nhúng. Thay vào đó, bạn nên sử dụng thay thế zipname<br/>\n"
+"                                            Lưu ý: Các hàm này sẽ được cập nhật khi cần thiết."
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid ""
+"<strong>Useful Functions (Indonesian Language as default)</strong><br/>"
+msgstr "<strong>Các Hàm Hữu Ích (Ngôn ngữ mặc định là tiếng Indonesia)</strong><br/>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+msgid ""
+"<strong>Language Configuration</strong><br/>\n"
+"                                            The default language is , but it can be changed. For example: lang='id_ID'{{spelled_out(docs.numeric_field, lang='en_US')}} {{formatdate(docs.numeric_field, lang='en_US')}} {{convert_currency(docs.numeric_field, locale='en_US')}}<br/>\n"
+"                                            <br/>\n"
+"                                            for format_date and convert_currency, you can use all parameter from babel function"
+msgstr ""
+"<strong>Cấu Hình Ngôn Ngữ</strong><br/>\n"
+"                                            Ngôn ngữ mặc định là , nhưng có thể thay đổi. Ví dụ: lang='id_ID'{{spelled_out(docs.numeric_field, lang='en_US')}} {{formatdate(docs.numeric_field, lang='en_US')}} {{convert_currency(docs.numeric_field, locale='en_US')}}<br/>\n"
+"                                            <br/>\n"
+"                                            đối với format_date và convert_currency, bạn có thể sử dụng tất cả tham số từ hàm babel"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid ""
+"<strong>Language Configuration</strong><br/>\n"
+"                                            Default language is <code>lang='id_ID'</code> change if needed.<br/>\n"
+"                                            Example: <code>{{ spelled_out(docs.numeric_field, lang='en_US') }}</code>"
+msgstr ""
+"<strong>Cấu Hình Ngôn Ngữ</strong><br/>\n"
+"                                            Ngôn ngữ mặc định là <code>lang='id_ID'</code> thay đổi nếu cần.<br/>\n"
+"                                            Ví dụ: <code>{{ spelled_out(docs.numeric_field, lang='en_US') }}</code>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid ""
+"<strong>Important Notes:</strong><br/>\n"
+"                                            1. For image functions, ensure the image field exists in your model<br/>\n"
+"                                            2. For replace image functions, dummy images must be present in the template<br/>\n"
+"                                            3. Date fields should be in valid date format for proper formatting"
+msgstr ""
+"<strong>Lưu ý Quan Trọng:</strong><br/>\n"
+"                                            1. Đối với các hàm hình ảnh, đảm bảo trường hình ảnh tồn tại trong model của bạn<br/>\n"
+"                                            2. Đối với các hàm thay thế hình ảnh, hình ảnh mẫu phải có sẵn trong template<br/>\n"
+"                                            3. Các trường ngày tháng phải ở định dạng ngày hợp lệ để định dạng đúng"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid ""
+"<strong>Field Naming Convention</strong><br/>\n"
+"                                            To call and write the field name, use the following format: <code>{{docs.field_name}}</code>, starting with the word \"docs\"."
+msgstr ""
+"<strong>Quy Ước Đặt Tên Trường</strong><br/>\n"
+"                                            Để gọi và viết tên trường, sử dụng định dạng sau: <code>{{docs.field_name}}</code>, bắt đầu bằng từ \"docs\"."
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+msgid ""
+"<strong>Field Naming Convention</strong><br/>\n"
+"                                            To call and write the field name, use the following format: , starting with the word \"docs\".{{docs.field_name}}"
+msgstr ""
+"<strong>Quy Ước Đặt Tên Trường</strong><br/>\n"
+"                                            Để gọi và viết tên trường, sử dụng định dạng sau: , bắt đầu bằng từ \"docs\".{{docs.field_name}}"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+msgid ""
+"<strong>Docx Output Modes</strong><br/>\n"
+"                                            There are three modes for generating docx reports:<br/>\n"
+"                                            <br/>\n"
+"                                            <strong>composer</strong> =&gt; Generate a docx file<br/>\n"
+"                                            <strong>zip</strong> =&gt; Generate a zip containing the docx file<br/>\n"
+"                                            <strong>pdf</strong> =&gt; Convert the docx file to PDF using LibreOffice<br/>\n"
+"                                            <br/>\n"
+"                                            If you want to use the 'pdf' option, ensure you have installed LibreOffice. Then set the LibreOffice path in Settings =&gt; Technical =&gt; Parameters =&gt; System Parameters, and search for the key . Set the value according to the LibreOffice installation path:default_libreoffice_path<br/>\n"
+"                                            <br/>\n"
+"                                            Linux: /usr/bin/libreoffice<br/>\n"
+"                                            Windows: C:\\Program Files\\LibreOffice\\program\\soffice.exe"
+msgstr ""
+"<strong>Chế độ Xuất Docx</strong><br/>\n"
+"                                            Có ba chế độ để tạo báo cáo docx:<br/>\n"
+"                                            <br/>\n"
+"                                            <strong>composer</strong> =&gt; Tạo file docx<br/>\n"
+"                                            <strong>zip</strong> =&gt; Tạo file zip chứa file docx<br/>\n"
+"                                            <strong>pdf</strong> =&gt; Chuyển đổi file docx sang PDF sử dụng LibreOffice<br/>\n"
+"                                            <br/>\n"
+"                                            Nếu bạn muốn sử dụng tùy chọn 'pdf', hãy đảm bảo bạn đã cài đặt LibreOffice. Sau đó đặt đường dẫn LibreOffice trong Cài đặt =&gt; Kỹ thuật =&gt; Tham số =&gt; Tham số Hệ thống, và tìm kiếm khóa . Đặt giá trị theo đường dẫn cài đặt LibreOffice:default_libreoffice_path<br/>\n"
+"                                            <br/>\n"
+"                                            Linux: /usr/bin/libreoffice<br/>\n"
+"                                            Windows: C:\\Program Files\\LibreOffice\\program\\soffice.exe"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<em>Note: The functions will be updated as needed.</em>"
+msgstr "<em>Lưu ý: Các hàm sẽ được cập nhật khi cần thiết.</em>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<code>{{ spelled_out(docs.numeric_field) }}</code>"
+msgstr "<code>{{ spelled_out(docs.numeric_field) }}</code>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<code>{{ formatdate(docs.date_field) }}</code>"
+msgstr "<code>{{ formatdate(docs.date_field) }}</code>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid ""
+"<code>{{ convert_currency(docs.monetary_field, docs.currency_id) }}</code>"
+msgstr "<code>{{ convert_currency(docs.monetary_field, docs.currency_id) }}</code>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<code>{% yn docs.boolean_field %}</code>"
+msgstr "<code>{% yn docs.boolean_field %}</code>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<code>{% xv docs.date_field %}</code>"
+msgstr "<code>{% xv docs.date_field %}</code>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid ""
+"<code>{% insert_img_cell docs.image_field, width=200, height=200 %}</code>"
+msgstr "<code>{% insert_img_cell docs.image_field, width=200, height=200 %}</code>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<code>{% insert_img_cell docs.image_field %}</code>"
+msgstr "<code>{% insert_img_cell docs.image_field %}</code>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<code>{% img docs.image_field %}</code>"
+msgstr "<code>{% img docs.image_field %}</code>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<code>{% insert_img docs.image_field %}</code>"
+msgstr "<code>{% insert_img docs.image_field %}</code>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Non-string value for a cell to specify a variable"
+msgstr "Giá trị không phải chuỗi cho một ô để chỉ định biến"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Return a checkbox based on boolean condition"
+msgstr "Trả về checkbox dựa trên điều kiện boolean"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Spell out numbers"
+msgstr "Viết số thành chữ"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Format dates"
+msgstr "Định dạng ngày tháng"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Format monetary field"
+msgstr "Định dạng trường tiền tệ"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Insert image in cell *(image fit to cell)"
+msgstr "Chèn hình ảnh vào ô *(hình ảnh vừa với ô)"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Insert image in cell *(cell fit to image)"
+msgstr "Chèn hình ảnh vào ô *(ô vừa với hình ảnh)"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Insert image in cell *(custom image size)"
+msgstr "Chèn hình ảnh vào ô *(kích thước hình ảnh tùy chỉnh)"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Replace dummy image with image field, *require dummy image in template"
+msgstr "Thay thế hình ảnh mẫu bằng trường hình ảnh, *yêu cầu có hình ảnh mẫu trong template"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<strong>1. Select \"Report Name\":</strong> Displayed in Print menu"
+msgstr "<strong>1. Chọn \"Tên báo cáo\":</strong> Hiển thị trong menu In"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<strong>2. Select \"Model\":</strong> Data source model for the report"
+msgstr "<strong>2. Chọn \"Mô hình\":</strong> Mô hình nguồn dữ liệu cho báo cáo"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid ""
+"<strong>3. Select Edit \"Field Name\":</strong> Downloaded file name (e.g., "
+"Display Name)"
+msgstr ""
+"<strong>3. Chọn chỉnh sửa \"Tên trường\":</strong> Tên file khi tải về (ví "
+"dụ: Tên hiển thị)"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<strong>4. Select \"Template File\":</strong> Upload .docx/.xlsx template"
+msgstr "<strong>4. Chọn \"Tệp đính kèm\":</strong> Tải lên mẫu .docx/.xlsx"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<strong>5. Select Data Fields:</strong>"
+msgstr "<strong>5. Chọn Trường dữ liệu:</strong>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<strong>6. Save Edits:</strong> Click \"Save\" button"
+msgstr "<strong>6. Lưu chỉnh sửa:</strong> Nhấn nút \"Lưu\""
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "<strong>7. Activate Report:</strong>"
+msgstr "<strong>7. Kích hoạt báo cáo:</strong>"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Select model → Display field list (Field Document)"
+msgstr "Chọn mô hình → Hiển thị danh sách trường (Trường dữ liệu)"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Click \"Copy\" to get field code (Code Template Render)"
+msgstr "Nhấn \"Sao chép\" để lấy mã trường (Mã dữ liệu Field)"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Paste code into template"
+msgstr "Dán mã vừa sao chép vào mẫu"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "\"Publish\" → Show report"
+msgstr "\"Xuất bản\" → Hiển thị báo cáo"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "\"Unpublish\" → Hide report"
+msgstr "\"Ngừng xuất bản\" → Ẩn báo cáo"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.docx_report_xml_view_form_inherit_field_doc
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.xlsx_report_xml_view_form_inherit_field_doc
+msgid "Quick Guide"
+msgstr "Hướng Dẫn Nhanh"
+
+#. module: onlyoffice_custom
+#: model:ir.model,name:onlyoffice_custom.model_report_preview
+msgid "Report Preview"
+msgstr "Xem trước báo cáo"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_report_preview__action_report_id
+msgid "Action Report"
+msgstr "Hành động báo cáo"
+
+#. module: onlyoffice_custom
+#: model_terms:ir.ui.view,arch_db:onlyoffice_custom.report_preview_view_form
+msgid "Save Report"
+msgstr "Lưu vào tệp"
+
