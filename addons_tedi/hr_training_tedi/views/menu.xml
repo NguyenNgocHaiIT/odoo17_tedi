@@ -10,10 +10,11 @@
         />
 
         <menuitem id="menu_training_plan"
-              name="Kế hoạch đào tạo"
-              parent="hr_training_tedi.training_tedi_root"
-              action="action_training_plan"
-              sequence="10"  />
+                  name="Kế hoạch đào tạo"
+                  parent="hr_training_tedi.training_tedi_root"
+                  action="action_training_plan"
+                  groups="hr_training_tedi.group_training_manager"
+                  sequence="10"  />
 
 
         <menuitem id="training_needs_tedi"
@@ -52,7 +53,7 @@
                   name="Tất cả đánh giá"
                   parent="hr_training_tedi.menu_training_review_root"
                   action="action_training_review_all"
-                  groups="hr_training_tedi.group_training_unit_manager,hr_training_tedi.group_training_general_director"
+                  groups="hr_training_tedi.group_training_manager"
                   sequence="70"/>
 
         <menuitem id="menu_training_configuration"
