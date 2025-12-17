@@ -132,7 +132,7 @@
                                     <field name="end_date"
                                                widget="daterange"
                                                options="{'related_start_date': 'start_date'}"
-                                               readonly="state == 'no_car' or (not can_edit_requester and state != 'draft')"
+                                               readonly="(state in ['no_car','done']) or (not can_edit_requester and state != 'draft')"
                                                force_save="1"/>
                                 </div>
                                 <field name="destination" readonly="state != 'draft'"/>
