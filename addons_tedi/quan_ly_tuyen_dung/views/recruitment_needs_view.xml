@@ -8,14 +8,14 @@
             <field name="model">recruitment.needs</field>
             <field name="arch" type="xml">
                 <tree string="Nhu cầu tuyển dụng">
-                    <field name="name" string="Đợt khảo sát" class="text-center"/>
-                    <field name="create_date" string="Ngày đăng ký" class="text-center"/>
-                    <field name="department_id" string="Phòng ban đăng ký" class="text-center"/>
+                    <field name="name" string="Đợt khảo sát" class="text-start"/>
+                    <field name="create_date" string="Ngày đăng ký" class="text-start"/>
+                    <field name="department_id" string="Phòng ban đăng ký" class="text-start"/>
                     <field name="state" string="Trạng thái"
                            widget="badge"
                            decoration-warning="state == 'draft'"
                            decoration-success="state == 'confirmed'"
-                           class="text-center"/>
+                           class="text-start"/>
                 </tree>
             </field>
         </record>
