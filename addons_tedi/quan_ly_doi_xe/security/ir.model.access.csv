@@ -8,3 +8,5 @@ access_hr_employee_base_user,access.hr.employee.base.user,hr.model_hr_employee,,
 access_fleet_vehicle_user_custom_tedi,fleet_vehicle_access_right_custom_tedi,fleet.model_fleet_vehicle,fleet.fleet_group_user,1,1,0,0
 
 access_fleet_vehicle_odometer_custom_tedi,fleet_vehicle_odometer_custom_tedi,fleet.model_fleet_vehicle_odometer,fleet.fleet_group_user,1,1,1,1
+
+access_vehicle_no_car_wizard_user,access_vehicle_no_car_wizard_user,model_vehicle_no_car_wizard,base.group_user,1,1,1,1

@@ -22,3 +22,5 @@ access_hr_education.major,access_hr_education.major,model_hr_education_major,bas
 access_hr_experience_project_type.major,access_hr_experience_project_type,model_hr_experience_project_type,base.group_user,1,1,1,1
 
 access_hr_external_experience,access_hr_external_experience,model_hr_external_experience,base.group_user,1,1,1,1
+
+access_hr_training_field_user,access_hr_training_field_user,model_hr_training_field,base.group_user,1,1,1,1

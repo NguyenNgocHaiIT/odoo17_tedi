@@ -162,7 +162,7 @@
                                     <field name="cert_type"/>
                                     <field name="code"/>
                                     <field name="issuer"/>
-                                    <field name="practice_field"/>
+                                    <field name="practice_field_id"/>
                                     <field name="rank"/>
                                     <field name="date_from"/>
                                     <field name="date_to"/>
@@ -287,7 +287,7 @@
                         </page>
 
                         <page string="Quá trình đào tạo" name="training_vn">
-                            <separator string="QUÁ TRÌNH ĐÀO TẠO"/>
+                            <separator string="QUÁ TRÌNH ĐÀO TẠO NGOÀI TEDI"/>
                             <field name="training_ids" nolabel="1" colspan="2">
                                 <tree editable="bottom">
                                     <field name="stt" readonly="1"/>

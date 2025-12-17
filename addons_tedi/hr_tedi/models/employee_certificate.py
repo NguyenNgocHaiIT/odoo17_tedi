@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
 
+class TrainingField(models.Model):
+    _name = 'hr.training.field'
+    _description = 'Training Field'
+
+    name = fields.Char(string ="Tên lĩnh vực")
+    active = fields.Boolean(default=True)
+
 class HREmployeeCertificate(models.Model):
     _name = "hr.employee.certificate"
     _description = "Employee Practice Certificate"
@@ -11,7 +18,7 @@ class HREmployeeCertificate(models.Model):
     cert_type = fields.Char(string="Loại chứng chỉ", required=True)
     code = fields.Char(string="Mã chứng chỉ")
     issuer = fields.Char(string="Nơi cấp")
-    practice_field = fields.Char(string="Lĩnh vực hành nghề")
+    practice_field_id = fields.Many2one("hr.training.field", string="Lĩnh vực")
     rank = fields.Char(string="Hạng")
     date_from = fields.Date(string="Từ ngày")
     date_to = fields.Date(string="Đến ngày")

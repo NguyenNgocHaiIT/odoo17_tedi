@@ -45,7 +45,7 @@
                   <field name="partner_name" string="Họ và tên" required="1"/>
                   <field name="dob" string="Ngày sinh"/>
                   <field name="country_id" string="Quốc tịch"/>
-                  <field name="folk" string="Dân tộc"/>
+                  <field name="folk_id" string="Dân tộc"/>
                   <field name="current_job" string="Nghề nghiệp hiện tại"/>
                   <field name="address" string="Địa chỉ thường trú"/>
                 </group>
@@ -150,7 +150,7 @@
                             <field name="cert_type" string="Tên chứng chỉ" required="1"/>
                             <field name="code" string="Mã chứng chỉ"/>
                             <field name="issuer" string="Nơi cấp"/>
-                            <field name="practice_field" string="Lĩnh vực"/>
+                            <field name="practice_field_id" string="Lĩnh vực"/>
                             <field name="rank" string="Thứ hạng"/>
                             <field name="date_from" string="Từ ngày"/>
                             <field name="date_to" string="Đến ngày"/>
