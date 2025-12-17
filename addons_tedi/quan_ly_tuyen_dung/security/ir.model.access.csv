@@ -57,4 +57,4 @@ access_recruitment_survey_commitee,access_recruitment_survey_commitee,model_recr
 access_recruitment_needs,access_recruitment_needs,model_recruitment_needs,base.group_user,1,1,1,1
 access_recruitment_needs_line,access_recruitment_needs_line,model_recruitment_needs_line,base.group_user,1,1,1,1
 
-access_res_ethnic_user,access_res_ethnic_user,model_res_ethnic,base.group_user,1,1,1,1
+

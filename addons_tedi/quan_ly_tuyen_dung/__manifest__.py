@@ -24,7 +24,6 @@
 
         "views/recruitment_needs_view.xml",
         "views/recruitment_survey.xml",
-        "views/folk_view.xml",
 
         "views/menu.xml",
     ],
