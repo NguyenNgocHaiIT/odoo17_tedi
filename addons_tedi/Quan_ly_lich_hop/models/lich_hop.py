@@ -29,7 +29,7 @@ class Calendar(models.Model):
     state = fields.Selection([
         ('draft', 'Nháp'),
         ('pending', 'Chờ duyệt'),
-        ('approved', 'Đã duyệt'),
+        ('approved', 'Đã duyệt lịch'),
         ('completed', 'Đã hoàn thành'),
         ('canceled', 'Đã hủy')
     ], string='Trạng thái', default='draft', tracking=True)
@@ -66,13 +66,13 @@ class Calendar(models.Model):
     can_approve_meeting = fields.Boolean(compute="_compute_permissions")
     can_approve_room = fields.Boolean(compute="_compute_permissions")
 
-    # --- 2. LOGIC PHÂN QUYỀN ---
+    # --- 2. LOGIC PHÂN QUYỀN (ĐÃ SỬA) ---
     @api.depends_context('uid')
     @api.depends('create_uid', 'room_sign', 'state')
     def _compute_permissions(self):
         current_user = self.env.user
 
-        # ID của Group (Lưu ý: Thay 'Quan_ly_lich_hop' bằng tên module thực tế của bạn nếu khác)
+        # ID của Group
         group_dept_manager = 'Quan_ly_lich_hop.group_calendar_department_manager'
         group_room_manager = 'Quan_ly_lich_hop.group_meeting_room_manager'
 
@@ -86,23 +86,25 @@ class Calendar(models.Model):
 
         for rec in self:
             # --- A. DUYỆT LỊCH HỌP ---
-            # Chỉ cho phép duyệt nếu là Admin HOẶC (Là Manager + Cùng phòng ban với người tạo)
             can_meeting = False
 
             # Tìm phòng ban người tạo phiếu
             creator_employee = self.env['hr.employee'].search([('user_id', '=', rec.create_uid.id)], limit=1)
             creator_dept = creator_employee.department_id if creator_employee else False
 
-            if is_admin:
+            # SỬA: Thêm "or is_room_manager" vào điều kiện cao nhất
+            # Nếu là Admin HOẶC Quản lý phòng họp -> Duyệt tất cả
+            if is_admin or is_room_manager:
                 can_meeting = True
+
+            # Nếu không phải cấp cao, mới xét đến cấp Quản lý đơn vị (check cùng phòng ban)
             elif is_dept_manager:
-                # Logic: Quản lý chỉ được duyệt cho nhân viên cùng phòng ban
                 if current_dept and creator_dept and current_dept.id == creator_dept.id:
                     can_meeting = True
 
             rec.can_approve_meeting = can_meeting
 
-            # --- B. DUYỆT PHÒNG ---
+            # --- B. DUYỆT PHÒNG (Giữ nguyên) ---
             can_room = False
             if (is_admin or is_room_manager) and rec.room_sign == 'pending':
                 can_room = True

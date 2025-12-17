@@ -69,7 +69,7 @@
 
                         <button name="on_TV" string="Xem lịch trên TV" type="object"/>
 
-                        <field name="state" widget="statusbar" statusbar_visible="approved,completed"/>
+                        <field name="room_sign" widget="statusbar" statusbar_visible="approved,completed"/>
                     </header>
 
                     <sheet>

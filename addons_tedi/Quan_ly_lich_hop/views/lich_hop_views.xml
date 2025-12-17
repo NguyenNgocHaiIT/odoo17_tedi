@@ -38,6 +38,8 @@
                         <field name="state"
                                widget="statusbar"
                                statusbar_visible="draft,pending,approved"/>
+
+
                         <field name="room_sign" invisible="1"/>
 
                         <button name="action_send_request"
