@@ -121,7 +121,7 @@
                                 <field name="tedi_driver_employee_id" string="Tài xế" readonly="state == 'done'" invisible="1"/>
                                 <field name="driver_id" invisible="1" force_save="1"/>
                                 <field name="num_passengers" readonly="state != 'draft'"/>
-                                <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
+                                <field name="attachment_ids" widget="many2many_binary" />
                                 <field name="work_content" placeholder="Mô tả..." readonly="state != 'draft'"/>
                             </group>
                             <group>
@@ -158,7 +158,7 @@
             </field>
         </record>
 
-       <record id="view_hr_tedi_vehicle_registration_calendar" model="ir.ui.view">
+        <record id="view_hr_tedi_vehicle_registration_calendar" model="ir.ui.view">
             <field name="name">hr.tedi.vehicle.registration.calendar</field>
             <field name="model">hr_tedi.vehicle.registration</field>
             <field name="arch" type="xml">
@@ -172,12 +172,9 @@
                           quick_create="false">
 
                     <field name="requester_id" widget="many2one_avatar_user"/>
-
-                    <field name="code"/>
-
-                    <field name="assigned_vehicle_id" filters="1"/>
-
                     <field name="state"/>
+
+                    <field name="assigned_vehicle_id" filters="1" invisible="1"/>
                 </calendar>
             </field>
         </record>

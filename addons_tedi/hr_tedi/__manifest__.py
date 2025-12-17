@@ -14,6 +14,7 @@
         'views/hr_employee_views.xml',
         "views/experience_position_view.xml",
         "views/employee_experience_view.xml",
+        "views/folk_view.xml",
 
         "views/hr_training_field_view.xml"
     ],

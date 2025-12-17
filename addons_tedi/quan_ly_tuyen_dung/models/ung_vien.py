@@ -61,19 +61,7 @@ STAGE_ACL = {
     ],
 }
 
-class ResEthnic(models.Model):
-    _name = 'res.ethnic'
-    _description = 'Danh mục Dân tộc'
-    _order = 'name'
 
-    name = fields.Char(string="Tên dân tộc", required=True)
-    code = fields.Char(string="Mã", help="Ví dụ: KINH, TAY, THAI...")
-    active = fields.Boolean(string="Đang sử dụng", default=True)
-
-    _sql_constraints = [
-        ('name_uniq', 'unique (name)', 'Tên dân tộc đã tồn tại!'),
-        ('code_uniq', 'unique (code)', 'Mã dân tộc phải là duy nhất!')
-    ]
 
 class Applicant(models.Model):
     _inherit = 'hr.applicant'
@@ -481,14 +469,17 @@ class Applicant(models.Model):
         ))
 
     _APPLICANT_TO_EMPLOYEE_FIELD_MAP = [
-        # (applicant_field, employee_field)
-        ("email_from", "work_email"),
-        ("partner_mobile", "mobile_phone"),
-        ("address", "household_address"),
-        ("folk", "ethnicity"),
-        ("current_job", "occupation"),
-        ("dob", "birthday"),
-        # ("email_from", "email_personal"),
+        # (Tên field bên Ứng viên, Tên field bên Nhân viên)
+        ("email_from", "work_email"),  # Email công việc
+        ("partner_mobile", "mobile_phone"),  # Di động
+        ("address", "household_address"),  # Địa chỉ -> Địa chỉ thường trú
+        ("folk_id", "folk_id"),  # Dân tộc (Many2one) - Quan trọng
+        ("current_job", "occupation"),  # Nghề nghiệp hiện tại
+        ("dob", "birthday"),  # Ngày sinh
+        ("country_id", "country_id"),  # Quốc tịch
+
+        # Nếu bên Applicant bạn bổ sung field CMND thì mở comment dòng dưới:
+        # ("citizen_id", "citizen_id"),
     ]
 
     # ======== Copy các trường đơn (char/date/m2o...) ========

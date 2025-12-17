@@ -92,6 +92,8 @@ class HrTediVehicleRegistration(models.Model):
         'fleet.vehicle', string="Phân công xe", tracking=True,
         domain="[('state_id.name', '=', 'Đã đăng kiểm')]"
     )
+
+
     tedi_driver_employee_id = fields.Many2one('hr.employee', string="Tài xế (Nhân viên)", tracking=True)
     driver_id = fields.Many2one('res.partner', string="Tài xế (Partner)", tracking=True)
 
@@ -122,6 +124,74 @@ class HrTediVehicleRegistration(models.Model):
 
     no_car_note = fields.Text(string="Ghi chú báo hết xe", readonly=True)
 
+    calendar_title = fields.Char(
+        string="Hiển thị trên lịch",
+        compute='_compute_calendar_title'
+    )
+
+    @api.depends('state', 'code', 'assigned_vehicle_id', 'tedi_driver_employee_id', 'driver_id',
+                 'external_booking_type')
+    def _compute_calendar_title(self):
+        for rec in self:
+            # =========================================================
+            # NHÓM 1: ĐÃ CÓ XE (Assigned, Waiting Return, Done)
+            # =========================================================
+            if rec.assigned_vehicle_id:
+                # 1. Biển số (Ưu tiên số 1)
+                plate = rec.assigned_vehicle_id.license_plate or 'Đang cập nhật'
+
+                # 2. Hãng xe
+                brand = rec.assigned_vehicle_id.model_id.brand_id.name or ''
+
+                # 3. Tên lái xe (Lấy tên tắt cho ngắn gọn)
+                # Ví dụ: "Nguyễn Văn A" -> hiển thị "A" hoặc giữ nguyên tùy ý
+                driver_full_name = rec.tedi_driver_employee_id.name or rec.driver_id.name or 'Chưa có TX'
+
+                # Tạo chuỗi: "30A-123.45 (Toyota - Tài xế A)"
+                # Tôi đưa Biển số lên đầu vì trên Lịch nó quan trọng nhất để phân biệt
+                detail_parts = [brand, driver_full_name]
+                detail_str = " - ".join(filter(None, detail_parts))
+
+                rec.calendar_title = f"{plate} ({detail_str})"
+
+            # =========================================================
+            # NHÓM 2: CÁC TRẠNG THÁI KHÁC (Chưa có xe / Hủy / ...)
+            # =========================================================
+            elif rec.state == 'no_car':
+                # Hết xe: Hiển thị phương án xử lý (Tự đặt / VP đặt)
+                # Lấy nhãn hiển thị của selection field thay vì key 'manager/unit'
+                booking_label = dict(rec._fields['external_booking_type'].selection).get(
+                    rec.external_booking_type) or 'Ngoài'
+                rec.calendar_title = f"HẾT XE: {booking_label}"
+
+            elif rec.state == 'approved':
+                rec.calendar_title = "CHỜ XẾP XE"  # Đã duyệt, đang đợi văn phòng gán xe
+
+            elif rec.state == 'submitted':
+                rec.calendar_title = "CHỜ DUYỆT"  # Lãnh đạo chưa duyệt
+
+            elif rec.state == 'draft':
+                rec.calendar_title = "NHÁP"
+
+            elif rec.state == 'refused':
+                rec.calendar_title = "ĐÃ TỪ CHỐI"
+
+            elif rec.state == 'cancel':
+                rec.calendar_title = "ĐÃ HỦY"
+
+            else:
+                # Fallback cho các trường hợp lạ
+                rec.calendar_title = "ĐANG XỬ LÝ"
+
+    @api.depends('code', 'calendar_title')
+    def _compute_display_name(self):
+        for rec in self:
+            # Format: [Mã phiếu] Thông tin xe
+            # Ví dụ: [DX/2025/001] Toyota - 30A.12345 - Nguyễn Văn A
+            if rec.calendar_title:
+                rec.display_name = f" {rec.calendar_title} [{rec.code}]"
+            else:
+                rec.display_name = rec.code or "New"
     # ========================================================
     # 2. LOGIC TỰ ĐỘNG
     # ========================================================
@@ -221,6 +291,9 @@ class HrTediVehicleRegistration(models.Model):
         # 1. Check quyền
         if not self.env.user.has_group('fleet.fleet_group_user') and not self.env.user.has_group('base.group_system'):
             raise AccessError("Chỉ bộ phận Quản lý đội xe mới được xác nhận hoàn thành.")
+
+        if not self.attachment_ids:
+            raise ValidationError("Vui lòng thêm đính kèm xác nhận hoàn thành.")
 
         if self.distance_km <= 0:
             raise ValidationError("Vui lòng nhập 'Số km thực tế đi được' trước khi xác nhận.")

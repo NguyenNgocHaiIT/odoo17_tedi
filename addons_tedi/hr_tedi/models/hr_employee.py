@@ -7,6 +7,19 @@ import base64
 import logging
 _logger = logging.getLogger(__name__)
 
+class ResEthnic(models.Model):
+    _name = 'res.ethnic'
+    _description = 'Danh mục Dân tộc'
+    _order = 'name'
+
+    name = fields.Char(string="Tên dân tộc", required=True)
+    code = fields.Char(string="Mã", help="Ví dụ: KINH, TAY, THAI...")
+    active = fields.Boolean(string="Đang sử dụng", default=True)
+
+    _sql_constraints = [
+        ('name_uniq', 'unique (name)', 'Tên dân tộc đã tồn tại!'),
+        ('code_uniq', 'unique (code)', 'Mã dân tộc phải là duy nhất!')
+    ]
 
 class HrEmployeePrivate(models.Model):
     _inherit = "hr.employee"
@@ -22,6 +35,11 @@ class HrEmployeePrivate(models.Model):
     household_address = fields.Char(string="Địa chỉ thường trú")
     occupation = fields.Char(string="Nghề nghiệp")
     ethnicity = fields.Char(string="Dân tộc")
+    folk_id = fields.Many2one(
+        'res.ethnic',
+        string="Dân tộc",
+        help="Chọn dân tộc từ danh mục"
+    )
 
     # ==== One2many ====
     education_ids = fields.One2many("hr.employee.education", "employee_id", string="Trình độ chuyên môn")
