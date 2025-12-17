@@ -12,3 +12,20 @@
     background-color: #F08080 !important;
     color: black !important;
 }
+
+/* Độ đặc hiệu cao hơn để ghi đè */
+body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row:hover {
+    background-color: inherit !important;
+    color: inherit !important;
+}
+
+/* Định nghĩa màu khi hover (tối hơn) */
+body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-green-row:hover {
+    background-color: #b8d9c4 !important; /* Tối hơn 15% */
+}
+body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-yellow-row:hover {
+    background-color: #f0e0b8 !important; /* Tối hơn 15% */
+}
+body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-red-row:hover {
+    background-color: #d87070 !important; /* Tối hơn 15% */
+}

@@ -483,6 +483,7 @@ class OfficeDocument(models.Model):
         ('cho_phan_phat', 'Chờ phân phát'),#vàng
         ('cho_xu_ly', 'Đã phân phát'),#xanh
         ('phat_hanh', 'Phát hành'),#xanh
+        ('huy', 'Đã hủy'),
     ], string='Trạng thái văn bản', default='draft', tracking=True)
     dv_xu_ly_chinh = fields.Many2one(
         'hr.department',
@@ -763,10 +764,27 @@ class OfficeDocument(models.Model):
         else:
             vals['tt_vb'] = 'cho_duyet'
 
+
         # Xử lý so_den_tong_hop và so_di_tong_hop khi có phan_loai_van_ban
         vals = self._update_document_numbers(vals)
 
         record = super(OfficeDocument, self).create(vals)
+
+        if record.document_type == 'resolution' and not record.phan_loai_van_ban:
+            # Tìm hoặc tạo phân loại "Quyết định"
+            category = self.env['office.document.category'].search([
+                ('code', '=', 'QĐ')
+            ], limit=1)
+
+            if not category:
+                # Tạo mới phân loại
+                category = self.env['office.document.category'].create({
+                    'code': 'QĐ',
+                    'name': 'Quyết định',
+                })
+
+            # Cập nhật phân loại cho quyết định
+            record.phan_loai_van_ban = category.id
 
         # 🔥 Nếu có task_id, tự chuyển trạng thái task thành "Đã giao"
         if record.task_id:
@@ -841,13 +859,14 @@ class OfficeDocument(models.Model):
 
         # ========== SỐ ĐI ==========
         if document_type == 'resolution':
-            seq_qd = get_daily_sequence(
-                'di.resolution',
-                'Số đi - Quyết định',
-                'QĐ-'
-            )
-            if not vals.get('so_di_tong_hop'):
-                vals['so_di_tong_hop'] = seq_qd.next_by_id()
+            #seq_qd = get_daily_sequence(
+            #    'di.resolution',
+            #    'Số đi - Quyết định',
+            #    'QĐ-'
+            #)
+            #if not vals.get('so_di_tong_hop'):
+            #    vals['so_di_tong_hop'] = seq_qd.next_by_id()
+            pass
         else:
             if phan_loai_id:
                 code = self.env['office.document.category'].browse(phan_loai_id).code
@@ -865,8 +884,24 @@ class OfficeDocument(models.Model):
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
         start_date = res.get('ngay_bat_dau', fields.Date.context_today(self))
+
         res['han_ket_thuc'] = start_date + timedelta(days=7)
+        if self._context.get('default_document_type') == 'resolution':
+            # Tìm hoặc tạo phân loại "Quyết định"
+            category = self.env['office.document.category'].search([
+                ('code', '=', 'QĐ')
+            ], limit=1)
+
+            if not category:
+                category = self.env['office.document.category'].create({
+                    'code': 'QĐ',
+                    'name': 'Quyết định',
+                })
+
+            res['phan_loai_van_ban'] = category.id
         return res
+
+
 
     @api.constrains('ngay_bat_dau', 'han_ket_thuc')
     def _check_dates(self):
@@ -939,6 +974,11 @@ class OfficeDocument(models.Model):
     def phat_hanh(self):
         self.ensure_one()
         self.tt_vb = 'phat_hanh'
+        return True
+
+    def huy(self):
+        self.ensure_one()
+        self.tt_vb = 'huy'
         return True
 
     @api.depends('lanh_dao_theo_doi')
@@ -1031,6 +1071,57 @@ class OfficeDocument(models.Model):
             else:
                 record.show_skip_button = False
 
+    @api.constrains('document_type', 'so_hieu', 'don_vi_ban_hanh', 'don_vi_ban_hanh_ngoai')
+    def _check_unique_document(self):
+        for rec in self:
+            if not rec.so_hieu:
+                continue
+
+            # Kiểm tra trùng cho công văn nội bộ
+            if rec.document_type in ['incoming_internal', 'outgoing_internal', 'resolution'] and rec.don_vi_ban_hanh:
+                domain = [
+                    ('id', '!=', rec.id),
+                    ('document_type', '=', rec.document_type),
+                    ('so_hieu', '=', rec.so_hieu),
+                    ('don_vi_ban_hanh', '=', rec.don_vi_ban_hanh.id)
+                ]
+                duplicate = self.search(domain, limit=1)
+                if duplicate:
+                    raise ValidationError(
+                        f"Đã tồn tại {duplicate.display_name} với cùng:\n"
+                        f"- Loại: {dict(rec._fields['document_type'].selection).get(rec.document_type)}\n"
+                        f"- Số hiệu: {rec.so_hieu}\n"
+                        f"- Đơn vị ban hành: {rec.don_vi_ban_hanh.name}"
+                    )
+
+            # Kiểm tra trùng cho công văn bên ngoài
+            elif rec.document_type in ['incoming', 'outgoing'] and rec.don_vi_ban_hanh_ngoai:
+                domain = [
+                    ('id', '!=', rec.id),
+                    ('document_type', '=', rec.document_type),
+                    ('so_hieu', '=', rec.so_hieu),
+                    ('don_vi_ban_hanh_ngoai', '=', rec.don_vi_ban_hanh_ngoai.id)
+                ]
+                duplicate = self.search(domain, limit=1)
+                if duplicate:
+                    raise ValidationError(
+                        f"Đã tồn tại {duplicate.display_name} với cùng:\n"
+                        f"- Loại: {dict(rec._fields['document_type'].selection).get(rec.document_type)}\n"
+                        f"- Số hiệu: {rec.so_hieu}\n"
+                        f"- Đơn vị ban hành: {rec.don_vi_ban_hanh_ngoai.name}"
+                    )
+
+    can_create_don_vi = fields.Boolean(
+        string="Có thể tạo đơn vị mới",
+        compute='_compute_can_create_don_vi',
+        store=False
+    )
+
+    def _compute_can_create_don_vi(self):
+        user = self.env.user
+        for rec in self:
+            rec.can_create_don_vi = user.has_group('quan_ly_cong_van.group_van_thu') or user.has_group(
+                'base.group_system')
 
 class AssignTaskWizard(models.TransientModel):
     _name = 'assign.task.wizard'
