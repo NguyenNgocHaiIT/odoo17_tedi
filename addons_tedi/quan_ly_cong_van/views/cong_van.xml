@@ -55,8 +55,6 @@
                                        invisible="not (document_type in ('incoming','outgoing'))"
                                        readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                                 <field name="lanh_dao_xu_ly" string="Lãnh đạo phụ trách" widget="many2many_tags" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
-                                <field name="ngay_den" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
-                                <field name="ngay_ban_hanh" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                                 <field name="document_type" invisible="1"/>
                                 <field name="phan_loai_van_ban" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
 
@@ -75,6 +73,8 @@
 
                                 <!--                                <field name="so_den_theo_so"/>-->
                                 <!--                                <field name="so_vb"/>-->
+                                <field name="ngay_den" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                <field name="ngay_ban_hanh" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                                 <field name="ngay_hieu_luc" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                                 <!--                                <field name="ngay_ky"/>-->
                                 <!--                                <field name="chuc_vu"/>-->
@@ -383,7 +383,7 @@
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','outgoing')]</field>
-            <field name="context">{'default_document_type': 'outgoing', 'create': False}</field>
+            <field name="context">{'default_document_type': 'outgoing'}</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_outgoing_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_outgoing_form')})]"/>
@@ -553,7 +553,7 @@
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','resolution')]</field>
-            <field name="context">{'default_document_type': 'resolution', 'create': False}</field>
+            <field name="context">{'default_document_type': 'resolution'}</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_resolution_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_resolution_form')})]"/>

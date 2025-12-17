@@ -749,6 +749,12 @@ class OfficeDocument(models.Model):
                 and document_type_val in ('outgoing', 'outgoing_internal','resolution')
         ):
             vals['tt_vb'] = 'da_duyet'
+
+        elif (
+                user.has_group('quan_ly_cong_van.group_van_thu')
+                and document_type_val in ('outgoing', 'outgoing_internal','resolution')
+        ):
+            vals['tt_vb'] = 'da_duyet'
         elif (
                 user.has_group('quan_ly_cong_van.group_don_vi_xu_ly')
                 and document_type_val in ('incoming', 'incoming_internal')
