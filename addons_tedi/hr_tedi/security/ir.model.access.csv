@@ -24,3 +24,6 @@ access_hr_experience_project_type.major,access_hr_experience_project_type,model_
 access_hr_external_experience,access_hr_external_experience,model_hr_external_experience,base.group_user,1,1,1,1
 
 access_hr_training_field_user,access_hr_training_field_user,model_hr_training_field,base.group_user,1,1,1,1
+
+
+access_res_ethnic_user,access_res_ethnic_user,model_res_ethnic,base.group_user,1,1,1,1

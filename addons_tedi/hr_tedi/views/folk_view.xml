@@ -57,12 +57,13 @@
         </record>
 
         <menuitem
-            id="menu_res_ethnic"
-            name="Dân tộc"
-            parent="hr_recruitment.menu_hr_recruitment_configuration"
+            id="menu_hr_folk"
+            name="Cấu hình Dân tộc"
+            parent="hr.menu_human_resources_configuration"
             action="action_res_ethnic"
-            sequence="100"
-        />
+            sequence="3"/>
+
+
 
 
     </data>

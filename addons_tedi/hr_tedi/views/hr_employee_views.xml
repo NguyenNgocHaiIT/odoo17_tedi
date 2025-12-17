@@ -126,7 +126,7 @@
                                     <field name="citizen_issuer"/>
                                     <field name="birthday" string="Sinh ngày"/>
                                     <field name="country_id" string="Quốc tịch"/>
-                                    <field name="ethnicity"/>
+                                    <field name="folk_id"/>
                                     <field name="household_address"/>
                                     <field name="bank_account_id"/>
                                  </group>
