@@ -56,6 +56,7 @@ class RecruitmentPlan(models.Model):
         ("draft", "Dự thảo"),
         ("board_approve", "HĐQT duyệt"),
         ("director_approve", "GD/PGD duyệt"),
+        ("approved","Đã duyệt"),
         ("complete", "Hoàn thành"),
     ], string="Trạng thái", default="draft", index=True, required=True, tracking=True)
 
@@ -200,6 +201,13 @@ class RecruitmentPlan(models.Model):
         for rec in self:
             if rec.recruitment_status != "director_approve":
                 raise ValidationError(_("Giám đốc chỉ phê duyệt được khi trạng thái là 'HĐQT duyệt'."))
+            rec.recruitment_status = "approved"
+
+    def action_complete(self):
+        self._check_committee()
+        for rec in self:
+            if rec.recruitment_status != "approved":
+                raise ValidationError(_("Chỉ hoàn thành được khi trạng thái là 'Đã duyệt'."))
             rec._apply_if_needed()
             rec.recruitment_status = "complete"
 

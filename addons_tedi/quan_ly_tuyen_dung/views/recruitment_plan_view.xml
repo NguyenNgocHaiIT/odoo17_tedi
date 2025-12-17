@@ -113,7 +113,7 @@
           <field name="is_applied_to_jobs" invisible="1"/>
 
           <header>
-            <field name="recruitment_status" widget="statusbar" statusbar_visible="draft,board_approve,director_approve,complete"/>
+            <field name="recruitment_status" widget="statusbar" statusbar_visible="draft,board_approve,director_approve,approved,complete"/>
 
             <!-- Trình duyệt: chỉ khi draft -->
             <button name="action_submit" type="object" string="Trình duyệt"
@@ -128,10 +128,14 @@
                     invisible="recruitment_status != 'board_approve' or is_applied_to_jobs"/>
 
             <!-- Hoàn thành: chỉ Director -->
-            <button name="action_director_approve" type="object" string="Hoàn Thành"
+            <button name="action_director_approve" type="object" string="Phê duyệt"
                     class="btn-success"
                     groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_director "
                     invisible="recruitment_status != 'director_approve' or is_applied_to_jobs"/>
+            <button name="action_complete"   type="object" string="Hoàn Thành"
+                    class="btn-success"
+                    groups="base.group_system,quan_ly_tuyen_dung.module_category_human_resources_recruitment "
+                    invisible="recruitment_status != 'approved' or is_applied_to_jobs"/>
 
           </header>
 
