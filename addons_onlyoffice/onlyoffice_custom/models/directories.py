@@ -13,7 +13,7 @@ class Directory(models.Model):
             self.env['document.share'].search([("document_id", '=', rec.id)]).unlink()
 
             link_share = self.env['ir.config_parameter'].sudo().get_param(
-                'web.base.url') + f"/onlyoffice/editor/{rec.id}"
+                'web.base.url') + f"/onlyoffice/share/{rec.id}"
             list_role_user = []
             roll_access_public = []
 

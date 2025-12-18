@@ -33,4 +33,5 @@ class DocumentShare(models.Model):
         id_folder = self.env.context.get('default_folder_id')
         if id_folder:
             direc = self.env['document.directory'].browse(id_folder)
+            direc.write({'document_share_id': self.id})
             direc.set_role_child_dir(direc)
