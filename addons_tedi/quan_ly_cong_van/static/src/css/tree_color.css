@@ -10,11 +10,6 @@
     color: red !important;
 }
 
-/* Độ đặc hiệu cao hơn để ghi đè */
-body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row:hover {
-    background-color: inherit !important;
-}
-
 /* GREEN */
 body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-green-row:hover td {
     color: green !important;
