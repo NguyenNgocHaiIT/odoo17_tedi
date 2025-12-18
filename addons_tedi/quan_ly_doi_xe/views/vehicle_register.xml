@@ -1,31 +1,64 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <data>
-        <record id="view_hr_tedi_vehicle_registration_tree" model="ir.ui.view">
-            <field name="name">hr.tedi.vehicle.registration.tree</field>
-            <field name="model">hr_tedi.vehicle.registration</field>
+        <record id="view_vehicle_no_car_wizard_form" model="ir.ui.view">
+            <field name="name">vehicle.no.car.wizard.form</field>
+            <field name="model">vehicle.no.car.wizard</field>
             <field name="arch" type="xml">
+                <form string="Thông báo hết xe">
+                    <sheet>
+                        <div class="alert alert-warning mb-4" role="alert">
+                            Hiện tại không còn xe nội bộ đáp ứng yêu cầu này.
+                            Vui lòng chọn phương án xử lý tiếp theo.
+                        </div>
+                        <group>
+                            <field name="booking_option"
+                                   widget="radio"
+                                   options="{'horizontal': true}"
+                                   string="Phương án"/>
+
+                            <field name="note"
+                                   string="Ghi chú"
+                                   placeholder="Nhập ghi chú thêm nếu cần..."/>
+                        </group>
+
+                    </sheet>
+                    <footer>
+                        <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary"/>
+                        <button string="Hủy bỏ" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_hr_tedi_vehicle_registration_tree" model="ir.ui.view">
+             <field name="name">hr.tedi.vehicle.registration.tree</field>
+             <field name="model">hr_tedi.vehicle.registration</field>
+             <field name="arch" type="xml">
                 <tree string="Phiếu đăng ký xe"
-                      decoration-muted="state == 'cancel'"
-                      decoration-info="state == 'draft'"
-                      decoration-success="state == 'done'"
-                      decoration-danger="state == 'refused'">
+                      default_order="create_date desc"
+                      decoration-muted="state in ['draft', 'cancel']"
+                      decoration-info="state == 'submitted'"
+                      decoration-primary="state in ['approved', 'assigned']"
+                      decoration-warning="state == 'waiting_return'"
+                      decoration-danger="state in ['refused', 'no_car']"
+                      decoration-success="state == 'done'">
+
                     <field name="code"/>
+                    <field name="create_date" string="Ngày tạo" optional="show"/>
                     <field name="requester_id"/>
                     <field name="start_date"/>
-                    <field name="end_date"/>
-                    <field name="trip_type"/>
-                    <field name="destination"/>
                     <field name="assigned_vehicle_id"/>
+                    <field name="tedi_driver_employee_id" widget="many2one_avatar"/>
+                    <field name="rating" widget="priority" optional="show" readonly="1"/>
 
-                    <field name="tedi_driver_employee_id" string="Tài xế" widget="many2one_avatar"/>
-
-                    <field name="work_content" optional="hide"/>
                     <field name="state" widget="badge"
-                           decoration-success="state == 'approved'"
-                           decoration-warning="state == 'submitted'"
-                           decoration-info="state == 'assigned'"
-                           decoration-danger="state == 'refused'"/>
+                           decoration-muted="state in ['draft', 'cancel']"
+                           decoration-info="state == 'submitted'"
+                           decoration-primary="state in ['approved', 'assigned']"
+                           decoration-warning="state == 'waiting_return'"
+                           decoration-danger="state in ['refused', 'no_car']"
+                           decoration-success="state == 'done'"/>
                 </tree>
             </field>
         </record>
@@ -37,65 +70,85 @@
                 <form string="Phiếu đăng ký xe">
                     <header>
                         <button name="action_submit" string="Gửi duyệt" type="object" class="oe_highlight" invisible="state != 'draft'"/>
-                        <button name="action_manager_approve" string="Lãnh đạo Duyệt" type="object" class="oe_highlight" invisible="state != 'submitted'"/>
-                        <button name="action_manager_refuse" string="Từ chối" type="object" invisible="state != 'submitted'"/>
+                        <button name="action_fleet_approve" string="Duyệt yêu cầu" type="object" class="oe_highlight" groups="fleet.fleet_group_manager" invisible="state != 'submitted'"/>
+                        <button name="action_fleet_refuse" string="Từ chối" type="object" groups="fleet.fleet_group_manager" invisible="state != 'submitted'"/>
+                        <button name="action_office_assign" string="Phân phối xe" type="object" class="oe_highlight" groups="fleet.fleet_group_manager" invisible="state != 'approved'"/>
 
-                        <button name="action_office_assign" string="Phân phối xe" type="object" class="oe_highlight" groups="fleet.fleet_group_user" invisible="state != 'approved'"/>
-                        <button name="action_office_no_car" string="Báo hết xe" type="object" class="btn-warning" groups="fleet.fleet_group_user" invisible="state != 'approved'"/>
-                        <button name="action_done" string="Xác nhận hoàn thành" type="object" class="oe_highlight" groups="fleet.fleet_group_user" invisible="state != 'assigned'"/>
+                        <button name="action_office_no_car" string="Báo hết xe" type="object" class="btn-warning" groups="fleet.fleet_group_manager" invisible="state != 'approved'"/>
 
-                        <button name="action_draft" string="Về nháp" type="object" invisible="state != 'submitted'"/>
-                        <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,assigned,done"/>
+                        <button name="action_send_feedback" string="Hoàn thành công tác" type="object" class="oe_highlight" invisible="state != 'assigned'"/>
+                        <button name="action_confirm_return" string="Xác nhận" type="object" class="oe_highlight" groups="fleet.fleet_group_manager" invisible="state != 'waiting_return'"/>
+                        <button name="action_draft" string="Về nháp" type="object" invisible="state != 'submitted'" groups="fleet.fleet_group_manager"/>
+
+                        <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,assigned,waiting_return,done"/>
                     </header>
 
                     <sheet>
                         <div class="oe_title">
                             <h1>
-                                <field name="code" readonly="1"/>
+                                <field name="code" readonly="1" class="me-2"/>
+                                <field name="state" widget="badge"
+                                       decoration-info="state == 'draft'"
+                                       decoration-primary="state == 'submitted'"
+                                       decoration-success="state == 'done'"
+                                       decoration-warning="state in ['waiting_return', 'approved', 'assigned']"
+                                       decoration-danger="state in ['refused', 'cancel', 'no_car']"
+                                       class="ms-2"/>
                             </h1>
+                        </div>
+
+                        <div class="alert alert-danger" role="alert" invisible="state != 'no_car'">
+                            <strong>Đã báo hết xe.</strong>
+                            Phương án: <field name="external_booking_type" readonly="1"/> -
+                            Ghi chú: <field name="no_car_note" readonly="1"/>
                         </div>
 
                         <group>
                             <group>
-                                <field name="requester_id" string="Người đề nghị" readonly="1" />
+                                <field name="can_edit_requester" invisible="1"/>
+
+                                <field name="requester_id" string="Người đề nghị" invisible="not can_edit_requester" readonly="state != 'draft'" required="1"/>
+                                <field name="requester_id" string="Người đề nghị" readonly="1" force_save="1" invisible="can_edit_requester"/>
+
                                 <field name="trip_type" readonly="state != 'draft'"/>
 
                                 <field name="assigned_vehicle_id"
                                        domain="[('state_id.name', '=', 'Đã đăng kiểm')]"
                                        context="{'show_driver': True}"
-                                       readonly="state not in ['approved']"
-                                />
+                                       readonly="state !='approved'"
+                                       invisible="state == 'no_car'"/>
 
-                                <field name="tedi_driver_employee_id"
-                                       string="Tài xế (Nhân viên)"
-                                       readonly="state == 'done'"
-                                       invisible="1"
-                                />
-
+                                <field name="tedi_driver_employee_id" string="Tài xế" readonly="state == 'done'" invisible="1"/>
                                 <field name="driver_id" invisible="1" force_save="1"/>
-
                                 <field name="num_passengers" readonly="state != 'draft'"/>
-                                <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
-                                <field name="work_content" placeholder="Mô tả chi tiết..." readonly="state != 'draft'"/>
+                                <field name="attachment_ids" widget="many2many_binary" />
+                                <field name="work_content" placeholder="Mô tả..." readonly="state != 'draft'"/>
                             </group>
-
                             <group>
                                 <label for="start_date" string="Thời gian"/>
                                 <div class="o_row">
                                     <field name="start_date" widget="daterange" options="{'related_end_date': 'end_date'}" readonly="state != 'draft'"/>
-                                    <i class="fa fa-long-arrow-right mx-2" aria-label="Arrow icon" title="Arrow"/>
-                                    <field name="end_date" widget="daterange" options="{'related_start_date': 'start_date'}" readonly="state != 'draft'"/>
+                                    <i class="fa fa-long-arrow-right mx-2" title="-"/>
+                                    <field name="end_date"
+                                               widget="daterange"
+                                               options="{'related_start_date': 'start_date'}"
+                                               readonly="(state in ['no_car','done']) or (not can_edit_requester and state != 'draft')"
+                                               force_save="1"/>
                                 </div>
                                 <field name="destination" readonly="state != 'draft'"/>
-
-                                <field name="distance_km"
-                                       string="Số Km thực tế"
-                                       readonly="state != 'assigned'"
-                                       class="fw-bold text-primary"/>
+                                <field name="distance_km" string="Số Km thực tế" readonly="state != 'waiting_return'" class="fw-bold text-primary"/>
                             </group>
                         </group>
-                    </sheet>
 
+                        <separator string="Đánh giá sau chuyến đi" invisible="state not in ['assigned', 'waiting_return', 'done']"/>
+                        <group invisible="state not in ['assigned', 'waiting_return', 'done']">
+                            <group>
+                                <field name="rating" widget="priority" readonly="state != 'assigned'"/>
+                            </group>
+                            <group></group>
+                            <field name="feedback_comment" placeholder="Đánh giá của bạn..." nolabel="1" colspan="2" readonly="state != 'assigned'"/>
+                        </group>
+                    </sheet>
                     <div class="oe_chatter">
                         <field name="message_follower_ids"/>
                         <field name="activity_ids"/>
@@ -105,18 +158,57 @@
             </field>
         </record>
 
-        <record id="action_hr_tedi_vehicle_registration2" model="ir.actions.act_window">
-            <field name="name">Phiếu đăng ký xe</field>
-            <field name="res_model">hr_tedi.vehicle.registration</field>
-            <field name="view_mode">tree,form</field>
-            <field name="view_ids" eval="[(5, 0, 0),
-                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_hr_tedi_vehicle_registration_tree')}),
-                (0, 0, {'view_mode': 'form', 'view_id': ref('view_hr_tedi_vehicle_registration_form')})]"/>
-            <field name="help" type="html">
-                <p class="o_view_nocontent_smiling_face">
-                    Tạo phiếu đăng ký xe mới
-                </p>
+        <record id="view_hr_tedi_vehicle_registration_calendar" model="ir.ui.view">
+            <field name="name">hr.tedi.vehicle.registration.calendar</field>
+            <field name="model">hr_tedi.vehicle.registration</field>
+            <field name="arch" type="xml">
+                <calendar string="Lịch xe"
+                          date_start="start_date"
+                          date_stop="end_date"
+                          mode="week"
+                          scales="day,week,month"
+                          color="assigned_vehicle_id"
+                          event_open_popup="true"
+                          quick_create="false">
+
+                    <field name="requester_id" widget="many2one_avatar_user"/>
+                    <field name="state"/>
+
+                    <field name="assigned_vehicle_id" filters="1" invisible="1"/>
+                </calendar>
             </field>
         </record>
+
+        <record id="action_hr_tedi_vehicle_registration2" model="ir.actions.act_window">
+            <field name="name">Lịch xe</field>
+            <field name="res_model">hr_tedi.vehicle.registration</field>
+            <field name="view_mode">calendar,tree,form</field>
+            <field name="view_ids" eval="[
+                (5, 0, 0),
+                (0, 0, {'view_mode': 'calendar', 'view_id': ref('view_hr_tedi_vehicle_registration_calendar')}),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_hr_tedi_vehicle_registration_tree')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_hr_tedi_vehicle_registration_form')})
+            ]"/>
+            <field name="context">{'search_default_week': 1}</field> <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">Chưa có lịch đăng ký xe nào.</p>
+            </field>
+        </record>
+
+<!--        <record id="action_hr_tedi_vehicle_registration2" model="ir.actions.act_window">-->
+<!--            <field name="name">Phiếu đăng ký xe</field>-->
+<!--            <field name="res_model">hr_tedi.vehicle.registration</field>-->
+<!--            <field name="view_mode">calendar,tree,form</field>-->
+<!--            <field name="view_ids" eval="[-->
+<!--                (5, 0, 0),-->
+<!--                (0, 0, {'view_mode': 'calendar', 'view_id': ref('view_hr_tedi_vehicle_registration_calendar')}),-->
+<!--                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_hr_tedi_vehicle_registration_tree')}),-->
+<!--                (0, 0, {'view_mode': 'form', 'view_id': ref('view_hr_tedi_vehicle_registration_form')})-->
+<!--            ]"/>-->
+<!--            <field name="help" type="html">-->
+<!--                <p class="o_view_nocontent_smiling_face">Tạo phiếu đăng ký xe mới</p>-->
+<!--            </field>-->
+<!--        </record>-->
+
+
     </data>
 </odoo>

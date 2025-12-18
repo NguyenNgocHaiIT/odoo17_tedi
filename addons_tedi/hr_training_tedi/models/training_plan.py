@@ -71,10 +71,55 @@ class TrainingPlan(models.Model):
     #      ====== FUNCTION TỔNG HỢP ======
     # =========================================
 
-    def _generate_from_survey(self):
+    @api.onchange('survey_id')
+    def _onchange_survey_id(self):
         """
-        Gom toàn bộ nhu cầu đào tạo đã duyệt từ đợt khảo sát.
-        Dùng chung cho onchange, create, write.
+        Khi thay đổi Đợt khảo sát trên giao diện:
+        1. Xóa hết các dòng chi tiết cũ.
+        2. Quét survey để lấy danh sách khóa học.
+        3. Điền ngay vào detail_ids (hiển thị luôn cho người dùng thấy).
+        """
+        # 1. Xóa dữ liệu detail cũ (nếu có) để tránh trộn lẫn khi đổi survey khác
+        # Mã lệnh (5, 0, 0) là lệnh xóa sạch các dòng trong One2many
+        self.detail_ids = [(5, 0, 0)]
+
+        if not self.survey_id:
+            return
+
+        TrainingNeeds = self.env['trainings.needs']
+
+        # Tìm các phiếu nhu cầu đã duyệt thuộc đợt khảo sát này
+        needs = TrainingNeeds.search([
+            ('name', '=', self.survey_id.id),
+            ('state', '=', 'approved'),
+        ])
+
+        if not needs:
+            return
+
+        # 2. Lấy danh sách các Course ID (duy nhất)
+        course_ids = set()
+        for need in needs:
+            for line in need.line_ids:
+                if line.course_id:
+                    course_ids.add(line.course_id.id)
+
+        # 3. Tạo dữ liệu cho detail_ids (trong bộ nhớ giao diện)
+        new_lines = []
+        for c_id in course_ids:
+            # Mã lệnh (0, 0, values) là lệnh tạo dòng mới
+            new_lines.append((0, 0, {
+                'course_id': c_id,
+                # Bạn có thể set mặc định các giá trị khác ở đây nếu muốn
+                # 'training_type': 'direct',
+            }))
+
+        self.detail_ids = new_lines
+
+    def _generate_participants_from_survey(self):
+        """
+        Hàm này giữ nguyên như câu trả lời trước.
+        Chỉ chạy khi bấm nút DUYỆT để tạo danh sách học viên.
         """
         Participation = self.env['training.plan.participation']
         ParticipationDetail = self.env['training.plan.participation.detail']
@@ -90,54 +135,48 @@ class TrainingPlan(models.Model):
             ])
 
             if not needs:
-                continue  # KHÔNG raise lỗi trong onchange
+                continue
 
             course_map = {}
-
-            # gom nhu cầu theo khóa học
             for need in needs:
                 student = need.user_id or need.create_uid or self.env.user
                 for line in need.line_ids:
                     if not line.course_id:
                         continue
-
                     course_id = line.course_id.id
                     course_map.setdefault(course_id, []).append((student, line))
 
-            if not course_map:
-                continue
-
             for course_id, items in course_map.items():
-
-                # tìm hoặc tạo detail
+                # Tìm detail (Lúc này detail đã được tạo bởi onchange và đã lưu)
                 detail = plan.detail_ids.filtered(lambda d: d.course_id.id == course_id)[:1]
+
+                # Fallback: Nếu lỡ người dùng xóa tay detail thì tạo lại
                 if not detail:
                     detail = self.env['training.plan.detail'].create({
                         'plan_id': plan.id,
                         'course_id': course_id,
                     })
 
-                # tìm hoặc tạo participation
+                # Tạo Participation
                 participation = Participation.search([
                     ('training_plan_id', '=', plan.id),
                     ('training_plan_detail_id', '=', detail.id),
                 ], limit=1)
+
                 if not participation:
                     participation = Participation.create({
                         'training_plan_id': plan.id,
                         'training_plan_detail_id': detail.id,
                     })
 
-                # tạo hoặc cập nhật chi tiết học viên
+                # Tạo danh sách học viên
                 for student, line in items:
                     existing = ParticipationDetail.search([
                         ('participation_id', '=', participation.id),
                         ('user_id', '=', student.id),
                     ], limit=1)
 
-                    if existing:
-                        line.participation_detail_id = existing.id
-                    else:
+                    if not existing:
                         part_detail = ParticipationDetail.create({
                             'participation_id': participation.id,
                             'user_id': student.id,
@@ -147,38 +186,17 @@ class TrainingPlan(models.Model):
 
 
 
-
     # =========================================
     #      ====== CREATE - WRITE ======
     # =========================================
 
-    # def _check_participant(self):
-    #     if self.env.user.has_group(PARTICIPANT):
-    #         raise AccessError(_("Participant không được thực hiện thao tác này"))
 
-
+    @api.model
     def create(self, vals):
-        # self._check_participant()
-        rec = super().create(vals)
-        if vals.get('survey_id'):
-            rec._generate_from_survey()
-        return rec
-
-    # def unlink(self):
-    #     for rec in self:
-    #         if rec.state == 'approved':
-    #             raise ValidationError(_("Không thể xoá kế hoạch đã được duyệt."))
-    #     return super().unlink()
+        return super().create(vals)
 
     def write(self, vals):
-        res = super().write(vals)
-
-        if 'survey_id' in vals:
-            for rec in self:
-                if rec.survey_id:
-                    rec._generate_from_survey()
-
-        return res
+        return super().write(vals)
 
     # =========================================
     #      ====== COMPUTE ======
@@ -215,7 +233,16 @@ class TrainingPlan(models.Model):
         for rec in self:
             if rec.state != "pending":
                 raise ValidationError(_("Chỉ có thể duyệt từ trạng thái 'Chờ duyệt'."))
+
+            # --- QUAN TRỌNG: Gọi hàm tạo học viên tại đây ---
+            rec._generate_participants_from_survey()
+
             rec.state = "approved"
+
+            # Trigger đồng bộ lịch sử
+            for detail in rec.detail_ids:
+                for part_detail in detail.participation_detail_ids:
+                    part_detail._sync_to_history()
 
     def action_reject(self):
         for rec in self:
@@ -248,6 +275,11 @@ class TrainingPlanDetail(models.Model):
             ("place_3", "Cơ sở 3"),
         ],
         string="Cơ sở đào tạo",
+    )
+    plan_state = fields.Selection(
+        related='plan_id.state',
+        string="Trạng thái Plan",
+        readonly=True
     )
 
     training_type = fields.Selection([
@@ -343,3 +375,16 @@ class TrainingPlanDetail(models.Model):
     def create(self, vals):
         # self._check_participant()
         return super().create(vals)
+
+    def write(self, vals):
+        res = super(TrainingPlanDetail, self).write(vals)
+
+        # Nếu sửa thông tin quan trọng
+        if any(f in vals for f in ['start_date', 'end_date', 'training_location', 'training_type', 'course_id']):
+            for detail in self:
+                # Logic này sẽ gọi _sync_to_history của từng học viên.
+                # Nhờ có điều kiện chặn ở trên, nếu Plan chưa duyệt (ví dụ sửa lúc Draft),
+                # nó sẽ tự động bỏ qua, không gây lỗi.
+                for part_detail in detail.participation_detail_ids:
+                    part_detail._sync_to_history()
+        return res

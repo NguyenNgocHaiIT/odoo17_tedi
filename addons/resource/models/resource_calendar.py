@@ -406,6 +406,7 @@ class ResourceCalendar(models.Model):
         result = defaultdict(lambda: [])
         tz_dates = {}
         all_leaves = self.env['resource.calendar.leaves'].search(domain)
+        print(all_leaves)
         for leave in all_leaves:
             leave_resource = leave.resource_id
             leave_company = leave.company_id

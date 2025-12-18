@@ -45,6 +45,18 @@ class FleetVehicle(models.Model):
     # 2. LOGIC ĐỒNG BỘ (EMPLOYEE -> PARTNER)
     # ========================================================
 
+    @api.depends('model_id.brand_id.name', 'model_id.name', 'license_plate', 'tedi_driver_employee_id')
+    def _compute_display_name(self):
+        for record in self:
+            # Lấy thông tin cơ bản: Hãng/Model/Biển số
+            name = record.model_id.brand_id.name + '/' + record.model_id.name + '/' + (record.license_plate or '')
+
+            # Nếu có tài xế, nối thêm tên tài xế vào
+            if record.tedi_driver_employee_id:
+                name += f" ({record.tedi_driver_employee_id.name})"
+
+            record.display_name = name
+
     def _get_partner_from_employee(self, employee):
         """Hàm phụ trợ: Lấy Partner từ Employee"""
         if not employee:

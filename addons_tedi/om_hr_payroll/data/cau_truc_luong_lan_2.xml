@@ -36,6 +36,10 @@ result = (contract.salary_grade_id.luong_chuc_danh/ worked_days.WORK100.number_o
             <field name="amount_select">code</field>
             <field name="quantity">1</field>
             <field name="amount_python_compute">leave_real = 0
+if worked_days.LEAVE100:
+    leave_real += worked_days.LEAVE100.number_of_days
+if worked_days.LEAVE105:
+    leave_real += worked_days.LEAVE105.number_of_days
 if worked_days.LEAVE110:
     leave_real += worked_days.LEAVE110.number_of_days
 if worked_days.LEAVE120:

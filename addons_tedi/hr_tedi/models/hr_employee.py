@@ -7,6 +7,19 @@ import base64
 import logging
 _logger = logging.getLogger(__name__)
 
+class ResEthnic(models.Model):
+    _name = 'res.ethnic'
+    _description = 'Danh mục Dân tộc'
+    _order = 'name'
+
+    name = fields.Char(string="Tên dân tộc", required=True)
+    code = fields.Char(string="Mã", help="Ví dụ: KINH, TAY, THAI...")
+    active = fields.Boolean(string="Đang sử dụng", default=True)
+
+    _sql_constraints = [
+        ('name_uniq', 'unique (name)', 'Tên dân tộc đã tồn tại!'),
+        ('code_uniq', 'unique (code)', 'Mã dân tộc phải là duy nhất!')
+    ]
 
 class HrEmployeePrivate(models.Model):
     _inherit = "hr.employee"
@@ -22,6 +35,11 @@ class HrEmployeePrivate(models.Model):
     household_address = fields.Char(string="Địa chỉ thường trú")
     occupation = fields.Char(string="Nghề nghiệp")
     ethnicity = fields.Char(string="Dân tộc")
+    folk_id = fields.Many2one(
+        'res.ethnic',
+        string="Dân tộc",
+        help="Chọn dân tộc từ danh mục"
+    )
 
     # ==== One2many ====
     education_ids = fields.One2many("hr.employee.education", "employee_id", string="Trình độ chuyên môn")
@@ -32,6 +50,22 @@ class HrEmployeePrivate(models.Model):
     experience_ids        = fields.One2many("hr.employee.experience",       "employee_id", string="Kinh nghiệm công việc liên quan")
     reward_discipline_ids = fields.One2many("hr.employee.reward.discipline","employee_id", string="Khen thưởng - Kỷ luật")
     training_ids = fields.One2many("hr.employee.training", "employee_id", string="Quá trình đào tạo")
+    external_experience_ids = fields.One2many(
+        "hr.external.experience", "employee_id", string="Kinh nghiệm Bên ngoài"
+    )
+    tedi_training_history_ids = fields.One2many(
+        "hr.employee.training.tedi",
+        "employee_id",
+        string="Quá trình đào tạo tại TEDI"
+    )
+
+    # Onchange để đánh số lại STT khi giao diện thay đổi (giống logic bạn gửi trước đó)
+    @api.onchange('tedi_training_history_ids')
+    def _onchange_tedi_training_seq(self):
+        for rec in self:
+            for idx, line in enumerate(rec.tedi_training_history_ids, start=1):
+                line.stt = idx
+
     # ==== Đảng – Đoàn thể (liên kết với hr.party.cell / hr.party.title) ====
     party_member = fields.Boolean(string="Là Đảng viên?")
     party_join_date = fields.Date(string="Ngày kết nạp Đảng")
@@ -53,6 +87,12 @@ class HrEmployeePrivate(models.Model):
 
     # ==== Mã nhân viên ====
     employee_code = fields.Char(string="Employee Code", readonly=False, copy=False)
+
+    attachment_ids = fields.Many2many(
+        'ir.attachment',
+        string="Tài liệu đính kèm"
+    )
+
 
     @api.onchange('name')
     def _onchange_name_generate_code(self):
@@ -199,3 +239,5 @@ class HrEmployeePrivate(models.Model):
                 'show_hr_icon_display': True,
             },
         }
+
+

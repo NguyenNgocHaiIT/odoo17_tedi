@@ -20,6 +20,10 @@
         "views/training_plan_participation_view.xml",
         "views/training_review_view.xml",
 
+        "views/training_schedule_view.xml",
+
+        "views/training_field_view.xml",
+
         "views/menu.xml",
 
     ],

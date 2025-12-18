@@ -15,7 +15,7 @@
         'views/attendance_report_views.xml',
         'views/hr_leave_type_views.xml',
         'views/work_entry_views.xml',
-
+        # 'data/data_work_entry_type.xml',
 
         "views/menu.xml",
     ],

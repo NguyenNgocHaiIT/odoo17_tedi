@@ -35,6 +35,15 @@ class XlsxReportConfig(models.Model):
         help='Enter field name to filter (wildcard * allowed)',
         store=False
     )
+    binary_id = fields.Many2one(
+        'ir.model.fields',
+        string='Field Name',
+        required=False,
+        ondelete='cascade',
+        domain="[('model_id', '=', model_id), ('relation', '=', 'ir.attachment'), '|',('ttype', '=', 'many2many'), ('ttype', '=', 'many2one')]",
+        readonly=False,
+        help="Field file report"
+    )
 
     @api.onchange('attachment_ids')
     def _compute_attachment_binary(self):
@@ -157,12 +166,9 @@ class XlsxReportConfig(models.Model):
         return {
             "name": self.name,
             "model": self.model_id.model,
-            "report_type": "docx",
-            "report_docx_template": self.attachment_ids[0].datas,
-            "report_docx_template_name": self.report_docx_template_filename,
-            "report_name": self._prepare_template_name(),
-            "docx_merge_mode": self.docx_merge_mode,
-            'docx_autoescape': self.autoescape,
+            "report_type": "xlsx-jinja",
+            "report_xlsx_jinja_template": self.attachment_ids[0].datas,
+            "report_xlsx_jinja_template_name": self.report_xlsx_template_filename,
+            "report_name": self.report_name,
             "print_report_name": self.print_report_name,
         }
-

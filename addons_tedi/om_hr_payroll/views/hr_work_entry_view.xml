@@ -5,5 +5,12 @@
                   action="hr_work_entry.hr_work_entry_action"
                   name="Work Entries"
                   parent="menu_hr_payroll_root"/>
+
+        <menuitem id="menu_hr_work_entry"
+                  action="hr_work_entry.hr_work_entry_action"
+                  name="Work Entries"
+                  parent="menu_hr_payroll_root"/>
+
+
     </data>
 </odoo>

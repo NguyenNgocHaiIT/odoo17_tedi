@@ -5,6 +5,7 @@ from odoo.exceptions import UserError
 
 class FleetVehicleLogServices(models.Model):
     _inherit = 'fleet.vehicle.log.services'
+    _rec_name = 'code'
 
     # --- 1. MAPPING CÁC TRƯỜNG CUSTOM ---
     code = fields.Char(string="Mã phiếu", default='New', copy=False, readonly=True)
@@ -18,13 +19,28 @@ class FleetVehicleLogServices(models.Model):
 
     # --- QUAN TRỌNG: Cần set default cho service_type_id vì XML đã ẩn nó đi ---
     service_type_id = fields.Many2one(
-        'fleet.service.type', 'Service Type', required=True,
-        default=lambda self: self.env.ref('fleet.type_service_service_7', raise_if_not_found=False) or self.env[
-            'fleet.service.type'].search([], limit=1)
+        'fleet.service.type', 'Loại dịch vụ', required=True,
+        default=lambda self: self.env['fleet.service.type'].search([], limit=1)
     )
 
     # --- 2. LOGIC TÍNH TOÁN ---
     amount = fields.Monetary(string='Tổng chi phí', compute='_compute_total_cost', store=True, readonly=False)
+
+    @api.onchange('vehicle_id')
+    def _onchange_vehicle_id(self):
+        """
+        Khi người dùng chọn xe, tự động lấy số Odometer (Công tơ mét)
+        hiện tại của xe đó điền vào phiếu.
+        """
+        if self.vehicle_id:
+            self.odometer = self.vehicle_id.odometer
+
+            # (Tùy chọn) Nếu bạn muốn lấy cả đơn vị (km/dặm) thì bỏ comment dòng dưới:
+            # self.odometer_unit = self.vehicle_id.odometer_unit
+
+    # -------------------------
+
+    # ... (Các phần logic cũ: amount, create, buttons... giữ nguyên) .
 
     @api.depends('repair_line_ids.price_unit')
     def _compute_total_cost(self):
@@ -64,7 +80,7 @@ class FleetServiceLine(models.Model):
     sequence = fields.Integer(string='STT', default=10)
 
     # 1. Thêm trường trỏ đến danh mục dịch vụ của Odoo
-    service_type_id = fields.Many2one('fleet.service.type', string="Loại dịch vụ", required=True)
+    service_type = fields.Char("Hạng mục")
 
     price_unit = fields.Float(string="Thành tiền")
 

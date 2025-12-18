@@ -2,31 +2,31 @@
 <odoo>
     <data>
 
-        <!-- TREE: Nhu cầu đào tạo (header ngoài list) -->
+
         <record id="view_recruitment_needs_tree" model="ir.ui.view">
             <field name="name">recruitment.needs.tree</field>
             <field name="model">recruitment.needs</field>
             <field name="arch" type="xml">
-                <tree string="Nhu cầu đào tạo">
-                    <field name="name" string="Đợt khảo sát" class="text-center"/>
-                    <field name="create_date" string="Ngày đăng ký" class="text-center"/>
-                    <field name="department_id" string="Phòng ban đăng ký" class="text-center"/>
+                <tree string="Nhu cầu tuyển dụng">
+                    <field name="name" string="Đợt khảo sát" class="text-start"/>
+                    <field name="create_date" string="Ngày đăng ký" class="text-start"/>
+                    <field name="department_id" string="Phòng ban đăng ký" class="text-start"/>
                     <field name="state" string="Trạng thái"
                            widget="badge"
                            decoration-warning="state == 'draft'"
                            decoration-success="state == 'confirmed'"
-                           class="text-center"/>
+                           class="text-start"/>
                 </tree>
             </field>
         </record>
 
 
-        <!-- TREE: dòng chi tiết nhu cầu đào tạo -->
+
        <record id="view_recruitment_needs_form" model="ir.ui.view">
         <field name="name">recruitment.needs.form</field>
         <field name="model">recruitment.needs</field>
         <field name="arch" type="xml">
-            <form string="Nhu cầu đào tạo">
+            <form string="Nhu cầu tuyển dụng">
                 <header>
                     <!-- ĐĂNG KÝ (draft -> pending) -->
                     <button name="action_approve"
@@ -43,7 +43,7 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="name" string="Đợt khảo sát"/>
+                            <field name="name" string="Đợt khảo sát" readonly="state == 'confirmed'"/>
                             <!-- Người đăng ký: readonly, luôn hiển thị -->
                             <field name="department_id" string="Phòng ban đăng ký" readonly="1"/>
                         </group>
@@ -54,12 +54,12 @@
                     </group>
                     
                     <notebook>
-                        <page string="Nhu cầu đào tạo">
+                        <page string="Nhu cầu tuyển dụng">
                             <field name="line_ids"
                                    options="{'no_open': True}"
                                    readonly="state == 'confirmed'">
 
-                                <tree string="Nhu cầu đào tạo"
+                                <tree string="Nhu cầu tuyển dụng"
                                       editable="bottom"
                                       readonly="parent.state == 'confirmed'">
 
@@ -82,7 +82,7 @@
 
         <!-- ACTION -->
         <record id="action_recruitment_needs" model="ir.actions.act_window">
-            <field name="name">Nhu cầu đào tạo</field>
+            <field name="name">Nhu cầu tuyển dụng</field>
             <field name="res_model">recruitment.needs</field>
             <field name="view_mode">tree,form</field>
             <field name="view_ids" eval="[

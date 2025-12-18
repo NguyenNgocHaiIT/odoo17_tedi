@@ -45,7 +45,7 @@
                   <field name="partner_name" string="Họ và tên" required="1"/>
                   <field name="dob" string="Ngày sinh"/>
                   <field name="country_id" string="Quốc tịch"/>
-                  <field name="folk" string="Dân tộc"/>
+                  <field name="folk_id" string="Dân tộc"/>
                   <field name="current_job" string="Nghề nghiệp hiện tại"/>
                   <field name="address" string="Địa chỉ thường trú"/>
                 </group>
@@ -64,11 +64,11 @@
                            domain="[('id', 'in', available_job_ids)]"/>
 
                   <field name="department_id" string="Phòng ban"/>
-                  <field name="interviewer_ids" widget="many2many_avatar_user"
+                  <field name="interviewer_ids" widget="many2many_tags"
                          options="{'no_create': True, 'no_create_edit': True}"/>
                   <field name="priority" widget="priority"/>
                   <field name="source_id"/>
-                  <field name="attachment_ids" string="Hồ sơ đính kèm" widget="many2many_tags"/>
+                  <field name="attachment_ids" widget="many2many_binary" string="Hồ sơ đính kèm" />
                 </group>
                 <group string="ĐỀ XUẤT LƯƠNG">
                   <label for="salary_expected"/>
@@ -96,14 +96,26 @@
               <field name="applicant_properties" columns="2"/>
 
               <!-- Đánh giá sau phỏng vấn -->
-              <notebook>
-                <page string="Đánh giá sau phỏng vấn">
-                  <field name="description" placeholder="Ghi chú tổng hợp..."/>
-                  <button name="action_open_applicant_evaluation_page"
-                          string="Mở bảng đánh giá chi tiết"
-                          type="object" class="btn-primary"/>
-                </page>
-              </notebook>
+
+                <group string="Đánh giá sau phỏng vấn">
+
+                    <group>
+                        <div colspan="2" class="o_row">
+                        <button name="action_open_applicant_evaluation_page"
+                                string="Mở bảng đánh giá chi tiết"
+                                type="object" class="btn-primary"/>
+                        </div>
+                        <field name="description"
+                           nolabel="1"
+                           colspan="2"
+                           placeholder="Nhập ghi chú tổng hợp tại đây..."
+                           style="min-height: 100px; border: 1px solid #ccc; padding: 10px; min-width: 50px;"/>
+                    </group>
+
+
+
+                </group>
+
 
 
                 <notebook colspan="4">
@@ -118,7 +130,7 @@
                                context="{'default_applicant_id': active_id}">
                           <tree editable="bottom">
                             <field name="stt" string="STT" readonly="1" width="60"/>
-                            <field name="major" string="Chuyên ngành đào tạo"/>
+                            <field name="major_id" string="Chuyên ngành đào tạo"/>
                             <field name="school" string="Trường đào tạo" required="1"/>
                             <field name="years" string="Số năm học"/>
                             <field name="degree" string="Trình độ"/>
@@ -138,7 +150,7 @@
                             <field name="cert_type" string="Tên chứng chỉ" required="1"/>
                             <field name="code" string="Mã chứng chỉ"/>
                             <field name="issuer" string="Nơi cấp"/>
-                            <field name="practice_field" string="Lĩnh vực"/>
+                            <field name="practice_field_id" string="Lĩnh vực"/>
                             <field name="rank" string="Thứ hạng"/>
                             <field name="date_from" string="Từ ngày"/>
                             <field name="date_to" string="Đến ngày"/>
@@ -175,7 +187,7 @@
                         <field name="work_address" string="Địa chỉ làm việc"/>
                         <field name="date_from" string="Từ ngày"/>
                         <field name="date_to" string="Đến ngày"/>
-                        <field name="position" string="Chức danh"/>
+                        <field name="work_position" string="Chức danh"/>
                       </tree>
                     </field>
                   </page>

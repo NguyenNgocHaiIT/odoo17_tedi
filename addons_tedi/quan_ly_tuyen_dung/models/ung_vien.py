@@ -62,15 +62,24 @@ STAGE_ACL = {
 }
 
 
+
 class Applicant(models.Model):
     _inherit = 'hr.applicant'
     _rec_name = "partner_name"
 
     # ==== THÔNG TIN BỔ SUNG ====
     dob = fields.Date(string="Sinh ngày")
-    country_id = fields.Many2one('res.country', string="Quốc tịch")
+    country_id = fields.Many2one(
+        'res.country',
+        string="Quốc tịch",
+        default=lambda self: self.env['res.country'].search([('code', '=', 'VN')], limit=1)
+    )
 
-    folk = fields.Char(string="Dân tộc")
+    folk_id = fields.Many2one(
+        'res.ethnic',
+        string="Dân tộc",
+        help="Chọn dân tộc từ danh mục"
+    )
     current_job = fields.Char(string="Nghề nghiệp")
     address = fields.Char(string="Địa chỉ")
     suitability = fields.Selection(
@@ -90,6 +99,7 @@ class Applicant(models.Model):
         "applicant_id", "attachment_id",
         string="Link hồ sơ"
     )
+    attachment=fields.Char(string="Link hồ sơ")
 
     isEmp = fields.Boolean(string="Is Emp", default=False)
 
@@ -116,6 +126,7 @@ class Applicant(models.Model):
     education_ids = fields.One2many(
         "hr.employee.education", "applicant_id", string="Trình độ học vấn (ứng viên)"
     )
+    descriptions = fields.Text(string="Đánh giá sau phỏng vấn")
 
     # Đánh giá sau phỏng vấn
     professional_skill = fields.Char(string="Khả năng chuyên môn")
@@ -159,6 +170,29 @@ class Applicant(models.Model):
 
     # ==== CỜ CHỐNG ĐẾM TRÙNG ====
     hired_counters_done = fields.Boolean(string="Đã cập nhật counters khi tuyển", default=False)
+
+    @api.onchange('availability')
+    def _onchange_availability(self):
+        """
+        Kiểm tra nếu ngày chọn nhỏ hơn ngày hiện tại
+        thì cảnh báo và xóa giá trị.
+        """
+        if self.availability:
+            # Lấy ngày hôm nay
+            today = fields.Date.today()
+
+            # So sánh
+            if self.availability < today:
+                # 1. Reset lại giá trị (để người dùng phải chọn lại)
+                self.availability = False
+
+                # 2. Trả về cảnh báo (Popup)
+                return {
+                    'warning': {
+                        'title': "Ngày không hợp lệ",
+                        'message': "Thời gian bắt đầu không được nhỏ hơn ngày hiện tại!"
+                    }
+                }
 
     # ================== ACTION: mở form trong modal ==================
     def action_open_applicant_from_wizard(self):
@@ -435,14 +469,17 @@ class Applicant(models.Model):
         ))
 
     _APPLICANT_TO_EMPLOYEE_FIELD_MAP = [
-        # (applicant_field, employee_field)
-        ("email_from", "work_email"),
-        ("partner_mobile", "mobile_phone"),
-        ("address", "household_address"),
-        ("folk", "ethnicity"),
-        ("current_job", "occupation"),
-        ("dob", "birthday"),
-        # ("email_from", "email_personal"),
+        # (Tên field bên Ứng viên, Tên field bên Nhân viên)
+        ("email_from", "work_email"),  # Email công việc
+        ("partner_mobile", "mobile_phone"),  # Di động
+        ("address", "household_address"),  # Địa chỉ -> Địa chỉ thường trú
+        ("folk_id", "folk_id"),  # Dân tộc (Many2one) - Quan trọng
+        ("current_job", "occupation"),  # Nghề nghiệp hiện tại
+        ("dob", "birthday"),  # Ngày sinh
+        ("country_id", "country_id"),  # Quốc tịch
+
+        # Nếu bên Applicant bạn bổ sung field CMND thì mở comment dòng dưới:
+        # ("citizen_id", "citizen_id"),
     ]
 
     # ======== Copy các trường đơn (char/date/m2o...) ========
@@ -454,27 +491,29 @@ class Applicant(models.Model):
         if write_vals:
             employee.sudo().write(write_vals)
 
-    # ======== Clone các bộ sưu tập O2M (đào tạo/chứng chỉ/kinh nghiệm/trình độ) ========
+        # ======== Clone các bộ sưu tập O2M (đào tạo/chứng chỉ/kinh nghiệm/trình độ) ========
     def _copy_collections_to_employee(self, employee):
         def _copy_lines(o2m_recs):
             for line in o2m_recs:
-                vals = {}
-                for fname, field in line._fields.items():
-                    if fname in ('id', 'create_uid', 'create_date', 'write_uid', 'write_date', 'employee_id',
-                                 'applicant_id'):
-                        continue
-                    vals[fname] = line[fname]
-                vals['employee_id'] = employee.id
-                vals['applicant_id'] = False
-                new_line = line.copy(default=vals)
-                if 'attachment_ids' in line._fields:
-                    new_line.attachment_ids = [(6, 0, line.attachment_ids.ids)]
+                # CHỈ ĐỊNH NGHĨA NHỮNG TRƯỜNG CẦN THAY ĐỔI
+                # Odoo sẽ tự động copy các trường dữ liệu khác (như work_position, school, date...)
+                vals = {
+                    'employee_id': employee.id,
+                    'applicant_id': False,  # Ngắt liên kết với ứng viên ở dòng mới (nếu model có field này)
+                }
 
+                # Thực hiện copy
+                new_line = line.copy(default=vals)
+
+                # Xử lý riêng cho Many2many (Attachment) để đảm bảo copy đúng
+                if 'attachment_ids' in line._fields and line.attachment_ids:
+                    new_line.write({'attachment_ids': [(6, 0, line.attachment_ids.ids)]})
+
+            # Thực hiện copy cho từng bảng
         _copy_lines(self.certificate_ids)
         _copy_lines(self.training_ids)
         _copy_lines(self.experience_ids)
         _copy_lines(self.education_ids)
-
     # ======== Đồng bộ tổng (idempotent nhẹ bằng cờ) ========
     applicant_sync_done = fields.Boolean(string="Đã đồng bộ sang nhân viên", default=False)
 

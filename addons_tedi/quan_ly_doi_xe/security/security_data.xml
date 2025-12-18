@@ -1,0 +1,8 @@
+<odoo>
+    <data>
+        <function model="res.groups" name="write" context="{'lang': 'vi_VN'}">
+            <value eval="[ref('fleet.fleet_group_user')]"/>
+            <value eval="{'name': 'Tài xế'}"/>
+        </function>
+    </data>
+</odoo>

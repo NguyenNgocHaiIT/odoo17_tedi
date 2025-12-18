@@ -2,52 +2,45 @@
 <odoo>
   <data>
 
-    <!-- TREE: Kế hoạch đào tạo -->
     <record id="view_training_plan_tree" model="ir.ui.view">
         <field name="name">training.plan.tree</field>
         <field name="model">training.plan</field>
         <field name="arch" type="xml">
             <tree string="Kế hoạch đào tạo">
-                <field name="name" class="text-center"/>
-                <field name="survey_id" class="text-center"/>
-                <!-- Dùng open_date làm Ngày tạo -->
-                <field name="open_date" string="Ngày tạo" readonly="1" class="text-center"/>
+                <field name="name" class="text-start"/>
+                <field name="survey_id" class="text-start"/>
+                <field name="open_date" string="Ngày tạo" readonly="1" class="text-start"/>
                 <field name="student_count" class="text-center"/>
                 <field name="total_fee" class="text-center"/>
                 <field name="state"
                        widget="badge"
                        decoration-warning="state == 'pending'"
                        decoration-success="state == 'approved'"
-                       class="text-center"/>
+                       class="text-start"/>
             </tree>
         </field>
     </record>
 
-    <!-- FORM: Kế hoạch đào tạo -->
     <record id="view_training_plan_form" model="ir.ui.view">
       <field name="name">training.plan.form</field>
       <field name="model">training.plan</field>
       <field name="arch" type="xml">
         <form string="Kế hoạch đào tạo">
 
-            <!-- Field state ẩn để dùng statusbar -->
             <field name="state" invisible="1"/>
 
             <header>
-                <!-- Statusbar -->
                 <field name="state"
                        widget="statusbar"
                        statusbar_visible="draft,pending,approved"/>
 
-                <!-- Đăng ký: draft -> pending -->
                 <button name="action_submit"
                         type="object"
-                        string="Đăng ký"
+                        string="Trình duyệt"
                         class="btn-primary"
                         groups="hr_training_tedi.group_training_manager"
                         invisible="state != 'draft'"/>
 
-                <!-- Duyệt: pending -> approved -->
                 <button name="action_approve"
                         type="object"
                         string="Duyệt"
@@ -55,90 +48,75 @@
                         groups="hr_training_tedi.group_training_general_director"
                         invisible="state != 'pending'"/>
 
-                <!-- Từ chối: pending -> draft -->
                 <button name="action_reject"
                         type="object"
                         string="Từ chối"
                         class="btn-danger"
                         groups="hr_training_tedi.group_training_general_director"
                         invisible="state != 'pending'"/>
-
-                <!-- Tổng hợp từ đợt khảo sát -->
-<!--                <button name="action_generate_from_survey"-->
-<!--                        type="object"-->
-<!--                        string="Tổng hợp từ đợt khảo sát"-->
-<!--                        class="btn-secondary"-->
-<!--                        invisible="(not survey_id) or (state not in ('draft','approved'))"/>-->
             </header>
 
             <sheet>
-              <!-- Thông tin chung -->
               <group>
-                  <group  >
-                      <!-- KHÔNG dùng attrs nữa, chỉ field bình thường -->
-                      <field name="name" readonly="state == 'approved'"/>
-
+                  <group>
+                      <field name="name" readonly="state == 'approved'" class="text-start"/>
                       <field name="survey_id"
-                             domain="[('state','in',('in_process','end'))]" readonly="state == 'approved'"/>
-<!--                      <field name="survey_id"-->
-<!--                             domain="[('state','=','end')]"/>-->
+                             domain="[('state','in',('in_process','end'))]" readonly="state == 'approved'" class="text-start"/>
                   </group>
 
                   <group>
-                      <!-- Ngày tạo: readonly cứng -->
-                      <field name="open_date" string="Ngày tạo" readonly="1"/>
+                      <field name="open_date" string="Ngày tạo" readonly="1" class="text-start"/>
                   </group>
               </group>
 
-              <!-- Thống kê -->
               <group>
                   <group>
-                      <field name="student_count" readonly="1"/>
-                      <field name="total_fee" readonly="1"/>
+                      <field name="student_count" readonly="1" class="text-start"/>
+                      <field name="total_fee" readonly="1" class="text-start"/>
                   </group>
               </group>
 
               <notebook>
-                <!-- Tab: Chi tiết kế hoạch -->
                 <page string="Chi tiết kế hoạch">
-                  <!-- BỎ attrs, để Python chặn sửa -->
                  <field name="detail_ids" readonly="state == 'approved'">
                     <tree editable="bottom" string="Chi tiết kế hoạch">
+                        <field name="plan_state" column_invisible="True"/>
                         <button name="open_participants"
                                 type="object"
                                 string="Học viên"
                                 class="btn-link"
+                                invisible="plan_state != 'approved'"
                                 icon="fa-users"/>
 
-                        <field name="course_id" class="text-center"/>
-                        <field name="training_center" class="text-center"/>
-                        <field name="training_type" class="text-center"/>
-                        <field name="time_of_execution" class="text-center"/>
-                        <field name="start_date" class="text-center"/>
-                        <field name="end_date" class="text-center"/>
-                        <field name="training_location" class="text-center"/>
+                        <field name="course_id" class="text-start"/>
+                        <field name="training_center" class="text-start"/>
+                        <field name="training_type" class="text-start"/>
+                        <field name="time_of_execution" class="text-start"/>
+                        <field name="start_date" class="text-start"/>
+                        <field name="end_date" class="text-start"/>
+                        <field name="training_location" class="text-start"/>
                         <field name="training_fee_per_person" class="text-center"/>
                         <field name="training_total_fee" readonly="1" class="text-center"/>
-                        <field name="training_fee_source" class="text-center"/>
-                        <field name="note" class="text-center"/>
+                        <field name="training_fee_source" class="text-start"/>
+                        <field name="note" class="text-start"/>
                     </tree>
 
 
                     <form string="Chi tiết kế hoạch">
                       <group>
-                        <field name="course_id" class="text-center"/>
-                        <field name="training_center" class="text-center"/>
-                        <field name="training_type" class="text-center"/>
-                        <field name="time_of_execution" class="text-center"/>
-                        <field name="start_date" class="text-center"/>
-                        <field name="end_date" class="text-center"/>
-                        <field name="training_location" class="text-center"/>
+                        <field name="course_id" class="text-start"/>
+                        <field name="training_center" class="text-start"/>
+                        <field name="training_type" class="text-start"/>
+                        <field name="time_of_execution" class="text-start"/>
+                        <field name="start_date" class="text-start"/>
+                        <field name="end_date" class="text-start"/>
+                        <field name="training_location" class="text-start"/>
                       </group>
                       <group>
-                        <field name="training_fee_per_person" class="text-center"/>
-                        <field name="training_total_fee" readonly="1" class="text-center"/>
-                        <field name="training_fee_source" class="text-center"/>
-                        <field name="note" class="text-center"/>
+                        <field name="training_fee_per_person" class="text-start"/>
+                        <field name="training_total_fee" readonly="1" class="text-start"/>
+                        <field name="training_fee_source" class="text-start"/>
+                        <field name="note" class="text-start"/>
                       </group>
                     </form>
 
@@ -151,7 +129,6 @@
       </field>
     </record>
 
-    <!-- Action -->
     <record id="action_training_plan" model="ir.actions.act_window">
       <field name="name">Kế hoạch đào tạo</field>
       <field name="res_model">training.plan</field>

@@ -5,10 +5,18 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+# -*- coding: utf-8 -*-
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 class Calendar(models.Model):
     _inherit = 'calendar.event'
 
+    # --- 1. CÁC TRƯỜNG DỮ LIỆU ---
     lanh_dao = fields.Many2one("hr.employee", string="Lãnh đạo")
     don_vi = fields.Many2many(
         "hr.department",
@@ -16,16 +24,21 @@ class Calendar(models.Model):
         'calendar_event_id', 'department_id',
         string='Đơn vị đồng xử lý'
     )
+
+    # State mới có thêm 'pending'
     state = fields.Selection([
         ('draft', 'Nháp'),
-        ('approved', 'Đã duyệt'),
+        ('pending', 'Chờ duyệt'),
+        ('approved', 'Đã duyệt lịch'),
+        ('completed', 'Đã hoàn thành'),
         ('canceled', 'Đã hủy')
     ], string='Trạng thái', default='draft', tracking=True)
 
     room_sign = fields.Selection([
         ('no_sign', 'Chưa đăng ký'),
-        ('have_sign', 'Đã đăng ký')
-    ], string="Trạng thái đăng ký phòng", default='no_sign')
+        ('pending', 'Chờ duyệt phòng'),
+        ('have_sign', 'Đã duyệt phòng')
+    ], string="Trạng thái phòng", default='no_sign', tracking=True)
 
     room_materials = fields.Many2many(
         'room.materials',
@@ -33,16 +46,12 @@ class Calendar(models.Model):
         'calendar_event_id', 'room_materials_id',
         string='Thông tin khác'
     )
+
     chu_tri = fields.Many2one("hr.employee", string="Người chủ trì", default=lambda self: self._get_default_chu_tri())
-
     room = fields.Many2one('room.room', string='Phòng')
-
     calendar_label = fields.Char(string="Nhãn trên calendar", compute="_compute_calendar_label")
-
-    color = fields.Integer(string='Màu', default=lambda self: 0)
-
+    color = fields.Integer(string='Màu', default=0)
     start_stop = fields.Char(string="Thời gian", compute="_compute_start_stop")
-
     date_only = fields.Date(string="Ngày", compute='_compute_date_only', store=True)
 
     employee_ids = fields.Many2many(
@@ -53,8 +62,56 @@ class Calendar(models.Model):
         default=lambda self: self._get_default_employees(),
     )
 
+    # --- Fields phân quyền ---
+    can_approve_meeting = fields.Boolean(compute="_compute_permissions")
+    can_approve_room = fields.Boolean(compute="_compute_permissions")
+
+    # --- 2. LOGIC PHÂN QUYỀN (ĐÃ SỬA) ---
+    @api.depends_context('uid')
+    @api.depends('create_uid', 'room_sign', 'state')
+    def _compute_permissions(self):
+        current_user = self.env.user
+
+        # ID của Group
+        group_dept_manager = 'Quan_ly_lich_hop.group_calendar_department_manager'
+        group_room_manager = 'Quan_ly_lich_hop.group_meeting_room_manager'
+
+        is_admin = current_user.has_group('base.group_system')
+        is_dept_manager = current_user.has_group(group_dept_manager)
+        is_room_manager = current_user.has_group(group_room_manager)
+
+        # Lấy phòng ban hiện tại của user đang login
+        current_employee = self.env['hr.employee'].search([('user_id', '=', current_user.id)], limit=1)
+        current_dept = current_employee.department_id if current_employee else False
+
+        for rec in self:
+            # --- A. DUYỆT LỊCH HỌP ---
+            can_meeting = False
+
+            # Tìm phòng ban người tạo phiếu
+            creator_employee = self.env['hr.employee'].search([('user_id', '=', rec.create_uid.id)], limit=1)
+            creator_dept = creator_employee.department_id if creator_employee else False
+
+            # SỬA: Thêm "or is_room_manager" vào điều kiện cao nhất
+            # Nếu là Admin HOẶC Quản lý phòng họp -> Duyệt tất cả
+            if is_admin or is_room_manager:
+                can_meeting = True
+
+            # Nếu không phải cấp cao, mới xét đến cấp Quản lý đơn vị (check cùng phòng ban)
+            elif is_dept_manager:
+                if current_dept and creator_dept and current_dept.id == creator_dept.id:
+                    can_meeting = True
+
+            rec.can_approve_meeting = can_meeting
+
+            # --- B. DUYỆT PHÒNG (Giữ nguyên) ---
+            can_room = False
+            if (is_admin or is_room_manager) and rec.room_sign == 'pending':
+                can_room = True
+            rec.can_approve_room = can_room
+
+    # --- 3. CÁC HÀM COMPUTE & DEFAULT KHÁC ---
     def _get_default_chu_tri(self):
-        """Lấy employee của user hiện tại làm chủ trì mặc định"""
         if self.env.user.employee_ids:
             return self.env.user.employee_ids[0].id
         return False
@@ -73,55 +130,10 @@ class Calendar(models.Model):
                 rec.start_stop = ""
 
     def _get_default_employees(self):
-        """Lấy danh sách người tham gia mặc định (bao gồm chủ trì)"""
         participant_ids = []
-
-        # 1. Thêm chủ trì (employee của user hiện tại)
         if self.env.user.employee_ids:
-            chu_tri_id = self.env.user.employee_ids[0].id
-            participant_ids.append(chu_tri_id)
-
-        # TRẢ VỀ LIST OF INTEGERS
+            participant_ids.append(self.env.user.employee_ids[0].id)
         return participant_ids
-
-    @api.model
-    def create(self, vals):
-        if not vals.get('chu_tri') and self.env.user.employee_ids:
-            # Lấy employee từ user hiện tại
-            current_employee = self.env.user.employee_ids[0]
-            vals['chu_tri'] = current_employee.id
-
-        record = super().create(vals)
-
-        # Tạo màu
-        record.color = record.id % 12
-        return record
-
-    def write(self, vals):
-        # Lưu giá trị chu_tri cũ trước
-        old_chu_tri_ids = {rec.id: rec.chu_tri.id for rec in self}
-
-        res = super().write(vals)
-
-        if 'chu_tri' in vals:
-            for rec in self:
-                old_chu_tri_id = old_chu_tri_ids.get(rec.id)
-                new_chu_tri_id = rec.chu_tri.id  # giá trị mới sau write
-
-                # Lấy danh sách employee hiện tại
-                current_ids = rec.employee_ids.ids
-                new_employee_ids = current_ids.copy()
-
-                # Thay thế chủ trì cũ bằng chủ trì mới, hoặc thêm mới nếu chưa có
-                if old_chu_tri_id and old_chu_tri_id in new_employee_ids:
-                    new_employee_ids = [eid if eid != old_chu_tri_id else new_chu_tri_id for eid in new_employee_ids]
-                elif new_chu_tri_id not in new_employee_ids:
-                    new_employee_ids.append(new_chu_tri_id)
-
-                # Loại bỏ trùng
-                rec.employee_ids = [(6, 0, list(set(new_employee_ids)))]
-
-        return res
 
     @api.depends('start', 'name')
     def _compute_calendar_label(self):
@@ -129,10 +141,59 @@ class Calendar(models.Model):
             time_str = event.start.strftime("%H:%M") if event.start else ""
             event.calendar_label = f"{time_str} - {event.name or ''}"
 
-    @api.onchange
-    def approve(self):
-        """Duyệt cuộc họp, gửi notification chat + popup + email cho employee và manager các đơn vị tham gia"""
+    # --- 4. CRUD OVERRIDES ---
+    @api.model
+    def create(self, vals):
+        if not vals.get('chu_tri') and self.env.user.employee_ids:
+            vals['chu_tri'] = self.env.user.employee_ids[0].id
+        record = super().create(vals)
+        record.color = record.id % 12
+        return record
+
+    def write(self, vals):
+        old_chu_tri_ids = {rec.id: rec.chu_tri.id for rec in self}
+        res = super().write(vals)
+        if 'chu_tri' in vals:
+            for rec in self:
+                old_chu_tri_id = old_chu_tri_ids.get(rec.id)
+                new_chu_tri_id = rec.chu_tri.id
+                current_ids = rec.employee_ids.ids
+                new_employee_ids = current_ids.copy()
+                if old_chu_tri_id and old_chu_tri_id in new_employee_ids:
+                    new_employee_ids = [eid if eid != old_chu_tri_id else new_chu_tri_id for eid in new_employee_ids]
+                elif new_chu_tri_id not in new_employee_ids:
+                    new_employee_ids.append(new_chu_tri_id)
+                rec.employee_ids = [(6, 0, list(set(new_employee_ids)))]
+        return res
+
+    # --- 5. BUTTON ACTIONS ---
+    def action_complete(self):
+        """Chuyển trạng thái sang Hoàn thành (Dành cho Quản lý phòng)"""
         self.ensure_one()
+
+        # Kiểm tra quyền (Dù đã ẩn ở XML nhưng check thêm ở Python cho chắc)
+        if not self.env.user.has_group('Quan_ly_lich_hop.group_meeting_room_manager'):
+            raise UserError("Chỉ có Quản lý phòng họp mới được xác nhận hoàn thành.")
+
+        self.write({'state': 'completed'})
+
+    def action_send_request(self):
+        """Nhân viên gửi duyệt"""
+        self.ensure_one()
+        if self.state != 'draft':
+            raise UserError("Chỉ có thể gửi duyệt phiếu ở trạng thái Nháp.")
+        self.write({'state': 'pending'})
+
+    def action_cancel(self):
+        """Hủy phiếu"""
+        self.write({'state': 'canceled'})
+
+    def approve(self):
+        """Quản lý duyệt: Gửi thông báo và đổi trạng thái"""
+        self.ensure_one()
+        if not self.can_approve_meeting:
+            raise UserError("Bạn không có quyền duyệt nội dung lịch họp này (Khác phòng ban hoặc thiếu quyền).")
+
         odoobot = self.env.ref('base.user_root')
         odoobot_employee = self.env['hr.employee'].search([('user_id', '=', odoobot.id)], limit=1)
         web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
@@ -140,26 +201,23 @@ class Calendar(models.Model):
         # 1. Đánh dấu đã duyệt
         self.write({'state': 'approved'})
 
-        # 2. Lấy danh sách employee cần mời (người tham dự + lãnh đạo)
+        # 2. Lấy danh sách cần thông báo
         employee_ids = self.employee_ids.ids
         if self.lanh_dao:
             employee_ids.append(self.lanh_dao.id)
         employees = self.env['hr.employee'].browse(set(employee_ids))
 
-        # 3. Lấy các manager của các đơn vị tham gia
         manager_employees = self.env['hr.employee']
         for dept in self.don_vi:
             if dept.manager_id:
                 manager_employees |= dept.manager_id
 
-        # 4. Hàm tạo kênh chat 1-1 (dựa trên user của employee)
+        # Hàm helper tạo kênh chat
         def get_or_create_direct_chat(employee1, employee2):
             if not employee1.user_id or not employee2.user_id:
                 return None
-
             partner1 = employee1.user_id.partner_id
             partner2 = employee2.user_id.partner_id
-
             domain = [
                 ('channel_type', '=', 'chat'),
                 ('channel_member_ids.partner_id', 'in', [partner1.id, partner2.id])
@@ -178,108 +236,95 @@ class Calendar(models.Model):
                 ]
             })
 
-        # 5. Gửi notification popup + chat cho tất cả employees + managers
+        # Gửi notification
         all_notify_employees = employees | manager_employees
         for employee in all_notify_employees:
             if not employee.user_id:
                 continue
 
-            # Popup notification
+            # Popup
             self.env['bus.bus']._sendone(
                 employee.user_id.partner_id,
                 'simple_notification',
                 {
                     'title': '📅 Lời mời họp mới',
-                    'message': f"Bạn có lời mời tham dự cuộc họp: {self.name}" if employee in employees else
-                    f"Đơn vị của bạn đã được mời tham dự cuộc họp: {self.name}",
+                    'message': f"Bạn/Đơn vị được mời tham dự: {self.name}",
                     'sticky': False,
                     'type': 'info',
                 }
             )
 
-            # Chat HTML
+            # Chat
             time_str = f"{self.start.strftime('%H:%M %d/%m/%Y')} → {self.stop.strftime('%H:%M %d/%m/%Y')}" if self.start and self.stop else ""
             body_chat = f"""
                 <p>📅 Cuộc họp: <b>{self.name}</b></p>
                 <p>⏰ {time_str}</p>
                 <p>🏢 Phòng: {self.room.name if self.room else 'Chưa đăng ký'}</p>
-                <p>{'Bạn được mời tham dự.' if employee in employees else 'Đơn vị của bạn đã được mời tham dự.'}</p>
-                <p><a href="{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
-                      style="background:#28a745;color:blue;padding:6px 12px;border-radius:4px;text-decoration:none;">📨 Xem cuộc họp</a></p>
+                <p><a href="{web_url}/web#id={self.id}&model=calendar.event&view_type=form" 
+                      style="background:#28a745;color:white;padding:4px 8px;border-radius:4px;text-decoration:none;">📨 Xem chi tiết</a></p>
             """
             try:
                 if odoobot_employee and odoobot_employee.user_id:
                     channel = get_or_create_direct_chat(odoobot_employee, employee)
                     if channel:
                         channel.sudo().message_post(
-                            body=body_chat,
-                            message_type='comment',
-                            subtype_xmlid='mail.mt_comment',
-                            author_id=odoobot_employee.user_id.partner_id.id,
-                            body_is_html=True,
+                            body=body_chat, message_type='comment', subtype_xmlid='mail.mt_comment',
+                            author_id=odoobot_employee.user_id.partner_id.id, body_is_html=True
                         )
             except Exception as e:
-                _logger.error(f"Lỗi gửi chat cho {employee.name}: {str(e)}")
+                _logger.error(f"Lỗi gửi chat: {str(e)}")
 
-        # 6. Gửi email tới manager các đơn vị tham gia
+        # Gửi email manager
         for employee in manager_employees:
             if not employee.work_email:
                 continue
-
-            # Người tạo
             user_create = self.create_uid
-            dept_create = user_create.employee_ids.department_id.name if user_create.employee_ids else ''
-            contact_info = f"{user_create.email or ''} / {user_create.phone or ''}"
-
-            # Thành phần tham dự
-            don_vi_names = ", ".join(self.don_vi.mapped('name'))
-            time_str = f"{self.start.strftime('%H:%M %d/%m/%Y')} → {self.stop.strftime('%H:%M %d/%m/%Y')}" if self.start and self.stop else ""
-
-            # Link mở form cuộc họp
             event_url = f"{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
-
-            subject = f"Mời họp {self.name}"
+            subject = f"Mời họp: {self.name}"
             body_html = f"""
                 <p>Kính gửi {employee.name},</p>
-                <p>Phòng {dept_create} kính mời đơn vị tham dự cuộc họp <b>{self.name}</b> với nội dung chi tiết như sau:</p>
-                <p><b>Thời gian:</b> {time_str}</p>
-                <p><b>Thành phần tham dự:</b> {don_vi_names}</p>
-                <p><b>Nội dung:</b> {self.name or 'Chưa có nội dung'}</p>
-                <p>Anh/chị vui lòng thu xếp nhân sự, thời gian tham dự và chuẩn bị các nội dung liên quan (nếu có).</p>
-                <p>Anh/chị truy cập vào đường link dưới đây để xem và cập nhật thành phần tham dự cuộc họp:</p>
-                <p><a href="{event_url}">{event_url}</a></p>
-                <p>Trân trọng,<br/>
-                {user_create.name}<br/>
-                {dept_create}<br/>
-                {contact_info}</p>
+                <p>Đơn vị được mời tham dự cuộc họp <b>{self.name}</b>.</p>
+                <p>Thời gian: {time_str}</p>
+                <p><a href="{event_url}">Xem chi tiết</a></p>
             """
             self.env['mail.mail'].sudo().create({
-                'subject': subject,
-                'body_html': body_html,
-                'email_to': employee.work_email,
+                'subject': subject, 'body_html': body_html, 'email_to': employee.work_email
             }).send()
 
         return True
 
+    def action_approve_room(self):
+        self.ensure_one()
+        if not self.can_approve_room:
+            raise UserError("Bạn không có quyền duyệt phòng họp.")
+        self.write({'room_sign': 'have_sign'})
+        self.message_post(body="✅ Phòng họp đã được duyệt!", message_type='notification')
+
+    def action_reject_room(self):
+        self.ensure_one()
+        if not self.can_approve_room:
+            raise UserError("Bạn không có quyền từ chối phòng họp.")
+        self.write({'room_sign': 'no_sign', 'room': False})
+        self.message_post(body="❌ Yêu cầu phòng họp đã bị từ chối.", message_type='notification')
+
     def open_room_booking_wizard(self):
         self.ensure_one()
+        if self.state != 'approved':
+            raise UserError("Vui lòng đợi Lịch họp được duyệt trước khi đăng ký phòng!")
         if not self.start or not self.stop:
-            raise UserError("Vui lòng nhập thời gian bắt đầu và kết thúc trước khi đăng ký phòng.")
-
+            raise UserError("Vui lòng nhập thời gian bắt đầu và kết thúc.")
         return {
             'type': 'ir.actions.act_window',
             'name': 'Đăng ký phòng họp',
             'res_model': 'room.booking.wizard',
             'view_mode': 'form',
             'target': 'new',
-            'context': {
-                'default_event_id': self.id,
-            },
-            'views': [(False, 'form')],
+            'context': {'default_event_id': self.id},
         }
 
     @api.model
     def on_TV(self, *args, **kwargs):
+        # Code dashboard TV của bạn
         return {
             'type': 'ir.actions.act_window',
             'name': 'Dashboard hôm nay',
@@ -297,9 +342,7 @@ class Calendar(models.Model):
             'res_model': 'calendar.add.participants.wizard',
             'view_mode': 'form',
             'target': 'new',
-            'context': {
-                'default_event_id': self.id,
-            },
+            'context': {'default_event_id': self.id},
         }
 
 
@@ -386,7 +429,7 @@ class RoomBookingWizard(models.TransientModel):
 
         # Đăng ký thành công
         self.event_id.write({
-            'room_sign': 'have_sign',
+            'room_sign': 'pending',  # <--- Chờ duyệt
             'room': self.room_id.id,
         })
 

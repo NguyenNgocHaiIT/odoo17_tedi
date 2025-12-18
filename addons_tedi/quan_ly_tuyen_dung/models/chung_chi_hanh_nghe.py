@@ -1,5 +1,6 @@
 from odoo import api, fields, models, _
 
+
 class HREmployeeCertificate(models.Model):
     _inherit = "hr.employee.certificate"
 
@@ -13,8 +14,17 @@ class HREmployeeCertificate(models.Model):
             if not parent:
                 rec.stt = 0
                 continue
+
+            # Lấy danh sách lines tương ứng
             lines = parent.certificate_ids
-            rec.stt = list(lines).index(rec) + 1
+
+            try:
+                # Cố gắng tìm vị trí của rec trong lines
+                rec.stt = list(lines).index(rec) + 1
+            except ValueError:
+                # Nếu rec chưa có trong danh sách (lỗi đang gặp), gán tạm STT bằng độ dài list + 1
+                rec.stt = len(lines) + 1
+
 
 class HREmployeeTraining(models.Model):
     _inherit = "hr.employee.training"
@@ -29,8 +39,13 @@ class HREmployeeTraining(models.Model):
             if not parent:
                 rec.stt = 0
                 continue
+
             lines = parent.training_ids
-            rec.stt = list(lines).index(rec) + 1
+
+            try:
+                rec.stt = list(lines).index(rec) + 1
+            except ValueError:
+                rec.stt = len(lines) + 1
 
 
 class HREmployeeWorkProcessOld(models.Model):
@@ -46,9 +61,13 @@ class HREmployeeWorkProcessOld(models.Model):
             if not parent:
                 rec.stt = 0
                 continue
-            lines = parent.experience_ids
-            rec.stt = list(lines).index(rec) + 1
 
+            lines = parent.experience_ids
+
+            try:
+                rec.stt = list(lines).index(rec) + 1
+            except ValueError:
+                rec.stt = len(lines) + 1
 
 
 class HREmployeeEducation(models.Model):
@@ -60,11 +79,14 @@ class HREmployeeEducation(models.Model):
     @api.depends('employee_id.education_ids', 'applicant_id.education_ids')
     def _compute_stt(self):
         for rec in self:
-            # Xác định cha là employee hay applicant
             parent = rec.employee_id or rec.applicant_id
             if not parent:
                 rec.stt = 0
                 continue
-            # Lấy danh sách đúng
+
             lines = parent.education_ids
-            rec.stt = list(lines).index(rec) + 1
+
+            try:
+                rec.stt = list(lines).index(rec) + 1
+            except ValueError:
+                rec.stt = len(lines) + 1

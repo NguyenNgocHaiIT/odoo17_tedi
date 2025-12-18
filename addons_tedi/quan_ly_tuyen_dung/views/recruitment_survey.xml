@@ -5,19 +5,19 @@
         <field name="name">recruitment_survey_tree</field>
         <field name="model">recruitment.survey</field>
         <field name="arch" type="xml">
-            <tree string="Khảo sát nhu cầu đào tạo">
-                <field name="name" string="Tên đợt khảo sát" class="text-center"/>
-                <field name="create_date" string="Ngày tạo" class="text-center"/>
-                <field name="start_date" string="Từ ngày" class="text-center"/>
-                <field name="end_date" string="Đến ngày" class="text-center"/>
-                <field name="user_id" string="Người tạo" class="text-center"/>
+            <tree string="Khảo sát nhu cầu tuyển dụng">
+                <field name="name" string="Tên đợt khảo sát" class="text-start"/>
+                <field name="create_date" string="Ngày tạo" class="text-start"/>
+                <field name="start_date" string="Từ ngày" class="text-start"/>
+                <field name="end_date" string="Đến ngày" class="text-start"/>
+                <field name="user_id" string="Người tạo" class="text-start"/>
                 <field name="state"
                        string="Trạng thái"
                        widget="badge"
                        decoration-danger="state == 'draft'"
                        decoration-warning="state == 'in_process'"
                        decoration-success="state == 'end'"
-                       class="text-center"/>
+                       class="text-start"/>
             </tree>
         </field>
     </record>
@@ -27,7 +27,7 @@
         <field name="name">recruitment_survey_form</field>
         <field name="model">recruitment.survey</field>
         <field name="arch" type="xml">
-            <form string="Khảo sát nhu cầu đào tạo">
+            <form string="Khảo sát nhu cầu tuyển dụng">
                 <!-- state ẩn để dùng cho statusbar -->
                 <field name="state" invisible="1"/>
 
@@ -87,7 +87,7 @@
 
     <!-- ACTION: GẮN SẴN TREE + FORM -->
     <record id="action_recruitment_survey" model="ir.actions.act_window">
-        <field name="name">Khảo sát nhu cầu đào tạo</field>
+        <field name="name">Khảo sát nhu cầu tuyển dụng</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">recruitment.survey</field>
         <field name="view_mode">tree,form</field>
