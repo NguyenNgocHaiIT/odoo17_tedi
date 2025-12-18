@@ -1,31 +1,36 @@
 .soft-green-row {
-    background-color: #d4edda !important;   /* xanh lá pastel */
-    color: black !important;              /* chữ xanh đậm */
+    color: green !important;
 }
 
 .soft-yellow-row {
-    background-color: #fff3cd !important;   /* vàng pastel */
-    color: black !important;              /* chữ vàng đậm */
+    color: #f1c40f !important;
 }
 
 .soft-red-row {
-    background-color: #F08080 !important;
-    color: black !important;
+    color: red !important;
 }
 
 /* Độ đặc hiệu cao hơn để ghi đè */
 body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row:hover {
     background-color: inherit !important;
-    color: inherit !important;
 }
 
-/* Định nghĩa màu khi hover (tối hơn) */
-body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-green-row:hover {
-    background-color: #b8d9c4 !important; /* Tối hơn 15% */
+/* GREEN */
+body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-green-row:hover td {
+    color: green !important;
 }
-body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-yellow-row:hover {
-    background-color: #f0e0b8 !important; /* Tối hơn 15% */
+
+/* YELLOW */
+body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-yellow-row:hover td {
+    color: #f1c40f !important;
 }
-body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-red-row:hover {
-    background-color: #d87070 !important; /* Tối hơn 15% */
+
+/* RED */
+body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-red-row:hover td {
+    color: red !important;
+}
+
+body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row{
+    font-weight: 600;
+    font-size: 15px;
 }

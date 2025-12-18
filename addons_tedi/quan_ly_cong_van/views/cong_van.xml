@@ -13,7 +13,11 @@
                     <field name="trich_yeu"/>
                     <field name="but_phe"/>
                     <field name="dv_xu_ly_chinh" />
-                    <field name="tt_vb" />
+                    <field name="tt_vb" widget="badge"
+                           decoration-success="tt_vb in ('phat_hanh', 'cho_xu_ly')"
+                           decoration-warning="tt_vb in ('cho_duyet', 'da_duyet')"
+                           decoration-info="tt_vb in ('cho_phan_phat', 'huy')"
+                           decoration-danger="tt_vb in ('cho_but_phe')"/>
                 </tree>
             </field>
         </record>
@@ -214,7 +218,11 @@
                     <field name="trich_yeu"/>
                     <field name="but_phe"/>
                     <field name="don_vi_ban_hanh"/>
-                    <field name="tt_vb"/>
+                    <field name="tt_vb" widget="badge"
+                           decoration-success="tt_vb in ('phat_hanh', 'cho_xu_ly')"
+                           decoration-warning="tt_vb in ('cho_duyet', 'da_duyet')"
+                           decoration-info="tt_vb in ('cho_phan_phat', 'huy')"
+                           decoration-danger="tt_vb in ('cho_but_phe')"/>
                 </tree>
             </field>
         </record>
@@ -414,7 +422,11 @@
                     <field name="trich_yeu"/>
                     <field name="but_phe"/>
                     <field name="don_vi_ban_hanh"/>
-                    <field name="tt_vb"/>
+                    <field name="tt_vb" widget="badge"
+                           decoration-success="tt_vb in ('phat_hanh', 'cho_xu_ly')"
+                           decoration-warning="tt_vb in ('cho_duyet', 'da_duyet')"
+                           decoration-info="tt_vb in ('cho_phan_phat', 'huy')"
+                           decoration-danger="tt_vb in ('cho_but_phe')"/>
                 </tree>
             </field>
         </record>
