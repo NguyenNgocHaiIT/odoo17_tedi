@@ -3,7 +3,7 @@ from odoo.exceptions import UserError
 from datetime import timedelta
 import logging
 
-_logger = logging.getLogger(__name__)
+
 
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
@@ -17,7 +17,12 @@ class Calendar(models.Model):
     _inherit = 'calendar.event'
 
     # --- 1. CÁC TRƯỜNG DỮ LIỆU ---
-    lanh_dao = fields.Many2one("hr.employee", string="Lãnh đạo")
+    lanh_dao = fields.Many2many(
+        "hr.employee",
+        'calendar_lanh_dao_rel',
+        'calendar_event_id','employee_id',
+        string="Lãnh đạo"
+    )
     don_vi = fields.Many2many(
         "hr.department",
         'calendar_don_vi_tham_gia_rel',
@@ -59,7 +64,7 @@ class Calendar(models.Model):
         'calendar_event_employee_rel',
         'event_id', 'employee_id',
         string='Người tham gia',
-        default=lambda self: self._get_default_employees(),
+        # default=lambda self: self._get_default_employees(),
     )
 
     # --- Fields phân quyền ---
@@ -168,14 +173,46 @@ class Calendar(models.Model):
 
     # --- 5. BUTTON ACTIONS ---
     def action_complete(self):
-        """Chuyển trạng thái sang Hoàn thành (Dành cho Quản lý phòng)"""
+        """
+        Chuyển trạng thái sang Hoàn thành.
+        - Cho phép: Quản lý phòng họp HOẶC Người tạo phiếu (create_uid).
+        - Nếu kết thúc sớm: Cập nhật lại thời gian kết thúc thực tế để giải phóng phòng (tùy chọn).
+        """
         self.ensure_one()
 
-        # Kiểm tra quyền (Dù đã ẩn ở XML nhưng check thêm ở Python cho chắc)
-        if not self.env.user.has_group('Quan_ly_lich_hop.group_meeting_room_manager'):
-            raise UserError("Chỉ có Quản lý phòng họp mới được xác nhận hoàn thành.")
+        # 1. Check quyền: Là quản lý HOẶC là người tạo ra phiếu này
+        is_manager = self.env.user.has_group('Quan_ly_lich_hop.group_meeting_room_manager')
 
-        self.write({'state': 'completed'})
+
+        if not (is_manager):
+            raise UserError("Bạn không có quyền xác nhận hoàn thành (Chỉ Người đăng ký hoặc Quản lý).")
+
+        # 2. Xử lý logic
+        vals = {'state': 'completed'}
+
+        # (Tùy chọn) Nếu muốn giải phóng phòng ngay lập tức trên Calendar khi kết thúc sớm:
+        # Nếu thời gian hiện tại < thời gian kết thúc dự kiến -> cập nhật stop = hiện tại
+        if fields.Datetime.now() < self.stop:
+            vals['stop'] = fields.Datetime.now()
+
+        self.write(vals)
+
+    @api.model
+    def _cron_auto_complete_meetings(self):
+        """
+        Hàm được gọi bởi Cron job.
+        Tìm các cuộc họp đang 'approved' mà thời gian kết thúc < hiện tại -> chuyển 'completed'.
+        """
+        now = fields.Datetime.now()
+        # Tìm các bản ghi: Trạng thái Approved VÀ Thời gian kết thúc đã qua
+        expired_meetings = self.search([
+            ('state', '=', 'approved'),
+            ('stop', '<', now)
+        ])
+
+        if expired_meetings:
+            _logger.info(f"Cron Job: Auto completing {len(expired_meetings)} meetings.")
+            expired_meetings.write({'state': 'completed'})
 
     def action_send_request(self):
         """Nhân viên gửi duyệt"""
