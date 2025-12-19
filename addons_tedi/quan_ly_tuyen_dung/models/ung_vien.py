@@ -126,6 +126,9 @@ class Applicant(models.Model):
     education_ids = fields.One2many(
         "hr.employee.education", "applicant_id", string="Trình độ học vấn (ứng viên)"
     )
+    external_experience_ids = fields.One2many(
+        "hr.external.experience", "applicant_id", string="Kinh nghiệm Bên ngoài"
+    )
     descriptions = fields.Text(string="Đánh giá sau phỏng vấn")
 
     # Đánh giá sau phỏng vấn
@@ -514,6 +517,8 @@ class Applicant(models.Model):
         _copy_lines(self.training_ids)
         _copy_lines(self.experience_ids)
         _copy_lines(self.education_ids)
+        _copy_lines(self.external_experience_ids)
+
     # ======== Đồng bộ tổng (idempotent nhẹ bằng cờ) ========
     applicant_sync_done = fields.Boolean(string="Đã đồng bộ sang nhân viên", default=False)
 

@@ -256,5 +256,5 @@ class HrLeave(models.Model):
                 ]
                 rec.my_history_ids = self.env['hr.leave'].search(domain, order='create_date desc', limit=10)
             else:
-                rec.my_history_ids = False
+                rec.my_history_ids = Falsea
 

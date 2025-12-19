@@ -8,7 +8,8 @@
                 <calendar string="Lịch họp" date_start="start" date_stop="stop" color="color">
                     <field name="name" string="Nội dung"/>
                     <field name="chu_tri" string="Người chủ trì"/>
-                    <field name="employee_ids" widget="many2many_tags" string="Người tham gia"/>
+<!--                    <field name="employee_ids" widget="many2many_tags" string="Người tham gia"/>-->
+                    <field name="don_vi" string="Đơn vị"/>
                 </calendar>
             </field>
         </record>
@@ -100,7 +101,7 @@
 
                             <group>
                                 <field name="chu_tri" string="Người chủ trì"/>
-                                <field name="lanh_dao" string="Lãnh đạo" />
+                                <field name="lanh_dao" string="Lãnh đạo" widget="many2many_tags" />
                                 <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia"/>
                                 <field name="employee_ids" widget="many2many_tags"
                                        string="Người tham gia"

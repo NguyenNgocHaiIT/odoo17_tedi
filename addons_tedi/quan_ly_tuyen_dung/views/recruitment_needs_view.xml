@@ -7,7 +7,7 @@
             <field name="name">recruitment.needs.tree</field>
             <field name="model">recruitment.needs</field>
             <field name="arch" type="xml">
-                <tree string="Nhu cầu tuyển dụng">
+                <tree string="Đăng ký nhu cầu">
                     <field name="name" string="Đợt khảo sát" class="text-start"/>
                     <field name="create_date" string="Ngày đăng ký" class="text-start"/>
                     <field name="department_id" string="Phòng ban đăng ký" class="text-start"/>
@@ -26,7 +26,7 @@
         <field name="name">recruitment.needs.form</field>
         <field name="model">recruitment.needs</field>
         <field name="arch" type="xml">
-            <form string="Nhu cầu tuyển dụng">
+            <form string="Đăng ký nhu cầu">
                 <header>
                     <!-- ĐĂNG KÝ (draft -> pending) -->
                     <button name="action_approve"
@@ -82,7 +82,7 @@
 
         <!-- ACTION -->
         <record id="action_recruitment_needs" model="ir.actions.act_window">
-            <field name="name">Nhu cầu tuyển dụng</field>
+            <field name="name">Đăng ký nhu cầu</field>
             <field name="res_model">recruitment.needs</field>
             <field name="view_mode">tree,form</field>
             <field name="view_ids" eval="[

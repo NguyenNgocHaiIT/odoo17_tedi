@@ -80,10 +80,37 @@ class HrEmployeePrivate(models.Model):
     union_join_date = fields.Date(string="Ngày vào Công đoàn")
     union_profile_no = fields.Char(string="Số lý lịch Công đoàn")
     union_card_no = fields.Char(string="Số thẻ Công đoàn")
+    union_title_id = fields.Many2one("hr.union.title", string="Chức danh Công đoàn")
 
     youth_member = fields.Boolean(string="Đoàn thanh niên?")
     youth_join_date = fields.Date(string="Ngày vào Đoàn")
     youth_card_no = fields.Char(string="Số thẻ Đoàn")
+    youth_title_id = fields.Many2one("hr.youth.union.title", string="Chức danh Đoàn")
+
+    # ==== Quân ngũ ====
+    is_military = fields.Boolean(string="Đã tham gia quân ngũ?")
+    military_start_date = fields.Date(string="Ngày nhập ngũ")
+    military_end_date = fields.Date(string="Ngày xuất ngũ")
+    military_rank_id = fields.Many2one(
+        'hr.military.rank',
+        string="Chức danh/Cấp bậc"
+    )
+
+    # ==== Thuong binh ====
+    is_policy_beneficiary = fields.Boolean(string="Thuộc diện chính sách?")
+    policy_type = fields.Selection([
+        ('wounded', 'Thương binh'),  # Là thương binh
+        ('sick', 'Bệnh binh'),  # Là bệnh binh
+        ('martyr_family', 'Thân nhân Liệt sĩ')  # Quan hệ với liệt sĩ
+    ], string="Loại đối tượng")
+
+    policy_rank = fields.Char(string="Hạng (Thương/Bệnh binh)", help="Ví dụ: 1/4, 2/4...")
+    # Dành cho thân nhân liệt sĩ
+    policy_martyr_relation = fields.Char(string="Quan hệ với Liệt sĩ", help="Ví dụ: Con đẻ, Vợ/Chồng...")
+    # Thông tin chung về giấy tờ
+    policy_card_no = fields.Char(string="Số thẻ Thương/Bệnh binh/Liệt sĩ")
+    policy_issue_date = fields.Date(string="Ngày cấp thẻ")
+    policy_issue_place = fields.Char(string="Nơi cấp")
 
     # ==== Mã nhân viên ====
     employee_code = fields.Char(string="Employee Code", readonly=False, copy=False)

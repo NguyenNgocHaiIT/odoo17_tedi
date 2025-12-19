@@ -8,6 +8,8 @@
     'icon': '/Quan_ly_lich_hop/static/description/icon.png',
 	'depends': [ 'base', 'mail', 'hr', 'project', 'web', 'calendar'],
 	'data': [
+        'data/cron_data.xml',
+
         'security/security_data.xml',
 		'security/ir.model.access.csv',
 		'views/lich_hop_views.xml',

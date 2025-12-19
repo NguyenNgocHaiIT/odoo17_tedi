@@ -99,7 +99,7 @@
 
                             <group>
                                 <field name="chu_tri" string="Người chủ trì" readonly="state == 'completed'"/>
-                                <field name="lanh_dao" string="Lãnh đạo" readonly="state == 'completed'"/>
+                                <field name="lanh_dao" string="Lãnh đạo" readonly="state == 'completed'" widget="many2many_tags"/>
                                 <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia" readonly="state == 'completed'"/>
                                 <field name="employee_ids" widget="many2many_tags" string="Người tham gia" readonly="state == 'completed'"/>
                             </group>
