@@ -64,7 +64,7 @@
                   name="Tất cả đơn nghỉ phép"
                   parent="menu_tedi_request_root"
                   action="hr_holidays.hr_leave_action_action_approve_department"
-                  groups="hr_holidays.group_hr_holidays_user"
+                  groups="hr_attendance_tedi.group_time_off_unit_manager"
                   sequence="2"/>
 
 <!--        <menuitem id="menu_tedi_attendance_import"-->

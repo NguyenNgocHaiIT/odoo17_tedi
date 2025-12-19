@@ -8,7 +8,8 @@ PARTICIPANT         = "hr_training_tedi.group_training_participant"
 UNIT_MANAGER        = "hr_training_tedi.group_training_unit_manager"
 GENERAL_DIRECTOR    = "hr_training_tedi.group_training_general_director"
 BASE                = "base.group_user"
-
+import logging
+_logger = logging.getLogger(__name__)
 class TrainingNeedsSurvey(models.Model):
     _name = 'training.needs.survey'
     _description = 'Training Needs Survey'
@@ -149,19 +150,39 @@ class TrainingNeedsSurvey(models.Model):
     # ----------------------------------------------------
     @api.model
     def _cron_update_survey_states(self):
-        # Cron job chạy bằng quyền hệ thống (SUPERUSER) nên không cần check quyền
-        today = fields.Date.context_today(self)
+        # 1. Log ra terminal để biết cron đã được gọi
+        _logger.info("============== START CRON: UPDATE SURVEY STATES ==============")
 
-        surveys_to_start = self.search([
+        # 2. Lấy ngày hôm nay
+        today = fields.Date.context_today(self)
+        _logger.info(f"Check Date: {today}")
+
+        # 3. Logic 1: Confirmed -> In Process
+        # Dùng sudo() để đảm bảo tìm thấy tất cả bản ghi bất chấp quyền
+        surveys_to_start = self.sudo().search([
             ('state', '=', 'confirmed'),
             ('start_date', '!=', False),
             ('start_date', '<=', today),
         ])
-        surveys_to_start.write({'state': 'in_process'})
 
-        surveys_to_end = self.search([
+        if surveys_to_start:
+            _logger.info(f"Starting {len(surveys_to_start)} surveys: {surveys_to_start.ids}")
+            surveys_to_start.write({'state': 'in_process'})
+        else:
+            _logger.info("No surveys to start.")
+
+        # 4. Logic 2: In Process -> End
+        # Lưu ý: end_date < today nghĩa là ngày kết thúc LÀ HÔM QUA
+        surveys_to_end = self.sudo().search([
             ('state', '=', 'in_process'),
             ('end_date', '!=', False),
             ('end_date', '<', today),
         ])
-        surveys_to_end.write({'state': 'end'})
+
+        if surveys_to_end:
+            _logger.info(f"Ending {len(surveys_to_end)} surveys: {surveys_to_end.ids}")
+            surveys_to_end.write({'state': 'end'})
+        else:
+            _logger.info("No surveys to end.")
+
+        _logger.info("============== END CRON ==============")

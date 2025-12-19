@@ -7,14 +7,15 @@ import { useState, onWillRender } from "@odoo/owl";
 
 export class MonthPickerField extends DateTimeField {
     setup() {
-        // Giữ nguyên phần setup đã chạy tốt của bạn
+        // KHÔNG gọi super.setup() vì nó sẽ khởi tạo hook mặc định chọn ngày
+
         const getPickerProps = () => {
             const value = this.getRecordValue();
             return {
                 value,
                 type: this.field.type,
                 range: this.isRange(value),
-                minPrecision: "months",
+                minPrecision: "months", // Ép buộc mức tối thiểu là tháng
                 maxPrecision: "decades",
             };
         };
@@ -42,25 +43,20 @@ export class MonthPickerField extends DateTimeField {
 
         this.state = useState(dateTimePicker.state);
         this.openPicker = dateTimePicker.open;
+
+        // Đảm bảo vẫn đăng ký sự kiện kiểm tra thay đổi dữ liệu (Dirty check)
         onWillRender(() => this.triggerIsDirty());
     }
 
-    /**
-     * Ghi đè hàm hiển thị để định dạng lại chuỗi Tháng/Năm
-     * @override
-     */
     getFormattedValue(valueIndex) {
         const value = this.values[valueIndex];
-        if (value) {
-            // Trả về định dạng Tháng/Năm (ví dụ: 12/2025)
-            // Lưu ý: value ở đây là đối tượng DateTime của luxon
+        if (value && value.isValid) {
             return value.toFormat("MM/yyyy");
         }
         return "";
     }
 }
 
-// Đăng ký widget
 registry.category("fields").add("month_picker", {
     ...dateField,
     component: MonthPickerField,

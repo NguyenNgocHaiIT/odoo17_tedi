@@ -5,7 +5,7 @@
     'category': 'TEDI/Quản lý nhân viên',
     'author': 'Phạm Hải Huy',
     'website': 'https://yourcompany.com',
-    'depends': ['hr', 'base','hr_skills','hr_contract'],  # thêm 'base' cho chắc chắn khi có model/attachment
+    'depends': ['hr', 'base','web','hr_skills','hr_contract'],  # thêm 'base' cho chắc chắn khi có model/attachment
     'data': [
         "security/ir.model.access.csv",
         "views/employee_education_views.xml",
@@ -18,6 +18,11 @@
 
         "views/hr_training_field_view.xml"
     ],
+    'assets': {
+        'web.assets_backend': [
+            'hr_tedi/static/src/js/month_year_widget.js',
+        ],
+    },
     'installable': True,
     'application': True,
 }

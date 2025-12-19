@@ -90,3 +90,26 @@ class HREmployeeEducation(models.Model):
                 rec.stt = list(lines).index(rec) + 1
             except ValueError:
                 rec.stt = len(lines) + 1
+
+class HrExternalExperience(models.Model):
+    _inherit = "hr.external.experience"
+
+    applicant_id = fields.Many2one("hr.applicant", ondelete="cascade")
+    employee_id = fields.Many2one("hr.employee", required=False)
+
+    @api.depends('employee_id.external_experience_ids', 'applicant_id.external_experience_ids')
+    def _compute_stt(self):
+        for rec in self:
+            parent = rec.employee_id or rec.applicant_id
+            if not parent:
+                rec.stt = 0
+                continue
+
+            lines = parent.external_experience_ids
+
+            try:
+                rec.stt = list(lines).index(rec) + 1
+            except ValueError:
+                rec.stt = len(lines) + 1
+
+# hr.external.experience

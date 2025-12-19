@@ -2,13 +2,12 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, AccessError
 from datetime import datetime, date
 
+# Định nghĩa các nhóm quyền
 HR_OFFICER = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
 COMMITTEE = 'quan_ly_tuyen_dung.group_recruitment_committee'
 DIRECTOR = 'quan_ly_tuyen_dung.group_recruitment_director'
 BOARD = 'quan_ly_tuyen_dung.group_recruitment_board'
 BASE = 'base.group_user'
-
-COMPLETE_EDITORS = {HR_OFFICER, COMMITTEE, DIRECTOR, BOARD}
 
 
 class RecruitmentPlan(models.Model):
@@ -18,6 +17,7 @@ class RecruitmentPlan(models.Model):
     _order = "sequence"
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
+    # --- CÁC FIELD CƠ BẢN ---
     sequence = fields.Integer(string="STT sắp xếp", default=10)
     stt = fields.Integer(string="STT", compute="_compute_stt", store=False, readonly=True)
 
@@ -25,16 +25,25 @@ class RecruitmentPlan(models.Model):
         string="Số kế hoạch", required=True, readonly=True, copy=False,
         default=lambda self: _('New'), tracking=True
     )
-    plan_execute_date = fields.Date(string="Ngày thực hiện", tracking=True, default=fields.Date.today,)
+    plan_execute_date = fields.Date(string="Ngày thực hiện", tracking=True, default=fields.Date.today)
+    @api.constrains('plan_execute_date')
+    def _check_plan_execute_date(self):
+        for rec in self:
+            # Nếu có chọn ngày VÀ ngày đó nhỏ hơn ngày hiện tại
+            if rec.plan_execute_date and rec.plan_execute_date < fields.Date.context_today(rec):
+                raise ValidationError("Ngày thực hiện không được nhỏ hơn ngày hiện tại!")
+
     plan_name = fields.Char(string="Tên kế hoạch", tracking=True)
+
     people_suggestion = fields.Many2one(
         "hr.employee",
         string="Người đề nghị",
         ondelete="set null",
-        default=lambda self: self.env.user.employee_id.id,)
+        default=lambda self: self.env.user.employee_id.id
+    )
     plan_purpose = fields.Char(string="Mục đích")
 
-    # --- FIELD MỚI: CHỌN ĐỢT KHẢO SÁT ---
+    # Field chọn đợt khảo sát
     survey_id = fields.Many2one(
         'recruitment.survey',
         string="Đợt khảo sát",
@@ -52,63 +61,51 @@ class RecruitmentPlan(models.Model):
     currency_id = fields.Many2one("res.currency", string="Tiền tệ",
                                   default=lambda self: self.env.ref("base.VND"), readonly=True)
 
+    # --- TRẠNG THÁI (ĐÃ CẬP NHẬT THEO LUỒNG MỚI) ---
     recruitment_status = fields.Selection([
-        ("draft", "Dự thảo"),
-        ("board_approve", "HĐQT duyệt"),
-        ("director_approve", "GD/PGD duyệt"),
-        ("approved","Đã duyệt"),
-        ("complete", "Hoàn thành"),
+        ("draft", "Dự thảo"),  # Committee tạo
+        ("director_approve", "GD duyệt"),  # Chờ GD duyệt
+        ("board_approve", "HĐQT duyệt"),  # Chờ HĐQT duyệt
+        ("approved", "Đã duyệt"),  # HĐQT xong -> Chờ GD bắt đầu
+        ("in_process","Đang triển khai"),
+        ("complete", "Hoàn thành"),  # Committee kết thúc
     ], string="Trạng thái", default="draft", index=True, required=True, tracking=True)
 
-    is_applied_to_jobs = fields.Boolean(string="Đã áp dụng sang Job", default=False, readonly=True)
+    is_applied_to_jobs = fields.Boolean(string="Đã triển khai (Update Job)", default=False, readonly=True)
+
     department_responsible = fields.Many2one(
         "hr.department",
         string="Phòng ban phụ trách",
         ondelete="set null",
-        default=lambda self: self.env.user.employee_id.department_id.id,)
+        default=lambda self: self.env.user.employee_id.department_id.id
+    )
 
     recruitment_plan_detail_ids = fields.One2many(
         "recruitment.plan.detail", "plan_id", string="Thông tin chi tiết"
     )
 
-    # ----------------- TỔNG HỢP NHU CẦU (LOGIC CHÍNH) -----------------
+    # ----------------- LOGIC TỰ ĐỘNG LẤY DỮ LIỆU TỪ KHẢO SÁT -----------------
     @api.onchange('survey_id')
     def _onchange_survey_id(self):
-        """
-        Khi chọn Đợt khảo sát:
-        1. Tìm các phiếu Nhu cầu (recruitment.needs) thuộc đợt này & đã Confirmed.
-        2. Duyệt qua từng dòng chi tiết của từng phiếu.
-        3. Đẩy thẳng vào recruitment_plan_detail_ids (KHÔNG cộng dồn/gom nhóm).
-        """
         if not self.survey_id:
             return
 
-        # 1. Tìm các phiếu nhu cầu hợp lệ
+        # Tìm các phiếu nhu cầu đã Confirm thuộc đợt khảo sát này
         needs = self.env['recruitment.needs'].search([
             ('name', '=', self.survey_id.id),
             ('state', '=', 'confirmed')
         ])
 
-        # Xóa dữ liệu cũ trên giao diện trước khi load mới
-        # (Lệnh (5, 0, 0) xóa sạch các dòng trong One2many)
         if not needs:
             self.recruitment_plan_detail_ids = [(5, 0, 0)]
             return
 
         new_lines = []
-
-        # 2. Duyệt qua từng phiếu nhu cầu
         for need in needs:
             dept = need.department_id
-            if not dept:
-                continue
-
-            # 3. Duyệt qua từng dòng chi tiết trong phiếu (Line)
+            if not dept: continue
             for line in need.line_ids:
-                if not line.job_id:
-                    continue
-
-                # Tạo dòng dữ liệu tương ứng 1-1
+                if not line.job_id: continue
                 val = {
                     'department_request': dept.id,
                     'recruitment_job': line.job_id.id,
@@ -117,47 +114,44 @@ class RecruitmentPlan(models.Model):
                     'professional_qualification': line.professional_qualification,
                     'note': line.note or '',
                 }
-
-                # Thêm vào danh sách lệnh tạo mới (0, 0, {values})
                 new_lines.append((0, 0, val))
 
-        # 4. Cập nhật vào One2many
-        # [(5, 0, 0)] để xóa dòng cũ, sau đó nối với danh sách dòng mới
+        # Xóa cũ và thêm mới
         self.recruitment_plan_detail_ids = [(5, 0, 0)] + new_lines
 
-    # ----------------- Quyền cơ bản -----------------
+    # ----------------- KIỂM TRA QUYỀN (HELPER) -----------------
     def _check_committee(self):
         if not self.env.user.has_group(COMMITTEE):
-            raise AccessError(_("Chỉ Ủy ban mới được thực hiện thao tác này."))
+            raise AccessError(_("Chỉ Ủy ban (Committee) mới được thực hiện thao tác này."))
 
     def _check_board(self):
         if not self.env.user.has_group(BOARD):
-            raise AccessError(_("Chỉ HĐQT mới được thực hiện thao tác này."))
+            raise AccessError(_("Chỉ HĐQT (Board) mới được thực hiện thao tác này."))
 
     def _check_director(self):
         if not self.env.user.has_group(DIRECTOR):
-            raise AccessError(_("Chỉ Giám đốc mới được thực hiện thao tác này."))
+            raise AccessError(_("Chỉ Giám đốc (Director) mới được thực hiện thao tác này."))
 
-    # ----------------- Edit rules -----------------
+    # ----------------- QUYỀN SỬA ĐỔI (EDIT RULES) -----------------
     def _can_edit_plan_in_state(self, state, op, vals=None):
         u = self.env.user
         is_committee = u.has_group(COMMITTEE)
-        is_board = u.has_group(BOARD)
         is_director = u.has_group(DIRECTOR)
-        is_base = u.has_group(BASE)
+        is_board = u.has_group(BOARD)
 
+        # Committee sửa khi Draft
         if state == 'draft':
-            return is_committee or is_board or is_director or is_base
+            return is_committee or u.has_group(BASE)
 
-        if state == 'board_approve':
-            return is_board
-
+        # Giám đốc sửa khi đang chờ Giám đốc duyệt (để điều chỉnh trước khi duyệt)
         if state == 'director_approve':
             return is_director
 
-        if state == 'complete':
-            return False
+        # HĐQT sửa khi đang chờ HĐQT duyệt
+        if state == 'board_approve':
+            return is_board
 
+        # Khi đã duyệt hoặc hoàn thành -> Không ai sửa
         return False
 
     def _check_plan_edit_permission(self, op, vals=None):
@@ -166,52 +160,88 @@ class RecruitmentPlan(models.Model):
             if not self._can_edit_plan_in_state(state, 'create', vals):
                 raise AccessError(_("Bạn không có quyền tạo Kế hoạch ở trạng thái '%s'.") % state)
             return
-        for rec in self:
-            if not self._can_edit_plan_in_state(rec.recruitment_status, op, vals):
-                action_name = {'create': 'tạo', 'write': 'sửa', 'unlink': 'xóa'}[op]
-                raise AccessError(_("Không được %s Kế hoạch khi ở trạng thái '%s'.")
-                                  % (action_name, rec.recruitment_status))
+        # for rec in self:
+        #     if not self._can_edit_plan_in_state(rec.recruitment_status, op, vals):
+        #         action_name = {'create': 'tạo', 'write': 'sửa', 'unlink': 'xóa'}[op]
+        #         raise AccessError(_("Không được %s Kế hoạch khi ở trạng thái '%s'.")
+        #                           % (action_name, rec.recruitment_status))
 
-    # ----------------- Actions -----------------
+    # ----------------- ACTION FLOW (LUỒNG MỚI) -----------------
+
+    # 1. Committee: Draft -> Director Approve
     def action_submit(self):
-        """COMMITTEE: draft -> waiting"""
         self._check_committee()
         for rec in self:
             if rec.recruitment_status != "draft":
                 raise ValidationError(_("Chỉ có thể trình duyệt từ trạng thái 'Dự thảo'."))
+            rec.recruitment_status = "director_approve"
+
+    # 2. Director: Director Approve -> Board Approve
+    def action_director_approve(self):
+        self._check_director()
+        for rec in self:
+            if rec.recruitment_status != "director_approve":
+                raise ValidationError(_("Giám đốc chỉ duyệt được khi trạng thái là 'GD duyệt'."))
             rec.recruitment_status = "board_approve"
 
+    # 3. Board: Board Approve -> Approved (Chờ triển khai)
     def action_board_approve(self):
-        """BOARD: waiting -> board_approve"""
         self._check_board()
         for rec in self:
             if rec.recruitment_status != "board_approve":
                 raise ValidationError(_("HĐQT chỉ duyệt được khi trạng thái là 'HĐQT duyệt'."))
-            rec.recruitment_status = "director_approve"
-
-    def _apply_if_needed(self):
-        for rec in self:
-            if not rec.is_applied_to_jobs:
-                rec._apply_recruitment_to_jobs()
-                rec.is_applied_to_jobs = True
-
-    def action_director_approve(self):
-        """DIRECTOR: board_approve -> complete"""
-        self._check_director()
-        for rec in self:
-            if rec.recruitment_status != "director_approve":
-                raise ValidationError(_("Giám đốc chỉ phê duyệt được khi trạng thái là 'HĐQT duyệt'."))
             rec.recruitment_status = "approved"
 
+    # 4. Director: Bắt đầu (Triển khai) -> Update Jobs
+    def action_director_start_deploy(self):
+        """Giám đốc bấm bắt đầu để cập nhật số lượng vào Job"""
+        self._check_director()
+        for rec in self:
+            if rec.recruitment_status != "approved":
+                raise ValidationError(_("Chỉ có thể triển khai khi Kế hoạch đã được HĐQT phê duyệt."))
+            if rec.is_applied_to_jobs:
+                raise ValidationError(_("Kế hoạch này đã được triển khai (đã cập nhật Job)."))
+
+
+            # Logic update job
+            rec._apply_recruitment_to_jobs()
+            rec.is_applied_to_jobs = True
+            rec.message_post(body=_(
+                "Giám đốc đã bắt đầu triển khai kế hoạch. Số lượng tuyển dụng đã được cập nhật vào cấu hình Vị trí công việc."))
+            rec.recruitment_status = "in_process"
+
+
+    # 5. Committee: Complete
     def action_complete(self):
         self._check_committee()
         for rec in self:
             if rec.recruitment_status != "approved":
                 raise ValidationError(_("Chỉ hoàn thành được khi trạng thái là 'Đã duyệt'."))
-            rec._apply_if_needed()
+
+            # (Tùy chọn) Kiểm tra xem Giám đốc đã triển khai chưa?
+            # if not rec.is_applied_to_jobs:
+            #     raise ValidationError(_("Kế hoạch chưa được triển khai (Cập nhật Job). Vui lòng chờ Giám đốc bấm 'Bắt đầu'."))
+
             rec.recruitment_status = "complete"
 
-    # ----------------- Compute / helpers -----------------
+    # ----------------- LOGIC CẬP NHẬT JOB -----------------
+    def _apply_recruitment_to_jobs(self):
+        """Gộp theo job và GHI ĐÈ nhu cầu (số lượng tuyển) vào model hr.job"""
+        self.ensure_one()
+        lines = self.recruitment_plan_detail_ids.filtered(lambda l: l.recruitment_job and l.requested_quantity > 0)
+        if not lines:
+            return
+        totals = {}
+        for ln in lines:
+            jid = ln.recruitment_job.id
+            totals[jid] = totals.get(jid, 0) + (ln.requested_quantity or 0)
+
+        jobs = self.env['hr.job'].browse(list(totals.keys()))
+        for job in jobs:
+            # Ghi đè số lượng tuyển dụng mục tiêu của Job
+            job.no_of_recruitment = totals[job.id]
+
+    # ----------------- COMPUTE & CONSTRAINTS -----------------
     @api.depends("sequence")
     def _compute_stt(self):
         all_ids = self.search([], order="sequence, id").ids
@@ -224,28 +254,10 @@ class RecruitmentPlan(models.Model):
         for plan in self:
             plan.total_applicant_request = sum(plan.recruitment_plan_detail_ids.mapped("requested_quantity"))
 
-    def _apply_recruitment_to_jobs(self):
-        """Gộp theo job và GHI ĐÈ nhu cầu."""
-        self.ensure_one()
-        lines = self.recruitment_plan_detail_ids.filtered(lambda l: l.recruitment_job and l.requested_quantity > 0)
-        if not lines:
-            return
-        totals = {}
-        for ln in lines:
-            jid = ln.recruitment_job.id
-            totals[jid] = totals.get(jid, 0) + (ln.requested_quantity or 0)
-
-        jobs = self.env['hr.job'].browse(list(totals.keys()))
-        for job in jobs:
-            job.no_of_recruitment = totals[job.id]
-
-
-    # Ngày thực hiện không chọn trong quá khứ
     @api.constrains('plan_execute_date')
     def _check_plan_execute_date(self):
         for rec in self:
             if rec.plan_execute_date:
-                # Chuyển str -> date nếu cần
                 if isinstance(rec.plan_execute_date, str):
                     plan_date = datetime.strptime(rec.plan_execute_date, '%Y-%m-%d').date()
                 else:
@@ -253,7 +265,7 @@ class RecruitmentPlan(models.Model):
                 if plan_date < date.today():
                     raise ValidationError("Ngày thực hiện không được nhỏ hơn ngày hiện tại.")
 
-    # ----------------- Overrides -----------------
+    # ----------------- CRUD OVERRIDES (PHÂN QUYỀN) -----------------
     @api.model
     def create(self, vals):
         self._check_plan_edit_permission('create', vals)
