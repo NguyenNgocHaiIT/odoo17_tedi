@@ -108,7 +108,6 @@ class HrLeave(models.Model):
     report_title = fields.Char(string='Tiêu đề')
     employee_code = fields.Char(related='employee_id.employee_code', string='Mã NV', store=True)
 
-    # [SỬA ĐỔI] Bỏ compute, bỏ store=True (vì mặc định là True), thêm readonly=True để user không tự chọn
     manager_id = fields.Many2one(
         'hr.employee',
         string='Người phê duyệt',
@@ -117,7 +116,61 @@ class HrLeave(models.Model):
     )
 
     # =========================================================================
-    # 4. LOGIC XỬ LÝ & FIX LỖI CREATE/WRITE
+    # 4. FIELD COMPUTE PHÂN QUYỀN (QUAN TRỌNG)
+    # =========================================================================
+    can_approve_by_unit_manager = fields.Boolean(
+        string='Có quyền duyệt (Unit Manager)',
+        compute='_compute_can_approve_by_unit_manager'
+    )
+
+    is_officer = fields.Boolean(string="Is Officer", compute='_compute_is_officer')
+
+    @api.depends_context('uid')
+    def _compute_is_officer(self):
+        for rec in self:
+            # Kiểm tra xem user có nhóm Officer hoặc Administrator HR không
+            rec.is_officer = self.env.user.has_group('hr_holidays.group_hr_holidays_user')
+
+    @api.depends('state', 'employee_id')
+    def _compute_can_approve_by_unit_manager(self):
+        current_user = self.env.user
+        current_employee = current_user.employee_id
+        is_unit_manager = current_user.has_group('hr_attendance_tedi.group_time_off_unit_manager')
+
+        for rec in self:
+            rec.can_approve_by_unit_manager = False
+
+            # --- DEBUG LOG START ---
+            print("\n========== DEBUG UNIT MANAGER CHECK ==========")
+            print(f"1. Current User: {current_user.name} (ID: {current_user.id})")
+            print(f"2. Has Group Unit Manager?: {is_unit_manager}")
+            print(f"3. Linked Employee: {current_employee.name if current_employee else 'NONE (Lỗi tại đây)'}")
+
+            manager_dept = current_employee.department_id
+            employee_dept = rec.employee_id.department_id
+
+            print(
+                f"4. Manager Dept: {manager_dept.name if manager_dept else 'NONE'} (ID: {manager_dept.id if manager_dept else 0})")
+            print(
+                f"5. Staff Dept: {employee_dept.name if employee_dept else 'NONE'} (ID: {employee_dept.id if employee_dept else 0})")
+
+            if not is_unit_manager:
+                print("=> KẾT QUẢ: FALSE (Do thiếu quyền Group)")
+                continue
+
+            if not current_employee:
+                print("=> KẾT QUẢ: FALSE (Do User chưa link Employee)")
+                continue
+
+            # Logic so sánh
+            if manager_dept == employee_dept:
+                print("=> KẾT QUẢ: TRUE (Cùng phòng ban)")
+                rec.can_approve_by_unit_manager = True
+            else:
+                print("=> KẾT QUẢ: FALSE (Khác phòng ban)")
+            print("==============================================\n")
+    # =========================================================================
+    # 5. LOGIC XỬ LÝ & FIX LỖI CREATE/WRITE
     # =========================================================================
 
     @api.onchange('date_from', 'date_to')
@@ -178,38 +231,96 @@ class HrLeave(models.Model):
         return super(HrLeave, self).write(vals)
 
     # =========================================================================
-    # [SỬA ĐỔI] 5. OVERRIDE HÀM DUYỆT ĐỂ GHI NHẬN NGƯỜI DUYỆT
+    # 6. OVERRIDE CÁC HÀM DUYỆT (SỬA LỖI QUYỀN TRUY CẬP)
     # =========================================================================
+
+    def _check_approval_update(self, state):
+        """
+        Hàm này chặn quyền duyệt (Approval Check).
+        """
+        if self._context.get('bypass_manager_check'):
+            return
+        super(HrLeave, self)._check_approval_update(state)
+
+    def _check_double_validation_rules(self, employees, state):
+        """
+        Hàm này chặn quyền duyệt lần 1 (Double Validation Rules).
+        CẦN THÊM HÀM NÀY ĐỂ FIX LỖI "You cannot first approve..."
+        """
+        if self._context.get('bypass_manager_check'):
+            return
+        super(HrLeave, self)._check_double_validation_rules(employees, state)
 
     def action_approve(self):
-        """
-        Duyệt lần 1 (nếu có cấu hình 2 bước) hoặc Duyệt luôn (nếu 1 bước)
-        """
-        res = super(HrLeave, self).action_approve()
-        # Ghi nhận người đang đăng nhập (self.env.user) là người phê duyệt
-        if self.env.user.employee_id:
-            self.write({'manager_id': self.env.user.employee_id.id})
-        return res
+        # 1. Logic Unit Manager (Custom)
+        if self.can_approve_by_unit_manager:
+            # Lưu người duyệt
+            current_employee = self.env.user.employee_id
+            if current_employee:
+                self.sudo().write({'manager_id': current_employee.id})
+
+            for leave in self:
+                validation_type = leave.holiday_status_id.leave_validation_type
+
+                # TH1: Cần duyệt 2 lần (Both) -> Chuyển sang validate1
+                if validation_type == 'both':
+                    # Dùng sudo + context để bypass hàm _check_double_validation_rules
+                    leave.sudo().with_context(bypass_manager_check=True).write({
+                        'state': 'validate1',
+                        'first_approver_id': current_employee.id,
+                    })
+                    # Gửi mail thông báo
+                    leave.activity_update()
+                    leave.message_post(body=f"Unit Manager ({current_employee.name}) đã duyệt lần 1.")
+
+                # TH2: Các trường hợp còn lại -> Duyệt thẳng
+                else:
+                    leave.action_validate()
+
+            return True
+
+        # 2. Nếu không phải Unit Manager -> Chạy quy trình chuẩn
+        return super(HrLeave, self).action_approve()
 
     def action_validate(self):
-        """
-        Duyệt lần 2 (nếu cấu hình 2 bước)
-        """
-        res = super(HrLeave, self).action_validate()
-        # Ghi nhận người đang đăng nhập là người phê duyệt cuối cùng
-        if self.env.user.employee_id:
-            self.write({'manager_id': self.env.user.employee_id.id})
-        return res
+        current_employee = self.env.user.employee_id
+        if current_employee:
+            self.sudo().write({'manager_id': current_employee.id})
+
+        if self.can_approve_by_unit_manager:
+            # Dùng sudo + context để bypass hàm _check_approval_update
+            self.sudo().with_context(bypass_manager_check=True).write({'state': 'validate'})
+
+            # Logic tạo work entry và resource leave (quan trọng)
+            self.sudo()._validate_leave_request()
+
+            self.activity_update()
+            self.message_post(body="Đã phê duyệt cuối cùng bởi Unit Manager.")
+            return True
+
+        return super(HrLeave, self).action_validate()
+
+    def action_refuse(self):
+        current_employee = self.env.user.employee_id
+        if current_employee:
+            self.sudo().write({'manager_id': current_employee.id})
+
+        if self.can_approve_by_unit_manager:
+            # Từ chối thường ít bị chặn hơn, nhưng cứ thêm context cho chắc ăn
+            self.sudo().with_context(bypass_manager_check=True).write({'state': 'refuse'})
+            self.message_post(body="Đã từ chối bởi Unit Manager.")
+            return True
+
+        return super(HrLeave, self).action_refuse()
 
     # =========================================================================
-    # 6. FIX WORK ENTRY CHỒNG LẤN
+    # 7. FIX WORK ENTRY CHỒNG LẤN
     # =========================================================================
 
     def _validate_leave_request(self):
-        # 1. Chạy logic gốc
         res = super(HrLeave, self)._validate_leave_request()
 
-        # 2. FIX: TỰ ĐỘNG REGENERATE WORK ENTRY
+        # TỰ ĐỘNG REGENERATE WORK ENTRY ĐỂ TRÁNH LỖI TRÙNG
         sudo_we = self.env['hr.work.entry'].sudo()
 
         for leave in self:
@@ -231,7 +342,7 @@ class HrLeave(models.Model):
         return res
 
     # =========================================================================
-    # 7. CÁC HÀM COMPUTE KHÁC
+    # 8. CÁC HÀM COMPUTE KHÁC
     # =========================================================================
     @api.depends('employee_id', 'holiday_status_id', 'date_from')
     def _compute_leave_stats(self):
@@ -256,5 +367,4 @@ class HrLeave(models.Model):
                 ]
                 rec.my_history_ids = self.env['hr.leave'].search(domain, order='create_date desc', limit=10)
             else:
-                rec.my_history_ids = Falsea
-
+                rec.my_history_ids = False
