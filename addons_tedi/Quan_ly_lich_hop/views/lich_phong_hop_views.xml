@@ -9,7 +9,7 @@
                     <field name="name" string="Nội dung"/>
                     <field name="room" string="Phòng"/>
                     <field name="user_id" string="Người chủ trì"/>
-                    <field name="partner_ids" widget="many2many_tags" string="Người tham gia"/>
+                     <field name="don_vi" string="Đơn vị"/>
                 </calendar>
             </field>
         </record>

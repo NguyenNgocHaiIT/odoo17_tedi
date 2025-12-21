@@ -33,6 +33,17 @@ class RecruitmentPlan(models.Model):
             if rec.plan_execute_date and rec.plan_execute_date < fields.Date.context_today(rec):
                 raise ValidationError("Ngày thực hiện không được nhỏ hơn ngày hiện tại!")
 
+    @api.onchange('plan_execute_date')
+    def _onchange_plan_execute_date(self):
+        if self.plan_execute_date and self.plan_execute_date < fields.Date.context_today(self):
+            # Reset về ngày hiện tại để người dùng không giữ giá trị sai
+            self.plan_execute_date = fields.Date.context_today(self)
+            return {
+                'warning': {
+                    'title': "Cảnh báo ngày tháng",
+                    'message': "Ngày thực hiện không được nhỏ hơn ngày hiện tại!"
+                }
+            }
     plan_name = fields.Char(string="Tên kế hoạch", tracking=True)
 
     people_suggestion = fields.Many2one(

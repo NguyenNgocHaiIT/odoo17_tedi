@@ -7,8 +7,9 @@
     'summary': '',
     'depends': ['base', 'web', 'hr', 'hr_attendance', 'hr_tedi', 'hr_contract', 'hr_holidays', 'hr_work_entry' , 'hr_work_entry_contract'],
     'data': [
-        "security/ir.model.access.csv",
         'security/ir_rule.xml',
+        "security/ir.model.access.csv",
+
         "wizard/attendance_import_views.xml",
         "wizard/generate_work_entry_wizard_views.xml",
         "views/attendance_views.xml",

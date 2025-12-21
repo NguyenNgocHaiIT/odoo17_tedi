@@ -52,7 +52,7 @@ class Calendar(models.Model):
         string='Thông tin khác'
     )
 
-    chu_tri = fields.Many2one("hr.employee", string="Người chủ trì", default=lambda self: self._get_default_chu_tri())
+    chu_tri = fields.Many2one("hr.employee", string="Người chủ trì")
     room = fields.Many2one('room.room', string='Phòng')
     calendar_label = fields.Char(string="Nhãn trên calendar", compute="_compute_calendar_label")
     color = fields.Integer(string='Màu', default=0)
