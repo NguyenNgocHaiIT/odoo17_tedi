@@ -42,6 +42,33 @@ class RecruitmentPlanDetail(models.Model):
         ("PhD", "Tiến sĩ"),
     ])
 
+    currency_id = fields.Many2one(
+        related='plan_id.currency_id',
+        depends=['plan_id.currency_id'],
+        store=True,
+        string='Tiền tệ'
+    )
+
+    # --- (MỚI) CHI PHÍ TRÊN 1 ĐẦU NGƯỜI ---
+    expense_per_head = fields.Monetary(
+        string="Chi phí/Người",
+        currency_field='currency_id',
+        default=0
+    )
+
+    # --- (MỚI) THÀNH TIỀN DÒNG (Số lượng * Chi phí) ---
+    total_line_fund = fields.Monetary(
+        string="Thành tiền",
+        compute="_compute_total_line_fund",
+        store=True,
+        currency_field='currency_id'
+    )
+
+    @api.depends('requested_quantity', 'expense_per_head')
+    def _compute_total_line_fund(self):
+        for rec in self:
+            rec.total_line_fund = rec.requested_quantity * rec.expense_per_head
+
     note = fields.Char(string="Ghi chú")
 
     nomination_ids = fields.Many2many(
@@ -56,6 +83,10 @@ class RecruitmentPlanDetail(models.Model):
         "detail_id", "attachment_id",
         string="Tài liệu mô tả công việc"
     )
+    qty_q1 = fields.Integer(string="SL Quý 1", default=0)
+    qty_q2 = fields.Integer(string="SL Quý 2", default=0)
+    qty_q3 = fields.Integer(string="SL Quý 3", default=0)
+    qty_q4 = fields.Integer(string="SL Quý 4", default=0)
 
     @api.constrains('nomination_ids')
     def _check_nomination_ids_refused_or_archived(self):

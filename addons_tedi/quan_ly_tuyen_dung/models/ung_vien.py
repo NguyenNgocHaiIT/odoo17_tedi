@@ -1,6 +1,10 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, AccessError, UserError
 import re
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 # ==== NHÓM ĐƯỢC PHÉP TẠO/SỬA ỨNG VIÊN ====
 HR_OFFICER = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
@@ -145,6 +149,12 @@ class Applicant(models.Model):
     proposal_unit = fields.Text(string="Đề xuất (Đơn vị)")
     proposal_hr   = fields.Text(string="Đề xuất (Phòng TCCB - LD)")
 
+    experience_id = fields.Many2one(
+        'experience.request',
+        string="Số năm kinh nghiệm",
+        help="Chọn số năm kinh nghiệm từ danh mục yêu cầu"
+    )
+
     def action_open_applicant_evaluation_page(self):
         self.ensure_one()
         view = self.env.ref('quan_ly_tuyen_dung.hr_applicant_eval_form_standalone')
@@ -212,21 +222,35 @@ class Applicant(models.Model):
             'context': dict(self.env.context, active_id=self.id),
         }
 
-
-    # ================== (MỚI) COMPUTE available_job_ids ==================
-    @api.depends('recruitment_plan_id')  # <-- bỏ department_id ở đây
+        # ================== (MỚI) COMPUTE available_job_ids ==================
+    @api.depends('recruitment_plan_id')
     def _compute_available_job_ids(self):
         Job = self.env['hr.job']
+        Plan = self.env['recruitment.plan']
+
         for rec in self:
             jobs = Job.browse()
+
+            # TRƯỜNG HỢP 1: Đã chọn Plan cụ thể trên form Ứng viên
             if rec.recruitment_plan_id:
-                # LẤY HẾT job trong plan, KHÔNG lọc theo department
                 jobs = rec.recruitment_plan_id.recruitment_plan_detail_ids.mapped('recruitment_job')
+
+                # TRƯỜNG HỢP 2: Chưa chọn Plan -> Tự động gợi ý các Job thuộc Plan QUÝ đang chạy
             else:
-                # Không có plan: nếu muốn vẫn hỗ trợ chọn theo phòng ban khi KHÔNG có plan
-                if rec.department_id:
-                    jobs = Job.search([('active', '=', True),
-                                       ('department_id', '=', rec.department_id.id)])
+                # Tìm các Kế hoạch Quý đang 'in_process'
+                active_quarter_plans = Plan.search([
+                    ('type', '=', 'quarter'),
+                    ('recruitment_status', '=', 'in_process')
+                ])
+
+                # Lấy tất cả Job trong các kế hoạch này
+                if active_quarter_plans:
+                    jobs = active_quarter_plans.mapped('recruitment_plan_detail_ids.recruitment_job')
+                else:
+                    # Fallback: Nếu không có kế hoạch nào chạy, lấy theo phòng ban (nếu có chọn) hoặc rỗng
+                    if rec.department_id:
+                        jobs = Job.search([('department_id', '=', rec.department_id.id), ('active', '=', True)])
+
             rec.available_job_ids = jobs
 
     # ================== ONCHANGE / DOMAIN ==================
@@ -238,21 +262,23 @@ class Applicant(models.Model):
                 if rec.job_id not in jobs_in_plan:
                     rec.job_id = False
         # chỉ thống nhất domain của PLAN (trùng XML), KHÔNG trả domain job_id để tránh “đua”
-        return {'domain': {'recruitment_plan_id': [('recruitment_status', '=', 'complete')]}}
+        return {'domain': {'recruitment_plan_id': [
+            ('type', '=', 'quarter'),
+        ]}}
 
-    @api.onchange('department_id')
-    def _onchange_department_id(self):
-        for rec in self:
-            if rec.department_id and rec.job_id:
-                # Nếu job đang chọn không thuộc phòng ban mới -> xóa
-                if rec.job_id.department_id != rec.department_id:
-                    rec.job_id = False
+    # @api.onchange('department_id')
+    # def _onchange_department_id(self):
+    #     for rec in self:
+    #         if rec.department_id and rec.job_id:
+    #             # Nếu job đang chọn không thuộc phòng ban mới -> xóa
+    #             if rec.job_id.department_id != rec.department_id:
+    #                 rec.job_id = False
 
-    @api.onchange('job_id')
-    def _onchange_job_id(self):
-        for rec in self:
-            if rec.job_id:
-                rec.department_id = rec.job_id.department_id.id
+    # @api.onchange('job_id')
+    # def _onchange_job_id(self):
+    #     for rec in self:
+    #         if rec.job_id:
+    #             rec.department_id = rec.job_id.department_id.id
 
     # ================== RÀNG BUỘC PLAN/JOB/DEPT ==================
     @api.constrains('recruitment_plan_id', 'job_id', 'department_id')
@@ -372,20 +398,30 @@ class Applicant(models.Model):
                 if app.emp_id and not app.applicant_sync_done:
                     app._sync_to_employee_if_any(force=False)
                 continue
-            app._reduce_plan_quantity(app)
+
+            # [ĐÃ SỬA] Bỏ comment dòng dưới để KHÔNG trừ số lượng trong kế hoạch
+            # app._reduce_plan_quantity(app)
+
+            # Vẫn giữ cập nhật counter của Job (Standard Odoo)
             app._update_job_counters_when_hired(app)
+
             app.sudo().write({'hired_counters_done': True})
             # nếu đã có emp thì sync ngay
             if app.emp_id:
                 app._sync_to_employee_if_any(False)
 
-    # ================== SIDE-EFFECTS: KHI RỜI KHỎI ĐÃ TUYỂN ==================
+        # ================== SIDE-EFFECTS: KHI RỜI KHỎI ĐÃ TUYỂN ==================
     def _rollback_hired_side_effects_if_needed(self):
         for app in self:
             if not app.hired_counters_done or app.isEmp:
                 continue
-            app._increase_plan_quantity(app)
+
+            # [ĐÃ SỬA] Bỏ comment dòng dưới để KHÔNG cộng lại số lượng vào kế hoạch
+            # app._increase_plan_quantity(app)
+
+            # Vẫn giữ rollback counter của Job (Standard Odoo)
             app._rollback_job_counters_when_unhired(app)
+
             app.sudo().write({'hired_counters_done': False})
 
     # ================== KẾ HOẠCH: TRỪ / CỘNG ==================
@@ -534,17 +570,75 @@ class Applicant(models.Model):
             app.sudo().write({'applicant_sync_done': True})
             app.message_post(body=_("Đã đồng bộ dữ liệu hồ sơ ứng viên sang nhân viên %s.") % (employee.name,))
 
-    # ================== HOOK CHUẨN ODOO: TẠO EMPLOYEE ==================
+        # ================== GỬI EMAIL THÔNG BÁO ==================
+    def _send_welcome_email(self, employee):
+        """
+        Gửi email thông báo cho nhân viên mới tạo.
+        Sử dụng mail.mail để gửi trực tiếp.
+        """
+        if not employee.work_email:
+                # Nếu không có email công việc thì bỏ qua
+            return
+
+        subject = _("Thông báo: Hồ sơ nhân viên của bạn đã được khởi tạo")
+        body_html = f"""
+            <div style="margin: 0px; padding: 0px;">
+                <p style="margin: 0px; padding: 0px; font-size: 13px;">
+                    Xin chào <strong>{employee.name}</strong>,
+                    <br/><br/>
+                    Chúc mừng bạn đã chính thức gia nhập đội ngũ. 
+                    Hồ sơ nhân viên của bạn đã được tạo thành công trên hệ thống.
+                    <br/><br/>
+                    Thông tin cơ bản:
+                    <ul>
+                        <li>Họ và tên: {employee.name}</li>
+                        <li>Email công việc: {employee.work_email}</li>
+                        <li>Phòng ban: {employee.department_id.name if employee.department_id else 'N/A'}</li>
+                        <li>Chức vụ: {employee.job_id.name if employee.job_id else 'N/A'}</li>
+                    </ul>
+                    <br/>
+                    Trân trọng,
+                    <br/>
+                    <em>Bộ phận Tuyển dụng & Nhân sự</em>
+                </p>
+            </div>
+            """
+
+        mail_values = {
+            'subject': subject,
+            'body_html': body_html,
+            'email_to': employee.work_email,
+            'email_from': self.env.user.email_formatted or self.env.company.email,
+            'auto_delete': True,  # Xóa mail khỏi danh sách chờ sau khi gửi xong
+            }
+
+            # Tạo và gửi ngay lập tức
+        try:
+            self.env['mail.mail'].create(mail_values).send()
+        except Exception as e:
+                # Log lỗi nếu gửi mail thất bại để không chặn quy trình tạo nhân viên
+            _logger = logging.getLogger(__name__)
+            _logger.error(f"Không thể gửi email chào mừng cho nhân viên {employee.name}: {str(e)}")
+
+        # ================== HOOK CHUẨN ODOO: TẠO EMPLOYEE ==================
     def create_employee_from_applicant(self):
+            # 1. Gọi super để Odoo tạo Employee và set emp_id vào applicant
         res = super().create_employee_from_applicant()
-        # giữ logic của bạn
+
+            # 2. Giữ logic side-effects của bạn (cập nhật counter kế hoạch)
         self._apply_hired_side_effects_once()
 
-        # bổ sung đồng bộ Applicant -> Employee
+            # 3. Bổ sung đồng bộ Applicant -> Employee (quan trọng: sync xong mới có email để gửi)
         self._sync_to_employee_if_any(force=False)
 
-        # cập nhật cờ isEmp (bạn đang dùng ở constraint không cho lùi từ đã tuyển)
+            # 4. Cập nhật cờ isEmp
         self.filtered(lambda a: a.emp_id and not a.isEmp).sudo().write({'isEmp': True})
+
+            # 5. (MỚI) Gửi email thông báo cho nhân viên mới
+        for app in self:
+            if app.emp_id:
+                app._send_welcome_email(app.emp_id)
+
         return res
 
     # ---- Helpers ----

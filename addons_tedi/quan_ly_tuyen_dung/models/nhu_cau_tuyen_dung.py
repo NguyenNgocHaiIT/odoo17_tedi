@@ -6,11 +6,32 @@ from odoo.exceptions import ValidationError, AccessError, UserError
 class RecruitmentNeeds(models.Model):
     _name = "recruitment.needs"
     _description = "Recruitment Needs"
+    _rec_name = "display_code"
 
+    display_code = fields.Char(string="Mã phiếu", compute="_compute_display_code", store=True, default="Mới")
+
+    @api.depends('type', 'department_id', 'create_date', 'name', 'plan_id')
+    def _compute_display_code(self):
+        for rec in self:
+            prefix = "KH-NĂM" if rec.type == 'year' else "KH-TT"
+            dept = rec.department_id.name or "N/A"
+            date = rec.create_date.strftime('%d/%m') if rec.create_date else ""
+
+            # Tạo tên dạng: KH-NĂM | Phòng IT | 22/12
+            rec.display_code = f"{prefix} | {dept} | {date}"
     name = fields.Many2one(
         "recruitment.survey",
         string="Tên đợt khảo sát",
         domain=[('state', '=', 'in_process')],
+        # Bỏ required=True ở Python, xử lý ở XML
+    )
+
+    # 3. THÊM TRƯỜNG KẾ HOẠCH QUÝ (Cho Nhu cầu Thực tế)
+    plan_id = fields.Many2one(
+        "recruitment.plan",
+        string="Thuộc Kế hoạch Quý",
+        # Lấy loại là 'quarter' VÀ trạng thái là 'in_process'
+        domain="[('type', '=', 'quarter'), ('recruitment_status', '=', 'in_process')]",
     )
 
     create_date = fields.Date(
@@ -24,6 +45,12 @@ class RecruitmentNeeds(models.Model):
         string='Phòng ban đăng ký',
         default=lambda self: self.env.user.employee_id.department_id
     )
+    type = fields.Selection([
+        ('year', 'Nhu cầu Năm'),
+        ('actual', 'Nhu cầu Thực tế'),
+    ], string="Loại nhu cầu", default='year', required=True)
+
+
 
     state = fields.Selection([
         ('draft', 'Dự thảo'),
@@ -44,6 +71,11 @@ class RecruitmentNeeds(models.Model):
 
     @api.model
     def create(self, vals):
+
+        if vals.get('type') == 'year' and not vals.get('name'):
+            raise UserError(_("Với Nhu cầu Năm, bạn phải chọn Đợt khảo sát."))
+        if vals.get('type') == 'actual' and not vals.get('plan_id'):
+            raise UserError(_("Với Nhu cầu Thực tế, bạn phải chọn Kế hoạch Quý."))
         if not vals.get('department_id'):
             employee = self.env.user.employee_id
             if employee and employee.department_id:
@@ -63,8 +95,75 @@ class RecruitmentNeeds(models.Model):
                 raise UserError(_("Chỉ được duyệt khi phiếu đang ở trạng thái 'Dự thảo'."))
             if not rec.line_ids:
                 raise UserError(_("Bạn phải nhập ít nhất 1 dòng nhu cầu tuyển dụng trước khi xác nhận."))
+
+            # --- LOGIC MỚI: CẬP NHẬT KẾ HOẠCH QUÝ ---
+            if rec.type == 'actual' and rec.plan_id:
+                rec._update_linked_quarterly_plan()
+            # ----------------------------------------
+
             rec.state = "confirmed"
 
+        # --- HÀM XỬ LÝ CẬP NHẬT PLAN ---
+
+    def _update_linked_quarterly_plan(self):
+        self.ensure_one()
+        # 1. Dùng sudo() ngay từ đầu để đảm bảo quyền ghi log vào Plan
+        plan = self.plan_id.sudo()
+
+        msg_body = f"<b>Cập nhật từ Nhu cầu thực tế ({self.display_name}):</b><ul>"
+
+        # Model Detail cũng cần quyền sudo để search/create/write
+        PlanDetailSudo = self.env['recruitment.plan.detail'].sudo()
+
+        for line in self.line_ids:
+            domain = [
+                ('plan_id', '=', plan.id),
+                ('recruitment_job', '=', line.job_id.id),
+                ('department_request', '=', self.department_id.id),
+                ('expense_per_head', '=', line.expected_salary),
+                ('experient_request_id', '=', line.experience_id.id or False),
+                ('professional_qualification', '=', line.professional_qualification or False),
+            ]
+
+            # 2. Tìm kiếm với quyền Admin
+            existing_detail = PlanDetailSudo.search(domain, limit=1)
+
+            if existing_detail:
+                # 3. Ghi (Write) với quyền Admin
+                old_qty = existing_detail.requested_quantity
+                new_qty = old_qty + line.amount
+
+                # Lưu ý: existing_detail đã được search từ PlanDetailSudo nên nó đã mang quyền sudo
+                existing_detail.requested_quantity = new_qty
+
+                msg_body += (
+                    f"<li>Vị trí <b>{line.job_id.name}</b> (Trùng tiêu chí): "
+                    f"Tăng từ {old_qty} lên {new_qty} (+{line.amount}).</li>"
+                )
+            else:
+                # 4. Tạo mới (Create) với quyền Admin
+                vals = {
+                    'plan_id': plan.id,
+                    'department_request': self.department_id.id,
+                    'recruitment_job': line.job_id.id,
+                    'requested_quantity': line.amount,
+                    'experient_request_id': line.experience_id.id,
+                    'professional_qualification': line.professional_qualification,
+                    'expense_per_head': line.expected_salary,
+                    'note': line.note or _("Bổ sung từ nhu cầu thực tế"),
+                }
+                PlanDetailSudo.create(vals)
+
+                msg_body += (
+                    f"<li>Vị trí <b>{line.job_id.name}</b> (Tiêu chí mới): "
+                    f"Thêm mới số lượng {line.amount}.</li>"
+                )
+
+        msg_body += "</ul>"
+
+        # 5. Ghi log (Message Post) với quyền Admin
+        # (Do biến 'plan' ở trên đã .sudo() rồi nên dòng này sẽ không lỗi)
+        plan.message_post(body=msg_body)
 
 class RecruitmentNeedsLine(models.Model):
     _name = 'recruitment.needs.line'
@@ -121,6 +220,7 @@ class RecruitmentNeedsLine(models.Model):
                 rec.current_employee_count = count
             else:
                 rec.current_employee_count = 0
+
 
     # --- ACTION MỞ POPUP ---
     def action_open_progress_wizard(self):
