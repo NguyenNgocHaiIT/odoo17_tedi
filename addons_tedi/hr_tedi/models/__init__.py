@@ -10,3 +10,4 @@ from . import hr_party_cell
 from . import hr_party_title
 from . import hr_employee_training
 from . import file
+from . import  hr_department

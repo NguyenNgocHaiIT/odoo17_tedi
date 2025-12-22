@@ -30,6 +30,11 @@ access_res_ethnic_user,access_res_ethnic_user,model_res_ethnic,base.group_user,1
 
 access_hr_military_rank,access_hr_military_rank,model_hr_military_rank,base.group_user,1,1,1,1
 
+access_hr_reward_benefit,access_hr_reward_benefit,model_hr_reward_benefit,base.group_user,1,1,1,1
+
+access_res_district,res.district,model_res_district,base.group_user,1,1,1,1
+access_res_ward,res.ward,model_res_ward,base.group_user,1,1,1,1
+
 access_hr_union_title_user,hr.union.title.user,model_hr_union_title,base.group_user,1,0,0,0
 access_hr_union_title_manager,hr.union.title.manager,model_hr_union_title,hr.group_hr_manager,1,1,1,1
 access_hr_youth_union_title_user,hr.youth.union.title.user,model_hr_youth_union_title,base.group_user,1,0,0,0

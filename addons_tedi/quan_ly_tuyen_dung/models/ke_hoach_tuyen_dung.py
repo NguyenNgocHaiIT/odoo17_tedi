@@ -68,7 +68,20 @@ class RecruitmentPlan(models.Model):
         store=True, readonly=True,
     )
 
-    plan_fund = fields.Monetary(string="Kinh phí", currency_field="currency_id")
+    plan_fund = fields.Monetary(
+        string="Kinh phí",
+        currency_field="currency_id",
+        compute="_compute_plan_fund",
+        store=True,
+        readonly=True
+    )
+
+    @api.depends('recruitment_plan_detail_ids.total_line_fund')
+    def _compute_plan_fund(self):
+        for rec in self:
+            # Tổng thành tiền của tất cả các dòng
+            rec.plan_fund = sum(rec.recruitment_plan_detail_ids.mapped('total_line_fund'))
+
     currency_id = fields.Many2one("res.currency", string="Tiền tệ",
                                   default=lambda self: self.env.ref("base.VND"), readonly=True)
 
@@ -95,13 +108,20 @@ class RecruitmentPlan(models.Model):
         "recruitment.plan.detail", "plan_id", string="Thông tin chi tiết"
     )
 
+    type = fields.Selection([
+        ('year', 'Kế hoạch Năm'),
+        ('quarter', 'Kế hoạch Quý'),
+    ], string="Loại kế hoạch", default='year', required=True, tracking=True)
+
+    # Field liên kết cha-con (để biết kế hoạch Quý thuộc Kế hoạch Năm nào)
+    parent_id = fields.Many2one('recruitment.plan', string="Thuộc Kế hoạch Năm", readonly=True)
+
     # ----------------- LOGIC TỰ ĐỘNG LẤY DỮ LIỆU TỪ KHẢO SÁT -----------------
     @api.onchange('survey_id')
     def _onchange_survey_id(self):
         if not self.survey_id:
             return
 
-        # Tìm các phiếu nhu cầu đã Confirm thuộc đợt khảo sát này
         needs = self.env['recruitment.needs'].search([
             ('name', '=', self.survey_id.id),
             ('state', '=', 'confirmed')
@@ -117,6 +137,8 @@ class RecruitmentPlan(models.Model):
             if not dept: continue
             for line in need.line_ids:
                 if not line.job_id: continue
+
+                # Mapping dữ liệu
                 val = {
                     'department_request': dept.id,
                     'recruitment_job': line.job_id.id,
@@ -124,10 +146,18 @@ class RecruitmentPlan(models.Model):
                     'experient_request_id': line.experience_id.id if line.experience_id else False,
                     'professional_qualification': line.professional_qualification,
                     'note': line.note or '',
+
+                    # --- (MỚI) LẤY CHI PHÍ TỪ EXPECTED SALARY ---
+                    'expense_per_head': line.expected_salary,
+
+                    # Mapping Quý
+                    'qty_q1': line.qty_q1,
+                    'qty_q2': line.qty_q2,
+                    'qty_q3': line.qty_q3,
+                    'qty_q4': line.qty_q4,
                 }
                 new_lines.append((0, 0, val))
 
-        # Xóa cũ và thêm mới
         self.recruitment_plan_detail_ids = [(5, 0, 0)] + new_lines
 
     # ----------------- KIỂM TRA QUYỀN (HELPER) -----------------
@@ -188,7 +218,7 @@ class RecruitmentPlan(models.Model):
             rec.recruitment_status = "director_approve"
 
     # 2. Director: Director Approve -> Board Approve
-    def action_director_approve(self):
+    def action_director_approve_new(self):
         self._check_director()
         for rec in self:
             if rec.recruitment_status != "director_approve":
@@ -205,22 +235,93 @@ class RecruitmentPlan(models.Model):
 
     # 4. Director: Bắt đầu (Triển khai) -> Update Jobs
     def action_director_start_deploy(self):
-        """Giám đốc bấm bắt đầu để cập nhật số lượng vào Job"""
+        # ... (Giữ nguyên logic check quyền cũ) ...
         self._check_director()
         for rec in self:
             if rec.recruitment_status != "approved":
                 raise ValidationError(_("Chỉ có thể triển khai khi Kế hoạch đã được HĐQT phê duyệt."))
             if rec.is_applied_to_jobs:
-                raise ValidationError(_("Kế hoạch này đã được triển khai (đã cập nhật Job)."))
+                raise ValidationError(_("Kế hoạch này đã được triển khai."))
 
-
-            # Logic update job
+            # A. Cập nhật vào Job (Logic cũ)
             rec._apply_recruitment_to_jobs()
             rec.is_applied_to_jobs = True
-            rec.message_post(body=_(
-                "Giám đốc đã bắt đầu triển khai kế hoạch. Số lượng tuyển dụng đã được cập nhật vào cấu hình Vị trí công việc."))
+
+            # B. Nếu là Kế hoạch Năm -> Tự động sinh 4 Kế hoạch Quý
+            if rec.type == 'year':
+                rec._generate_quarterly_plans()
+
+            rec.message_post(body=_("Giám đốc đã bắt đầu triển khai kế hoạch."))
             rec.recruitment_status = "in_process"
 
+    def action_director_approve_quarter(self):
+        """
+        Kế hoạch Quý: Giám đốc duyệt thẳng từ Dự thảo -> Đã duyệt.
+        Bỏ qua bước Trình duyệt và HĐQT.
+        """
+        self._check_director()
+        for rec in self:
+            if rec.type != 'quarter':
+                raise ValidationError(_("Hành động này chỉ dành cho Kế hoạch Quý."))
+
+            if rec.recruitment_status != 'draft':
+                raise ValidationError(_("Chỉ có thể duyệt khi kế hoạch đang ở trạng thái 'Dự thảo'."))
+
+            # Chuyển thẳng sang Approved
+            rec.recruitment_status = "approved"
+
+            # Log lại
+            rec.message_post(body=_("Giám đốc đã phê duyệt Kế hoạch Quý (Duyệt nhanh)."))
+
+    # --- HÀM TẠO 4 KẾ HOẠCH CON ---
+    def _generate_quarterly_plans(self):
+        self.ensure_one()
+        quarters_map = {1: 'qty_q1', 2: 'qty_q2', 3: 'qty_q3', 4: 'qty_q4'}
+
+        for q_num, field_qty in quarters_map.items():
+            plan_name = f"{self.plan_name} - Quý {q_num}"
+
+            # Check tồn tại
+            existing = self.env['recruitment.plan'].search([
+                ('parent_id', '=', self.id), ('plan_name', '=', plan_name)
+            ], limit=1)
+            if existing: continue
+
+            # Tạo Header Quý
+            plan_vals = {
+                'plan_name': plan_name,
+                'type': 'quarter',
+                'parent_id': self.id,
+                'recruitment_status': 'draft',
+                'plan_execute_date': self.plan_execute_date,
+                'people_suggestion': self.people_suggestion.id,
+                'department_responsible': self.department_responsible.id,
+                'plan_purpose': f"Triển khai Quý {q_num} theo kế hoạch năm: {self.plan_code}",
+                # Lưu ý: Không cần set plan_fund ở đây, nó sẽ tự tính khi tạo lines
+            }
+
+            # Tạo Lines Quý
+            detail_lines = []
+            for line in self.recruitment_plan_detail_ids:
+                qty_in_quarter = getattr(line, field_qty, 0)
+                if qty_in_quarter > 0:
+                    line_vals = {
+                        'department_request': line.department_request.id,
+                        'recruitment_job': line.recruitment_job.id,
+                        'experient_request_id': line.experient_request_id.id,
+                        'professional_qualification': line.professional_qualification,
+                        'note': line.note,
+
+                        # --- QUAN TRỌNG: TRUYỀN SỐ LƯỢNG VÀ ĐƠN GIÁ ---
+                        'requested_quantity': qty_in_quarter,
+                        'expense_per_head': line.expense_per_head,
+                        # ---------------------------------------------
+                    }
+                    detail_lines.append((0, 0, line_vals))
+
+            if detail_lines:
+                plan_vals['recruitment_plan_detail_ids'] = detail_lines
+                self.env['recruitment.plan'].create(plan_vals)
 
     # 5. Committee: Complete
     def action_complete(self):

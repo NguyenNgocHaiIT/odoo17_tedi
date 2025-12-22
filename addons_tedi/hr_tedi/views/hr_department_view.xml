@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_department_tree_inherit_multi_manager" model="ir.ui.view">
+            <field name="name">hr.department.tree.inherit.multi.manager</field>
+            <field name="model">hr.department</field>
+            <field name="inherit_id" ref="hr.view_department_tree"/>
+            <field name="arch" type="xml">
+                <field name="manager_id" position="attributes">
+                    <attribute name="column_invisible">1</attribute> </field>
+
+                <field name="manager_id" position="after">
+                    <field name="manager_ids" widget="many2many_tags_avatar" string="Ban Quản lý"/>
+                </field>
+            </field>
+        </record>
+
+        <record id="view_department_filter_inherit_multi_manager" model="ir.ui.view">
+            <field name="name">hr.department.search.inherit.multi.manager</field>
+            <field name="model">hr.department</field>
+            <field name="inherit_id" ref="hr.view_department_filter"/>
+            <field name="arch" type="xml">
+                <field name="manager_id" position="after">
+                    <field name="manager_ids" string="Quản lý (Bao gồm đồng quản lý)"/>
+                </field>
+            </field>
+        </record>
+
+        <record id="view_department_kanban_inherit_multi_manager" model="ir.ui.view">
+            <field name="name">hr.department.kanban.inherit.multi.manager</field>
+            <field name="model">hr.department</field>
+            <field name="inherit_id" ref="hr.hr_department_view_kanban"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[contains(@class, 'o_kanban_primary_right')]" position="inside">
+                    <div t-if="record.manager_ids.raw_value" class="mt-2">
+                        <span class="text-muted">Ban quản lý: </span>
+                        <field name="manager_ids" widget="many2many_tags_avatar"/>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_department_form_multi_manager" model="ir.ui.view">
+            <field name="name">hr.department.form.multi.manager</field>
+            <field name="model">hr.department</field>
+            <field name="inherit_id" ref="hr.view_department_form"/>
+            <field name="arch" type="xml">
+
+                <field name="manager_id" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </field>
+
+                <field name="manager_id" position="after">
+                    <field name="manager_ids"
+                           widget="many2many_tags_avatar"
+                           placeholder="Chọn các quản lý..."
+                           options="{'no_create': True}"/>
+
+                    <field name="manager_id" string="Đại diện trưởng phòng (System)" readonly="1" force_save="1"/>
+                </field>
+
+            </field>
+        </record>
+
+    </data>
+</odoo>

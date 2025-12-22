@@ -115,10 +115,75 @@ class HrEmployeePrivate(models.Model):
     # ==== Mã nhân viên ====
     employee_code = fields.Char(string="Employee Code", readonly=False, copy=False)
 
+
+
     attachment_ids = fields.Many2many(
         'ir.attachment',
         string="Tài liệu đính kèm"
     )
+    province_id = fields.Many2one(
+        'res.country.state',
+        string="Tỉnh/Thành phố",
+        domain="[('country_id.code', '=', 'VN')]"  # Mặc định lọc Việt Nam
+    )
+    supervisor_ids = fields.Many2many('hr.employee', 'hr_employee_supervisor_rel', 'emp_id', 'sup_id',
+                                      string="Đồng quản lý")
+
+    # --- HÀM TỰ ĐỘNG LẤY DANH SÁCH SẾP TỪ PHÒNG BAN ---
+    @api.onchange('department_id')
+    def _onchange_department_get_multi_managers(self):
+        # Giữ lại logic cũ: Lấy sếp chính (để vẽ sơ đồ tổ chức)
+        # Lưu ý: department_id.manager_id là field gốc (Many2one) hoặc field logic bạn đã map
+        if self.department_id.manager_id:
+            self.parent_id = self.department_id.manager_id
+
+        # LOGIC MỚI: Lấy danh sách ban quản lý (Many2many) từ phòng ban
+        # Lưu ý: department_id.manager_ids là field custom bên model hr.department bạn đã tạo
+        if self.department_id and hasattr(self.department_id, 'manager_ids'):
+            # Lọc bỏ chính nhân viên đang sửa (để tránh lỗi tự mình quản lý mình)
+            managers = self.department_id.manager_ids.filtered(lambda m: m.id != self._origin.id)
+            self.supervisor_ids = managers
+        else:
+            self.supervisor_ids = False
+
+    # 2. Quận/Huyện
+    district_id = fields.Many2one(
+        'res.district',
+        string="Quận/Huyện",
+        domain="[('state_id', '=', province_id)]"  # Chỉ hiện huyện thuộc tỉnh đã chọn
+    )
+
+    # 3. Xã/Phường
+    ward_id = fields.Many2one(
+        'res.ward',
+        string="Xã/Phường",
+        domain="[('district_id', '=', district_id)]"  # Chỉ hiện xã thuộc huyện đã chọn
+    )
+
+    # Địa chỉ cụ thể (Số nhà, đường...)
+    street_detail = fields.Char(string="Số nhà/Đường")
+
+    # --- Tự động reset giá trị khi thay đổi cấp cha ---
+    @api.onchange('province_id')
+    def _onchange_province(self):
+        self.district_id = False
+        self.ward_id = False
+
+    @api.onchange('district_id')
+    def _onchange_district(self):
+        self.ward_id = False
+
+    # --- Tự động gộp địa chỉ hiển thị (Optional) ---
+    @api.onchange('street_detail', 'ward_id', 'district_id', 'province_id')
+    def _onchange_full_address(self):
+        parts = [
+            self.street_detail,
+            self.ward_id.name,
+            self.district_id.name,
+            self.province_id.name
+        ]
+        # Gán vào field household_address cũ của bạn để lưu full text
+        self.household_address = ", ".join([p for p in parts if p])
 
 
     @api.onchange('name')
@@ -266,5 +331,34 @@ class HrEmployeePrivate(models.Model):
                 'show_hr_icon_display': True,
             },
         }
+
+
+class ResDistrict(models.Model):
+    _name = 'res.district'
+    _description = 'Quận/Huyện'
+    _order = 'name'
+
+    name = fields.Char(string="Tên Quận/Huyện", required=True)
+    # Liên kết với Tỉnh/Thành phố (res.country.state có sẵn của Odoo)
+    state_id = fields.Many2one('res.country.state', string="Tỉnh/Thành phố", required=True)
+
+    _sql_constraints = [
+        ('name_state_uniq', 'unique(name, state_id)', 'Quận/Huyện này đã tồn tại trong Tỉnh/TP này!')
+    ]
+
+
+# --- 2. MODEL XÃ/PHƯỜNG ---
+class ResWard(models.Model):
+    _name = 'res.ward'
+    _description = 'Xã/Phường'
+    _order = 'name'
+
+    name = fields.Char(string="Tên Xã/Phường", required=True)
+    # Liên kết với Quận/Huyện
+    district_id = fields.Many2one('res.district', string="Quận/Huyện", required=True)
+
+    _sql_constraints = [
+        ('name_district_uniq', 'unique(name, district_id)', 'Xã/Phường này đã tồn tại trong Quận/Huyện này!')
+    ]
 
 
