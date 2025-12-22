@@ -1182,7 +1182,7 @@ class OfficeDocument(models.Model):
         self.ensure_one()
 
         # Đặt lại trạng thái về draft để chỉnh sửa
-        self.tt_vb = 'draft'
+        self.tt_vb = 'cho_duyet'
 
         # Thông báo cho người dùng
         return {
