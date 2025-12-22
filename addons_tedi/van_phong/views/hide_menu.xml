@@ -12,4 +12,56 @@
     <record id="project_todo.menu_todo_todos" model="ir.ui.menu">
         <field name="active" eval="False"/>
     </record>
+    <record id="event.event_main_menu" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="fleet.menu_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/doi-xe.png</field>
+    </record>
+    <record id="hr_recruitment.menu_hr_recruitment_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/tuyen-dung.png</field>
+    </record>
+    <record id="hr_attendance.menu_hr_attendance_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/cham-cong.png</field>
+    </record>
+    <record id="hr.menu_hr_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/nhan-vien.png</field>
+    </record>
+    <record id="hr_holidays.menu_hr_holidays_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/ngay-nghi.png</field>
+    </record>
+    <record id="account.menu_finance" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/hoa-don.png</field>
+    </record>
+    <record id="multi_level_approval.menu_multi_level_approval_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/phe-duyet.png</field>
+    </record>
+    <record id="base.menu_management" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/ung-dung.png</field>
+    </record>
+    <record id="base.menu_administration" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/cai-dat.png</field>
+    </record>
+    <record id="project.menu_main_pm" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/du-an.png</field>
+    </record>
+    <record id="spreadsheet_dashboard.spreadsheet_dashboard_menu_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/bang-dieu-khien.png</field>
+    </record>
+    <record id="om_hr_payroll.menu_hr_payroll_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/bang-luong.png</field>
+    </record>
+    <record id="survey.menu_surveys" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/khao-sat.png</field>
+    </record>
+    <record id="contacts.menu_contacts" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/lien-he.png</field>
+    </record>
+    <record id="mass_mailing.mass_mailing_menu_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/marketing.png</field>
+    </record>
+    <record id="onlyoffice_custom.menu_custom_report_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/mau-bao-cao.png</field>
+    </record>
+
 </odoo>

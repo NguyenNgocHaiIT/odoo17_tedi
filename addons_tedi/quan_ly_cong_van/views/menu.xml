@@ -58,6 +58,26 @@
                 action="action_open_office_resolution_task"
                 sequence="16"/>
 
+        <!-- Menu Văn bản HĐQT -->
+        <menuitem
+                id="document_director_menu"
+                name="Văn bản HĐQT"
+                parent="office_document_menu_root"
+                sequence="14"/>
+
+        <menuitem
+                id="document_director_menu_item"
+                name="Văn bản HĐQT"
+                parent="document_director_menu"
+                action="action_open_office_document_directors"
+                sequence="13"/>
+
+        <menuitem
+                id="Office_task_menu_director"
+                name="Giao việc"
+                parent="document_director_menu"
+                action="action_open_office_director_document_task"
+                sequence="16"/>
 
         <!-- Menu văn bản nội bộ đến -->
         <menuitem

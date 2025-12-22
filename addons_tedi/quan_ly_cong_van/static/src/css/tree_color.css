@@ -24,8 +24,3 @@ body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-yellow
 body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-red-row:hover td {
     color: red !important;
 }
-
-body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row{
-    font-weight: 700;
-    font-size: 15px;
-}

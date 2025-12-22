@@ -43,7 +43,16 @@
                                 invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh'))"/>
                         <button name="huy" string="Hủy" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb == 'huy'"/>
+                                invisible="tt_vb == 'huy'"
+                                confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
+                        <button name="co_cong_van_dieu_chinh" string="Có công văn điều chỉnh" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="tt_vb != 'cho_but_phe'"
+                                confirm="Bạn có chắc muốn chuyển văn bản về trạng thái chỉnh sửa?"/>
+                        <button name="action_chuyen_lanh_dao"
+                                type="object"
+                                string="Chuyển lãnh đạo"
+                                invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_den"/>
                     </header>
                     <sheet>
                         <field name="can_create_don_vi" invisible="1"/>
@@ -255,7 +264,12 @@
                                 invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh'))"/>
                         <button name="huy" string="Hủy" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb == 'huy'"/>
+                                invisible="tt_vb == 'huy'"
+                                confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
+                        <button name="co_cong_van_dieu_chinh" string="Có công văn điều chỉnh" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="tt_vb != 'cho_but_phe'"
+                                confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
                     </header>
                     <sheet>
                         <field name="can_create_don_vi" invisible="1"/>
@@ -459,18 +473,33 @@
                                 invisible="not (tt_vb in ('cho_phan_phat', 'phat_hanh'))"/>
                         <button name="huy" string="Hủy" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb == 'huy'"/>
+                                invisible="tt_vb == 'huy'"
+                                confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
+                        <button name="co_cong_van_dieu_chinh" string="Có công văn điều chỉnh" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="tt_vb != 'cho_but_phe'"
+                                confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
+
                     </header>
                     <sheet>
                         <field name="can_create_don_vi" invisible="1"/>
                         <field name="show_skip_button" invisible="1"/>
                         <field name="co_the_but_phe_cong_van_di" invisible="1"/>
                         <field name="tt_vb" invisible="1"/>
+                        <field name="document_type" invisible="1"/>
+
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu" readonly="tt_vb != 'draft'" required="1"/>
                         <group>
                             <group>
-                                <field name="so_di_tong_hop" string="Số quyết định" required="1"/>
+                                <field name="so_di_tong_hop" string="Số quyết định"
+                                       required="document_type == 'resolution'"
+                                       invisible="document_type != 'resolution'"
+                                       readonly="tt_vb != 'draft'"/>
+                                <field name="so_di_tong_hop" string="Số văn bản"
+                                       required="document_type == 'director'"
+                                       invisible="document_type != 'director'"
+                                       readonly="tt_vb != 'draft'"/>
                                 <field name="don_vi_ban_hanh" readonly="tt_vb != 'draft'" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
                                 <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách" readonly="tt_vb != 'draft'" required="1"/>
@@ -591,6 +620,17 @@
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_resolution_form')})]"/>
         </record>
 
+        <record id="action_open_office_document_directors" model="ir.actions.act_window">
+            <field name="name">Văn bản HĐQT</field>
+            <field name="res_model">office.document</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[('document_type','=','director')]</field>
+            <field name="context">{'default_document_type': 'director'}</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_resolution_tree')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_resolution_form')})]"/>
+        </record>
+
         <record id="phan_phat_form" model="ir.ui.view">
             <field name="name">phan_phat_form</field>
             <field name="model">office.document.phan.phat</field>
@@ -603,22 +643,35 @@
                     <sheet>
                         <group>
                             <group>
-                                <!--                                <field name="nhan_van_ban"/>-->
-                                <field name="don_vi_xu_ly_chinh"/>
-                                <field name="don_vi_dong_xu_ly" widget="many2many_tags"/>
+                                <field name="loai_phan_phat" widget="radio"/>
                             </group>
-                            <group>
-                                <!--                                <field name="noi_nhan_ban_goc_luu_tru"/>-->
-                                <field name="nguoi_xu_ly_chinh" widget="many2many_tags"/>
-                                <field name="nguoi_dong_xu_ly" widget="many2many_tags"/>
-                            </group>
-                            <!--                            <group string="Đơn vị nhận">-->
-                            <!--                                <field name="pb_dv_nhan"/>-->
-                            <!--                                <field name="ca_nhan_dv_nhan"/>-->
-                            <!--                                <field name="nhom_nguoi_dung_dv_nhan"/>-->
-                            <!--                            </group>-->
                             <group/>
                         </group>
+
+                        <!-- Nhóm cho đơn vị -->
+                        <group invisible="loai_phan_phat == 'ca_nhan'" string="Cho đơn vị">
+                            <group>
+                                <field name="don_vi_xu_ly_chinh" invisible="loai_phan_phat == 'ca_nhan'"/>
+                                <field name="don_vi_dong_xu_ly" widget="many2many_tags" invisible="loai_phan_phat == 'ca_nhan'"/>
+                            </group>
+                            <group>
+                                <field name="nguoi_xu_ly_chinh" widget="many2many_tags" readonly="1"
+                                       invisible="loai_phan_phat == 'ca_nhan'"/>
+                                <field name="nguoi_dong_xu_ly" widget="many2many_tags" readonly="1"
+                                       invisible="loai_phan_phat == 'ca_nhan'"/>
+                            </group>
+                        </group>
+
+                        <!-- Nhóm cho cá nhân -->
+                        <group invisible="loai_phan_phat == 'don_vi'" string="Cho cá nhân">
+                            <group>
+                                <field name="ca_nhan_xu_ly_chinh" widget="many2many_tags"/>
+                                <field name="ca_nhan_dong_xu_ly" widget="many2many_tags"/>
+                            </group>
+                            <group/>
+                        </group>
+
+                        <group/>
                     </sheet>
                     <footer>
                         <button name="phan_phat" string="Phân phát" type="object"/>
@@ -686,7 +739,7 @@
             <field name="res_model">office.document</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','outgoing_internal')]</field>
-            <field name="context">{'default_document_type': 'outgoing_internal', 'create': False}</field>
+            <field name="context">{'default_document_type': 'outgoing_internal'}</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_outgoing_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_outgoing_form')})]"/>
@@ -713,5 +766,28 @@
             </field>
         </record>
 
+        <record id="view_chuyen_lanh_dao_wizard_form" model="ir.ui.view">
+            <field name="name">office.document.chuyen.lanh.dao.form</field>
+            <field name="model">office.document.chuyen.lanh.dao</field>
+            <field name="arch" type="xml">
+                <form string="Chuyển lãnh đạo">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="office_document_id" widget="many2one" options="{'no_open': True, 'no_create': True}" readonly="1"/>
+                                <field name="lanh_dao_hien_tai_id" widget="many2one" options="{'no_open': True, 'no_create': True}" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="lanh_dao_moi_id" required="1"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="cancel" string="Hủy" class="btn-secondary" special="cancel"/>
+                        <button name="action_chuyen" string="Chuyển" class="btn-primary" type="object"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
     </data>
 </odoo>
