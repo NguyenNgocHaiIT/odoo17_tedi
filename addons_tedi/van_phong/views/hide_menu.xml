@@ -12,4 +12,10 @@
     <record id="project_todo.menu_todo_todos" model="ir.ui.menu">
         <field name="active" eval="False"/>
     </record>
+    <record id="fleet.menu_root" model="ir.ui.menu">
+        <field name="web_icon">quan_ly_doi_xe,static/description/icon.png</field>
+    </record>
+    <record id="hr_recruitment.menu_hr_recruitment_root" model="ir.ui.menu">
+        <field name="web_icon">quan_ly_tuyen_dung,static/description/icon.png</field>
+    </record>
 </odoo>
