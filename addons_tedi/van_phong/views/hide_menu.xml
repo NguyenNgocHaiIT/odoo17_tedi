@@ -48,4 +48,20 @@
     <record id="spreadsheet_dashboard.spreadsheet_dashboard_menu_root" model="ir.ui.menu">
         <field name="web_icon">van_phong,static/description/bang-dieu-khien.png</field>
     </record>
+    <record id="om_hr_payroll.menu_hr_payroll_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/bang-luong.png</field>
+    </record>
+    <record id="survey.menu_surveys" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/khao-sat.png</field>
+    </record>
+    <record id="contacts.menu_contacts" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/lien-he.png</field>
+    </record>
+    <record id="mass_mailing.mass_mailing_menu_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/marketing.png</field>
+    </record>
+    <record id="onlyoffice_custom.menu_custom_report_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/mau-bao-cao.png</field>
+    </record>
+
 </odoo>
