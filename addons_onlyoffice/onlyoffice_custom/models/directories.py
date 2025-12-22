@@ -36,7 +36,9 @@ class Directory(models.Model):
             rec.write({"document_share_id": document_share.id})
         if self.id != dir.id:
             list_role_user = []
+            user_ids = []
             for role in self.document_share_id.user_role_permision_ids:
+                user_ids.append(role.user_id.id)
                 list_role_user.append(self.env['user.role.permision'].create({
                     "user_id": role.user_id.id,
                     "role_access_ids": [(6, 0, role.role_access_ids.ids)]
@@ -47,7 +49,7 @@ class Directory(models.Model):
                 "role_access_ids": [(6, 0, self.document_share_id.role_access_ids.ids)]
             })
             dir.write({
-                "document_share_id": document_share
+                "document_share_id": document_share, "user_ids": [(6, 0, user_ids)]
             })
 
     def set_role_child_dir(self, child_dir, update=True):

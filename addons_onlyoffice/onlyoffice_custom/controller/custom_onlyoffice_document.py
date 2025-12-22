@@ -63,53 +63,40 @@ class OnlyofficeDocuments_custom(Onlyoffice_Connector):
         }
         current_user = request.env.user
         user_share = ''
-        if not attachment.public:
-            if document_share:
-                public = document_share.public_access
-                for rec in document_share.user_role_permision_ids:
-                    if rec.user_id.id == current_user.id:
-                        rolls = [rec.role_access for rec in rec.role_access_ids]
-                        user_share = rec.user_id
-                        roll_access = {
-                            "edit": "edit" in rolls,
-                            "comment": "comment" in rolls,
-                            "review": "review" in rolls,
-                            "copy": "copy" in rolls,
-                            "print": "print" in rolls,
-                            "chat": "chat" in rolls,
-                            "download": "download" in rolls,
-                            "rename": "rename" in rolls,
-                        }
-                        break
-                if not public:
-                    if request.env.user != attachment.sudo().create_uid and not user_share:
-                        raise AccessError(_("User has no read access rights to open this document"))
-                elif public and request.env.user != attachment.sudo().create_uid:
-                    rolls_public = [roll_public.role_access for roll_public in document_share.role_access_ids]
+        if document_share:
+            public = document_share.public_access
+            for rec in document_share.user_role_permision_ids:
+                if rec.user_id.id == current_user.id:
+                    rolls = [rec.role_access for rec in rec.role_access_ids]
+                    user_share = rec.user_id
                     roll_access = {
-                        "edit": "edit" in rolls_public,
-                        "comment": "comment" in rolls_public,
-                        "review": "review" in rolls_public,
-                        "copy": "copy" in rolls_public,
-                        "print": "print" in rolls_public,
-                        "chat": "chat" in rolls_public,
-                        "download": "download" in rolls_public,
-                        "rename": "rename" in rolls_public,
+                        "edit": "edit" in rolls,
+                        "comment": "comment" in rolls,
+                        "review": "review" in rolls,
+                        "copy": "copy" in rolls,
+                        "print": "print" in rolls,
+                        "chat": "chat" in rolls,
+                        "download": "download" in rolls,
+                        "rename": "rename" in rolls,
                     }
-            elif request.env.user != attachment.sudo().create_uid:
-                raise AccessError(_("User has no read access rights to open this document"))
-
-        if attachment.public and request.env.user != attachment.sudo().create_uid:
-            roll_access = {
-                "edit": False,
-                "comment": False,
-                "review": False,
-                "copy": False,
-                "print": False,
-                "chat": False,
-                "download": False,
-                "rename": False,
-            }
+                    break
+            if not public:
+                if request.env.user != attachment.sudo().create_uid and not user_share:
+                    raise AccessError(_("User has no read access rights to open this document"))
+            elif public and request.env.user != attachment.sudo().create_uid:
+                rolls_public = [roll_public.role_access for roll_public in document_share.role_access_ids]
+                roll_access = {
+                    "edit": "edit" in rolls_public,
+                    "comment": "comment" in rolls_public,
+                    "review": "review" in rolls_public,
+                    "copy": "copy" in rolls_public,
+                    "print": "print" in rolls_public,
+                    "chat": "chat" in rolls_public,
+                    "download": "download" in rolls_public,
+                    "rename": "rename" in rolls_public,
+                }
+        elif request.env.user != attachment.sudo().create_uid:
+            raise AccessError(_("User has no read access rights to open this document"))
 
         data = attachment.sudo().read(["id", "checksum", "public", "name", "access_token"])[0]
         key = str(data["id"]) + str(data["checksum"])

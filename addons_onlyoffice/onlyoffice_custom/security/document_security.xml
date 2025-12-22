@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="windx_documents_management_preview.rule_document_directory_admin" model="ir.rule">
+            <field name="groups" eval="[(4, ref('base.user_admin'))]"/>
+        </record>
+        <record id="rule_document_directory_user_read_only_parent" model="ir.rule">
+           <field name="name">User can read only parent directory</field>
+            <field name="model_id" ref="model_document_directory"/>
+            <field name="domain_force">['&amp;',('user_ids', 'not in', user.id), ('child_ids.user_ids', 'in', user.id)]</field>
+            <field name="groups" eval="[(4, ref('windx_documents_management_preview.group_documents_user'))]"/>
+            <field name="perm_unlink" eval="0"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_create" eval="0"/>
+        </record>
+
+    </data>
+</odoo>

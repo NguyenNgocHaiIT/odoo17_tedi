@@ -22,9 +22,6 @@
         <record id="role_viewer7" model="role.onlyoffice">
             <field name="role_access">chat</field>
         </record>
-        <record id="role_viewer8" model="role.onlyoffice">
-            <field name="role_access">rename</field>
-        </record>
     </data>
 </odoo>
 
