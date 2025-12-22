@@ -11,6 +11,26 @@
                     <attribute name="invisible">1</attribute>
                 </xpath>
 
+                <xpath expr="//field[@name='state']" position="before">
+                    <field name="can_approve_by_unit_manager" invisible="1"/>
+                    <field name="is_officer" invisible="1"/>
+                </xpath>
+
+                <xpath expr="//button[@name='action_approve']" position="attributes">
+                    <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
+                    <attribute name="invisible">not (can_approve_by_unit_manager or is_officer) or state != 'confirm'</attribute>
+                </xpath>
+
+                <xpath expr="//button[@name='action_refuse']" position="attributes">
+                    <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
+                    <attribute name="invisible">not (can_approve_by_unit_manager or is_officer) or state not in ['confirm', 'validate', 'validate1']</attribute>
+                </xpath>
+
+                <xpath expr="//button[@name='action_validate']" position="attributes">
+                    <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
+                    <attribute name="invisible">not (can_approve_by_unit_manager or is_officer) or state != 'validate1'</attribute>
+                </xpath>
+
                 <xpath expr="//group[@name='col_left']/field[1]" position="before">
                     <field name="date_from"
                            string="Thời gian bắt đầu"
@@ -155,6 +175,16 @@
             <field name="model">hr.leave</field>
             <field name="inherit_id" ref="hr_holidays.hr_leave_view_tree"/>
             <field name="arch" type="xml">
+
+                <xpath expr="//button[@name='action_approve']" position="attributes">
+                     <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
+                </xpath>
+                <xpath expr="//button[@name='action_validate']" position="attributes">
+                     <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
+                </xpath>
+                 <xpath expr="//button[@name='action_refuse']" position="attributes">
+                     <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
+                </xpath>
                  <xpath expr="//field[@name='employee_id']" position="after">
                     <field name="employee_code" optional="show"/>
                 </xpath>
@@ -163,5 +193,27 @@
                 </xpath>
             </field>
         </record>
+
+        <record id="action_time_off_my_department" model="ir.actions.act_window">
+             <field name="name">Đơn nghỉ phép (Bộ phận của tôi)</field>
+             <field name="res_model">hr.leave</field>
+             <field name="view_mode">tree,form,calendar,kanban</field>
+
+             <field name="domain">[('employee_id.department_id.member_ids.user_id', '=', uid)]</field>
+
+             <field name="context">{'group_by': 'employee_id', 'create': False}</field>
+             <field name="help" type="html">
+                 <p class="o_view_nocontent_smiling_face">
+                     Không tìm thấy đơn nghỉ phép nào trong bộ phận của bạn.
+                 </p>
+             </field>
+         </record>
+
+         <menuitem id="menu_time_off_my_department"
+                   name="Đơn thuộc bộ phận"
+                   parent="menu_tedi_request_root"
+                   action="action_time_off_my_department"
+                   groups="hr_attendance_tedi.group_time_off_unit_manager"
+                   sequence="15"/>
     </data>
 </odoo>

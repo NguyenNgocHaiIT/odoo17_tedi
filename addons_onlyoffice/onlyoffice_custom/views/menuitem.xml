@@ -17,5 +17,12 @@
                       action="alnas_xlsx.xlsx_report_action"
                       sequence="2"/>
         </menuitem>
+
+        <menuitem id="windx_documents_management_preview.menu_document_directory"
+              name="Directories"
+              parent="windx_documents_management_preview.menu_document_root"
+              action="windx_documents_management_preview.document_directory_kanban_action"
+              groups="base.group_user"
+              sequence="1"/>
     </data>
 </odoo>

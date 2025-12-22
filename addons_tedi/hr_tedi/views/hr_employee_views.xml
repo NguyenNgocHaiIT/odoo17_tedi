@@ -128,7 +128,12 @@
                                     <field name="country_id" string="Quốc tịch"/>
                                     <field name="folk_id"/>
                                     <field name="household_address"/>
-                                    <field name="bank_account_id"/>
+
+                                    <field name="bank_account_id"
+                                           context="{
+                                               'default_partner_id': work_contact_id,
+                                               'default_currency_id': 23
+                                           }"/>
                                  </group>
 
                                 <group string="Hồ sơ nhân sự">
@@ -138,22 +143,35 @@
                                     <field name="job_id" string="Vị trí công việc"/>
                                     <field name="parent_id" string="Quản lý trực tiếp"/>
                                     <field name="work_location_id" string="Địa điểm làm việc"/>
-                                    <field name="tz" string="Múi giờ"/>
+<!--                                    <field name="tz" string="Múi giờ"/>-->
                                 </group>
                             </group>
 
-                            <separator string="TRÌNH ĐỘ CHUYÊN MÔN"/>
-                            <field name="education_ids" nolabel="1" colspan="2" context="{'default_employee_id': active_id}">
-                                <tree editable="bottom">
-                                    <field name="stt" readonly="1"/>
-                                    <field name="school"/>
-                                    <field name="major_id"/>
-                                    <field name="years"/>
-                                    <field name="degree"/>
-                                    <field name="issue_date"/>
-                                    <field name="attachment_ids" widget="many2many_binary"/>
-                                </tree>
-                            </field>
+                            <group string="THÔNG TIN QUÂN NGŨ" colspan="2" col="2">
+                                <field name="is_military"/>
+                                <field name="military_start_date" invisible="not is_military"/>
+                                <field name="military_end_date" invisible="not is_military"/>
+                                <field name="military_rank_id" invisible="not is_military"/>
+                            </group>
+
+                            <group string="THÔNG TIN CHÍNH SÁCH (THƯƠNG BINH - LIỆT SĨ)" colspan="2" col="2">
+                                <field name="is_policy_beneficiary"/>
+
+                                <field name="policy_type"
+                                       invisible="not is_policy_beneficiary"
+                                       required="is_policy_beneficiary"/>
+
+                                <field name="policy_rank"
+                                       invisible="not is_policy_beneficiary or policy_type == 'martyr_family'"/>
+
+                                <field name="policy_martyr_relation"
+                                       invisible="not is_policy_beneficiary or policy_type != 'martyr_family'"/>
+
+                                <field name="policy_card_no" invisible="not is_policy_beneficiary"/>
+                                <field name="policy_issue_date" invisible="not is_policy_beneficiary"/>
+                                <field name="policy_issue_place" invisible="not is_policy_beneficiary"/>
+                            </group>
+
 
                             <separator string="CHỨNG CHỈ HÀNH NGHỀ"/>
                             <field name="certificate_ids" nolabel="1" colspan="2" context="{'default_employee_id': active_id}">
@@ -183,6 +201,20 @@
                                 </tree>
                             </field>
                         </page>
+                        <page string="Trình độ học vấn">
+                             <field name="education_ids" nolabel="1" colspan="2" context="{'default_employee_id': active_id}">
+                                <tree editable="bottom">
+                                    <field name="stt" readonly="1"/>
+                                    <field name="school"/>
+                                    <field name="major_id"/>
+<!--                                    <field name="years"/>-->
+                                    <field name="degree"/>
+                                    <field name="issue_date"/>
+                                    <field name="attachment_ids" widget="many2many_binary"/>
+                                </tree>
+                            </field>
+
+                        </page>
 
                         <page string="Quá trình công tác" name="work_process">
                             <separator string="QUÁ TRÌNH CÔNG TÁC TẠI TEDI"/>
@@ -197,18 +229,19 @@
                                     <field name="date_to"/>
                                 </tree>
                             </field>
-
-                            <separator string="QUÁ TRÌNH CÔNG TÁC TẠI ĐƠN VỊ CŨ"/>
+                            <separator string="QUÁ TRÌNH CÔNG TÁC TẠI ĐƠN VỊ KHÁC"/>
                             <field name="work_process_old_ids" nolabel="1" colspan="2">
                                 <tree editable="bottom">
                                     <field name="stt" readonly="1"/>
                                     <field name="company_name"/>
                                     <field name="work_address"/>
-                                    <field name="date_from"/>
-                                    <field name="date_to"/>
+                                    <field name="date_from" widget="month_picker" options="{'format': 'MM/yyyy'}" placeholder="MM/YYYY" string="Từ tháng"/>
+                                    <field name="date_to" widget="month_picker" options="{'format': 'MM/yyyy'}" placeholder="MM/YYYY" string="Đến tháng"/>
                                     <field name="work_position"/>
                                 </tree>
                             </field>
+
+
                         </page>
 
                         <page string="Kinh nghiệm công việc" name="exp_vn">
@@ -269,20 +302,20 @@
                                     <field name="party_medal_no" invisible="not party_member"/>
                                 </group>
 
-                                <group>
+                                 <group>
                                     <group string="THÔNG TIN CÔNG ĐOÀN" colspan="2" col="2">
                                         <field name="union_member"/>
                                         <field name="union_join_date" invisible="not union_member"/>
-                                        <field name="union_profile_no" invisible="not union_member"/>
+                                        <field name="union_title_id" invisible="not union_member"/> <field name="union_profile_no" invisible="not union_member"/>
                                         <field name="union_card_no" invisible="not union_member"/>
                                     </group>
 
                                     <group string="THÔNG TIN ĐOÀN THANH NIÊN" colspan="2" col="2">
                                         <field name="youth_member"/>
                                         <field name="youth_join_date" invisible="not youth_member"/>
-                                        <field name="youth_card_no" invisible="not youth_member"/>
+                                        <field name="youth_title_id" invisible="not youth_member"/> <field name="youth_card_no" invisible="not youth_member"/>
                                     </group>
-                                </group>
+                                 </group>
                             </group>
                         </page>
 
@@ -351,6 +384,31 @@
             parent="hr.menu_human_resources_configuration"
             sequence="2"
             groups="hr.group_hr_user"/>
+
+        <menuitem
+            id="menu_view_hr_bank"
+            name="Ngân hàng"
+            action="base.action_res_partner_bank_account_form"
+            parent="hr.menu_human_resources_configuration"
+            sequence="2"
+            groups="hr.group_hr_user"/>
+
+        <menuitem
+            id="menu_view_res_bank_tedi"
+            name="Danh sách Ngân hàng"
+            action="base.action_res_bank_form"
+            parent="hr.menu_human_resources_configuration"
+            sequence="3"
+            groups="hr.group_hr_user"/>
+
+        <menuitem
+            id="menu_view_res_currency_tedi"
+            name="Tiền tệ"
+            action="base.action_currency_form"
+            parent="hr.menu_human_resources_configuration"
+            sequence="4"
+            groups="hr.group_hr_user"/>
+
 
 
 

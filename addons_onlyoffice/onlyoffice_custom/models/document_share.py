@@ -32,5 +32,9 @@ class DocumentShare(models.Model):
     def action_share_document(self):
         id_folder = self.env.context.get('default_folder_id')
         if id_folder:
+            user_ids = []
+            for rec in self.user_role_permision_ids:
+                user_ids.append(rec.user_id.id)
             direc = self.env['document.directory'].browse(id_folder)
+            direc.write({'document_share_id': self.id, "user_ids": [(6, 0, user_ids)]})
             direc.set_role_child_dir(direc)

@@ -27,3 +27,10 @@ access_hr_training_field_user,access_hr_training_field_user,model_hr_training_fi
 
 
 access_res_ethnic_user,access_res_ethnic_user,model_res_ethnic,base.group_user,1,1,1,1
+
+access_hr_military_rank,access_hr_military_rank,model_hr_military_rank,base.group_user,1,1,1,1
+
+access_hr_union_title_user,hr.union.title.user,model_hr_union_title,base.group_user,1,0,0,0
+access_hr_union_title_manager,hr.union.title.manager,model_hr_union_title,hr.group_hr_manager,1,1,1,1
+access_hr_youth_union_title_user,hr.youth.union.title.user,model_hr_youth_union_title,base.group_user,1,0,0,0
+access_hr_youth_union_title_manager,hr.youth.union.title.manager,model_hr_youth_union_title,hr.group_hr_manager,1,1,1,1

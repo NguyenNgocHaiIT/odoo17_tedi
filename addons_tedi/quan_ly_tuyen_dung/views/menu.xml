@@ -18,7 +18,7 @@
               sequence="7"/>
 
     <menuitem id="menu_recruitment_needs"
-              name="Nhu cầu tuyển dụng"
+              name="Đăng ký nhu cầu"
               parent="hr_recruitment.menu_hr_recruitment_root"
               action="action_recruitment_needs"
               sequence="8"/>

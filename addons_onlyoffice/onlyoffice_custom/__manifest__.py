@@ -14,6 +14,7 @@
         "data/role_access.xml",
 
         "security/ir.model.access.csv",
+        "security/document_security.xml",
 
         "views/hr_employee.xml",
         "views/fields_document_views.xml",
@@ -35,6 +36,7 @@
 
             'onlyoffice_custom/static/src/xml/document_kanban_button.xml',
             'onlyoffice_custom/static/src/xml/m2m_field_preview.xml',
+            'onlyoffice_custom/static/src/css/report.scss',
         ],
     },
     "license": "LGPL-3",

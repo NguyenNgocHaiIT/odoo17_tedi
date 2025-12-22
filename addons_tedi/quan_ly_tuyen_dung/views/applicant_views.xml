@@ -58,7 +58,7 @@
               <group>
                 <group string="VỊ TRÍ ỨNG TUYỂN">
                   <field name="recruitment_plan_id" string="Đợt tuyển dụng"
-                         domain="[('recruitment_status', 'in', ['director_approve'])]"/>
+                         domain="[('recruitment_status', 'in', ['approved'])]"/>
                     <field name="available_job_ids" invisible="1"/>
                     <field name="job_id" string="Vị trí"
                            domain="[('id', 'in', available_job_ids)]"/>
@@ -132,7 +132,7 @@
                             <field name="stt" string="STT" readonly="1" width="60"/>
                             <field name="major_id" string="Chuyên ngành đào tạo"/>
                             <field name="school" string="Trường đào tạo" required="1"/>
-                            <field name="years" string="Số năm học"/>
+<!--                            <field name="years" string="Số năm học"/>-->
                             <field name="degree" string="Trình độ"/>
                             <field name="issue_date" string="Ngày cấp"/>
                             <field name="attachment_ids" widget="many2many_binary" string="File"/>
@@ -190,6 +190,20 @@
                         <field name="work_position" string="Chức danh"/>
                       </tree>
                     </field>
+                  </page>
+                  <page string="Kinh nghiệm làm việc">
+                       <field name="external_experience_ids">
+                           <tree editable="bottom">
+                               <field name="company_name" style="font-weight: bold;"/>
+                               <field name="project_name"/>
+                               <field name="project_type"/>
+                               <field name="position"/>
+                               <field name="date_from"/>
+                               <field name="date_to"/>
+                               <field name="status"
+                                           decoration-success="status == 'completed'"/>
+                           </tree>
+                       </field>
                   </page>
 
                 </notebook>

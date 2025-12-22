@@ -7,7 +7,7 @@
             <field name="model">report.preview</field>
             <field name="priority" eval="8"/>
             <field name="arch" type="xml">
-                <form>
+                <form class="onlyoffice_custom">
                     <group>
                         <field name="action_report_id" readonly="1" invisible="1"/>
                         <field name="attachment_ids" widget="many2many_binary_preview"/>
