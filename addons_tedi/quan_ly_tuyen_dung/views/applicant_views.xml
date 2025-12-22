@@ -57,8 +57,8 @@
 
               <group>
                 <group string="VỊ TRÍ ỨNG TUYỂN">
-                  <field name="recruitment_plan_id" string="Đợt tuyển dụng"
-                         domain="[('recruitment_status', 'in', ['approved'])]"/>
+                  <field name="recruitment_plan_id"
+                         domain="[('type', '=', 'quarter'), ('recruitment_status', '=', 'in_process')]"/>
                     <field name="available_job_ids" invisible="1"/>
                     <field name="job_id" string="Vị trí"
                            domain="[('id', 'in', available_job_ids)]"/>
@@ -67,6 +67,7 @@
                   <field name="interviewer_ids" widget="many2many_tags"
                          options="{'no_create': True, 'no_create_edit': True}"/>
                   <field name="priority" widget="priority"/>
+                  <field name="experience_id" string="Số năm kinh nghiệm"/>
                   <field name="source_id"/>
                   <field name="attachment_ids" widget="many2many_binary" string="Hồ sơ đính kèm" />
                 </group>
