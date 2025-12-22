@@ -152,7 +152,7 @@
                                     <field name="department_id" string="Phòng ban"/>
                                     <field name="job_id" string="Vị trí công việc"/>
                                     <field name="parent_id" string="Quản lý trực tiếp"/>
-                                    <field name="supervisor_ids"/>
+                                    <field name="supervisor_ids"  widget="many2many_tags_avatar"/>
                                     <field name="work_location_id" string="Địa điểm làm việc"/>
 <!--                                    <field name="tz" string="Múi giờ"/>-->
                                 </group>
