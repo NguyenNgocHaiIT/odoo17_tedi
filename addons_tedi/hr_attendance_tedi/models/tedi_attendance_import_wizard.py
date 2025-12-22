@@ -126,7 +126,7 @@ class TediAttendanceImportWizard(models.TransientModel):
                 success_count += 1
 
             except ValidationError as ve:
-                errors.append(f"Dòng {row_index}: {ve.name}")
+                errors.append(f"Dòng {row_index}: {str(ve)}")
             except Exception as e:
                 errors.append(f"Dòng {row_index}: Lỗi hệ thống - {str(e)}")
 

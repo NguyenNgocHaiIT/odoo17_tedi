@@ -16,8 +16,20 @@
         <menuitem id="menu_tedi_attendance"
                   name="Chấm công"
                   parent="hr_attendance.menu_hr_attendance_root"
-                  action="action_tedi_attendance_my"
                   sequence="3"/>
+
+        <menuitem id="menu_tedi_attendance_my"
+                  name="Chấm công của tôi "
+                  parent="menu_tedi_attendance"
+                  action="action_tedi_attendance_my"
+                  sequence="1"/>
+
+        <menuitem id="menu_tedi_attendance_all"
+                  name="Tất cả Chấm công"
+                  parent="menu_tedi_attendance"
+                  action="action_tedi_attendance_all"
+                  groups="hr_holidays.group_hr_holidays_user"
+                  sequence="2"/>
 
         <menuitem id="menu_tedi_request_root"
                   name="Đơn nghỉ phép"
