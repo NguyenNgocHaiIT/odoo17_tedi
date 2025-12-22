@@ -15,6 +15,11 @@ _logger = logging.getLogger(__name__)
 class PhanPhat(models.TransientModel):
     _name = 'office.document.phan.phat'
 
+    loai_phan_phat = fields.Selection([
+        ('don_vi', 'Cho đơn vị'),
+        ('ca_nhan', 'Cho cá nhân')
+    ], string='Loại phân phát', default='don_vi', required=True)
+
     nhan_van_ban = fields.Char('Nhận văn bản')
     don_vi_xu_ly_chinh = fields.Many2one(
         'hr.department',
@@ -44,11 +49,31 @@ class PhanPhat(models.TransientModel):
         string='Người đồng xử lý'
     )
 
+    ca_nhan_xu_ly_chinh = fields.Many2many(
+        'hr.employee',
+        'office_document_ca_nhan_xu_ly_chinh_employee_rel',
+        'phanphat_id', 'employee_id',
+        string='Người xử lý chính')
+    ca_nhan_dong_xu_ly = fields.Many2many(
+        'hr.employee',
+        'office_document_ca_nhan_dong_xu_ly_employee_rel',
+        'phanphat_id', 'employee_id',
+        string='Người đồng xử lý'
+    )
+
     @api.constrains('don_vi_xu_ly_chinh', 'don_vi_dong_xu_ly')
     def _check_don_vi_trung(self):
         for rec in self:
-            if rec.don_vi_xu_ly_chinh and rec.don_vi_xu_ly_chinh in rec.don_vi_dong_xu_ly:
+            if rec.loai_phan_phat == 'don_vi' and rec.don_vi_xu_ly_chinh and rec.don_vi_xu_ly_chinh in rec.don_vi_dong_xu_ly:
                 raise ValidationError("Đơn vị xử lý chính không được trùng với đơn vị đồng xử lý!")
+
+    @api.constrains('ca_nhan_xu_ly_chinh', 'ca_nhan_dong_xu_ly')
+    def _check_ca_nhan_trung(self):
+        for rec in self:
+            if rec.loai_phan_phat == 'ca_nhan':
+                trung_nhau = set(rec.ca_nhan_xu_ly_chinh.ids) & set(rec.ca_nhan_dong_xu_ly.ids)
+                if trung_nhau:
+                    raise ValidationError("Cá nhân xử lý chính không được trùng với cá nhân đồng xử lý!")
 
     # ----- COMPUTE FIELD -----
     @api.depends('don_vi_xu_ly_chinh')
@@ -77,20 +102,44 @@ class PhanPhat(models.TransientModel):
         if not doc.exists():
             return
 
+        # Xác định người xử lý dựa vào loại phân phát
+        if self.loai_phan_phat == 'don_vi':
+            nguoi_xu_ly_chinh_ids = self.nguoi_xu_ly_chinh.ids
+            nguoi_dong_xu_ly_ids = self.nguoi_dong_xu_ly.ids
+        else:  # ca_nhan
+            nguoi_xu_ly_chinh_ids = self.ca_nhan_xu_ly_chinh.ids
+            nguoi_dong_xu_ly_ids = self.ca_nhan_dong_xu_ly.ids
+
         # --- 1. Cập nhật Many2many vào văn bản ---
-        doc.write({
-            'dv_xu_ly_chinh': self.don_vi_xu_ly_chinh.id or False,
-            'dv_dong_xu_ly': [(6, 0, self.don_vi_dong_xu_ly.ids)],
-            'nguoi_xu_ly_chinh': [(6, 0, self.nguoi_xu_ly_chinh.ids)] if self.nguoi_xu_ly_chinh else [(5,)],
-            'nguoi_dong_xu_ly': [(6, 0, self.nguoi_dong_xu_ly.ids)],
+        update_data = {
             'tt_vb': 'cho_xu_ly',
+        }
+
+        if self.loai_phan_phat == 'don_vi':
+            update_data.update({
+                'dv_xu_ly_chinh': self.don_vi_xu_ly_chinh.id or False,
+                'dv_dong_xu_ly': [(6, 0, self.don_vi_dong_xu_ly.ids)],
+            })
+
+        update_data.update({
+            'nguoi_xu_ly_chinh': [(6, 0, nguoi_xu_ly_chinh_ids)] if nguoi_xu_ly_chinh_ids else [(5,)],
+            'nguoi_dong_xu_ly': [(6, 0, nguoi_dong_xu_ly_ids)] if nguoi_dong_xu_ly_ids else [(5,)],
         })
+
+        doc.write(update_data)
 
         # --- 2. Tạo detail2 cho từng người ---
         lines_to_create = []
-        for emp, role in [(e, 'Xử lý chính') for e in self.nguoi_xu_ly_chinh] + \
-                         [(e, 'Đồng xử lý') for e in self.nguoi_dong_xu_ly]:
 
+        # Tạo danh sách người xử lý
+        employees_list = []
+        if nguoi_xu_ly_chinh_ids:
+            employees_list.extend(
+                [(emp, 'Xử lý chính') for emp in self.env['hr.employee'].browse(nguoi_xu_ly_chinh_ids)])
+        if nguoi_dong_xu_ly_ids:
+            employees_list.extend([(emp, 'Đồng xử lý') for emp in self.env['hr.employee'].browse(nguoi_dong_xu_ly_ids)])
+
+        for emp, role in employees_list:
             if not doc.detail2.filtered(lambda l: l.nguoi_nhap_y_kien == emp):
                 lines_to_create.append({
                     'office_document_id': doc.id,
@@ -108,7 +157,8 @@ class PhanPhat(models.TransientModel):
         odoobot = self.env.ref('base.user_root')
         odoobot_partner = odoobot.partner_id
 
-        employees_to_notify = self.nguoi_xu_ly_chinh | self.nguoi_dong_xu_ly
+        # Lấy tất cả nhân viên cần thông báo
+        employees_to_notify = self.env['hr.employee'].browse(nguoi_xu_ly_chinh_ids + nguoi_dong_xu_ly_ids)
         users_to_notify = employees_to_notify.mapped('user_id').filtered(lambda u: u.partner_id)
 
         web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
@@ -144,7 +194,11 @@ class PhanPhat(models.TransientModel):
             })
 
         # --- 5. Gửi popup, chat, email ---
-        for user in users_to_notify:
+        for employee in employees_to_notify:
+            user = employee.user_id
+            if not user or not user.partner_id:
+                continue
+
             partner = user.partner_id
 
             # Popup realtime
@@ -172,12 +226,11 @@ class PhanPhat(models.TransientModel):
             except Exception as e:
                 _logger.error(f"Lỗi gửi chat cho {partner.name}: {str(e)}")
 
-        # Email
-        for emp in employees_to_notify:
+            # Email
             try:
                 subject = f"[Văn bản mới] {doc.trich_yeu}"
                 body_html = f"""
-                                <p>Xin chào {user.name},</p>
+                                <p>Xin chào {employee.name},</p>
                                 <p>Bạn vừa được phân công xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
                                 <p>
                                     <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
@@ -186,18 +239,18 @@ class PhanPhat(models.TransientModel):
                                 </p>
                                 <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
                             """
-                email = emp.user_id.email or emp.work_email
+                email = employee.work_email or user.email
                 if not email:
                     continue
 
                 self.env['mail.mail'].sudo().create({
-                    'subject': f"[Văn bản mới] {doc.trich_yeu}",
+                    'subject': subject,
                     'email_to': email,
                     'email_from': self.env.user.email or 'no-reply@company.com',
                     'body_html': body_html,
                 }).send()
             except Exception as e:
-                _logger.warning(f"Gửi mail thất bại cho {user.email}: {str(e)}")
+                _logger.warning(f"Gửi mail thất bại cho {employee.name}: {str(e)}")
 
         # --- 6. Thông báo thành công ---
         return {
@@ -205,7 +258,7 @@ class PhanPhat(models.TransientModel):
             'tag': 'display_notification',
             'params': {
                 'title': 'Thành công',
-                'message': 'Đã phân phát văn bản và gửi email đến người nhận.',
+                'message': 'Đã phân phát văn bản và gửi thông báo đến người nhận.',
                 'type': 'success',
                 'sticky': False,
                 'next': {'type': 'ir.actions.act_window_close'},
@@ -451,6 +504,7 @@ class OfficeDocument(models.Model):
         ('resolution', 'Quyết định'),
         ('incoming_internal', 'Văn bản nội bộ đến'),
         ('outgoing_internal', 'Văn bản nội bộ đi'),
+        ('director', 'Văn bản HĐQT'),
     ], string='Loại công văn', required=True)
     loai_van_ban = fields.Selection([
         ('1', 'Thông báo'),
@@ -1123,6 +1177,52 @@ class OfficeDocument(models.Model):
             rec.can_create_don_vi = user.has_group('quan_ly_cong_van.group_van_thu') or user.has_group(
                 'base.group_system')
 
+    def co_cong_van_dieu_chinh(self):
+        """Xử lý khi có công văn điều chỉnh"""
+        self.ensure_one()
+
+        # Đặt lại trạng thái về draft để chỉnh sửa
+        self.tt_vb = 'draft'
+
+        # Thông báo cho người dùng
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Thông báo',
+                'message': 'Văn bản đã được chuyển về trạng thái chỉnh sửa. Vui lòng cập nhật thông tin điều chỉnh.',
+                'type': 'success',
+                'sticky': False,
+                'next': {'type': 'ir.actions.act_window_close'},
+            }
+        }
+
+    def action_chuyen_lanh_dao(self):
+        """Mở wizard chuyển lãnh đạo"""
+        self.ensure_one()
+
+        # Kiểm tra quyền
+        current_user = self.env.user
+        current_employee = self.env['hr.employee'].search(
+            [('user_id', '=', current_user.id)], limit=1
+        )
+
+        if not current_employee or current_employee not in self.lanh_dao_xu_ly:
+            raise UserError("Bạn không có quyền chuyển lãnh đạo cho văn bản này!")
+
+        return {
+            'name': 'Chuyển lãnh đạo',
+            'type': 'ir.actions.act_window',
+            'view_mode': 'form',
+            'view_id': self.env.ref('quan_ly_cong_van.view_chuyen_lanh_dao_wizard_form').id,
+            'res_model': 'office.document.chuyen.lanh.dao',
+            'target': 'new',
+            'context': {
+                'default_office_document_id': self.id,
+                'default_lanh_dao_hien_tai_id': current_employee.id,
+            }
+        }
+
 class AssignTaskWizard(models.TransientModel):
     _name = 'assign.task.wizard'
     _description = 'Giao việc - Danh sách từng người'
@@ -1271,3 +1371,105 @@ class AssignTaskWizardLine(models.TransientModel):
             ('department_id.name', '=', department_name)
         ])
         return {'domain': {'nguoi_nhap_y_kien': [('id', 'in', employees.ids)] if employees else [('id', '=', False)]}}
+
+
+class ChuyenLanhDaoWizard(models.TransientModel):
+    _name = 'office.document.chuyen.lanh.dao'
+    _description = 'Chuyển lãnh đạo xử lý'
+
+    office_document_id = fields.Many2one(
+        'office.document',
+        string='Văn bản',
+        required=True,
+        readonly=True
+    )
+
+    lanh_dao_hien_tai_id = fields.Many2one(
+        'hr.employee',
+        string='Lãnh đạo hiện tại',
+        required=True,
+        readonly=True
+    )
+
+    lanh_dao_moi_id = fields.Many2one(
+        'hr.employee',
+        string='Lãnh đạo mới',
+        required=True,
+        domain="[('id', '!=', lanh_dao_hien_tai_id)]"
+    )
+
+    @api.constrains('lanh_dao_moi_id')
+    def _check_lanh_dao_moi(self):
+        for rec in self:
+            if rec.lanh_dao_moi_id == rec.lanh_dao_hien_tai_id:
+                raise ValidationError("Lãnh đạo mới không được trùng với lãnh đạo hiện tại!")
+
+    def action_chuyen(self):
+        """Thực hiện chuyển lãnh đạo"""
+        self.ensure_one()
+
+        doc = self.office_document_id
+        lanh_dao_cu = self.lanh_dao_hien_tai_id
+        lanh_dao_moi = self.lanh_dao_moi_id
+
+        # 1. Cập nhật danh sách lãnh đạo xử lý
+        current_leaders = doc.lanh_dao_xu_ly
+        new_leaders = current_leaders - lanh_dao_cu + lanh_dao_moi
+
+        doc.write({
+            'lanh_dao_xu_ly': [(6, 0, new_leaders.ids)]
+        })
+
+        # 3. Gửi thông báo cho lãnh đạo mới
+        web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        detail_url = f"{web_url}/web#id={doc.id}&model=office.document&view_type=form"
+
+        # Thông báo popup
+        if lanh_dao_moi.user_id:
+            try:
+                partner = lanh_dao_moi.user_id.partner_id
+                self.env['bus.bus']._sendone(
+                    partner,
+                    'simple_notification',
+                    {
+                        'title': 'Được chuyển xử lý văn bản',
+                        'message': f"Bạn vừa được chuyển xử lý văn bản: {doc.trich_yeu}",
+                        'sticky': False,
+                        'type': 'info',
+                    }
+                )
+            except Exception as e:
+                _logger.warning(f"Gửi notification thất bại: {str(e)}")
+
+        # Gửi email
+        try:
+            email = lanh_dao_moi.work_email or (lanh_dao_moi.user_id.email if lanh_dao_moi.user_id else None)
+            if email:
+                subject = f"[Chuyển xử lý] {doc.trich_yeu}"
+                body_html = f"""
+                <p>Xin chào {lanh_dao_moi.name},</p>
+                <p>Bạn vừa được chuyển xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
+                <p><b>Chuyển từ:</b> {lanh_dao_cu.name}</p>
+                <p>
+                    <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                        Xem chi tiết văn bản
+                    </a>
+                </p>
+                <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
+                """
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject,
+                    'email_to': email,
+                    'email_from': self.env.user.email or 'no-reply@company.com',
+                    'body_html': body_html,
+                }).send()
+        except Exception as e:
+            _logger.warning(f"Gửi mail thất bại: {str(e)}")
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'history_back',  # Tag phải khớp với tên đăng ký trong JS
+        }
+
+    def cancel(self):
+        return {'type': 'ir.actions.act_window_close'}
