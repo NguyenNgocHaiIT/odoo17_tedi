@@ -57,7 +57,7 @@
           <field name="department_request"/>
           <field name="recruitment_job" required="1"/>
           <field name="experient_request_id"/>
-          <field name="professional_qualification"/>
+          <field name="professional_qualification" string="Trình độ chuyên môn"/>
 
           <field name="qty_q1" sum="Tổng Q1" optional="show"/>
           <field name="qty_q2" sum="Tổng Q2" optional="show"/>
@@ -70,6 +70,31 @@
           <field name="expense_per_head" widget="monetary" string="Chi phí/Người" optional="show"/>
           <field name="total_line_fund" widget="monetary" string="Thành tiền" sum="Tổng Tiền"/>
           <field name="note" />
+
+          <field name="reject_reason"
+                 readonly="1"
+                 optional="show"
+                 invisible="state != 'rejected'"
+                 decoration-danger="state == 'rejected'"/>
+          <field name="state"
+                 widget="badge"
+                 decoration-success="state == 'approved'"
+                 decoration-danger="state == 'rejected'"
+                 readonly="1"/>
+
+            <button name="action_open_reject_wizard"
+                    type="object"
+                    icon="fa-times-circle"
+                    class="text-danger"
+                    title="Từ chối"
+                    invisible="state == 'rejected'"/>
+
+            <button name="action_reset_approval"
+                    type="object"
+                    icon="fa-check-circle"
+                    class="text-success"
+                    title="Phê duyệt lại"
+                    invisible="state == 'approved'"/>
         </tree>
       </field>
     </record>
@@ -84,8 +109,8 @@
           <field name="recruitment_job" required="1"/>
           <field name="requested_quantity" string="Số lượng" sum="Tổng"/>
           <field name="experient_request_id"/>
-          <field name="professional_qualification" optional="hide"/>
-          <field name="attachment_ids" widget="many2many_binary" optional="hide"/>
+          <field name="professional_qualification" string="Trình độ chuyên môn"/>
+          <field name="attachment_ids" widget="many2many_binary"/>
           <field name="expense_per_head" widget="monetary" string="Chi phí/Người"/>
           <field name="total_line_fund" widget="monetary" string="Thành tiền" sum="Tổng Tiền"/>
           <field name="note"/>
@@ -263,16 +288,22 @@
             (0, 0, {'view_mode': 'form', 'view_id': ref('view_recruitment_plan_quarter_form')})]"/>
     </record>
 
-<!--    <menuitem id="menu_recruitment_plan_year" -->
-<!--              name="Kế hoạch Năm" -->
-<!--              parent="quan_ly_tuyen_dung.menu_recruitment_plan_root" -->
-<!--              action="action_recruitment_plan_year" -->
-<!--              sequence="1"/>-->
+    <record id="view_recruitment_plan_detail_reject_wizard_form" model="ir.ui.view">
+            <field name="name">recruitment.plan.detail.reject.wizard.form</field>
+            <field name="model">recruitment.plan.detail.reject.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Nhập lý do từ chối">
+                    <group>
+                        <field name="reason" placeholder="Ví dụ: Chưa phù hợp ngân sách, dư biên chế..."/>
+                        <field name="detail_id" invisible="1"/>
+                    </group>
+                    <footer>
+                        <button name="action_confirm_reject" string="Xác nhận Từ chối" type="object" class="btn-danger"/>
+                        <button string="Hủy" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
 
-<!--    <menuitem id="menu_recruitment_plan_quarter" -->
-<!--              name="Kế hoạch Quý" -->
-<!--              parent="quan_ly_tuyen_dung.menu_recruitment_plan_root" -->
-<!--              action="action_recruitment_plan_quarter" -->
-<!--              sequence="2"/>-->
 
 </odoo>

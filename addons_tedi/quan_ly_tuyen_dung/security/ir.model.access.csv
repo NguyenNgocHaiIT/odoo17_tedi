@@ -59,4 +59,6 @@ access_recruitment_needs_line,access_recruitment_needs_line,model_recruitment_ne
 
 access_recruitment_progress_wizard,recruitment.progress.wizard,model_recruitment_progress_wizard,base.group_user,1,1,1,1
 
+access_recruitment_plan_detail_reject_wizard,recruitment_plan_detail_reject_wizard,model_recruitment_plan_detail_reject_wizard,base.group_user,1,1,1,1
+
 
