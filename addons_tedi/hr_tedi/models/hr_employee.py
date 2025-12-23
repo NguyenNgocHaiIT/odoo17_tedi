@@ -21,6 +21,20 @@ class ResEthnic(models.Model):
         ('code_uniq', 'unique (code)', 'Mã dân tộc phải là duy nhất!')
     ]
 
+class HrPosition(models.Model):
+    _name = 'hr.position'
+    _description = 'Danh mục Chức vụ'
+    _order = 'sequence, name'
+
+    name = fields.Char(string="Tên chức vụ", required=True)
+    code = fields.Char(string="Mã chức vụ")
+    description = fields.Text(string="Mô tả")
+    active = fields.Boolean(string="Đang sử dụng", default=True)
+
+    _sql_constraints = [
+        ('code_uniq', 'unique (code)', 'Mã chức vụ phải là duy nhất!')
+    ]
+
 class HrEmployeePrivate(models.Model):
     _inherit = "hr.employee"
 
@@ -57,6 +71,11 @@ class HrEmployeePrivate(models.Model):
         "hr.employee.training.tedi",
         "employee_id",
         string="Quá trình đào tạo tại TEDI"
+    )
+    position_id = fields.Many2one(
+        'hr.position',
+        string="Chức vụ",
+        help="Chọn chức vụ từ danh mục (VD: Giám đốc, Trưởng phòng, Chuyên viên...)"
     )
 
     # Onchange để đánh số lại STT khi giao diện thay đổi (giống logic bạn gửi trước đó)
@@ -157,32 +176,25 @@ class HrEmployeePrivate(models.Model):
     ward_id = fields.Many2one(
         'res.ward',
         string="Xã/Phường",
-        domain="[('district_id', '=', district_id)]"  # Chỉ hiện xã thuộc huyện đã chọn
+        domain="[('state_id', '=', province_id)]"  # Lọc Xã theo Tỉnh
     )
 
-    # Địa chỉ cụ thể (Số nhà, đường...)
     street_detail = fields.Char(string="Số nhà/Đường")
 
-    # --- Tự động reset giá trị khi thay đổi cấp cha ---
+    # --- Khi đổi Tỉnh -> Reset Xã ---
     @api.onchange('province_id')
     def _onchange_province(self):
-        self.district_id = False
         self.ward_id = False
 
-    @api.onchange('district_id')
-    def _onchange_district(self):
-        self.ward_id = False
-
-    # --- Tự động gộp địa chỉ hiển thị (Optional) ---
-    @api.onchange('street_detail', 'ward_id', 'district_id', 'province_id')
+    # --- Tự động gộp địa chỉ hiển thị (Bỏ District) ---
+    @api.onchange('street_detail', 'ward_id', 'province_id')
     def _onchange_full_address(self):
         parts = [
             self.street_detail,
             self.ward_id.name,
-            self.district_id.name,
+            # Bỏ self.district_id.name
             self.province_id.name
         ]
-        # Gán vào field household_address cũ của bạn để lưu full text
         self.household_address = ", ".join([p for p in parts if p])
 
 
@@ -333,18 +345,7 @@ class HrEmployeePrivate(models.Model):
         }
 
 
-class ResDistrict(models.Model):
-    _name = 'res.district'
-    _description = 'Quận/Huyện'
-    _order = 'name'
 
-    name = fields.Char(string="Tên Quận/Huyện", required=True)
-    # Liên kết với Tỉnh/Thành phố (res.country.state có sẵn của Odoo)
-    state_id = fields.Many2one('res.country.state', string="Tỉnh/Thành phố", required=True)
-
-    _sql_constraints = [
-        ('name_state_uniq', 'unique(name, state_id)', 'Quận/Huyện này đã tồn tại trong Tỉnh/TP này!')
-    ]
 
 
 # --- 2. MODEL XÃ/PHƯỜNG ---
@@ -354,11 +355,12 @@ class ResWard(models.Model):
     _order = 'name'
 
     name = fields.Char(string="Tên Xã/Phường", required=True)
-    # Liên kết với Quận/Huyện
-    district_id = fields.Many2one('res.district', string="Quận/Huyện", required=True)
 
+    # THAY ĐỔI: Liên kết trực tiếp với Tỉnh/Thành phố (Bỏ qua Quận/Huyện)
+    state_id = fields.Many2one('res.country.state', string="Tỉnh/Thành phố", required=True)
+
+    # Constraint: Tên xã phải duy nhất trong 1 Tỉnh
     _sql_constraints = [
-        ('name_district_uniq', 'unique(name, district_id)', 'Xã/Phường này đã tồn tại trong Quận/Huyện này!')
+        ('name_state_uniq', 'unique(name, state_id)', 'Xã/Phường này đã tồn tại trong Tỉnh/TP này!')
     ]
-
 

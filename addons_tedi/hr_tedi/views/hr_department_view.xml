@@ -7,8 +7,6 @@
             <field name="model">hr.department</field>
             <field name="inherit_id" ref="hr.view_department_tree"/>
             <field name="arch" type="xml">
-                <field name="manager_id" position="attributes">
-                    <attribute name="column_invisible">1</attribute> </field>
 
                 <field name="manager_id" position="after">
                     <field name="manager_ids" widget="many2many_tags_avatar" string="Ban Quản lý"/>
@@ -47,9 +45,7 @@
             <field name="inherit_id" ref="hr.view_department_form"/>
             <field name="arch" type="xml">
 
-                <field name="manager_id" position="attributes">
-                    <attribute name="invisible">1</attribute>
-                </field>
+
 
                 <field name="manager_id" position="after">
                     <field name="manager_ids"
@@ -62,6 +58,8 @@
 
             </field>
         </record>
+
+
 
     </data>
 </odoo>

@@ -1,0 +1,27 @@
+<odoo>
+    <data>
+        <record id="view_hr_position_tree" model="ir.ui.view">
+            <field name="name">hr.position.tree</field>
+            <field name="model">hr.position</field>
+            <field name="arch" type="xml">
+                <tree string="Chức vụ" editable="bottom">
+                    <field name="code"/>
+                    <field name="name"/>
+                    <field name="description"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="action_hr_position" model="ir.actions.act_window">
+            <field name="name">Chức vụ</field>
+            <field name="res_model">hr.position</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <menuitem id="menu_hr_position"
+                  name="Chức vụ"
+                  parent="hr.menu_human_resources_configuration"
+                  action="action_hr_position"
+                  sequence="2"/>
+    </data>
+</odoo>

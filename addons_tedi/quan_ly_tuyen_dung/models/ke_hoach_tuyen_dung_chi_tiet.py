@@ -1,3 +1,5 @@
+from pygments.lexer import default
+
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, AccessError
 
@@ -87,6 +89,34 @@ class RecruitmentPlanDetail(models.Model):
     qty_q2 = fields.Integer(string="SL Quý 2", default=0)
     qty_q3 = fields.Integer(string="SL Quý 3", default=0)
     qty_q4 = fields.Integer(string="SL Quý 4", default=0)
+
+    reject_reason = fields.Text(string="Lý do từ chối", readonly=True)
+
+    # Sửa lại field state để readonly (người dùng sẽ đổi trạng thái qua nút bấm)
+    state = fields.Selection([
+        ("approved", "Đã phê duyệt"),
+        ("rejected", "Từ chối")
+    ], string="Trạng thái", default="approved", readonly=True)
+
+    # Nút bấm để mở Wizard Từ chối
+    def action_open_reject_wizard(self):
+        self.ensure_one()
+        return {
+            'name': _('Từ chối Tuyển dụng'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'recruitment.plan.detail.reject.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_detail_id': self.id},
+        }
+
+    # Nút bấm để Phê duyệt lại (nếu lỡ từ chối nhầm)
+    def action_reset_approval(self):
+        for rec in self:
+            rec.write({
+                'state': 'approved',
+                'reject_reason': False  # Xóa lý do cũ
+            })
 
     @api.constrains('nomination_ids')
     def _check_nomination_ids_refused_or_archived(self):
@@ -202,3 +232,19 @@ class RecruitmentPlanDetail(models.Model):
     def unlink(self):
         self._check_edit_permission('unlink')
         return super().unlink()
+
+class RecruitmentPlanDetailRejectWizard(models.TransientModel):
+    _name = "recruitment.plan.detail.reject.wizard"
+    _description = "Wizard Từ chối chi tiết kế hoạch"
+
+    detail_id = fields.Many2one('recruitment.plan.detail', string="Dòng chi tiết", required=True)
+    reason = fields.Text(string="Lý do từ chối", required=True) # Bắt buộc nhập
+
+    def action_confirm_reject(self):
+        self.ensure_one()
+        # Cập nhật trạng thái và lý do vào dòng chi tiết
+        self.detail_id.write({
+            'state': 'rejected',
+            'reject_reason': self.reason
+        })
+        return {'type': 'ir.actions.act_window_close'}

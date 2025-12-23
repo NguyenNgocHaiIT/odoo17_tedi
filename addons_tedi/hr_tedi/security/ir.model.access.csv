@@ -32,10 +32,11 @@ access_hr_military_rank,access_hr_military_rank,model_hr_military_rank,base.grou
 
 access_hr_reward_benefit,access_hr_reward_benefit,model_hr_reward_benefit,base.group_user,1,1,1,1
 
-access_res_district,res.district,model_res_district,base.group_user,1,1,1,1
 access_res_ward,res.ward,model_res_ward,base.group_user,1,1,1,1
 
 access_hr_union_title_user,hr.union.title.user,model_hr_union_title,base.group_user,1,0,0,0
 access_hr_union_title_manager,hr.union.title.manager,model_hr_union_title,hr.group_hr_manager,1,1,1,1
 access_hr_youth_union_title_user,hr.youth.union.title.user,model_hr_youth_union_title,base.group_user,1,0,0,0
 access_hr_youth_union_title_manager,hr.youth.union.title.manager,model_hr_youth_union_title,hr.group_hr_manager,1,1,1,1
+
+access_hr_position,hr.position,model_hr_position,base.group_user,1,1,1,1
