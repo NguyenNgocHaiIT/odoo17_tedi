@@ -79,19 +79,25 @@ class PhanPhat(models.TransientModel):
     @api.depends('don_vi_xu_ly_chinh')
     def _compute_nguoi_xu_ly_chinh(self):
         for rec in self:
-            if rec.don_vi_xu_ly_chinh and rec.don_vi_xu_ly_chinh.manager_id:
-                rec.nguoi_xu_ly_chinh = rec.don_vi_xu_ly_chinh.manager_id
-            else:
+            if not rec.don_vi_xu_ly_chinh:
                 rec.nguoi_xu_ly_chinh = False
+                continue
+
+            dept = rec.don_vi_xu_ly_chinh
+            employees = dept.manager_id | dept.manager_ids  # union trực tiếp, bỏ qua False
+            rec.nguoi_xu_ly_chinh = employees.filtered(bool)  # loại bỏ False nếu có
 
     @api.depends('don_vi_dong_xu_ly')
     def _compute_nguoi_dong_xu_ly(self):
         for rec in self:
-            if rec.don_vi_dong_xu_ly:
-                employees = rec.don_vi_dong_xu_ly.mapped('manager_id')
-                rec.nguoi_dong_xu_ly = employees
-            else:
+            if not rec.don_vi_dong_xu_ly:
                 rec.nguoi_dong_xu_ly = False
+                continue
+
+            employees = self.env['hr.employee']
+            for dept in rec.don_vi_dong_xu_ly:
+                employees |= (dept.manager_id | dept.manager_ids).filtered(bool)
+            rec.nguoi_dong_xu_ly = employees or False
 
     def phan_phat(self):
         doc_id = self.env.context.get('active_id')
