@@ -53,48 +53,47 @@
       <field name="model">recruitment.plan.detail</field>
       <field name="arch" type="xml">
         <tree string="Chi tiết Năm" editable="bottom">
-          <field name="stt" string="STT" readonly="1" width="40"/>
-          <field name="department_request"/>
-          <field name="recruitment_job" required="1"/>
-          <field name="experient_request_id"/>
-          <field name="professional_qualification" string="Trình độ chuyên môn"/>
+            <field name="plan_status" column_invisible="True"/>
 
-          <field name="qty_q1" sum="Tổng Q1" optional="show"/>
-          <field name="qty_q2" sum="Tổng Q2" optional="show"/>
-          <field name="qty_q3" sum="Tổng Q3" optional="show"/>
-          <field name="qty_q4" sum="Tổng Q4" optional="show"/>
+            <field name="stt" string="STT" readonly="1" width="40"/>
+            <field name="department_request"/>
+            <field name="recruitment_job" required="1"/>
+            <field name="experient_request_id"/>
+            <field name="professional_qualification" string="Trình độ chuyên môn"/>
 
-          <field name="requested_quantity" string="Tổng Năm" sum="Tổng cả năm"/>
+            <field name="qty_q1" sum="Tổng Q1" optional="show"/>
+            <field name="qty_q2" sum="Tổng Q2" optional="show"/>
+            <field name="qty_q3" sum="Tổng Q3" optional="show"/>
+            <field name="qty_q4" sum="Tổng Q4" optional="show"/>
+            <field name="requested_quantity" string="Tổng Năm" sum="Tổng cả năm"/>
 
-          <field name="attachment_ids" widget="many2many_binary"/>
-          <field name="expense_per_head" widget="monetary" string="Chi phí/Người" optional="show"/>
-          <field name="total_line_fund" widget="monetary" string="Thành tiền" sum="Tổng Tiền"/>
-          <field name="note" />
+            <field name="attachment_ids" widget="many2many_binary"/>
+            <field name="expense_per_head" widget="monetary" string="Chi phí/Người" optional="show"/>
+            <field name="total_line_fund" widget="monetary" string="Thành tiền" sum="Tổng Tiền"/>
+            <field name="note" />
 
-          <field name="reject_reason"
-                 readonly="1"
-                 optional="show"
-                 invisible="state != 'rejected'"
-                 decoration-danger="state == 'rejected'"/>
-          <field name="state"
-                 widget="badge"
-                 decoration-success="state == 'approved'"
-                 decoration-danger="state == 'rejected'"
-                 readonly="1"/>
+            <field name="state"
+                   widget="badge"
+                   decoration-success="state == 'approved'"
+                   decoration-danger="state == 'rejected'"
+                   column_invisible="parent.recruitment_status not in ['approved', 'in_process', 'complete']"/>
+            <field name="reject_reason"
+                   readonly="1"
+                   optional="show"
+                   invisible="state != 'rejected'"/>
 
-            <button name="action_open_reject_wizard"
+            <button name="action_toggle_state"
+                    string="Đã phê duyệt"
                     type="object"
-                    icon="fa-times-circle"
-                    class="text-danger"
-                    title="Từ chối"
-                    invisible="state == 'rejected'"/>
+                    class="btn btn-sm btn-success rounded-pill px-3"
+                    invisible="state == 'approved' or parent.recruitment_status  in ['approved', 'in_process']"/>
 
-            <button name="action_reset_approval"
+            <button name="action_toggle_state"
+                    string="Từ chối"
                     type="object"
-                    icon="fa-check-circle"
-                    class="text-success"
-                    title="Phê duyệt lại"
-                    invisible="state == 'approved'"/>
+                    class="btn btn-sm btn-danger rounded-pill px-3"
+                    invisible="state == 'rejected' or parent.recruitment_status  in ['approved', 'in_process']"/>
+
         </tree>
       </field>
     </record>
@@ -187,7 +186,7 @@
                 <group>
                     <field name="department_responsible" readonly="recruitment_status != 'draft'"/>
                     <field name="people_suggestion" readonly="recruitment_status != 'draft'"/>
-                    <field name="plan_fund" widget="monetary" readonly="recruitment_status != 'draft'"/>
+                    <field name="plan_fund" widget="monetary" readonly="1"/>
                     <field name="is_applied_to_jobs" invisible="1"/>
                 </group>
             </group>
@@ -209,40 +208,48 @@
       <field name="arch" type="xml">
         <form string="KẾ HOẠCH QUÝ">
           <header>
+            <button name="action_notify_quarter"
+                    type="object"
+                    string="Thông báo"
+                    class="btn-primary"
+                    groups="quan_ly_tuyen_dung.group_recruitment_committee"
+                    invisible="recruitment_status != 'draft'"/>
+
+            <button name="action_submit_quarter"
+                    type="object"
+                    string="Trình duyệt"
+                    class="btn-primary"
+                    groups="quan_ly_tuyen_dung.group_recruitment_committee"
+                    invisible="recruitment_status != 'notify'"/>
+
             <button name="action_director_approve_quarter"
                     type="object"
-                    string="Giám đốc Duyệt"
+                    string="Phê duyệt"
                     class="btn-primary"
-                    groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_director"
-                    invisible="recruitment_status != 'draft'"/>
+                    groups="quan_ly_tuyen_dung.group_recruitment_director"
+                    invisible="recruitment_status != 'director_approve'"/>
 
             <button name="action_director_start_deploy"
                     type="object"
-                    string="Bắt đầu tuyển"
+                    string="Triển khai"
                     class="btn-success"
-                    groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_director"
+                    groups="quan_ly_tuyen_dung.group_recruitment_director"
                     invisible="recruitment_status != 'approved' or is_applied_to_jobs"/>
 
-            <button name="action_complete"
+            <button name="action_complete_quarter"
                     type="object"
-                    string="Kết thúc"
+                    string="Hoàn thành"
                     class="btn-secondary"
-                    groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_committee"
-                    invisible="recruitment_status != 'approved'"/>
+                    groups="quan_ly_tuyen_dung.group_recruitment_director"
+                    invisible="recruitment_status != 'in_process'"/>
 
             <field name="recruitment_status" widget="statusbar"
-                   statusbar_visible="draft,approved,in_process,complete"/>
+                   statusbar_visible="draft,notify,director_approve,approved,in_process,complete"/>
           </header>
           <sheet>
-<!--            <div class="oe_title">-->
-<!--                <h1><field name="plan_code"/></h1>-->
-<!--                <label for="plan_name" class="oe_edit_only"/>-->
-<!--                <h2></h2>-->
-<!--            </div>-->
             <group>
                 <group>
                     <field name="plan_name"/>
-<!--                    <field name="type" readonly="1"/>-->
                     <field name="parent_id" readonly="1" string="Thuộc Kế hoạch Năm"/>
                     <field name="plan_execute_date" readonly="recruitment_status != 'draft'"/>
                     <field name="plan_purpose" readonly="recruitment_status != 'draft'"/>
@@ -250,7 +257,7 @@
                 <group>
                     <field name="department_responsible" readonly="recruitment_status != 'draft'"/>
                     <field name="people_suggestion" readonly="recruitment_status != 'draft'"/>
-                    <field name="plan_fund" widget="monetary" readonly="recruitment_status != 'draft'"/>
+                    <field name="plan_fund" widget="monetary" readonly="1"/>
                     <field name="is_applied_to_jobs" invisible="1"/>
                 </group>
             </group>
@@ -258,8 +265,8 @@
                 <page string="Chi tiết tuyển dụng">
                     <field name="recruitment_plan_detail_ids"
                            context="{'default_plan_id': id, 'tree_view_ref': 'quan_ly_tuyen_dung.view_recruitment_plan_detail_quarter_tree'}"
-                           readonly="recruitment_status != 'draft'"/>
-                </page>
+                           readonly="recruitment_status not in ['draft', 'notify']"/>
+                           </page>
             </notebook>
           </sheet>
         </form>

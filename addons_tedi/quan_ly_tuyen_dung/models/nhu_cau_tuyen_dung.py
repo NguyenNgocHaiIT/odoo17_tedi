@@ -31,7 +31,7 @@ class RecruitmentNeeds(models.Model):
         "recruitment.plan",
         string="Thuộc Kế hoạch Quý",
         # Lấy loại là 'quarter' VÀ trạng thái là 'in_process'
-        domain="[('type', '=', 'quarter'), ('recruitment_status', '=', 'in_process')]",
+        domain="[('type', '=', 'quarter'), ('recruitment_status', '=', 'notify')]",
     )
 
     create_date = fields.Date(
@@ -90,7 +90,19 @@ class RecruitmentNeeds(models.Model):
         return res
 
     def action_approve(self):
+
         for rec in self:
+
+            if rec.type == 'year' and not rec.name:
+                raise UserError(_("Vui lòng chọn 'Đợt khảo sát' trước khi Xác nhận."))
+
+                # 2. Bắt buộc phải chọn Kế hoạch quý (nếu là Thực tế)
+            if rec.type == 'actual' and not rec.plan_id:
+                raise UserError(_("Vui lòng chọn 'Kế hoạch Quý' trước khi Xác nhận."))
+
+                # 3. Kiểm tra dòng chi tiết
+            if not rec.line_ids:
+                raise UserError(_("Vui lòng nhập ít nhất 1 dòng nhu cầu tuyển dụng."))
             if rec.state != 'draft':
                 raise UserError(_("Chỉ được duyệt khi phiếu đang ở trạng thái 'Dự thảo'."))
             if not rec.line_ids:
@@ -120,7 +132,7 @@ class RecruitmentNeeds(models.Model):
                 ('plan_id', '=', plan.id),
                 ('recruitment_job', '=', line.job_id.id),
                 ('department_request', '=', self.department_id.id),
-                ('expense_per_head', '=', line.expected_salary),
+                # ('expense_per_head', '=', line.expected_salary),
                 ('experient_request_id', '=', line.experience_id.id or False),
                 ('professional_qualification', '=', line.professional_qualification or False),
             ]
@@ -149,7 +161,7 @@ class RecruitmentNeeds(models.Model):
                     'requested_quantity': line.amount,
                     'experient_request_id': line.experience_id.id,
                     'professional_qualification': line.professional_qualification,
-                    'expense_per_head': line.expected_salary,
+                    # 'expense_per_head': line.expected_salary,
                     'note': line.note or _("Bổ sung từ nhu cầu thực tế"),
                 }
                 PlanDetailSudo.create(vals)
@@ -182,6 +194,23 @@ class RecruitmentNeedsLine(models.Model):
     qty_q2 = fields.Integer(string="Quý 2", default=0)
     qty_q3 = fields.Integer(string="Quý 3", default=0)
     qty_q4 = fields.Integer(string="Quý 4", default=0)
+
+    progress_summary = fields.Char(
+        string="Tiến độ (Q1-Q2-Q3-Q4)",
+        compute='_compute_progress_summary',
+        store=False
+    )
+
+    action_helper = fields.Char(string="Cấu hình", compute='_compute_action_helper')
+
+    def _compute_action_helper(self):
+        for rec in self:
+            rec.action_helper = ""  # Hoặc để chữ "Click ->" nếu muốn
+
+    @api.depends('qty_q1', 'qty_q2', 'qty_q3', 'qty_q4')
+    def _compute_progress_summary(self):
+        for rec in self:
+            rec.progress_summary = f"{rec.qty_q1} - {rec.qty_q2} - {rec.qty_q3} - {rec.qty_q4}"
 
     current_employee_count = fields.Integer(
         string="Nhân sự hiện có",
@@ -225,16 +254,23 @@ class RecruitmentNeedsLine(models.Model):
     # --- ACTION MỞ POPUP ---
     def action_open_progress_wizard(self):
         self.ensure_one()
+        # Cơ chế Odoo: Khi ấn nút này trên giao diện editable="bottom",
+        # Odoo đã tự động gọi lệnh write/create để lưu dòng này vào DB rồi.
+
         return {
             'name': _('Cấu hình tiến trình bổ sung'),
             'type': 'ir.actions.act_window',
             'res_model': 'recruitment.progress.wizard',
             'view_mode': 'form',
-            'target': 'new',  # Hiển thị dạng Popup
+            'target': 'new',
             'context': {
+                # Truyền ID để wizard biết đang link với dòng nào
                 'default_line_id': self.id,
+
+                # TRUYỀN GIÁ TRỊ TRỰC TIẾP:
+                # Wizard sẽ nhận các giá trị này làm mặc định (default_get)
+                # giúp hiển thị ngay lập tức số liệu vừa nhập.
                 'default_amount_total': self.amount,
-                # Truyền giá trị hiện tại vào wizard
                 'default_qty_q1': self.qty_q1,
                 'default_qty_q2': self.qty_q2,
                 'default_qty_q3': self.qty_q3,
@@ -243,10 +279,13 @@ class RecruitmentNeedsLine(models.Model):
         }
 
 
-# --- MODEL WIZARD (POPUP) ---
+
 class RecruitmentProgressWizard(models.TransientModel):
     _name = 'recruitment.progress.wizard'
     _description = 'Cấu hình tiến trình tuyển dụng theo quý'
+    _rec_name = 'display_name_wizard'  # 1. Thêm Rec Name cho Wizard
+
+    display_name_wizard = fields.Char(string="Tiêu đề", default="Phân bổ tiến độ")
 
     line_id = fields.Many2one('recruitment.needs.line', string="Dòng nhu cầu", required=True)
     amount_total = fields.Integer(string="Tổng số lượng cần tuyển", readonly=True)
@@ -256,23 +295,50 @@ class RecruitmentProgressWizard(models.TransientModel):
     qty_q3 = fields.Integer(string="Quý 3")
     qty_q4 = fields.Integer(string="Quý 4")
 
-    # Validation (Tùy chọn): Kiểm tra tổng 4 quý có khớp tổng số lượng không
+    # --- TỰ ĐỘNG LOAD DỮ LIỆU CŨ ---
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+
+
+        # Logic cũ của bạn vẫn tốt để đảm bảo an toàn (phòng trường hợp mở wizard theo cách khác)
+        if not res.get('line_id') and self._context.get('default_line_id'):
+            res['line_id'] = self._context.get('default_line_id')
+
+        # Nếu amount_total chưa có (không truyền qua context), mới phải query lại DB
+        if 'amount_total' not in res and res.get('line_id'):
+            line = self.env['recruitment.needs.line'].browse(res['line_id'])
+            if line.exists():
+                res.update({
+                    'amount_total': line.amount,
+                    'qty_q1': line.qty_q1,
+                    'qty_q2': line.qty_q2,
+                    'qty_q3': line.qty_q3,
+                    'qty_q4': line.qty_q4,
+                })
+
+        return res
+
     @api.constrains('qty_q1', 'qty_q2', 'qty_q3', 'qty_q4')
     def _check_total_qty(self):
         for rec in self:
             total_plan = rec.qty_q1 + rec.qty_q2 + rec.qty_q3 + rec.qty_q4
             if total_plan > rec.amount_total:
                 raise UserError(
-                    _("Tổng số lượng phân bổ 4 quý (%s) không được lớn hơn số lượng cần tuyển (%s).") % (total_plan,
-                                                                                                         rec.amount_total))
+                    _("Tổng số lượng phân bổ 4 quý (%s) không được lớn hơn số lượng cần tuyển (%s).")
+                    % (total_plan, rec.amount_total)
+                )
 
+    # --- LƯU VÀ RELOAD GIAO DIỆN ---
     def action_confirm(self):
-        """Lưu dữ liệu từ Wizard về Line gốc"""
         self.ensure_one()
-        self.line_id.write({
-            'qty_q1': self.qty_q1,
-            'qty_q2': self.qty_q2,
-            'qty_q3': self.qty_q3,
-            'qty_q4': self.qty_q4,
-        })
+        if self.line_id:
+            # 1. Ghi dữ liệu vào line gốc
+            self.line_id.write({
+                'qty_q1': self.qty_q1,
+                'qty_q2': self.qty_q2,
+                'qty_q3': self.qty_q3,
+                'qty_q4': self.qty_q4,
+            })
+
         return {'type': 'ir.actions.act_window_close'}

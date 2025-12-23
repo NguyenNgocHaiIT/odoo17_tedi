@@ -90,6 +90,13 @@ class RecruitmentPlanDetail(models.Model):
     qty_q3 = fields.Integer(string="SL Quý 3", default=0)
     qty_q4 = fields.Integer(string="SL Quý 4", default=0)
 
+    plan_status = fields.Selection(
+        related='plan_id.recruitment_status',
+        string="Trạng thái Kế hoạch",
+        readonly=True,
+        store=True  # Có thể store=True hoặc False tùy nhu cầu, nhưng False là đủ cho giao diện
+    )
+
     reject_reason = fields.Text(string="Lý do từ chối", readonly=True)
 
     # Sửa lại field state để readonly (người dùng sẽ đổi trạng thái qua nút bấm)
@@ -219,6 +226,15 @@ class RecruitmentPlanDetail(models.Model):
                 if not self._can_edit_in_state(state, op, vals):
                     vn = {'create': 'tạo', 'write': 'sửa', 'unlink': 'xóa'}
                     raise AccessError(_("Không được %s dòng khi Kế hoạch ở trạng thái '%s'.") % (vn[op], state))
+
+    def action_toggle_state(self):
+        self.ensure_one()
+        if self.state == 'approved':
+            # Nếu đang Duyệt -> Click để Từ chối (Mở Wizard)
+            return self.action_open_reject_wizard()
+        elif self.state == 'rejected':
+            # Nếu đang Từ chối -> Click để Duyệt lại (Lưu ngay)
+            return self.action_reset_approval()
 
     @api.model
     def create(self, vals):

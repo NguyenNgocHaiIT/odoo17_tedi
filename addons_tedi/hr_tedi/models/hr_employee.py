@@ -24,7 +24,7 @@ class ResEthnic(models.Model):
 class HrPosition(models.Model):
     _name = 'hr.position'
     _description = 'Danh mục Chức vụ'
-    _order = 'sequence, name'
+    _order = 'name'
 
     name = fields.Char(string="Tên chức vụ", required=True)
     code = fields.Char(string="Mã chức vụ")

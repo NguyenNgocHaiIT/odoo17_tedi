@@ -5,29 +5,52 @@
         <menuitem
             id="training_tedi_root"
             name="Đào tạo"
-            web_icon="hr_training_tedi,static/description/icon.png"
             sequence="0"
         />
 
-        <menuitem id="menu_training_plan"
+        <menuitem id="menu_training_plan_new"
                   name="Kế hoạch đào tạo"
                   parent="hr_training_tedi.training_tedi_root"
-                  action="action_training_plan"
+                  groups="hr_training_tedi.group_training_manager"
+                  sequence="0"  />
+
+        <menuitem id="training_needs_tedi"
+                  name="Yêu cầu đăng ký đào tạo"
+                  parent="menu_training_plan_new"
+                  action="action_training_needs_survey"
+                  sequence="10"/>
+
+        <menuitem id="menu_trainings_needs"
+                  name="Nhu cầu đào tạo"
+                  parent="menu_training_plan_new"
+                  action="action_trainings_needs_year"
+                  sequence="30"  />
+
+        <menuitem id="menu_training_plan_year"
+                  name="Kế hoạch đào tạo"
+                  parent="menu_training_plan_new"
+                  action="action_training_plan_year"
+                  groups="hr_training_tedi.group_training_manager"
+                  sequence="30"  />
+
+        <menuitem id="menu_training_plan_real"
+                  name="Triển khai kế hoạch"
+                  parent="hr_training_tedi.training_tedi_root"
+                  groups="hr_training_tedi.group_training_manager"
+                  sequence="20"  />
+
+        <menuitem id="menu_training_plan_quarter"
+                  name="Triển khai kế hoạch"
+                  parent="menu_training_plan_real"
+                  action="action_training_plan_quarter"
                   groups="hr_training_tedi.group_training_manager"
                   sequence="10"  />
 
-
-        <menuitem id="training_needs_tedi"
-                  name="Khảo sát nhu cầu đào tạo"
-                  parent="hr_training_tedi.training_tedi_root"
-                  action="action_training_needs_survey"
-                  sequence="20"/>
-
-        <menuitem id="menu_trainings_needs"
-              name="Nhu cầu đào tạo"
-              parent="hr_training_tedi.training_tedi_root"
-              action="action_trainings_needs"
-              sequence="30"  />
+        <menuitem id="menu_trainings_needs_real"
+                  name="Nhu cầu thực tế"
+                  parent="menu_training_plan_real"
+                  action="action_trainings_needs_actual"
+                  sequence="30"  />
 
 
         <menuitem id="menu_training_participation"

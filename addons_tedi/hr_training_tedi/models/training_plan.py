@@ -61,6 +61,14 @@ class TrainingPlan(models.Model):
         store=True,
     )
 
+    type = fields.Selection([
+        ('year', 'Kế hoạch Năm'),
+        ('quarter', 'Kế hoạch Quý'),
+    ], string="Loại kế hoạch", default='year', required=True, tracking=True)
+
+    # Field liên kết cha-con (để biết kế hoạch Quý thuộc Kế hoạch Năm nào)
+    parent_id = fields.Many2one('recruitment.plan', string="Thuộc Kế hoạch Năm", readonly=True)
+
     _sql_constraints = [
         ('survey_unique',
          'unique(survey_id)',
@@ -234,15 +242,77 @@ class TrainingPlan(models.Model):
             if rec.state != "pending":
                 raise ValidationError(_("Chỉ có thể duyệt từ trạng thái 'Chờ duyệt'."))
 
-            # --- QUAN TRỌNG: Gọi hàm tạo học viên tại đây ---
-            rec._generate_participants_from_survey()
+            # --- LOGIC MỚI: PHÂN LOẠI XỬ LÝ ---
+            if rec.type == 'year':
+                # Nếu là Kế hoạch Năm -> Tạo ra 4 Kế hoạch Quý
+                rec._generate_quarterly_plans()
+                rec.message_post(body=_("Đã duyệt Kế hoạch Năm và sinh ra các Kế hoạch Quý tương ứng."))
+
+            elif rec.type == 'quarter':
+                # Nếu là Kế hoạch Quý -> Tạo danh sách học viên (Lớp học)
+                rec._generate_participants_from_survey()
+                rec.message_post(body=_("Đã duyệt Kế hoạch Quý và khởi tạo danh sách học viên."))
+
+                # Trigger đồng bộ lịch sử (chỉ chạy khi thực sự có học viên)
+                for detail in rec.detail_ids:
+                    for part_detail in detail.participation_detail_ids:
+                        part_detail._sync_to_history()
 
             rec.state = "approved"
 
-            # Trigger đồng bộ lịch sử
-            for detail in rec.detail_ids:
-                for part_detail in detail.participation_detail_ids:
-                    part_detail._sync_to_history()
+    def _generate_quarterly_plans(self):
+        self.ensure_one()
+        # Mapping: Quý -> Trường số lượng tương ứng
+        quarters_map = {1: 'qty_q1', 2: 'qty_q2', 3: 'qty_q3', 4: 'qty_q4'}
+
+        for q_num, field_qty in quarters_map.items():
+            plan_name = f"{self.name} - Quý {q_num}"
+
+            # Kiểm tra xem đã tạo chưa để tránh trùng lặp
+            existing = self.env['training.plan'].search([
+                ('parent_id', '=', self.id),
+                ('name', '=', plan_name)
+            ], limit=1)
+
+            if existing:
+                continue
+
+            # 1. Tạo Header Kế hoạch Quý
+            plan_vals = {
+                'name': plan_name,
+                'type': 'quarter',
+                'parent_id': self.id,
+                'state': 'draft',  # Để draft cho HR kiểm tra lại rồi mới trình duyệt
+                'open_date': fields.Date.today(),
+                # Copy Survey ID để quý con cũng biết nó thuộc đợt khảo sát nào (nếu cần mapping lại user)
+                'survey_id': self.survey_id.id,
+                'currency_id': self.currency_id.id,
+            }
+
+            # 2. Tạo Lines
+            detail_lines = []
+            for line in self.detail_ids:
+                qty_in_quarter = getattr(line, field_qty, 0)
+
+                # Chỉ tạo dòng nếu quý đó có học viên
+                if qty_in_quarter > 0:
+                    line_vals = {
+                        'course_id': line.course_id.id,
+                        'training_center': line.training_center,
+                        'training_type': line.training_type,
+                        'training_location': line.training_location,
+                        'training_fee_per_person': line.training_fee_per_person,
+                        'training_fee_source': line.training_fee_source,
+                        'note': line.note,
+                        # Lưu ý: Ở quý con, ta chưa có học viên cụ thể ngay lập tức,
+                        # nhưng có thể lưu số lượng dự kiến vào note hoặc một field expected_qty
+                        # Ở đây ta chỉ tạo khung detail để HR add người vào sau.
+                    }
+                    detail_lines.append((0, 0, line_vals))
+
+            if detail_lines:
+                plan_vals['detail_ids'] = detail_lines
+                self.env['training.plan'].create(plan_vals)
 
     def action_reject(self):
         for rec in self:
@@ -276,10 +346,19 @@ class TrainingPlanDetail(models.Model):
         ],
         string="Cơ sở đào tạo",
     )
+    state = fields.Selection([
+        ("approved", "Đã phê duyệt"),
+        ("rejected", "Từ chối")
+    ], string="Trạng thái dòng", default="approved", readonly=True)
+
+    reject_reason = fields.Text(string="Lý do từ chối", readonly=True)
+
+    # Field này đã có trong code cũ của bạn, đảm bảo nó được store=True để dùng trong XML invisible
     plan_state = fields.Selection(
         related='plan_id.state',
         string="Trạng thái Plan",
-        readonly=True
+        readonly=True,
+        store=True
     )
 
     training_type = fields.Selection([
@@ -326,6 +405,50 @@ class TrainingPlanDetail(models.Model):
         compute='_compute_student_and_total',
         store=True,
     )
+    qty_q1 = fields.Integer(string="SL Quý 1", default=0)
+    qty_q2 = fields.Integer(string="SL Quý 2", default=0)
+    qty_q3 = fields.Integer(string="SL Quý 3", default=0)
+    qty_q4 = fields.Integer(string="SL Quý 4", default=0)
+
+    # Tổng dự kiến cả năm (dùng để check với student_count thực tế)
+    total_expected_qty = fields.Integer(
+        string="Tổng dự kiến",
+        compute="_compute_total_expected",
+        store=True
+    )
+
+    def action_open_reject_wizard(self):
+        self.ensure_one()
+        return {
+            'name': _('Từ chối Đào tạo'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'training.plan.detail.reject.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_detail_id': self.id},
+        }
+
+    def action_reset_approval(self):
+        for rec in self:
+            rec.write({
+                'state': 'approved',
+                'reject_reason': False
+            })
+
+    def action_toggle_state(self):
+        self.ensure_one()
+        # Logic: Chỉ cho bấm khi Plan ở trạng thái Chờ duyệt hoặc Đã duyệt
+        # (Tùy nghiệp vụ của bạn, ở đây tôi để giống bên Tuyển dụng là cho phép sửa ở các bước sau)
+
+        if self.state == 'approved':
+            return self.action_open_reject_wizard()
+        elif self.state == 'rejected':
+            return self.action_reset_approval()
+
+    @api.depends('qty_q1', 'qty_q2', 'qty_q3', 'qty_q4')
+    def _compute_total_expected(self):
+        for rec in self:
+            rec.total_expected_qty = rec.qty_q1 + rec.qty_q2 + rec.qty_q3 + rec.qty_q4
 
     def open_participants(self):
         """
@@ -388,3 +511,18 @@ class TrainingPlanDetail(models.Model):
                 for part_detail in detail.participation_detail_ids:
                     part_detail._sync_to_history()
         return res
+
+class TrainingPlanDetailRejectWizard(models.TransientModel):
+    _name = "training.plan.detail.reject.wizard"
+    _description = "Wizard Từ chối chi tiết kế hoạch đào tạo"
+
+    detail_id = fields.Many2one('training.plan.detail', string="Dòng chi tiết", required=True)
+    reason = fields.Text(string="Lý do từ chối", required=True)
+
+    def action_confirm_reject(self):
+        self.ensure_one()
+        self.detail_id.write({
+            'state': 'rejected',
+            'reject_reason': self.reason
+        })
+        return {'type': 'ir.actions.act_window_close'}

@@ -87,12 +87,13 @@ class RecruitmentPlan(models.Model):
 
     # --- TRẠNG THÁI (ĐÃ CẬP NHẬT THEO LUỒNG MỚI) ---
     recruitment_status = fields.Selection([
-        ("draft", "Dự thảo"),  # Committee tạo
-        ("director_approve", "GD duyệt"),  # Chờ GD duyệt
-        ("board_approve", "HĐQT duyệt"),  # Chờ HĐQT duyệt
-        ("approved", "Đã duyệt"),  # HĐQT xong -> Chờ GD bắt đầu
-        ("in_process","Đang triển khai"),
-        ("complete", "Hoàn thành"),  # Committee kết thúc
+        ("draft", "Dự thảo"),
+        ("notify", "Thông báo"),  # <-- MỚI: State cho bước Committee thông báo
+        ("director_approve", "Chờ duyệt"),  # Dùng lại key cũ cho bước "Chờ GD duyệt"
+        ("board_approve", "HĐQT duyệt"),  # Dùng cho kế hoạch Năm
+        ("approved", "Đã duyệt"),
+        ("in_process", "Đang triển khai"),
+        ("complete", "Hoàn thành"),
     ], string="Trạng thái", default="draft", index=True, required=True, tracking=True)
 
     is_applied_to_jobs = fields.Boolean(string="Đã triển khai (Update Job)", default=False, readonly=True)
@@ -148,13 +149,14 @@ class RecruitmentPlan(models.Model):
                     'note': line.note or '',
 
                     # --- (MỚI) LẤY CHI PHÍ TỪ EXPECTED SALARY ---
-                    'expense_per_head': line.expected_salary,
+                    # 'expense_per_head': line.expected_salary,
+                    'expense_per_head': 0,
 
-                    # Mapping Quý
-                    'qty_q1': line.qty_q1,
-                    'qty_q2': line.qty_q2,
-                    'qty_q3': line.qty_q3,
-                    'qty_q4': line.qty_q4,
+                    # # Mapping Quý
+                    # 'qty_q1': line.qty_q1,
+                    # 'qty_q2': line.qty_q2,
+                    # 'qty_q3': line.qty_q3,
+                    # 'qty_q4': line.qty_q4,
                 }
                 new_lines.append((0, 0, val))
 
@@ -179,6 +181,7 @@ class RecruitmentPlan(models.Model):
         is_committee = u.has_group(COMMITTEE)
         is_director = u.has_group(DIRECTOR)
         is_board = u.has_group(BOARD)
+
 
         # Committee sửa khi Draft
         if state == 'draft':
@@ -376,6 +379,65 @@ class RecruitmentPlan(models.Model):
                     plan_date = rec.plan_execute_date
                 if plan_date < date.today():
                     raise ValidationError("Ngày thực hiện không được nhỏ hơn ngày hiện tại.")
+
+        # ----------------- CÁC HÀM XỬ LÝ LUỒNG QUÝ (MỚI) -----------------
+
+        # BƯỚC 1: Committee: Draft -> Notify
+
+    def action_notify_quarter(self):
+        self._check_committee()
+        for rec in self:
+            if rec.type != 'quarter':
+                raise ValidationError(_("Hành động này chỉ dành cho Kế hoạch Quý."))
+            if rec.recruitment_status != 'draft':
+                raise ValidationError(_("Chỉ có thể thông báo khi kế hoạch đang ở 'Dự thảo'."))
+
+            rec.recruitment_status = 'notify'
+            rec.message_post(body=_("Committee đã gửi thông báo kế hoạch quý."))
+
+        # BƯỚC 2: Committee: Notify -> Director Approve (Trình duyệt -> Chờ duyệt)
+    def action_submit_quarter(self):
+        self._check_committee()
+        for rec in self:
+            if rec.type != 'quarter':
+                raise ValidationError(_("Hành động này chỉ dành cho Kế hoạch Quý."))
+            if rec.recruitment_status != 'notify':
+                raise ValidationError(_("Chỉ có thể trình duyệt từ trạng thái 'Thông báo'."))
+
+            rec.recruitment_status = 'director_approve'
+            rec.message_post(body=_("Committee đã trình duyệt kế hoạch lên Giám đốc."))
+
+        # BƯỚC 3: Director: Director Approve -> Approved (Phê duyệt)
+    def action_director_approve_quarter(self):
+        self._check_director()
+        for rec in self:
+            if rec.type != 'quarter':
+                raise ValidationError(_("Hành động này chỉ dành cho Kế hoạch Quý."))
+
+                # Sửa logic: Phải từ 'director_approve' (Chờ duyệt) mới được duyệt
+            if rec.recruitment_status != 'director_approve':
+                 raise ValidationError(_("Chỉ có thể phê duyệt khi kế hoạch đang ở trạng thái 'Chờ duyệt'."))
+
+            rec.recruitment_status = "approved"
+            rec.message_post(body=_("Giám đốc đã phê duyệt Kế hoạch Quý."))
+
+    # BƯỚC 4: Director: Approved -> In Process (Triển khai)
+        # (Dùng lại hàm action_director_start_deploy cũ, logic không đổi)
+
+        # BƯỚC 5: Director: In Process -> Complete (Hoàn thành)
+    def action_complete_quarter(self):
+        self._check_director()  # Yêu cầu Director (theo đề bài)
+        for rec in self:
+            if rec.type != 'quarter':
+                raise ValidationError(_("Hành động này chỉ dành cho Kế hoạch Quý."))
+
+            if rec.recruitment_status != "in_process":
+                raise ValidationError(_("Chỉ hoàn thành được khi trạng thái là 'Đang triển khai'."))
+
+            rec.recruitment_status = "complete"
+            rec.message_post(body=_("Giám đốc xác nhận hoàn thành kế hoạch quý."))
+
+
 
     # ----------------- CRUD OVERRIDES (PHÂN QUYỀN) -----------------
     @api.model

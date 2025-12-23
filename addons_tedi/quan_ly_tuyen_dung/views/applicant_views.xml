@@ -188,7 +188,7 @@
                         <field name="work_address" string="Địa chỉ làm việc"/>
                         <field name="date_from" string="Từ ngày"/>
                         <field name="date_to" string="Đến ngày"/>
-                        <field name="work_position" string="Chức danh"/>
+                        <field name="position_id" string="Chức danh"/>
                       </tree>
                     </field>
                   </page>

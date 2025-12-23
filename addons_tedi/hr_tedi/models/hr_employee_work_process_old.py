@@ -21,6 +21,11 @@ class HREmployeeWorkProcessOld(models.Model):
         string="Vị trí/Chức danh",
         required=True
     )
+    position_id = fields.Many2one(
+        'hr.position',
+        string="Chức vụ",
+        help="Chọn chức vụ từ danh mục (VD: Giám đốc, Trưởng phòng, Chuyên viên...)"
+    )
 
     @api.constrains('date_from', 'date_to')
     def _check_dates(self):

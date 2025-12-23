@@ -121,3 +121,5 @@ access_training_result_wizard_director,access_training_result_wizard_director,mo
 access_training_result_wizard_admin,access_training_result_wizard_admin,model_training_result_wizard,hr_training_tedi.group_training_admin,1,1,1,1
 
 access_training_result_wizard_line_user,access_training_result_line_wizard_user,model_training_result_wizard_line,base.group_user,1,1,1,1
+
+access_training.plan.detail.reject.wizard,training.plan.detail.reject.wizard,model_training_plan_detail_reject_wizard,base.group_user,1,1,1,1

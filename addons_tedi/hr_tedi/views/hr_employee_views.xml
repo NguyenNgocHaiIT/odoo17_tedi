@@ -179,9 +179,9 @@
                                 <field name="policy_martyr_relation"
                                        invisible="not is_policy_beneficiary or policy_type != 'martyr_family'"/>
 
-                                <field name="policy_card_no" invisible="not is_policy_beneficiary"/>
-                                <field name="policy_issue_date" invisible="not is_policy_beneficiary"/>
-                                <field name="policy_issue_place" invisible="not is_policy_beneficiary"/>
+<!--                                <field name="policy_card_no" invisible="not is_policy_beneficiary"/>-->
+<!--                                <field name="policy_issue_date" invisible="not is_policy_beneficiary"/>-->
+<!--                                <field name="policy_issue_place" invisible="not is_policy_beneficiary"/>-->
                             </group>
 
 
@@ -314,23 +314,25 @@
                                     <field name="party_official_date" invisible="not party_member"/>
                                     <field name="party_title_id" invisible="not party_member"/>
                                     <field name="party_cell_id" invisible="not party_member"/>
-                                    <field name="party_profile_no" invisible="not party_member"/>
-                                    <field name="party_card_no" invisible="not party_member"/>
-                                    <field name="party_medal_no" invisible="not party_member"/>
+<!--                                    <field name="party_profile_no" invisible="not party_member"/>-->
+<!--                                    <field name="party_card_no" invisible="not party_member"/>-->
+<!--                                    <field name="party_medal_no" invisible="not party_member"/>-->
                                 </group>
 
                                  <group>
                                     <group string="THÔNG TIN CÔNG ĐOÀN" colspan="2" col="2">
                                         <field name="union_member"/>
                                         <field name="union_join_date" invisible="not union_member"/>
-                                        <field name="union_title_id" invisible="not union_member"/> <field name="union_profile_no" invisible="not union_member"/>
+                                        <field name="union_title_id" invisible="not union_member"/>
+<!--                                        <field name="union_profile_no" invisible="not union_member"/>-->
 <!--                                        <field name="union_card_no" invisible="not union_member"/>-->
                                     </group>
 
                                     <group string="THÔNG TIN ĐOÀN THANH NIÊN" colspan="2" col="2">
                                         <field name="youth_member"/>
                                         <field name="youth_join_date" invisible="not youth_member"/>
-                                        <field name="youth_title_id" invisible="not youth_member"/> <field name="youth_card_no" invisible="not youth_member"/>
+                                        <field name="youth_title_id" invisible="not youth_member"/>
+<!--                                        <field name="youth_card_no" invisible="not youth_member"/>-->
                                     </group>
                                  </group>
                             </group>
