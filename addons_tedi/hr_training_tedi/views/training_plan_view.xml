@@ -9,8 +9,8 @@
                 <field name="name" class="text-start"/>
                 <field name="survey_id" class="text-start"/>
                 <field name="open_date" string="Ngày tạo" readonly="1" class="text-start"/>
-                <field name="student_count" class="text-center"/>
-                <field name="total_fee" class="text-center"/>
+                <field name="student_count" class="text-end"/>
+                <field name="total_fee" class="text-end"/>
                 <field name="state"
                        widget="badge"
                        decoration-warning="state == 'pending'"
@@ -27,14 +27,14 @@
                 <tree editable="bottom" string="Chi tiết kế hoạch năm">
                     <field name="plan_state" column_invisible="True"/>
 
-                    <field name="course_id"/>
-                    <field name="training_type"/>
+                    <field name="course_id" width="250px"/>
+                    <field name="training_type" optional="hide"/>
 
-                    <field name="qty_q1" sum="Q1"/>
-                    <field name="qty_q2" sum="Q2"/>
-                    <field name="qty_q3" sum="Q3"/>
-                    <field name="qty_q4" sum="Q4"/>
-                    <field name="total_expected_qty" sum="Tổng năm"/>
+                    <field name="execution_date" widget="month_picker" string="Tháng thực hiện" width="150px"/>
+
+                    <field name="quarter" readonly="1" force_save="1" width="80px"/>
+
+                    <field name="expected_qty" sum="Tổng SL"/>
 
                     <field name="training_fee_per_person"/>
                     <field name="training_total_fee" invisible="1"/>
@@ -44,7 +44,7 @@
                            widget="badge"
                            decoration-success="state == 'approved'"
                            decoration-danger="state == 'rejected'"
-                           invisible="plan_state in ['pending', 'approved']"/>
+                           column_invisible="parent.state in ['draft','pending']"/>
 
                     <field name="reject_reason"
                            readonly="1"
@@ -56,13 +56,13 @@
                             string="Đã phê duyệt"
                             type="object"
                             class="btn btn-sm btn-success rounded-pill px-3"
-                            invisible="state != 'approved' or plan_state not in ['pending', 'approved']"/>
+                            invisible="state != 'approved' or plan_state =='approved'"/>
 
                     <button name="action_toggle_state"
                             string="Từ chối"
                             type="object"
                             class="btn btn-sm btn-danger rounded-pill px-3"
-                            invisible="state != 'rejected' or plan_state not in ['pending', 'approved']"/>
+                            invisible="state != 'rejected' or plan_state == 'approved'"/>
                 </tree>
             </field>
         </record>
@@ -109,12 +109,10 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                 </header>
                 <sheet>
-                    <div class="oe_title">
-                        <h1><field name="name" placeholder="VD: Kế hoạch Đào tạo Năm 2025"/></h1>
-                    </div>
                     <group>
                         <group>
-                            <field name="type" readonly="1"/>
+                            <field name="name" placeholder="VD: Kế hoạch Đào tạo Năm 2025"/>
+                            <field name="type" readonly="1" invisible="1"/>
                             <field name="survey_id" domain="[('state','in',('in_process','end'))]" readonly="state == 'approved'"/>
                         </group>
                         <group>

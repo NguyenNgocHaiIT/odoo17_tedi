@@ -6,8 +6,8 @@
             <field name="name">trainings.needs.tree</field>
             <field name="model">trainings.needs</field>
             <field name="arch" type="xml">
-                <tree string="Nhu cầu đào tạo">
-                    <field name="name" string="Đợt khảo sát" class="text-start"/>
+                <tree string="Đăng ký đào tạo">
+                    <field name="name" string="Đợt đào tạo" class="text-start"/>
                     <field name="create_date" string="Ngày đăng ký" class="text-start"/>
                     <field name="user_id" string="Người đăng ký" class="text-start"/>
                     <field name="approver_id" string="Người phê duyệt" class="text-start"/>
@@ -24,7 +24,7 @@
             <field name="name">trainings.needs.form</field>
             <field name="model">trainings.needs</field>
             <field name="arch" type="xml">
-                <form string="Nhu cầu đào tạo">
+                <form string="Đăng ký đào tạo">
                     <header>
                         <button name="action_submit" string="Trình duyệt" type="object" class="btn-primary" invisible="state != 'draft'"/>
                         <button name="action_approve" string="Duyệt" type="object" class="btn-success" invisible="state != 'pending'"/>
@@ -74,7 +74,7 @@
         </record>
 
         <record id="action_trainings_needs_year" model="ir.actions.act_window">
-            <field name="name">Nhu cầu Năm</field>
+            <field name="name">Đăng ký năm</field>
             <field name="res_model">trainings.needs</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('type', '=', 'year')]</field>
@@ -82,7 +82,7 @@
             </record>
 
         <record id="action_trainings_needs_actual" model="ir.actions.act_window">
-            <field name="name">Nhu cầu Thực tế (Đăng ký lớp)</field>
+            <field name="name">Đăng ký lớp</field>
             <field name="res_model">trainings.needs</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('type', '=', 'actual')]</field>

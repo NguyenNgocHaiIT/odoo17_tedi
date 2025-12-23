@@ -11,6 +11,7 @@ BASE                = "base.group_user"
 class TrainingPlan(models.Model):
     _name = 'training.plan'
     _description = 'Training Plan'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
 
     name = fields.Char(string='Tên kế hoạch', required=True)
 
@@ -67,13 +68,13 @@ class TrainingPlan(models.Model):
     ], string="Loại kế hoạch", default='year', required=True, tracking=True)
 
     # Field liên kết cha-con (để biết kế hoạch Quý thuộc Kế hoạch Năm nào)
-    parent_id = fields.Many2one('recruitment.plan', string="Thuộc Kế hoạch Năm", readonly=True)
+    parent_id = fields.Many2one('training.plan', string="Thuộc Kế hoạch Năm", readonly=True)
 
-    _sql_constraints = [
-        ('survey_unique',
-         'unique(survey_id)',
-         'Mỗi đợt khảo sát chỉ được gắn với một kế hoạch đào tạo.'),
-    ]
+    # _sql_constraints = [
+    #     ('survey_unique',
+    #      'unique(survey_id)',
+    #      'Mỗi đợt khảo sát chỉ được gắn với một kế hoạch đào tạo.'),
+    # ]
 
     # =========================================
     #      ====== FUNCTION TỔNG HỢP ======
@@ -262,13 +263,25 @@ class TrainingPlan(models.Model):
 
     def _generate_quarterly_plans(self):
         self.ensure_one()
-        # Mapping: Quý -> Trường số lượng tương ứng
-        quarters_map = {1: 'qty_q1', 2: 'qty_q2', 3: 'qty_q3', 4: 'qty_q4'}
 
-        for q_num, field_qty in quarters_map.items():
+        # Duyệt qua 4 quý
+        for q_num in range(1, 5):  # 1, 2, 3, 4
+            q_str = str(q_num)
+
+            # Lọc các dòng thuộc quý này (dựa vào field quarter được compute từ ngày)
+            # Chỉ lấy các dòng ĐÃ DUYỆT (state='approved') và có số lượng > 0
+            lines_in_quarter = self.detail_ids.filtered(
+                lambda l: l.quarter == q_str
+                          and l.state == 'approved'
+                          and l.expected_qty > 0
+            )
+
+            if not lines_in_quarter:
+                continue
+
             plan_name = f"{self.name} - Quý {q_num}"
 
-            # Kiểm tra xem đã tạo chưa để tránh trùng lặp
+            # Kiểm tra trùng tên kế hoạch con
             existing = self.env['training.plan'].search([
                 ('parent_id', '=', self.id),
                 ('name', '=', plan_name)
@@ -282,33 +295,28 @@ class TrainingPlan(models.Model):
                 'name': plan_name,
                 'type': 'quarter',
                 'parent_id': self.id,
-                'state': 'draft',  # Để draft cho HR kiểm tra lại rồi mới trình duyệt
+                'state': 'draft',
                 'open_date': fields.Date.today(),
-                # Copy Survey ID để quý con cũng biết nó thuộc đợt khảo sát nào (nếu cần mapping lại user)
                 'survey_id': self.survey_id.id,
                 'currency_id': self.currency_id.id,
             }
 
             # 2. Tạo Lines
             detail_lines = []
-            for line in self.detail_ids:
-                qty_in_quarter = getattr(line, field_qty, 0)
-
-                # Chỉ tạo dòng nếu quý đó có học viên
-                if qty_in_quarter > 0:
-                    line_vals = {
-                        'course_id': line.course_id.id,
-                        'training_center': line.training_center,
-                        'training_type': line.training_type,
-                        'training_location': line.training_location,
-                        'training_fee_per_person': line.training_fee_per_person,
-                        'training_fee_source': line.training_fee_source,
-                        'note': line.note,
-                        # Lưu ý: Ở quý con, ta chưa có học viên cụ thể ngay lập tức,
-                        # nhưng có thể lưu số lượng dự kiến vào note hoặc một field expected_qty
-                        # Ở đây ta chỉ tạo khung detail để HR add người vào sau.
-                    }
-                    detail_lines.append((0, 0, line_vals))
+            for line in lines_in_quarter:
+                line_vals = {
+                    'course_id': line.course_id.id,
+                    'training_center': line.training_center,
+                    'training_type': line.training_type,
+                    'training_location': line.training_location,
+                    'training_fee_per_person': line.training_fee_per_person,
+                    'training_fee_source': line.training_fee_source,
+                    'note': line.note,
+                    # Lưu ý: Ở KH Quý, chưa có học viên ngay nên student_count = 0
+                    # Ta có thể đưa expected_qty vào note hoặc thêm field phụ nếu cần
+                    'student_count': 0,
+                }
+                detail_lines.append((0, 0, line_vals))
 
             if detail_lines:
                 plan_vals['detail_ids'] = detail_lines
@@ -417,6 +425,30 @@ class TrainingPlanDetail(models.Model):
         store=True
     )
 
+    execution_date = fields.Date(string="Thời gian thực hiện", required=True, default=fields.Date.today)
+
+    # --- 2. FIELD QUÝ (Tự động tính từ execution_date) ---
+    quarter = fields.Selection([
+        ('1', 'Quý 1'),
+        ('2', 'Quý 2'),
+        ('3', 'Quý 3'),
+        ('4', 'Quý 4'),
+    ], string="Quý", compute="_compute_quarter", store=True)
+
+    # --- 3. FIELD SỐ LƯỢNG DỰ KIẾN ---
+    expected_qty = fields.Integer(string="SL Dự kiến", default=1)
+
+    @api.depends('execution_date')
+    def _compute_quarter(self):
+        for rec in self:
+            if not rec.execution_date:
+                rec.quarter = False
+            else:
+                # Công thức tính quý: (Tháng - 1) // 3 + 1
+                # VD: Tháng 5 -> (4)//3 + 1 = 1 + 1 = 2
+                q = (rec.execution_date.month - 1) // 3 + 1
+                rec.quarter = str(q)
+
     def action_open_reject_wizard(self):
         self.ensure_one()
         return {
@@ -483,10 +515,16 @@ class TrainingPlanDetail(models.Model):
             'res_id': participation.id,  # ← mở đúng record
         }
 
-    @api.depends('participation_detail_ids', 'training_fee_per_person')
+    @api.depends('participation_detail_ids', 'training_fee_per_person', 'expected_qty')
     def _compute_student_and_total(self):
         for detail in self:
-            count = len(detail.participation_detail_ids)
+            # Nếu là Plan Năm: Tính theo SL dự kiến
+            if detail.plan_id.type == 'year':
+                count = detail.expected_qty
+            # Nếu là Plan Quý: Tính theo SL học viên thực tế
+            else:
+                count = len(detail.participation_detail_ids)
+
             detail.student_count = count
             detail.training_total_fee = (detail.training_fee_per_person or 0.0) * count
 

@@ -37,27 +37,35 @@
                   name="Triển khai kế hoạch"
                   parent="hr_training_tedi.training_tedi_root"
                   groups="hr_training_tedi.group_training_manager"
+                  action="action_training_plan_quarter"
                   sequence="20"  />
 
-        <menuitem id="menu_training_plan_quarter"
-                  name="Triển khai kế hoạch"
-                  parent="menu_training_plan_real"
-                  action="action_training_plan_quarter"
-                  groups="hr_training_tedi.group_training_manager"
-                  sequence="10"  />
+<!--        <menuitem id="menu_training_plan_quarter"-->
+<!--                  name="Triển khai kế hoạch"-->
+<!--                  parent="menu_training_plan_real"-->
+<!--                  -->
+<!--                  groups="hr_training_tedi.group_training_manager"-->
+<!--                  sequence="10"  />-->
 
-        <menuitem id="menu_trainings_needs_real"
-                  name="Nhu cầu thực tế"
-                  parent="menu_training_plan_real"
-                  action="action_trainings_needs_actual"
-                  sequence="30"  />
 
+
+
+        <menuitem id="menu_training_participation_root"
+                  name="Lớp đào tạo"
+                  parent="hr_training_tedi.training_tedi_root"
+                  sequence="40"/>
 
         <menuitem id="menu_training_participation"
                   name="Lớp đào tạo"
-                  parent="hr_training_tedi.training_tedi_root"
+                  parent="hr_training_tedi.menu_training_participation_root"
                   action="action_training_participation"
-                  sequence="40"/>
+                  sequence="10"/>
+
+        <menuitem id="menu_trainings_needs_real"
+                  name="Đăng ký lớp"
+                  parent="menu_training_participation_root"
+                  action="action_trainings_needs_actual"
+                  sequence="30"  />
 
 
 
