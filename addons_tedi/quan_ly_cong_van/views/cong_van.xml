@@ -500,6 +500,9 @@
                                        required="document_type == 'director'"
                                        invisible="document_type != 'director'"
                                        readonly="tt_vb != 'draft'"/>
+                                <field name="phan_loai_van_ban" readonly="tt_vb != 'draft'"
+                                       invisible="document_type != 'director'"
+                                       required="1"/>
                                 <field name="don_vi_ban_hanh" readonly="tt_vb != 'draft'" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
                                 <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách" readonly="tt_vb != 'draft'" required="1"/>

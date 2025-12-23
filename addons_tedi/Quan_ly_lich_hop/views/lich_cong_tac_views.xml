@@ -38,31 +38,33 @@
                 <form delete="false" duplicate="false">
                     <header>
                         <button name="approve" string="Duyệt" type="object"
-                                groups="base.group_system"/>
+                                invisible="not can_approve_meeting or state != 'draft'"/>
                         <button string="Huỷ" class="btn btn-secondary" special="cancel"
-                                groups="base.group_system"/>
+                                invisible="state not in ['draft']"/>
                     </header>
 
                     <sheet>
+                        <field name="can_approve_meeting" invisible="1"/>
+                        <field name="state" invisible="1"/>
                         <div class="oe_title">
                             <label for="name" string="Chủ đề cuộc họp"/>
                             <h1>
-                                <field name="name"/>
+                                <field name="name" readonly=" not (state in ('draft'))"/>
                             </h1>
                         </div>
                         <group>
                             <label for="start" string="Thời gian" />
                             <div style="display: flex;" >
-                                <field name="start" class="oe_inline"/>
+                                <field name="start" class="oe_inline" readonly=" not (state in ('draft'))"/>
                                 <span class="o_form_label" style="padding: 0 4px;">→</span>
-                                <field name="stop" class="oe_inline"/>
+                                <field name="stop" class="oe_inline" readonly=" not (state in ('draft'))"/>
                             </div>
 
-                            <field name="lanh_dao" string="Lãnh đạo"/>
-                            <field name="user_id" string="Người chủ trì" />
-                            <field name="partner_ids" widget="many2many_tags" string="Thành phần tham gia" />
-                            <field name="location" string="Địa điểm"/>
-                            <field name="name" string="Nội dung"/>
+                            <field name="lanh_dao" string="Lãnh đạo" readonly=" not (state in ('draft'))"/>
+                            <field name="user_id" string="Người chủ trì" readonly=" not (state in ('draft'))"/>
+                            <field name="partner_ids" widget="many2many_tags" string="Thành phần tham gia"  readonly=" not (state in ('draft'))"/>
+                            <field name="location" string="Địa điểm" readonly=" not (state in ('draft'))"/>
+                            <field name="name" string="Nội dung" readonly=" not (state in ('draft'))"/>
                         </group>
                     </sheet>
                 </form>

@@ -149,27 +149,27 @@ class Calendar(models.Model):
     # --- 4. CRUD OVERRIDES ---
     @api.model
     def create(self, vals):
-        if not vals.get('chu_tri') and self.env.user.employee_ids:
-            vals['chu_tri'] = self.env.user.employee_ids[0].id
+
+        self._check_room_conflict(vals)
+
         record = super().create(vals)
         record.color = record.id % 12
         return record
 
     def write(self, vals):
-        old_chu_tri_ids = {rec.id: rec.chu_tri.id for rec in self}
-        res = super().write(vals)
-        if 'chu_tri' in vals:
-            for rec in self:
-                old_chu_tri_id = old_chu_tri_ids.get(rec.id)
-                new_chu_tri_id = rec.chu_tri.id
-                current_ids = rec.employee_ids.ids
-                new_employee_ids = current_ids.copy()
-                if old_chu_tri_id and old_chu_tri_id in new_employee_ids:
-                    new_employee_ids = [eid if eid != old_chu_tri_id else new_chu_tri_id for eid in new_employee_ids]
-                elif new_chu_tri_id not in new_employee_ids:
-                    new_employee_ids.append(new_chu_tri_id)
-                rec.employee_ids = [(6, 0, list(set(new_employee_ids)))]
-        return res
+        for rec in self:
+            check_vals = {
+                'room': vals.get('room', rec.room.id),
+                'start': vals.get('start', rec.start),
+                'stop': vals.get('stop', rec.stop),
+            }
+
+            self._check_room_conflict(
+                check_vals,
+                exclude_ids=[rec.id]
+            )
+
+        return super().write(vals)
 
     # --- 5. BUTTON ACTIONS ---
     def action_complete(self):
@@ -359,16 +359,11 @@ class Calendar(models.Model):
             'context': {'default_event_id': self.id},
         }
 
-    @api.model
-    def on_TV(self, *args, **kwargs):
-        # Code dashboard TV của bạn
+    def on_TV(self): # Mở dashboard TV
         return {
-            'type': 'ir.actions.act_window',
-            'name': 'Dashboard hôm nay',
-            'res_model': 'calendar.dashboard',
-            'view_mode': 'form',
-            'view_id': self.env.ref('Quan_ly_lich_hop.view_dashboard_today_form').id,
-            'target': 'current',
+            'type': 'ir.actions.act_url',
+            'url': '/dashboard/tv',
+            'target': 'new', # hoặc 'self' nếu muốn thay tab hiện tại
         }
 
     def action_add_participants(self):
@@ -381,6 +376,37 @@ class Calendar(models.Model):
             'target': 'new',
             'context': {'default_event_id': self.id},
         }
+
+    def _check_room_conflict(self, vals, exclude_ids=None):
+        """
+        Check trùng phòng họp theo thời gian
+        """
+        room_id = vals.get('room')
+        start = vals.get('start')
+        stop = vals.get('stop')
+
+        if not room_id or not start or not stop:
+            return
+
+        domain = [
+            ('room', '=', room_id),
+            ('start', '<', stop),
+            ('stop', '>', start),
+            ('state', '!=', 'canceled'),
+        ]
+
+        if exclude_ids:
+            domain.append(('id', 'not in', exclude_ids))
+
+        conflict = self.search(domain, limit=1)
+        if conflict:
+            user_tz_start = fields.Datetime.context_timestamp(self, conflict.start)
+            user_tz_stop = fields.Datetime.context_timestamp(self, conflict.stop)
+            raise UserError(
+                f"❌ Phòng họp '{conflict.room.name}' đã được đăng ký "
+                f"từ {user_tz_start.strftime('%H:%M %d/%m/%Y')} "
+                f"đến {user_tz_stop.strftime('%H:%M %d/%m/%Y')}."
+            )
 
 
 class RoomMaterials(models.Model):
@@ -457,10 +483,13 @@ class RoomBookingWizard(models.TransientModel):
         ], limit=1)
 
         if conflicting_event:
+            start_local = fields.Datetime.context_timestamp(self, conflicting_event.start)
+            stop_local = fields.Datetime.context_timestamp(self, conflicting_event.stop)
+
             raise UserError(
-                f"Phòng họp '{self.room_id.name}' đã được đăng ký trong khoảng:\n"
-                f"{conflicting_event.start.strftime('%H:%M')} → {conflicting_event.stop.strftime('%H:%M')} "
-                f"ngày {conflicting_event.start.strftime('%d/%m/%Y')}.\n"
+                f"Phòng họp '{self.room_id.name}' đã được đăng ký trong khoảng thời gian:\n"
+                f"{start_local.strftime('%H:%M %d/%m/%Y')} "
+                f"→ {stop_local.strftime('%H:%M %d/%m/%Y')}\n\n"
                 "Vui lòng chọn phòng khác hoặc điều chỉnh thời gian."
             )
 

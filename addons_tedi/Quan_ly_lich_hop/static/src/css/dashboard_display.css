@@ -1,0 +1,24 @@
+.auto-scroll {
+    height: 60vh; /* Chiều cao vùng cuộn - điều chỉnh tùy ý (60vh ~ 60% màn hình) */
+    overflow: hidden;
+    position: relative;
+}
+
+.auto-scroll table {
+    animation: scroll 40s linear infinite; /* 40s cho 1 vòng - điều chỉnh tốc độ ở đây */
+    display: block;
+}
+
+@keyframes scroll {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(-50%); /* -50% vì nội dung được lặp 2 lần */
+    }
+}
+
+/* Dừng cuộn khi hover (tùy chọn, tiện cho người muốn đọc chi tiết) */
+.auto-scroll:hover table {
+    animation-play-state: paused;
+}
