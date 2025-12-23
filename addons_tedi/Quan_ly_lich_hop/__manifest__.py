@@ -16,7 +16,7 @@
 		'views/lich_phong_hop_views.xml',
 		'views/lich_cong_tac_views.xml',
 		'views/cau_hinh.xml',
-		#'views/template_xem_tren_TV.xml',
+		'views/template_dashboard.xml',
 		'views/menu.xml',
 	],
 	'assets': {
