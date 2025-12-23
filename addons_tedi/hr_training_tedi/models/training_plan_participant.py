@@ -5,11 +5,25 @@ from odoo.exceptions import AccessError, ValidationError
 class TrainingPlanParticipation(models.Model):
     _name = 'training.plan.participation'
     _description = 'Training Plan Participation'
-    _rec_name = "training_plan_detail_id"
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _rec_name = "name"
 
     # =========================================================
     # 1. LOGIC TRẠNG THÁI (CORE)
     # =========================================================
+    name = fields.Char(string="Mô tả", compute="_compute_name", store=True)
+
+    @api.depends('training_plan_detail_id', 'training_plan_id.name')
+    def _compute_name(self):
+        for rec in self:
+            # Lấy tên khóa học (từ detail)
+            detail_name = rec.training_plan_detail_id.display_name or _("Chưa chọn khóa")
+            # Lấy tên Plan
+            plan_name = rec.training_plan_id.name or ""
+
+            # Gán format: "Tên khóa - Tên Plan"
+            rec.name = f"{detail_name} - {plan_name}"
+
 
     # [MỚI] Field cờ đánh dấu đã bấm nút Kết thúc thủ công
     is_manually_ended = fields.Boolean(
