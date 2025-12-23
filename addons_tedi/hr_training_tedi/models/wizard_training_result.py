@@ -11,6 +11,7 @@ class TrainingResultWizard(models.TransientModel):
         readonly=True
     )
 
+
     # Danh sách học viên trong wizard
     line_ids = fields.One2many(
         'training.result.wizard.line',
