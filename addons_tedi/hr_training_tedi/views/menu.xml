@@ -8,27 +8,26 @@
             sequence="0"
         />
 
-        <menuitem id="menu_training_plan_new"
+        <menuitem id="menu_training_plan_lod"
                   name="Kế hoạch đào tạo"
                   parent="hr_training_tedi.training_tedi_root"
-                  groups="hr_training_tedi.group_training_manager"
                   sequence="0"  />
 
         <menuitem id="training_needs_tedi"
                   name="Yêu cầu đăng ký đào tạo"
-                  parent="menu_training_plan_new"
+                  parent="menu_training_plan_lod"
                   action="action_training_needs_survey"
                   sequence="10"/>
 
         <menuitem id="menu_trainings_needs"
-                  name="Nhu cầu đào tạo"
-                  parent="menu_training_plan_new"
+                  name="Đăng ký đào tạo"
+                  parent="menu_training_plan_lod"
                   action="action_trainings_needs_year"
                   sequence="30"  />
 
         <menuitem id="menu_training_plan_year"
                   name="Kế hoạch đào tạo"
-                  parent="menu_training_plan_new"
+                  parent="menu_training_plan_lod"
                   action="action_training_plan_year"
                   groups="hr_training_tedi.group_training_manager"
                   sequence="30"  />
