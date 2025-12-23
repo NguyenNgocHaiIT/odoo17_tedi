@@ -4,8 +4,8 @@
         <field name="name">training_needs_survey_tree</field>
         <field name="model">training.needs.survey</field>
         <field name="arch" type="xml">
-            <tree string="Khảo sát nhu cầu đào tạo">
-                <field name="name" string="Tên đợt khảo sát" class="text-start"/>
+            <tree string="Yêu cầu đăng ký đào tạo">
+                <field name="name" string="Tên đợt đăng ký" class="text-start"/>
                 <field name="create_date" string="Ngày tạo" class="text-start"/>
                 <field name="start_date" string="Từ ngày" class="text-start"/>
                 <field name="end_date" string="Đến ngày" class="text-start"/>
@@ -25,7 +25,7 @@
         <field name="name">training_needs_survey_form</field>
         <field name="model">training.needs.survey</field>
         <field name="arch" type="xml">
-            <form string="Khảo sát nhu cầu đào tạo">
+            <form string="Yêu cầu đăng ký đào tạo">
                 <field name="state" invisible="1"/>
 
                 <header>
@@ -81,7 +81,7 @@
     </record>
 
     <record id="action_training_needs_survey" model="ir.actions.act_window">
-        <field name="name">Khảo sát nhu cầu đào tạo</field>
+        <field name="name">Yêu cầu đăng ký đào tạo</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">training.needs.survey</field>
         <field name="view_mode">tree,form</field>

@@ -14,6 +14,20 @@ class TrainingNeeds(models.Model):
     _name = 'trainings.needs'
     _description = 'Training Needs'
 
+    type = fields.Selection([
+        ('year', 'Nhu cầu Năm'),
+        ('actual', 'Nhu cầu Thực tế'),
+    ], string="Loại nhu cầu", default='year', required=True)
+
+    # Chọn Lớp học (Đã được tạo từ Kế hoạch Quý)
+    participation_id = fields.Many2one(
+        "training.plan.participation",
+        string="Lớp học (Đợt đào tạo)",
+        # Chỉ lấy các lớp chưa kết thúc để bổ sung
+        domain="[('state', 'in', ['not_started', 'in_progress'])]",
+    )
+
+    # Đợt khảo sát (Chỉ bắt buộc cho Nhu cầu Năm)
     name = fields.Many2one(
         "training.needs.survey",
         string="Tên đợt khảo sát",
@@ -117,13 +131,14 @@ class TrainingNeeds(models.Model):
                 raise UserError(_("Bạn không được chọn 2 khoá đào tạo giống nhau trong cùng một phiếu."))
 
     @api.model
+    @api.model
     def create(self, vals):
-        """Tự gán người đăng ký = user tạo bản ghi nếu chưa set."""
-        if not vals.get('user_id'):
-            vals['user_id'] = self.env.uid
-        res = super().create(vals)
-        res._check_unique_course()
-        return res
+        if vals.get('type') == 'year' and not vals.get('name'):
+            raise UserError(_("Với Nhu cầu Năm, bạn phải chọn Đợt khảo sát."))
+        if vals.get('type') == 'actual' and not vals.get('participation_id'):
+            raise UserError(_("Với Nhu cầu Thực tế, bạn phải chọn Lớp học."))
+
+        return super().create(vals)
 
     def write(self, vals):
         res = super().write(vals)
@@ -151,20 +166,56 @@ class TrainingNeeds(models.Model):
         for rec in self:
             if rec.state != 'pending':
                 raise UserError(_("Chỉ được duyệt khi phiếu đang ở trạng thái 'Chờ duyệt'."))
-            if not rec.line_ids:
-                raise UserError(_("Bạn phải nhập ít nhất 1 dòng nhu cầu đào tạo trước khi duyệt."))
 
-            # CHECK QUYỀN TRƯỞNG ĐƠN VỊ
-            # Nếu chỉ có quyền Unit Manager mà không phải Manager cấp cao
+            # --- XỬ LÝ NHU CẦU THỰC TẾ: THÊM NGƯỜI VÀO LỚP ---
+            if rec.type == 'actual' and rec.participation_id:
+                rec._add_students_to_participation()
+
+            # --- XỬ LÝ QUYỀN DUYỆT CŨ CỦA BẠN ---
             if self.env.user.has_group('hr_training_tedi.group_training_unit_manager') and \
                     not self.env.user.has_group('hr_training_tedi.group_training_manager'):
-
                 if not rec.is_valid_approver:
                     raise UserError(_("Bạn không có quyền duyệt yêu cầu của phòng ban khác."))
 
             rec.state = "approved"
             rec.approver_id = self.env.user.id
 
+    def _add_students_to_participation(self):
+        self.ensure_one()
+        ParticipationDetail = self.env['training.plan.participation.detail']
+
+        # Lớp học đích
+        participation = self.participation_id
+
+        # Danh sách người đăng ký (lấy từ line_ids hoặc user_id của phiếu)
+        # TH1: Nếu TrainingNeedsLine có field user_id (đăng ký hộ nhiều người) -> Duyệt qua line
+        # TH2: Nếu TrainingNeedsLine chỉ chọn khóa học, người học là chủ phiếu (user_id) -> Add 1 lần
+
+        # Giả sử cấu trúc hiện tại của bạn:
+        # TrainingNeeds = 1 người đăng ký (user_id) đăng ký nhiều khóa (line_ids)
+        # Nhưng ở Type Actual -> 1 Phiếu chỉ chọn 1 Lớp (participation_id) -> Các dòng line có thể thừa?
+        # -> Giải pháp tốt nhất: Ở Type Actual, ẩn tab chi tiết line_ids đi, hoặc tự động tạo line cho khớp.
+
+        # Cách xử lý đơn giản: Lấy user_id của phiếu add vào lớp
+        student_user = self.user_id
+
+        # Kiểm tra đã có trong lớp chưa
+        existing = ParticipationDetail.search([
+            ('participation_id', '=', participation.id),
+            ('user_id', '=', student_user.id)
+        ], limit=1)
+
+        if not existing:
+            ParticipationDetail.create({
+                'participation_id': participation.id,
+                'user_id': student_user.id,
+                'note': _("Bổ sung từ Nhu cầu thực tế: %s") % self.display_name,
+            })
+
+            # Ghi log vào lớp học
+            participation.message_post(body=_(
+                "Đã bổ sung học viên <b>%s</b> từ phiếu nhu cầu thực tế."
+            ) % student_user.name)
     # =========================
     #  ACTION: TỪ CHỐI (pending -> draft)
     # =========================

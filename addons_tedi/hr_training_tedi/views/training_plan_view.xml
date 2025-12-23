@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
   <data>
-
-    <record id="view_training_plan_tree" model="ir.ui.view">
+     <record id="view_training_plan_tree" model="ir.ui.view">
         <field name="name">training.plan.tree</field>
         <field name="model">training.plan</field>
         <field name="arch" type="xml">
@@ -21,124 +20,198 @@
         </field>
     </record>
 
-    <record id="view_training_plan_form" model="ir.ui.view">
-      <field name="name">training.plan.form</field>
-      <field name="model">training.plan</field>
-      <field name="arch" type="xml">
-        <form string="Kế hoạch đào tạo">
+    <record id="view_training_plan_detail_year_tree" model="ir.ui.view">
+            <field name="name">training.plan.detail.year.tree</field>
+            <field name="model">training.plan.detail</field>
+            <field name="arch" type="xml">
+                <tree editable="bottom" string="Chi tiết kế hoạch năm">
+                    <field name="plan_state" column_invisible="True"/>
 
-            <field name="state" invisible="1"/>
+                    <field name="course_id"/>
+                    <field name="training_type"/>
 
-            <header>
-                <field name="state"
-                       widget="statusbar"
-                       statusbar_visible="draft,pending,approved"/>
+                    <field name="qty_q1" sum="Q1"/>
+                    <field name="qty_q2" sum="Q2"/>
+                    <field name="qty_q3" sum="Q3"/>
+                    <field name="qty_q4" sum="Q4"/>
+                    <field name="total_expected_qty" sum="Tổng năm"/>
 
-                <button name="action_submit"
-                        type="object"
-                        string="Trình duyệt"
-                        class="btn-primary"
-                        groups="hr_training_tedi.group_training_manager"
-                        invisible="state != 'draft'"/>
+                    <field name="training_fee_per_person"/>
+                    <field name="training_total_fee" invisible="1"/>
+                    <field name="note"/>
 
-                <button name="action_approve"
-                        type="object"
-                        string="Duyệt"
-                        class="btn-success"
-                        groups="hr_training_tedi.group_training_general_director"
-                        invisible="state != 'pending'"/>
+                    <field name="state"
+                           widget="badge"
+                           decoration-success="state == 'approved'"
+                           decoration-danger="state == 'rejected'"
+                           invisible="plan_state in ['pending', 'approved']"/>
 
-                <button name="action_reject"
-                        type="object"
-                        string="Từ chối"
-                        class="btn-danger"
-                        groups="hr_training_tedi.group_training_general_director"
-                        invisible="state != 'pending'"/>
-            </header>
+                    <field name="reject_reason"
+                           readonly="1"
+                           optional="show"
+                           invisible="state != 'rejected'"
+                           decoration-danger="state == 'rejected'"/>
 
-            <sheet>
-              <group>
-                  <group>
-                      <field name="name" readonly="state == 'approved'" class="text-start"/>
-                      <field name="survey_id"
-                             domain="[('state','in',('in_process','end'))]" readonly="state == 'approved'" class="text-start"/>
-                  </group>
+                    <button name="action_toggle_state"
+                            string="Đã phê duyệt"
+                            type="object"
+                            class="btn btn-sm btn-success rounded-pill px-3"
+                            invisible="state != 'approved' or plan_state not in ['pending', 'approved']"/>
 
-                  <group>
-                      <field name="open_date" string="Ngày tạo" readonly="1" class="text-start"/>
-                  </group>
-              </group>
+                    <button name="action_toggle_state"
+                            string="Từ chối"
+                            type="object"
+                            class="btn btn-sm btn-danger rounded-pill px-3"
+                            invisible="state != 'rejected' or plan_state not in ['pending', 'approved']"/>
+                </tree>
+            </field>
+        </record>
 
-              <group>
-                  <group>
-                      <field name="student_count" readonly="1" class="text-start"/>
-                      <field name="total_fee" readonly="1" class="text-start"/>
-                  </group>
-              </group>
+    <record id="view_training_plan_detail_quarter_tree" model="ir.ui.view">
+        <field name="name">training.plan.detail.quarter.tree</field>
+        <field name="model">training.plan.detail</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom" string="Chi tiết kế hoạch quý">
+                <field name="plan_state" column_invisible="True"/>
+                <button name="open_participants" type="object" string="Học viên" class="btn-link"
+                        invisible="plan_state != 'approved'" icon="fa-users"/>
 
-              <notebook>
-                <page string="Chi tiết kế hoạch">
-                 <field name="detail_ids" readonly="state == 'approved'">
-                    <tree editable="bottom" string="Chi tiết kế hoạch">
-                        <field name="plan_state" column_invisible="True"/>
-                        <button name="open_participants"
-                                type="object"
-                                string="Học viên"
-                                class="btn-link"
-                                invisible="plan_state != 'approved'"
-                                icon="fa-users"/>
+                <field name="course_id"/>
+                <field name="training_center"/>
+                <field name="training_type"/>
+                <field name="time_of_execution"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="training_location"/>
 
-                        <field name="course_id" class="text-start"/>
-                        <field name="training_center" class="text-start"/>
-                        <field name="training_type" class="text-start"/>
-                        <field name="time_of_execution" class="text-start"/>
-                        <field name="start_date" class="text-start"/>
-                        <field name="end_date" class="text-start"/>
-                        <field name="training_location" class="text-start"/>
-                        <field name="training_fee_per_person" class="text-center"/>
-                        <field name="training_total_fee" readonly="1" class="text-center"/>
-                        <field name="training_fee_source" class="text-start"/>
-                        <field name="note" class="text-start"/>
-                    </tree>
-
-
-                    <form string="Chi tiết kế hoạch">
-                      <group>
-                        <field name="course_id" class="text-start"/>
-                        <field name="training_center" class="text-start"/>
-                        <field name="training_type" class="text-start"/>
-                        <field name="time_of_execution" class="text-start"/>
-                        <field name="start_date" class="text-start"/>
-                        <field name="end_date" class="text-start"/>
-                        <field name="training_location" class="text-start"/>
-                      </group>
-                      <group>
-                        <field name="training_fee_per_person" class="text-start"/>
-                        <field name="training_total_fee" readonly="1" class="text-start"/>
-                        <field name="training_fee_source" class="text-start"/>
-                        <field name="note" class="text-start"/>
-                      </group>
-                    </form>
-
-                  </field>
-                </page>
-
-              </notebook>
-            </sheet>
-        </form>
-      </field>
+                <field name="student_count" string="SL Thực tế"/>
+                <field name="training_fee_per_person"/>
+                <field name="training_total_fee" sum="Tổng chi phí"/>
+                <field name="note"/>
+            </tree>
+        </field>
     </record>
 
-    <record id="action_training_plan" model="ir.actions.act_window">
-      <field name="name">Kế hoạch đào tạo</field>
-      <field name="res_model">training.plan</field>
-      <field name="view_mode">tree,form</field>
-      <field name="view_ids" eval="[
-                (5, 0, 0),
-                (0, 0, {'view_id': ref('view_training_plan_tree'), 'view_mode': 'tree'}),
-                (0, 0, {'view_id': ref('view_training_plan_form'), 'view_mode': 'form'})
-            ]"/>
+    <record id="view_training_plan_year_form" model="ir.ui.view">
+        <field name="name">training.plan.year.form</field>
+        <field name="model">training.plan</field>
+        <field name="arch" type="xml">
+            <form string="Kế hoạch Đào tạo Năm">
+                <header>
+                    <button name="action_submit" type="object" string="Trình duyệt" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_approve" type="object" string="Duyệt &amp; Tạo Quý" class="btn-success"
+                            groups="hr_training_tedi.group_training_general_director"
+                            invisible="state != 'pending'"/>
+                    <button name="action_reject" type="object" string="Từ chối" class="btn-danger"
+                            groups="hr_training_tedi.group_training_general_director"
+                            invisible="state != 'pending'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="VD: Kế hoạch Đào tạo Năm 2025"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="type" readonly="1"/>
+                            <field name="survey_id" domain="[('state','in',('in_process','end'))]" readonly="state == 'approved'"/>
+                        </group>
+                        <group>
+                            <field name="open_date"/>
+                            <field name="total_fee" string="Dự toán kinh phí"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Phân bổ chi tiết">
+                            <field name="detail_ids" context="{'tree_view_ref': 'hr_training_tedi.view_training_plan_detail_year_tree'}" readonly="state == 'approved'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
     </record>
 
-  </data>
+    <record id="view_training_plan_quarter_form" model="ir.ui.view">
+        <field name="name">training.plan.quarter.form</field>
+        <field name="model">training.plan</field>
+        <field name="arch" type="xml">
+            <form string="Kế hoạch Đào tạo Quý">
+                <header>
+                    <button name="action_submit" type="object" string="Trình duyệt" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_approve" type="object" string="Duyệt &amp; Tạo Lớp" class="btn-success"
+                            groups="hr_training_tedi.group_training_general_director"
+                            invisible="state != 'pending'"/>
+                    <button name="action_reject" type="object" string="Từ chối" class="btn-danger"
+                            groups="hr_training_tedi.group_training_general_director"
+                            invisible="state != 'pending'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="type" readonly="1"/>
+                            <field name="parent_id" string="Thuộc Kế hoạch Năm" readonly="1"/>
+                            <field name="survey_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="open_date"/>
+                            <field name="student_count"/>
+                            <field name="total_fee"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Danh sách khóa học">
+                            <field name="detail_ids" context="{'tree_view_ref': 'hr_training_tedi.view_training_plan_detail_quarter_tree'}" readonly="state == 'approved'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+   <record id="view_training_plan_detail_reject_wizard_form" model="ir.ui.view">
+       <field name="name">training.plan.detail.reject.wizard.form</field>
+       <field name="model">training.plan.detail.reject.wizard</field>
+       <field name="arch" type="xml">
+           <form string="Nhập lý do từ chối">
+               <group>
+                   <field name="reason" placeholder="Ví dụ: Chi phí quá cao, không cần thiết..."/>
+                   <field name="detail_id" invisible="1"/>
+               </group>
+               <footer>
+                   <button name="action_confirm_reject" string="Xác nhận Từ chối" type="object" class="btn-danger"/>
+                   <button string="Hủy" class="btn-secondary" special="cancel"/>
+               </footer>
+           </form>
+       </field>
+   </record>
+
+    <record id="action_training_plan_year" model="ir.actions.act_window">
+        <field name="name">Kế hoạch Năm</field>
+        <field name="res_model">training.plan</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('type', '=', 'year')]</field>
+        <field name="context">{'default_type': 'year'}</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_training_plan_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_training_plan_year_form')})]"/>
+    </record>
+
+    <record id="action_training_plan_quarter" model="ir.actions.act_window">
+        <field name="name">Kế hoạch Quý</field>
+        <field name="res_model">training.plan</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('type', '=', 'quarter')]</field>
+        <field name="context">{'default_type': 'quarter'}</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_training_plan_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_training_plan_quarter_form')})]"/>
+    </record>
+
+    </data>
 </odoo>
