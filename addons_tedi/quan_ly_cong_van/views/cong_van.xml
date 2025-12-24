@@ -45,9 +45,9 @@
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb == 'huy'"
                                 confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
-                        <button name="co_cong_van_dieu_chinh" string="Có công văn điều chỉnh" type="object"
+                        <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb != 'cho_but_phe'"
+                                invisible="tt_vb in ('draft, cho_duyet')"
                                 confirm="Bạn có chắc muốn chuyển văn bản về trạng thái chỉnh sửa?"/>
                         <button name="action_chuyen_lanh_dao"
                                 type="object"
@@ -59,10 +59,11 @@
                         <field name="is_van_thu" invisible="1"/>
                         <field name="not_is_van_thu" invisible="1"/>
                         <field name="co_the_but_phe_cong_van_den" invisible="1"/>
-                        <group>
-                            <group>
+                        <group col="12">
+                            <group colspan="5">
                                 <field name="outgoing_internal_id" string="Công văn nội bộ đi liên quan"
                                        invisible="document_type != 'incoming_internal'" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                <field name="tt_vb" readonly="1"/>
                                 <field name="so_den_tong_hop" string="Số công văn" readonly="1"/>
                                 <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                                 <field name="don_vi_ban_hanh"
@@ -84,10 +85,6 @@
 
 
                                 <!--                                <field name="phoi_hop_xu_ly"/>-->
-                            </group>
-                            <group>
-                                <field name="tt_vb" readonly="1"/>
-
 
                                 <!--                                <field name="so_den_theo_so"/>-->
                                 <!--                                <field name="so_vb"/>-->
@@ -103,6 +100,9 @@
                                 <field name="but_phe" invisible="1"/>
                                 <field name="dv_xu_ly_chinh" readonly="1"/>
                                 <field name="dv_dong_xu_ly" widget="many2many_tags" readonly="1"/>
+                            </group>
+                            <group colspan="7">
+                                <field name="attachment" widget="pdf_viewer" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                             </group>
                         </group>
                         <label for="trich_yeu" string="Trích yếu" />
@@ -126,9 +126,6 @@
                                         <field name="han_ket_thuc" readonly="not (is_van_thu or not_is_van_thu)"/>
                                     </group>
                                     <!-- <field name="ho_so_cong_viec"/> -->
-                                    <group colspan="2" class="o_form_label_fixed">
-                                        <field name="attachment" widget="pdf_viewer" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
-                                    </group>
                                     <group colspan="2" class="o_form_label_fixed">
                                         <field name="note" readonly="not (is_van_thu or not_is_van_thu)"/>
                                     </group>
@@ -165,14 +162,13 @@
                                           decoration-section_dark="is_section"
                                           expandable="1"
                                           class="o_office_document_detail2_tree"
-                                          create="false" edit="false" delete="true">
+                                          create="false" edit="false" delete="false">
                                         <field name="allow_assign" column_invisible="1"/>
-                                        <field name="is_section" column_invisible="1"/>
-
 
                                         <field name="nguoi_nhap_y_kien" string="Họ tên"/>
                                         <field name="noi_dung_chi_dao" string="Trách nhiệm"/>
                                         <field name="nhom_phong_ban" string="Phòng ban"/>
+                                        <field name="thoi_diem_chi_dao" string="Thời gian phân phát"/>
                                         <field name="view_time" string="Thời gian đọc văn bản"/>
                                         <field name="cong_viec" string="Công việc được giao" invisible="is_section"/>
 
@@ -182,7 +178,15 @@
                                                 type="object"
                                                 icon="fa-tasks"
                                                 class="oe_highlight"
-                                                invisible="not allow_assign"/>
+                                                invisible="not is_section or not allow_assign"/>
+
+                                        <field name="is_section" column_invisible="1"/>
+
+                                        <button name="unlink"
+                                                type="object"
+                                                icon="fa-trash"
+                                                class="oe_stat_button"
+                                                groups="quan_ly_cong_van.group_van_thu"/>
                                     </tree>
                                 </field>
                             </page>
@@ -266,9 +270,9 @@
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb == 'huy'"
                                 confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
-                        <button name="co_cong_van_dieu_chinh" string="Có công văn điều chỉnh" type="object"
+                        <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb != 'cho_but_phe'"
+                                invisible="tt_vb in ('draft, cho_duyet')"
                                 confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
                     </header>
                     <sheet>
@@ -277,10 +281,11 @@
                         <field name="co_the_but_phe_cong_van_di" invisible="1"/>
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu" readonly="tt_vb != 'draft'" required="1"/>
-                        <group>
-                            <group>
+                        <group col="12">
+                            <group colspan="5">
                                 <field name="document_type" invisible="1"/>
                                 <field name="so_di_tong_hop" readonly="1"/>
+                                <field name="tt_vb" readonly="1"/>
                                 <field name="don_vi_ban_hanh"
                                        invisible="not (document_type in ('incoming_internal','outgoing_internal','resolution'))"
                                        readonly="tt_vb != 'draft'" required="1"
@@ -299,9 +304,6 @@
                                 <!--                                <field name="nguoi_soan_thao"/>-->
                                 <!--                                <field name="dv_theo_doi_chinh"/>-->
                                 <!--                                <field name="phoi_hop_xu_ly"/>-->
-                            </group>
-                            <group>
-                                <field name="tt_vb" readonly="1"/>
                                 <field name="so_hieu" readonly="tt_vb != 'draft'" required="1"/>
                                 <field name="ngay_ban_hanh" readonly="tt_vb != 'draft'" required="1"/>
                                 <field name="ngay_xuat" readonly="tt_vb != 'draft'" required="1"/>
@@ -319,6 +321,9 @@
                                 <!--                                <field name="nguoi_theo_doi_chinh"/>-->
                                 <!--                                <field name="but_phe"/>-->
                                 <!--                                <field name="so_di_tong_hop_so_den_theo_so"/>-->
+                            </group>
+                            <group colspan="7">
+                                <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'" style="width: 100%;"/>
                             </group>
                         </group>
 
@@ -340,11 +345,6 @@
                         <!--                            <group/>-->
                         <!--                        </group>-->
                         <notebook>
-                            <page string="Hồ sơ công việc">
-                                <group string="Chi tiết">
-                                    <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'" style="width: 100%;"/>
-                                </group>
-                            </page>
                             <page string="Ý kiến chỉ đạo">
                                 <group></group>
                                 <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
@@ -377,7 +377,7 @@
                                           decoration-italic="is_section"
                                           expandable="1"
                                           class="o_office_document_detail2_tree"
-                                          create="false" edit="false" delete="true">
+                                          create="false" edit="false" delete="false">
 
                                         <field name="allow_assign" column_invisible="1"/>
                                         <field name="is_section" column_invisible="1"/>
@@ -385,6 +385,7 @@
                                         <field name="nguoi_nhap_y_kien" string="Họ tên"/>
                                         <field name="noi_dung_chi_dao" string="Trách nhiệm"/>
                                         <field name="nhom_phong_ban" string="Phòng ban"/>
+                                        <field name="thoi_diem_chi_dao" string="Thời gian phân phát"/>
                                         <field name="view_time" string="Thời gian đọc văn bản"/>
                                         <field name="cong_viec" string="Công việc được giao" invisible="is_section"/>
 
@@ -393,7 +394,12 @@
                                                 type="object"
                                                 icon="fa-tasks"
                                                 class="oe_highlight"
-                                                invisible="not allow_assign"/>
+                                                invisible="not is_section or not allow_assign"/>
+                                        <button name="unlink"
+                                                type="object"
+                                                icon="fa-trash"
+                                                class="oe_stat_button"
+                                                groups="quan_ly_cong_van.group_van_thu"/>
                                     </tree>
                                 </field>
                             </page>
@@ -475,9 +481,9 @@
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb == 'huy'"
                                 confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
-                        <button name="co_cong_van_dieu_chinh" string="Có công văn điều chỉnh" type="object"
+                        <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb != 'cho_but_phe'"
+                                invisible="tt_vb in ('draft, cho_duyet')"
                                 confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
 
                     </header>
@@ -490,8 +496,9 @@
 
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu" readonly="tt_vb != 'draft'" required="1"/>
-                        <group>
-                            <group>
+                        <group col="12">
+                            <group colspan="5">
+                                <field name="tt_vb" readonly="1"/>
                                 <field name="so_di_tong_hop" string="Số quyết định"
                                        required="document_type == 'resolution'"
                                        invisible="document_type != 'resolution'"
@@ -515,8 +522,6 @@
                                 <!--                                <field name="nguoi_soan_thao"/>-->
                                 <!--                                <field name="dv_theo_doi_chinh"/>-->
                                 <!--                                <field name="phoi_hop_xu_ly"/>-->
-                            </group>
-                            <group>
                                 <field name="so_hieu" readonly="tt_vb != 'draft'" required="1"/>
                                 <field name="ngay_ban_hanh" readonly="tt_vb != 'draft'" required="1"/>
                                 <field name="ngay_xuat" readonly="tt_vb != 'draft'" required="1"/>
@@ -534,6 +539,9 @@
                                 <!--                                <field name="nguoi_theo_doi_chinh"/>-->
                                 <!--                                <field name="but_phe"/>-->
                                 <!--                                <field name="so_di_tong_hop_so_den_theo_so"/>-->
+                            </group>
+                            <group colspan="7">
+                                <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'" style="width: 100%;"/>
                             </group>
                         </group>
 
@@ -555,11 +563,6 @@
                         <!--                            <group/>-->
                         <!--                        </group>-->
                         <notebook>
-                            <page string="Hồ sơ công việc">
-                                <group string="Chi tiết">
-                                    <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'" style="width: 100%;"/>
-                                </group>
-                            </page>
                             <page string="Ý kiến chỉ đạo">
                                 <group></group>
                                 <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
@@ -591,6 +594,7 @@
                                         <field name="nguoi_nhap_y_kien" string="Họ tên"/>
                                         <field name="noi_dung_chi_dao" string="Nội dung"/>
                                         <field name="nhom_phong_ban" string="Phòng ban"/>
+                                        <field name="thoi_diem_chi_dao" string="Thời gian phân phát"/>
                                         <field name="view_time" string="Thời gian đọc văn bản"/>
                                     </tree>
                                 </field>
