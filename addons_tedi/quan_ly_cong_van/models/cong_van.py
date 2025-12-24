@@ -17,7 +17,8 @@ class PhanPhat(models.TransientModel):
 
     loai_phan_phat = fields.Selection([
         ('don_vi', 'Cho đơn vị'),
-        ('ca_nhan', 'Cho cá nhân')
+        ('ca_nhan', 'Cho cá nhân'),
+        ('ca_hai', 'Cho cả đơn vị và cá nhân'),
     ], string='Loại phân phát', default='don_vi', required=True)
 
     nhan_van_ban = fields.Char('Nhận văn bản')
@@ -64,13 +65,13 @@ class PhanPhat(models.TransientModel):
     @api.constrains('don_vi_xu_ly_chinh', 'don_vi_dong_xu_ly')
     def _check_don_vi_trung(self):
         for rec in self:
-            if rec.loai_phan_phat == 'don_vi' and rec.don_vi_xu_ly_chinh and rec.don_vi_xu_ly_chinh in rec.don_vi_dong_xu_ly:
+            if rec.loai_phan_phat in ('don_vi', 'ca_hai') and rec.don_vi_xu_ly_chinh and rec.don_vi_xu_ly_chinh in rec.don_vi_dong_xu_ly:
                 raise ValidationError("Đơn vị xử lý chính không được trùng với đơn vị đồng xử lý!")
 
     @api.constrains('ca_nhan_xu_ly_chinh', 'ca_nhan_dong_xu_ly')
     def _check_ca_nhan_trung(self):
         for rec in self:
-            if rec.loai_phan_phat == 'ca_nhan':
+            if rec.loai_phan_phat in ('ca_nhan', 'ca_hai'):
                 trung_nhau = set(rec.ca_nhan_xu_ly_chinh.ids) & set(rec.ca_nhan_dong_xu_ly.ids)
                 if trung_nhau:
                     raise ValidationError("Cá nhân xử lý chính không được trùng với cá nhân đồng xử lý!")
@@ -108,13 +109,19 @@ class PhanPhat(models.TransientModel):
         if not doc.exists():
             return
 
+        nguoi_xu_ly_chinh_ids = []
+        nguoi_dong_xu_ly_ids = []
+
         # Xác định người xử lý dựa vào loại phân phát
-        if self.loai_phan_phat == 'don_vi':
-            nguoi_xu_ly_chinh_ids = self.nguoi_xu_ly_chinh.ids
-            nguoi_dong_xu_ly_ids = self.nguoi_dong_xu_ly.ids
-        else:  # ca_nhan
-            nguoi_xu_ly_chinh_ids = self.ca_nhan_xu_ly_chinh.ids
-            nguoi_dong_xu_ly_ids = self.ca_nhan_dong_xu_ly.ids
+        if self.loai_phan_phat in ('don_vi', 'ca_hai'):
+            nguoi_xu_ly_chinh_ids += self.nguoi_xu_ly_chinh.ids
+            nguoi_dong_xu_ly_ids += self.nguoi_dong_xu_ly.ids
+        if self.loai_phan_phat in ('ca_nhan', 'ca_hai'):
+            nguoi_xu_ly_chinh_ids += self.ca_nhan_xu_ly_chinh.ids
+            nguoi_dong_xu_ly_ids += self.ca_nhan_dong_xu_ly.ids
+
+        nguoi_xu_ly_chinh_ids = list(set(nguoi_xu_ly_chinh_ids))
+        nguoi_dong_xu_ly_ids = list(set(nguoi_dong_xu_ly_ids))
 
         # --- 1. Cập nhật Many2many vào văn bản ---
         update_data = {
@@ -946,7 +953,9 @@ class OfficeDocument(models.Model):
         start_date = res.get('ngay_bat_dau', fields.Date.context_today(self))
 
         res['han_ket_thuc'] = start_date + timedelta(days=7)
-        if self._context.get('default_document_type') == 'resolution':
+        document_type = self._context.get('default_document_type')
+
+        if document_type  == 'resolution':
             # Tìm hoặc tạo phân loại "Quyết định"
             category = self.env['office.document.category'].search([
                 ('code', '=', 'QĐ')
@@ -956,6 +965,19 @@ class OfficeDocument(models.Model):
                 category = self.env['office.document.category'].create({
                     'code': 'QĐ',
                     'name': 'Quyết định',
+                })
+
+            res['phan_loai_van_ban'] = category.id
+
+        elif document_type in ('incoming', 'outgoing'):
+            category = self.env['office.document.category'].search([
+                ('code', '=', 'CV')
+            ], limit=1)
+
+            if not category:
+                category = self.env['office.document.category'].create({
+                    'code': 'CV',
+                    'name': 'Công văn',
                 })
 
             res['phan_loai_van_ban'] = category.id
@@ -1228,6 +1250,14 @@ class OfficeDocument(models.Model):
                 'default_lanh_dao_hien_tai_id': current_employee.id,
             }
         }
+
+    def unlink_detail2(self):
+        # Kiểm tra quyền trước khi xóa
+        user = self.env.user
+        if not user.has_group('quan_ly_cong_van.group_van_thu'):
+            raise UserError("Chỉ văn thư mới có quyền xóa bản ghi này!")
+
+        return super().unlink()
 
 class AssignTaskWizard(models.TransientModel):
     _name = 'assign.task.wizard'

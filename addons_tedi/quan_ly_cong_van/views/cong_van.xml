@@ -45,9 +45,9 @@
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb == 'huy'"
                                 confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
-                        <button name="co_cong_van_dieu_chinh" string="Có công văn điều chỉnh" type="object"
+                        <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb != 'cho_but_phe'"
+                                invisible="tt_vb in ('draft, cho_duyet')"
                                 confirm="Bạn có chắc muốn chuyển văn bản về trạng thái chỉnh sửa?"/>
                         <button name="action_chuyen_lanh_dao"
                                 type="object"
@@ -165,14 +165,13 @@
                                           decoration-section_dark="is_section"
                                           expandable="1"
                                           class="o_office_document_detail2_tree"
-                                          create="false" edit="false" delete="true">
+                                          create="false" edit="false" delete="false">
                                         <field name="allow_assign" column_invisible="1"/>
-                                        <field name="is_section" column_invisible="1"/>
-
 
                                         <field name="nguoi_nhap_y_kien" string="Họ tên"/>
                                         <field name="noi_dung_chi_dao" string="Trách nhiệm"/>
                                         <field name="nhom_phong_ban" string="Phòng ban"/>
+                                        <field name="thoi_diem_chi_dao" string="Thời gian phân phát"/>
                                         <field name="view_time" string="Thời gian đọc văn bản"/>
                                         <field name="cong_viec" string="Công việc được giao" invisible="is_section"/>
 
@@ -182,7 +181,15 @@
                                                 type="object"
                                                 icon="fa-tasks"
                                                 class="oe_highlight"
-                                                invisible="not allow_assign"/>
+                                                invisible="not is_section or not allow_assign"/>
+
+                                        <field name="is_section" column_invisible="1"/>
+
+                                        <button name="unlink"
+                                                type="object"
+                                                icon="fa-trash"
+                                                class="oe_stat_button"
+                                                groups="quan_ly_cong_van.group_van_thu"/>
                                     </tree>
                                 </field>
                             </page>
@@ -266,9 +273,9 @@
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb == 'huy'"
                                 confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
-                        <button name="co_cong_van_dieu_chinh" string="Có công văn điều chỉnh" type="object"
+                        <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb != 'cho_but_phe'"
+                                invisible="tt_vb in ('draft, cho_duyet')"
                                 confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
                     </header>
                     <sheet>
@@ -377,7 +384,7 @@
                                           decoration-italic="is_section"
                                           expandable="1"
                                           class="o_office_document_detail2_tree"
-                                          create="false" edit="false" delete="true">
+                                          create="false" edit="false" delete="false">
 
                                         <field name="allow_assign" column_invisible="1"/>
                                         <field name="is_section" column_invisible="1"/>
@@ -385,6 +392,7 @@
                                         <field name="nguoi_nhap_y_kien" string="Họ tên"/>
                                         <field name="noi_dung_chi_dao" string="Trách nhiệm"/>
                                         <field name="nhom_phong_ban" string="Phòng ban"/>
+                                        <field name="thoi_diem_chi_dao" string="Thời gian phân phát"/>
                                         <field name="view_time" string="Thời gian đọc văn bản"/>
                                         <field name="cong_viec" string="Công việc được giao" invisible="is_section"/>
 
@@ -393,7 +401,12 @@
                                                 type="object"
                                                 icon="fa-tasks"
                                                 class="oe_highlight"
-                                                invisible="not allow_assign"/>
+                                                invisible="not is_section or not allow_assign"/>
+                                        <button name="unlink"
+                                                type="object"
+                                                icon="fa-trash"
+                                                class="oe_stat_button"
+                                                groups="quan_ly_cong_van.group_van_thu"/>
                                     </tree>
                                 </field>
                             </page>
@@ -475,9 +488,9 @@
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb == 'huy'"
                                 confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
-                        <button name="co_cong_van_dieu_chinh" string="Có công văn điều chỉnh" type="object"
+                        <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb != 'cho_but_phe'"
+                                invisible="tt_vb in ('draft, cho_duyet')"
                                 confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
 
                     </header>
@@ -591,6 +604,7 @@
                                         <field name="nguoi_nhap_y_kien" string="Họ tên"/>
                                         <field name="noi_dung_chi_dao" string="Nội dung"/>
                                         <field name="nhom_phong_ban" string="Phòng ban"/>
+                                        <field name="thoi_diem_chi_dao" string="Thời gian phân phát"/>
                                         <field name="view_time" string="Thời gian đọc văn bản"/>
                                     </tree>
                                 </field>

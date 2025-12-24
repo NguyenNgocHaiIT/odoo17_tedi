@@ -1,5 +1,6 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_office_document_admin,access_office_document_admin,model_office_document,base.group_system,1,1,1,1
+access_office_document_user,access_office_document_user,model_office_document,base.group_user,1,1,1,1
 access_office_document_van_thu,access_office_document_van_thu,model_office_document,quan_ly_cong_van.group_van_thu,1,1,1,1
 access_office_document_lanh_dao,access_office_document_lanh_dao,model_office_document,quan_ly_cong_van.group_lanh_dao,1,1,1,1
 access_office_document_don_vi_xu_ly,access_office_document_don_vi_xu_ly,model_office_document,quan_ly_cong_van.group_don_vi_xu_ly,1,1,1,1
