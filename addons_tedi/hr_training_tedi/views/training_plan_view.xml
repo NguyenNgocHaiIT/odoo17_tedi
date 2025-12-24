@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <tree string="Kế hoạch đào tạo">
                 <field name="name" class="text-start"/>
-                <field name="survey_id" class="text-start"/>
+                <field name="survey_id" class="text-start" string="Đợt đăng ký"/>
                 <field name="open_date" string="Ngày tạo" readonly="1" class="text-start"/>
                 <field name="student_count" class="text-end"/>
                 <field name="total_fee" class="text-end"/>

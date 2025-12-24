@@ -269,10 +269,10 @@ class TrainingPlan(models.Model):
             q_str = str(q_num)
 
             # Lọc các dòng thuộc quý này (dựa vào field quarter được compute từ ngày)
-            # Chỉ lấy các dòng ĐÃ DUYỆT (state='approved') và có số lượng > 0
+            # --- UPDATE: Thêm điều kiện l.state != 'rejected' ---
             lines_in_quarter = self.detail_ids.filtered(
                 lambda l: l.quarter == q_str
-                          and l.state == 'approved'
+                          and l.state != 'rejected' # <-- Quan trọng: Bỏ qua dòng bị từ chối
                           and l.expected_qty > 0
             )
 
@@ -313,8 +313,9 @@ class TrainingPlan(models.Model):
                     'training_fee_source': line.training_fee_source,
                     'note': line.note,
                     # Lưu ý: Ở KH Quý, chưa có học viên ngay nên student_count = 0
-                    # Ta có thể đưa expected_qty vào note hoặc thêm field phụ nếu cần
                     'student_count': 0,
+                    # Mang theo số lượng dự kiến sang để tham khảo (tùy chọn)
+                    'expected_qty': line.expected_qty,
                 }
                 detail_lines.append((0, 0, line_vals))
 

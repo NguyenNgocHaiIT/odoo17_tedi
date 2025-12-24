@@ -7,7 +7,7 @@
             <field name="model">trainings.needs</field>
             <field name="arch" type="xml">
                 <tree string="Đăng ký đào tạo năm">
-                    <field name="name" string="Đợt khảo sát" class="text-start"/>
+                    <field name="name" string="Đợt đăng ký" class="text-start"/>
                     <field name="create_date" string="Ngày đăng ký" class="text-start"/>
                     <field name="user_id" string="Người đăng ký" class="text-start"/>
                     <field name="approver_id" string="Người phê duyệt" class="text-start"/>
@@ -87,7 +87,7 @@
                                 <field name="is_valid_approver" invisible="1"/>
                                 <field name="type" widget="radio" options="{'horizontal': true}" readonly="1" force_save="1" invisible="1"/>
 
-                                <field name="name" string="Đợt khảo sát"
+                                <field name="name" string="Đợt đăng ký"
                                        invisible="type != 'year'"
                                        required="type == 'year'"
                                        readonly="state != 'draft'"/>

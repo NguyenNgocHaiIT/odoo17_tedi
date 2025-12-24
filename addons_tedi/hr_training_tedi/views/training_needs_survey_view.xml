@@ -45,14 +45,14 @@
                             type="object"
                             class="btn-secondary"
                             groups="hr_training_tedi.group_training_manager"
-                            confirm="Bạn có chắc chắn muốn kết thúc khảo sát này ngay lập tức?"
+                            confirm="Bạn có chắc chắn muốn kết thúc đợt đăng ký này ngay lập tức?"
                             invisible="state != 'in_process'"/>
 
                     <button name="action_start_survey"
                             string="Bắt đầu"
                             type="object"
                             class="btn-primary"
-                            confirm="Bạn có chắc chắn muốn bắt đầu khảo sát này ngay lập tức?"
+                            confirm="Bạn có chắc chắn muốn bắt đầu đợt đăng ký này ngay lập tức?"
                             groups="hr_training_tedi.group_training_manager"
                             invisible="state != 'confirmed'"/>
                 </header>
@@ -66,7 +66,7 @@
 
                         <group>
                             <field name="create_date" readonly="1" widget="date" class="text-start"/>
-                            <label for="start_date" string="Thời gian khảo sát" readonly="state == 'end'"/>
+                            <label for="start_date" string="Thời gian đợt đăng ký" readonly="state == 'end'"/>
                             <div class="o_row">
                                 <field name="start_date" widget="date" readonly="state != 'draft'" class="text-start"/>
                                 <span style="margin: 0 10px;">→</span>

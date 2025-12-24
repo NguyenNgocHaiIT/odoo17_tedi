@@ -153,10 +153,10 @@ class RecruitmentPlan(models.Model):
                     'expense_per_head': 0,
 
                     # # Mapping Quý
-                    # 'qty_q1': line.qty_q1,
-                    # 'qty_q2': line.qty_q2,
-                    # 'qty_q3': line.qty_q3,
-                    # 'qty_q4': line.qty_q4,
+                    'qty_q1': line.qty_q1,
+                    'qty_q2': line.qty_q2,
+                    'qty_q3': line.qty_q3,
+                    'qty_q4': line.qty_q4,
                 }
                 new_lines.append((0, 0, val))
 
@@ -300,12 +300,17 @@ class RecruitmentPlan(models.Model):
                 'people_suggestion': self.people_suggestion.id,
                 'department_responsible': self.department_responsible.id,
                 'plan_purpose': f"Triển khai Quý {q_num} theo kế hoạch năm: {self.plan_code}",
-                # Lưu ý: Không cần set plan_fund ở đây, nó sẽ tự tính khi tạo lines
             }
 
             # Tạo Lines Quý
             detail_lines = []
             for line in self.recruitment_plan_detail_ids:
+
+                # --- UPDATE: Bỏ qua dòng đã bị Từ chối ---
+                if line.state == 'rejected':
+                    continue
+                # -----------------------------------------
+
                 qty_in_quarter = getattr(line, field_qty, 0)
                 if qty_in_quarter > 0:
                     line_vals = {
@@ -322,6 +327,7 @@ class RecruitmentPlan(models.Model):
                     }
                     detail_lines.append((0, 0, line_vals))
 
+            # Chỉ tạo kế hoạch quý nếu có ít nhất 1 dòng chi tiết hợp lệ
             if detail_lines:
                 plan_vals['recruitment_plan_detail_ids'] = detail_lines
                 self.env['recruitment.plan'].create(plan_vals)
