@@ -113,7 +113,7 @@
                         <group>
                             <field name="name" placeholder="VD: Kế hoạch Đào tạo Năm 2025"/>
                             <field name="type" readonly="1" invisible="1"/>
-                            <field name="survey_id" domain="[('state','in',('in_process','end'))]" readonly="state == 'approved'"/>
+                            <field name="survey_id" domain="[('state','in',('in_process','end'))]" readonly="state == 'approved'" string="Đợt đăng ký"/>
                         </group>
                         <group>
                             <field name="open_date"/>
@@ -147,14 +147,12 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                 </header>
                 <sheet>
-                    <div class="oe_title">
-                        <h1><field name="name"/></h1>
-                    </div>
                     <group>
                         <group>
+                            <field name="name"/>
                             <field name="type" readonly="1"/>
                             <field name="parent_id" string="Thuộc Kế hoạch Năm" readonly="1"/>
-                            <field name="survey_id" readonly="1"/>
+                            <field name="survey_id" readonly="1" string="Tên đợt đăng ký"/>
                         </group>
                         <group>
                             <field name="open_date"/>
