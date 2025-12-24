@@ -27,6 +27,11 @@
         "views/menu.xml",
 
     ],
+    # 'assets': {
+    #         'web.assets_backend': [
+    #             'hr_training_tedi/static/src/js/month_year_widget.js',
+    #         ],
+    #     },
 
     'installable': True,
     'application': True,

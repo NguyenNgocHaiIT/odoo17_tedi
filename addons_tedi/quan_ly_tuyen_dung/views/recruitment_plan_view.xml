@@ -86,13 +86,13 @@
                     string="Đã phê duyệt"
                     type="object"
                     class="btn btn-sm btn-success rounded-pill px-3"
-                    invisible="state == 'approved' or parent.recruitment_status  in ['approved', 'in_process']"/>
+                    invisible="state == 'rejected' or parent.recruitment_status  in ['approved', 'in_process','complete']"/>
 
             <button name="action_toggle_state"
                     string="Từ chối"
                     type="object"
                     class="btn btn-sm btn-danger rounded-pill px-3"
-                    invisible="state == 'rejected' or parent.recruitment_status  in ['approved', 'in_process']"/>
+                    invisible="state == 'approved' or parent.recruitment_status  in ['approved', 'in_process','complete']"/>
 
         </tree>
       </field>
@@ -180,7 +180,7 @@
                 <group>
                     <field name="plan_name"/>
                     <field name="type" readonly="1"/> <field name="plan_execute_date" readonly="recruitment_status != 'draft'"/>
-                    <field name="survey_id" readonly="recruitment_status != 'draft'"/>
+                    <field name="survey_id" readonly="recruitment_status != 'draft'" string="Đợt đăng ký"/>
                     <field name="plan_purpose" readonly="recruitment_status != 'draft'"/>
                 </group>
                 <group>

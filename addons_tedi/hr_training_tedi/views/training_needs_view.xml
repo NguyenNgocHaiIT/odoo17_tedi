@@ -2,12 +2,30 @@
 <odoo>
     <data>
 
-        <record id="view_trainings_needs_tree" model="ir.ui.view">
-            <field name="name">trainings.needs.tree</field>
+        <record id="view_trainings_needs_year_tree" model="ir.ui.view">
+            <field name="name">trainings.needs.year.tree</field>
             <field name="model">trainings.needs</field>
             <field name="arch" type="xml">
-                <tree string="Nhu cầu đào tạo">
-                    <field name="name" string="Đợt khảo sát" class="text-start"/>
+                <tree string="Đăng ký đào tạo năm">
+                    <field name="name" string="Đợt đăng ký" class="text-start"/>
+                    <field name="create_date" string="Ngày đăng ký" class="text-start"/>
+                    <field name="user_id" string="Người đăng ký" class="text-start"/>
+                    <field name="approver_id" string="Người phê duyệt" class="text-start"/>
+                    <field name="state" string="Trạng thái"
+                           widget="badge"
+                           decoration-warning="state == 'pending'"
+                           decoration-success="state == 'approved'"
+                           class="text-start"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_trainings_needs_actual_tree" model="ir.ui.view">
+            <field name="name">trainings.needs.actual.tree</field>
+            <field name="model">trainings.needs</field>
+            <field name="arch" type="xml">
+                <tree string="Đăng ký lớp học">
+                    <field name="participation_id" string="Lớp học đăng ký" class="text-start"/>
                     <field name="create_date" string="Ngày đăng ký" class="text-start"/>
                     <field name="user_id" string="Người đăng ký" class="text-start"/>
                     <field name="approver_id" string="Người phê duyệt" class="text-start"/>
@@ -24,19 +42,52 @@
             <field name="name">trainings.needs.form</field>
             <field name="model">trainings.needs</field>
             <field name="arch" type="xml">
-                <form string="Nhu cầu đào tạo">
+                <form string="Đăng ký đào tạo">
                     <header>
-                        <button name="action_submit" string="Trình duyệt" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                        <button name="action_approve" string="Duyệt" type="object" class="btn-success" invisible="state != 'pending'"/>
+                        <button name="action_submit"
+                                string="Trình duyệt"
+                                type="object"
+                                class="btn-primary"
+                                invisible="state != 'draft'"/>
+
+                        <button name="action_approve"
+                                string="Duyệt (Đơn vị)"
+                                type="object"
+                                class="btn-success"
+                                groups="hr_training_tedi.group_training_unit_manager"
+                                invisible="state != 'pending' or type != 'year' or not is_valid_approver"/>
+
+                        <button name="action_approve"
+                                string="Duyệt &amp; Xếp lớp"
+                                type="object"
+                                class="btn-success"
+                                groups="hr_training_tedi.group_training_manager"
+                                invisible="state != 'pending' or type != 'actual'"/>
+
+                        <button name="action_reject"
+                                string="Từ chối"
+                                type="object"
+                                class="btn-danger"
+                                groups="hr_training_tedi.group_training_unit_manager"
+                                invisible="state != 'pending' or type != 'year' or not is_valid_approver"/>
+
+                         <button name="action_reject"
+                                string="Từ chối"
+                                type="object"
+                                class="btn-danger"
+                                groups="hr_training_tedi.group_training_manager"
+                                invisible="state != 'pending' or type != 'actual'"/>
+
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                     </header>
 
                     <sheet>
                         <group>
                             <group>
+                                <field name="is_valid_approver" invisible="1"/>
                                 <field name="type" widget="radio" options="{'horizontal': true}" readonly="1" force_save="1" invisible="1"/>
 
-                                <field name="name" string="Đợt khảo sát"
+                                <field name="name" string="Đợt đăng ký"
                                        invisible="type != 'year'"
                                        required="type == 'year'"
                                        readonly="state != 'draft'"/>
@@ -74,19 +125,25 @@
         </record>
 
         <record id="action_trainings_needs_year" model="ir.actions.act_window">
-            <field name="name">Nhu cầu Năm</field>
+            <field name="name">Đăng ký năm</field>
             <field name="res_model">trainings.needs</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('type', '=', 'year')]</field>
             <field name="context">{'default_type': 'year'}</field>
-            </record>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_trainings_needs_year_tree')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_trainings_needs_form')})]"/>
+        </record>
 
         <record id="action_trainings_needs_actual" model="ir.actions.act_window">
-            <field name="name">Nhu cầu Thực tế (Đăng ký lớp)</field>
+            <field name="name">Đăng ký lớp</field>
             <field name="res_model">trainings.needs</field>
             <field name="view_mode">tree,form</field>
             <field name="domain">[('type', '=', 'actual')]</field>
             <field name="context">{'default_type': 'actual'}</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_trainings_needs_actual_tree')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_trainings_needs_form')})]"/>
         </record>
 
     </data>

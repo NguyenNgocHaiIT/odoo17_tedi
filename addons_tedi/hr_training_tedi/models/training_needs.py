@@ -13,6 +13,36 @@ BASE                = "base.group_user"
 class TrainingNeeds(models.Model):
     _name = 'trainings.needs'
     _description = 'Training Needs'
+    _rec_name = 'display_name_custom'
+
+    # Tạo field compute để lưu tên hiển thị
+    display_name_custom = fields.Char(
+        string="Mô tả phiếu",
+        compute='_compute_display_name_custom',
+        store=True
+    )
+
+    @api.depends('type', 'name.name', 'participation_id.name')
+    def _compute_display_name_custom(self):
+        for rec in self:
+            # 1. Nếu chưa có dữ liệu gì (phiếu mới tạo)
+            if not rec.id and not rec.name and not rec.participation_id:
+                rec.display_name_custom = _("Mới")
+                continue
+
+            # 2. Logic theo loại phiếu
+            if rec.type == 'year':
+                survey_name = rec.name.name if rec.name else _("Chưa chọn đợt")
+                rec.display_name_custom = f"Đăng ký năm - {survey_name}"
+
+            elif rec.type == 'actual':
+                # Vì bên Participation bạn đã sửa rec_name = "Tên khóa - Tên Plan"
+                # nên ở đây rec.participation_id.name sẽ hiển thị rất rõ ràng.
+                class_name = rec.participation_id.name if rec.participation_id else _("Chưa chọn lớp")
+                rec.display_name_custom = f"Đăng ký bổ sung - {class_name}"
+
+            else:
+                rec.display_name_custom = _("Phiếu đăng ký")
 
     type = fields.Selection([
         ('year', 'Nhu cầu Năm'),
@@ -101,36 +131,44 @@ class TrainingNeeds(models.Model):
             if current_user.has_group('base.group_system'):
                 rec.is_valid_approver = True
 
-    @api.constrains('line_ids')
+    @api.constrains('line_ids', 'type')
     def _check_lines_unique_course(self):
         for rec in self:
-            courses = rec.line_ids.mapped('course_id.id')
-            if len(courses) != len(set(courses)):
-                raise ValidationError(
-                    _("Bạn không được chọn 2 khoá đào tạo giống nhau trong cùng một phiếu.")
-                )
+            # CHỈ KIỂM TRA KHI LÀ NHU CẦU NĂM
+            if rec.type == 'year':
+                courses = rec.line_ids.mapped('course_id.id')
+                # Lọc bỏ các dòng không chọn khóa (nếu có)
+                courses = [c for c in courses if c]
 
-    @api.onchange('line_ids')
+                if len(courses) != len(set(courses)):
+                    raise ValidationError(
+                        _("Bạn không được chọn 2 khoá đào tạo giống nhau trong cùng một phiếu nhu cầu năm.")
+                    )
+
+    @api.onchange('line_ids', 'type')
     def _onchange_line_ids_unique_course(self):
-        if not self.line_ids:
-            return
+        # CHỈ CẢNH BÁO KHI LÀ NHU CẦU NĂM
+        if self.type == 'year' and self.line_ids:
+            courses = self.line_ids.mapped('course_id')
+            # Lọc bỏ các record rỗng
+            courses = courses.filtered(lambda c: c.id)
 
-        courses = self.line_ids.mapped('course_id')
-        if len(courses) != len(set(courses.ids)):
-            return {
-                'warning': {
-                    'title': "Lỗi trùng khóa học",
-                    'message': "Bạn không được chọn 2 khoá đào tạo giống nhau trong cùng một phiếu.",
+            if len(courses) != len(set(courses.ids)):
+                return {
+                    'warning': {
+                        'title': "Lỗi trùng khóa học",
+                        'message': "Bạn không được chọn 2 khoá đào tạo giống nhau trong cùng một phiếu.",
+                    }
                 }
-            }
 
     def _check_unique_course(self):
         for rec in self:
-            courses = rec.line_ids.mapped('course_id')
-            if len(courses) != len(set(courses.ids)):
-                raise UserError(_("Bạn không được chọn 2 khoá đào tạo giống nhau trong cùng một phiếu."))
+            if rec.type == 'year':
+                courses = rec.line_ids.mapped('course_id')
+                if len(courses) != len(set(courses.ids)):
+                    raise UserError(_("Bạn không được chọn 2 khoá đào tạo giống nhau trong cùng một phiếu."))
 
-    @api.model
+
     @api.model
     def create(self, vals):
         if vals.get('type') == 'year' and not vals.get('name'):
@@ -153,8 +191,15 @@ class TrainingNeeds(models.Model):
             if rec.state != 'draft':
                 raise UserError(_("Chỉ được đăng ký khi phiếu đang ở trạng thái 'Dự thảo'."))
 
-            if not rec.line_ids:
-                raise UserError(_("Bạn phải nhập ít nhất 1 dòng nhu cầu đào tạo trước khi đăng ký."))
+            # --- SỬA ĐOẠN VALIDATE ---
+            # 1. Nếu là Nhu cầu Năm -> Bắt buộc nhập dòng chi tiết
+            if rec.type == 'year' and not rec.line_ids:
+                raise UserError(_("Với Nhu cầu Năm, bạn phải nhập ít nhất 1 dòng nhu cầu đào tạo."))
+
+            # 2. Nếu là Nhu cầu Thực tế -> Bắt buộc chọn Lớp học
+            if rec.type == 'actual' and not rec.participation_id:
+                raise UserError(_("Với Nhu cầu Thực tế (Đăng ký lớp), bạn vui lòng chọn Lớp học cần tham gia."))
+            # -------------------------
 
             # create_date: thời điểm bấm Đăng ký
             if not rec.create_date:
@@ -163,20 +208,47 @@ class TrainingNeeds(models.Model):
             rec.state = 'pending'
 
     def action_approve(self):
+        # Định nghĩa các nhóm quyền (để dễ sửa sau này)
+        GROUP_UNIT_MANAGER = 'hr_training_tedi.group_training_unit_manager'  # Trưởng đơn vị
+        GROUP_TRAINING_MANAGER = 'hr_training_tedi.group_training_manager'  # Quản lý đào tạo (HR)
+
         for rec in self:
             if rec.state != 'pending':
                 raise UserError(_("Chỉ được duyệt khi phiếu đang ở trạng thái 'Chờ duyệt'."))
 
-            # --- XỬ LÝ NHU CẦU THỰC TẾ: THÊM NGƯỜI VÀO LỚP ---
-            if rec.type == 'actual' and rec.participation_id:
-                rec._add_students_to_participation()
+            # -----------------------------------------------------------
+            # TRƯỜNG HỢP 1: NHU CẦU NĂM (Type = 'year')
+            # Người duyệt: Trưởng đơn vị (Unit Manager)
+            # Logic: Kiểm tra đúng phòng ban -> Đổi trạng thái -> Xong.
+            # -----------------------------------------------------------
+            if rec.type == 'year':
+                # 1. Check xem User hiện tại có phải Trưởng đơn vị không
+                if not self.env.user.has_group(GROUP_UNIT_MANAGER) and not self.env.is_superuser():
+                    raise UserError(_("Chỉ có Trưởng đơn vị mới được quyền duyệt Nhu cầu Năm."))
 
-            # --- XỬ LÝ QUYỀN DUYỆT CŨ CỦA BẠN ---
-            if self.env.user.has_group('hr_training_tedi.group_training_unit_manager') and \
-                    not self.env.user.has_group('hr_training_tedi.group_training_manager'):
-                if not rec.is_valid_approver:
-                    raise UserError(_("Bạn không có quyền duyệt yêu cầu của phòng ban khác."))
+                # 2. Check xem User có thuộc đúng nhánh phòng ban không (dựa vào compute field is_valid_approver)
+                # (Admin hệ thống thì bỏ qua check này)
+                if not self.env.user.has_group('base.group_system'):
+                    if not rec.is_valid_approver:
+                        raise UserError(_("Bạn không có quyền duyệt nhu cầu đào tạo của phòng ban khác."))
 
+            # -----------------------------------------------------------
+            # TRƯỜNG HỢP 2: NHU CẦU THỰC TẾ (Type = 'actual')
+            # Người duyệt: Quản lý đào tạo (Training Manager - Bên HR/Đào tạo)
+            # Logic: Không cần check phòng ban (vì HR duyệt cho toàn công ty) -> Add học viên -> Đổi trạng thái.
+            # -----------------------------------------------------------
+            elif rec.type == 'actual':
+                # 1. Check xem User hiện tại có phải Quản lý đào tạo không
+                if not self.env.user.has_group(GROUP_TRAINING_MANAGER) and not self.env.is_superuser():
+                    raise UserError(_("Chỉ có Quản lý đào tạo mới được quyền duyệt Đăng ký lớp học."))
+
+                # 2. Thực hiện logic nghiệp vụ: Thêm người vào lớp
+                if rec.participation_id:
+                    rec._add_students_to_participation()
+
+            # -----------------------------------------------------------
+            # CẬP NHẬT TRẠNG THÁI CHUNG
+            # -----------------------------------------------------------
             rec.state = "approved"
             rec.approver_id = self.env.user.id
 
