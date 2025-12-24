@@ -6,22 +6,27 @@ import { useDateTimePicker } from "@web/core/datetime/datetime_hook";
 import { useState, onWillRender } from "@odoo/owl";
 
 export class MonthPickerField extends DateTimeField {
-    setup() {
-        // KHÔNG gọi super.setup() vì nó sẽ khởi tạo hook mặc định chọn ngày
+    // 1. Định nghĩa format chung
+    get format() {
+        return "MM/yyyy";
+    }
 
+    setup() {
         const getPickerProps = () => {
             const value = this.getRecordValue();
             return {
                 value,
                 type: this.field.type,
                 range: this.isRange(value),
-                minPrecision: "months", // Ép buộc mức tối thiểu là tháng
+                format: this.format, // Format cho Popup
+                minPrecision: "months",
                 maxPrecision: "decades",
             };
         };
 
         const dateTimePicker = useDateTimePicker({
             target: "root",
+            format: this.format, // Format cho ô Input khi đang nhập/click vào
             get pickerProps() {
                 return getPickerProps();
             },
@@ -44,14 +49,16 @@ export class MonthPickerField extends DateTimeField {
         this.state = useState(dateTimePicker.state);
         this.openPicker = dateTimePicker.open;
 
-        // Đảm bảo vẫn đăng ký sự kiện kiểm tra thay đổi dữ liệu (Dirty check)
         onWillRender(() => this.triggerIsDirty());
     }
 
+    // --- KHẮC PHỤC LỖI TẠI ĐÂY ---
+    // Hàm này quyết định giá trị hiển thị sau khi render lại (lúc đã chọn xong)
     getFormattedValue(valueIndex) {
         const value = this.values[valueIndex];
+        // value là object Luxon DateTime
         if (value && value.isValid) {
-            return value.toFormat("MM/yyyy");
+            return value.toFormat(this.format); // Ép hiển thị theo format MM/yyyy
         }
         return "";
     }

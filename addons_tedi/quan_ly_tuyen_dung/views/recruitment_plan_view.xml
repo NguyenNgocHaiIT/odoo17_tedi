@@ -123,15 +123,17 @@
       <field name="name">recruitment.plan.tree</field>
       <field name="model">recruitment.plan</field>
       <field name="arch" type="xml">
-        <tree string="Kế hoạch tuyển dụng">
+        <tree string="Kế hoạch tuyển dụng" default_order="open_date desc">
           <field name="stt" string="STT" width="80"/>
           <field name="plan_code" string="Số kế hoạch"/>
           <field name="type" string="Loại" optional="show"/>
           <field name="plan_name" string="Tên kế hoạch"/>
+          <field name="open_date"  string="Ngày tạo"/>
           <field name="plan_execute_date" string="Ngày thực hiện"/>
           <field name="department_responsible" string="Phòng phụ trách" optional="hide"/>
           <field name="total_applicant_request" string="Tổng SL"/>
           <field name="recruitment_status" widget="badge"
+                 class="text-center"
                  decoration-success="recruitment_status == 'complete'"
                  decoration-info="recruitment_status == 'approved'"
                  decoration-primary="recruitment_status == 'in_process'"

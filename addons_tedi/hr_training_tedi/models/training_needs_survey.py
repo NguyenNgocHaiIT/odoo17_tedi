@@ -42,7 +42,7 @@ class TrainingNeedsSurvey(models.Model):
     state = fields.Selection([
         ("draft", "Dự thảo"),
         ("confirmed", "Đã xác nhận"),
-        ("in_process", "Đang khảo sát"),
+        ("in_process", "Đang mở đăng ký"),
         ("end", "Kết thúc"),
     ], string="Trạng thái", default="draft")
 

@@ -6,7 +6,7 @@
             <field name="name">trainings.needs.year.tree</field>
             <field name="model">trainings.needs</field>
             <field name="arch" type="xml">
-                <tree string="Đăng ký đào tạo năm">
+                <tree string="Đăng ký đào tạo năm" default_order="create_date desc">
                     <field name="name" string="Đợt đăng ký" class="text-start"/>
                     <field name="create_date" string="Ngày đăng ký" class="text-start"/>
                     <field name="user_id" string="Người đăng ký" class="text-start"/>
@@ -24,7 +24,7 @@
             <field name="name">trainings.needs.actual.tree</field>
             <field name="model">trainings.needs</field>
             <field name="arch" type="xml">
-                <tree string="Đăng ký lớp học">
+                <tree string="Đăng ký lớp học" default_order="create_date desc">
                     <field name="participation_id" string="Lớp học đăng ký" class="text-start"/>
                     <field name="create_date" string="Ngày đăng ký" class="text-start"/>
                     <field name="user_id" string="Người đăng ký" class="text-start"/>

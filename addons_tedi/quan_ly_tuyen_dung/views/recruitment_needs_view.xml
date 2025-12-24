@@ -6,7 +6,7 @@
             <field name="name">recruitment.needs.year.tree</field>
             <field name="model">recruitment.needs</field>
             <field name="arch" type="xml">
-                <tree string="Nhu cầu Năm">
+                <tree string="Nhu cầu Năm" default_order="create_date desc">
                     <field name="display_code"/>
                     <field name="name" string="Đợt đăng ký"/>
                     <field name="department_id"/>
@@ -79,7 +79,7 @@
             <field name="name">recruitment.needs.actual.tree</field>
             <field name="model">recruitment.needs</field>
             <field name="arch" type="xml">
-                <tree string="Nhu cầu Thực tế">
+                <tree string="Nhu cầu Thực tế" default_order="create_date desc">
                     <field name="display_code"/>
                     <field name="plan_id" string="Kế hoạch Quý"/>
                     <field name="department_id"/>
