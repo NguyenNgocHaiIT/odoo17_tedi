@@ -5,7 +5,7 @@
         <field name="name">recruitment_survey_tree</field>
         <field name="model">recruitment.survey</field>
         <field name="arch" type="xml">
-            <tree string="Yêu cầu đăng ký tuyển dụng">
+            <tree string="Yêu cầu đăng ký tuyển dụng" default_order="create_date desc">
                 <field name="name" string="Tên đợt đăng ký" class="text-start"/>
                 <field name="create_date" string="Ngày tạo" class="text-start"/>
                 <field name="start_date" string="Từ ngày" class="text-start"/>

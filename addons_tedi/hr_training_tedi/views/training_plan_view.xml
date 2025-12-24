@@ -5,7 +5,7 @@
         <field name="name">training.plan.tree</field>
         <field name="model">training.plan</field>
         <field name="arch" type="xml">
-            <tree string="Kế hoạch đào tạo">
+            <tree string="Kế hoạch đào tạo" default_order="open_date desc">
                 <field name="name" class="text-start"/>
                 <field name="survey_id" class="text-start" string="Đợt đăng ký"/>
                 <field name="open_date" string="Ngày tạo" readonly="1" class="text-start"/>

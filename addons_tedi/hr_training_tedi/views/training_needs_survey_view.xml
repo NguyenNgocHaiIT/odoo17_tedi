@@ -4,7 +4,7 @@
         <field name="name">training_needs_survey_tree</field>
         <field name="model">training.needs.survey</field>
         <field name="arch" type="xml">
-            <tree string="Yêu cầu đăng ký đào tạo">
+            <tree string="Yêu cầu đăng ký đào tạo" default_order="create_date desc">
                 <field name="name" string="Tên đợt đăng ký" class="text-start"/>
                 <field name="create_date" string="Ngày tạo" class="text-start"/>
                 <field name="start_date" string="Từ ngày" class="text-start"/>

@@ -18,6 +18,12 @@ class RecruitmentPlan(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     # --- CÁC FIELD CƠ BẢN ---
+    open_date = fields.Date(
+        string='Ngày tạo',
+        default=fields.Date.context_today,
+        readonly=True,
+    )
+
     sequence = fields.Integer(string="STT sắp xếp", default=10)
     stt = fields.Integer(string="STT", compute="_compute_stt", store=False, readonly=True)
 
@@ -300,6 +306,7 @@ class RecruitmentPlan(models.Model):
                 'people_suggestion': self.people_suggestion.id,
                 'department_responsible': self.department_responsible.id,
                 'plan_purpose': f"Triển khai Quý {q_num} theo kế hoạch năm: {self.plan_code}",
+                'open_date': fields.Date.today(),
             }
 
             # Tạo Lines Quý

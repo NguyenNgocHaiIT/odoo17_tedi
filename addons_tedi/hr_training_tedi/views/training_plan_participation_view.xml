@@ -5,12 +5,15 @@
         <field name="model">training.plan.participation</field>
         <field name="arch" type="xml">
             <tree string="Lớp đào tạo"
+                  default_order="create_date desc"
                   decoration-muted="state == 'not_started'"
                   decoration-success="state == 'in_progress'"
                   decoration-info="state == 'finished'">
 
                 <field name="training_plan_id" class="text-start"/>
                 <field name="training_plan_detail_id" class="text-start"/>
+
+                <field name="create_date" string="Ngày tạo"/>
 
                 <field name="start_date" optional="show" class="text-start"/>
                 <field name="end_date" optional="hide" class="text-start"/>

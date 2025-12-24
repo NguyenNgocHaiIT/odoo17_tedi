@@ -13,6 +13,12 @@ class TrainingPlanParticipation(models.Model):
     # =========================================================
     name = fields.Char(string="Mô tả", compute="_compute_name", store=True)
 
+    create_date = fields.Date(
+        string='Ngày tạo',
+        default=fields.Date.context_today,
+        readonly=True,
+    )
+
     @api.depends('training_plan_detail_id', 'training_plan_id.name')
     def _compute_name(self):
         for rec in self:

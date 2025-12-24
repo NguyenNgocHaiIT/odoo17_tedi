@@ -176,6 +176,7 @@ class TrainingPlan(models.Model):
                     participation = Participation.create({
                         'training_plan_id': plan.id,
                         'training_plan_detail_id': detail.id,
+                        'create_date': fields.Date.today(),
                     })
 
                 # Tạo danh sách học viên
