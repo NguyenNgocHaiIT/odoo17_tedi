@@ -7,12 +7,12 @@
             <field name="model">office.document</field>
             <field name="arch" type="xml">
                 <tree default_order="create_date desc">
-                    <field name="ngay_den"/>
-                    <field name="so_den_tong_hop"/>
-                    <field name="so_hieu"/>
-                    <field name="trich_yeu"/>
-                    <field name="but_phe"/>
-                    <field name="dv_xu_ly_chinh" />
+                    <field name="ngay_den" class="o_ellipsis"/>
+                    <field name="so_den_tong_hop" class="o_ellipsis" />
+                    <field name="so_hieu" class="o_ellipsis"/>
+                    <field name="trich_yeu" class="o_ellipsis"/>
+                    <field name="but_phe" class="o_ellipsis"/>
+                    <field name="dv_xu_ly_chinh" class="o_ellipsis"/>
                     <field name="tt_vb" widget="badge"
                            decoration-success="tt_vb in ('phat_hanh', 'cho_xu_ly')"
                            decoration-warning="tt_vb in ('cho_duyet', 'da_duyet')"
@@ -47,7 +47,7 @@
                                 confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
                         <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb in ('draft, cho_duyet')"
+                                invisible="tt_vb in ('draft, cho_duyet','huy')"
                                 confirm="Bạn có chắc muốn chuyển văn bản về trạng thái chỉnh sửa?"/>
                         <button name="action_chuyen_lanh_dao"
                                 type="object"
@@ -62,7 +62,12 @@
                         <group col="12">
                             <group colspan="5">
                                 <field name="outgoing_internal_id" string="Công văn nội bộ đi liên quan"
-                                       invisible="document_type != 'incoming_internal'" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                       invisible="document_type != 'incoming_internal'"
+                                       readonly="not (is_van_thu or not_is_van_thu)"
+                                       widget="many2one_clickable"/>
+                                <field name="outgoing_id" string="Công văn đi liên quan"
+                                       invisible="document_type != 'incoming'" readonly="not (is_van_thu or not_is_van_thu)"
+                                        widget="many2one_clickable"/>
                                 <field name="tt_vb" readonly="1"/>
                                 <field name="so_den_tong_hop" string="Số công văn" readonly="1"/>
                                 <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
@@ -225,12 +230,12 @@
             <field name="model">office.document</field>
             <field name="arch" type="xml">
                 <tree default_order="create_date desc">
-                    <field name="ngay_ban_hanh"/>
-                    <field name="so_di_tong_hop"/>
-                    <field name="so_hieu"/>
-                    <field name="trich_yeu"/>
-                    <field name="but_phe"/>
-                    <field name="don_vi_ban_hanh"/>
+                    <field name="ngay_ban_hanh" class="o_ellipsis"/>
+                    <field name="so_di_tong_hop" class="o_ellipsis"/>
+                    <field name="so_hieu" class="o_ellipsis"/>
+                    <field name="trich_yeu" class="o_ellipsis"/>
+                    <field name="but_phe" class="o_ellipsis"/>
+                    <field name="don_vi_ban_hanh" class="o_ellipsis"/>
                     <field name="tt_vb" widget="badge"
                            decoration-success="tt_vb in ('phat_hanh', 'cho_xu_ly')"
                            decoration-warning="tt_vb in ('cho_duyet', 'da_duyet')"
@@ -272,7 +277,7 @@
                                 confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
                         <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb in ('draft, cho_duyet')"
+                                invisible="tt_vb in ('draft, cho_duyet','huy')"
                                 confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
                     </header>
                     <sheet>
@@ -283,6 +288,14 @@
                         <field name="trich_yeu" readonly="tt_vb != 'draft'" required="1"/>
                         <group col="12">
                             <group colspan="5">
+                                <field name="incoming_internal_id" string="Công văn nội bộ đến liên quan"
+                                       invisible="document_type != 'outgoing_internal'"
+                                       readonly="tt_vb != 'draft'"
+                                       widget="many2one_clickable"/>
+                                <field name="incoming_id" string="Công văn đến liên quan"
+                                       invisible="document_type != 'outgoing'"
+                                       readonly="tt_vb != 'draft'"
+                                       widget="many2one_clickable"/>
                                 <field name="document_type" invisible="1"/>
                                 <field name="so_di_tong_hop" readonly="1"/>
                                 <field name="tt_vb" readonly="1"/>
@@ -436,12 +449,12 @@
             <field name="model">office.document</field>
             <field name="arch" type="xml">
                 <tree default_order="create_date desc">
-                    <field name="ngay_ban_hanh"/>
-                    <field name="so_di_tong_hop"/>
-                    <field name="so_hieu"/>
-                    <field name="trich_yeu"/>
-                    <field name="but_phe"/>
-                    <field name="don_vi_ban_hanh"/>
+                    <field name="ngay_ban_hanh" class="o_ellipsis"/>
+                    <field name="so_di_tong_hop" class="o_ellipsis"/>
+                    <field name="so_hieu" class="o_ellipsis"/>
+                    <field name="trich_yeu" class="o_ellipsis"/>
+                    <field name="but_phe" class="o_ellipsis"/>
+                    <field name="don_vi_ban_hanh" class="o_ellipsis"/>
                     <field name="tt_vb" widget="badge"
                            decoration-success="tt_vb in ('phat_hanh', 'cho_xu_ly')"
                            decoration-warning="tt_vb in ('cho_duyet', 'da_duyet')"
@@ -483,7 +496,7 @@
                                 confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
                         <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb in ('draft, cho_duyet')"
+                                invisible="tt_vb in ('draft, cho_duyet','huy')"
                                 confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
 
                     </header>
@@ -507,6 +520,7 @@
                                        required="document_type == 'director'"
                                        invisible="document_type != 'director'"
                                        readonly="tt_vb != 'draft'"/>
+                                <field name="so_hieu" readonly="tt_vb != 'draft'" required="1"/>
                                 <field name="phan_loai_van_ban" readonly="tt_vb != 'draft'"
                                        invisible="document_type != 'director'"
                                        required="1"/>
@@ -522,7 +536,6 @@
                                 <!--                                <field name="nguoi_soan_thao"/>-->
                                 <!--                                <field name="dv_theo_doi_chinh"/>-->
                                 <!--                                <field name="phoi_hop_xu_ly"/>-->
-                                <field name="so_hieu" readonly="tt_vb != 'draft'" required="1"/>
                                 <field name="ngay_ban_hanh" readonly="tt_vb != 'draft'" required="1"/>
                                 <field name="ngay_xuat" readonly="tt_vb != 'draft'" required="1"/>
 
