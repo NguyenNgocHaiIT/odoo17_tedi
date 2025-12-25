@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <record id="paperformat_recruitment_plan_landscape" model="report.paperformat">
+            <field name="name">Kế hoạch Tuyển dụng (Ngang)</field>
+            <field name="default" eval="True"/>
+            <field name="format">A4</field>
+            <field name="orientation">Landscape</field>
+            <field name="margin_top">20</field>
+            <field name="margin_bottom">20</field>
+            <field name="margin_left">10</field>
+            <field name="margin_right">10</field>
+            <field name="header_line" eval="False"/>
+            <field name="header_spacing">15</field>
+            <field name="dpi">90</field>
+        </record>
+
+        <record id="action_report_recruitment_plan" model="ir.actions.report">
+            <field name="name">In Kế hoạch Tuyển dụng</field>
+            <field name="model">recruitment.plan</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">quan_ly_tuyen_dung.report_recruitment_plan_template</field>
+            <field name="report_file">quan_ly_tuyen_dung.report_recruitment_plan_template</field>
+            <field name="print_report_name">'Ke_hoach_' + (object.plan_code or 'New')</field>
+            <field name="binding_model_id" ref="model_recruitment_plan"/>
+            <field name="binding_type">report</field>
+            <field name="paperformat_id" ref="paperformat_recruitment_plan_landscape"/>
+        </record>
+
+        <template id="report_recruitment_plan_template">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-call="web.external_layout">
+                        <div class="page">
+                            <div class="text-center mb-4">
+                                <h2 style="font-weight: bold; text-transform: uppercase;">
+                                    <span t-if="o.type == 'year'">KẾ HOẠCH TUYỂN DỤNG NĂM</span>
+                                    <span t-if="o.type == 'quarter'">KẾ HOẠCH TUYỂN DỤNG QUÝ</span>
+                                </h2>
+                                <h4>Số: <span t-field="o.plan_code"/></h4>
+                            </div>
+
+                            <div class="row mb-4" style="font-size: 14px;">
+                                <div class="col-6">
+                                    <p><strong>Tên kế hoạch:</strong> <span t-field="o.plan_name"/></p>
+                                    <p><strong>Ngày lập:</strong> <span t-field="o.open_date" t-options='{"widget": "date"}'/></p>
+                                    <p><strong>Người đề nghị:</strong> <span t-field="o.people_suggestion"/></p>
+                                </div>
+                                <div class="col-6">
+                                    <p><strong>Phòng ban phụ trách:</strong> <span t-field="o.department_responsible"/></p>
+                                    <p><strong>Ngày thực hiện dự kiến:</strong> <span t-field="o.plan_execute_date" t-options='{"widget": "date"}'/></p>
+                                    <p><strong>Trạng thái:</strong> <span t-field="o.recruitment_status"/></p>
+                                </div>
+                                <div class="col-12 mt-2">
+                                    <p><strong>Mục đích:</strong> <span t-field="o.plan_purpose"/></p>
+                                </div>
+                            </div>
+
+                            <table class="table table-bordered table-sm table-striped" style="font-size: 13px; vertical-align: middle;">
+                                <thead style="background-color: #f2f2f2; text-align: center;">
+                                    <tr>
+                                        <th style="width: 5%;">STT</th>
+                                        <th style="width: 15%;">Phòng ban</th>
+                                        <th style="width: 15%;">Vị trí tuyển dụng</th>
+                                        <th style="width: 10%;">Trình độ</th>
+
+                                        <t t-if="o.type == 'year'">
+                                            <th style="width: 5%;">Q1</th>
+                                            <th style="width: 5%;">Q2</th>
+                                            <th style="width: 5%;">Q3</th>
+                                            <th style="width: 5%;">Q4</th>
+                                        </t>
+
+                                        <th style="width: 8%;">SL Tổng</th>
+                                        <th style="width: 10%;">Chi phí/Người</th>
+                                        <th style="width: 10%;">Thành tiền</th>
+                                        <th>Ghi chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="total_qty" t-value="0"/>
+                                    <t t-set="total_fund" t-value="0"/>
+
+                                    <tr t-foreach="o.recruitment_plan_detail_ids" t-as="line">
+                                        <t t-if="line.state != 'rejected'">
+                                            <td class="text-center"><span t-field="line.stt"/></td>
+                                            <td><span t-field="line.department_request"/></td>
+                                            <td><span t-field="line.recruitment_job"/></td>
+                                            <td><span t-field="line.professional_qualification"/></td>
+
+                                            <t t-if="o.type == 'year'">
+                                                <td class="text-center"><span t-field="line.qty_q1"/></td>
+                                                <td class="text-center"><span t-field="line.qty_q2"/></td>
+                                                <td class="text-center"><span t-field="line.qty_q3"/></td>
+                                                <td class="text-center"><span t-field="line.qty_q4"/></td>
+                                            </t>
+
+                                            <td class="text-center font-weight-bold">
+                                                <span t-field="line.requested_quantity"/>
+                                            </td>
+                                            <td class="text-end">
+                                                <span t-field="line.expense_per_head"
+                                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                            </td>
+                                            <td class="text-end">
+                                                <span t-field="line.total_line_fund"
+                                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                            </td>
+                                            <td><span t-field="line.note"/></td>
+
+                                            <t t-set="total_qty" t-value="total_qty + line.requested_quantity"/>
+                                            <t t-set="total_fund" t-value="total_fund + line.total_line_fund"/>
+                                        </t>
+                                    </tr>
+
+                                    <tr style="font-weight: bold; background-color: #e9ecef;">
+                                        <td t-att-colspan="o.type == 'year' and 8 or 4" class="text-end">TỔNG CỘNG:</td>
+                                        <td class="text-center"><t t-out="total_qty"/></td>
+                                        <td></td>
+                                        <td class="text-end">
+                                            <span t-out="total_fund"
+                                                  t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="row mt-5 text-center">
+                                <div class="col-4">
+                                    <strong>Người lập</strong><br/>
+                                    <i>(Ký, ghi rõ họ tên)</i>
+                                </div>
+                                <div class="col-4">
+                                    <strong>Phòng nhân sự</strong><br/>
+                                    <i>(Ký, ghi rõ họ tên)</i>
+                                </div>
+                                <div class="col-4">
+                                    <strong>Giám đốc duyệt</strong><br/>
+                                    <i>(Ký, ghi rõ họ tên)</i>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+
+    </data>
+</odoo>

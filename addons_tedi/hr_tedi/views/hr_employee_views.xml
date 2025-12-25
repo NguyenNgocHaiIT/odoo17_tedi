@@ -143,6 +143,7 @@
                                                'default_currency_id': 23,
                                                'default_bank_id': 2
                                            }"/>
+                                    <field name="personal_tax_code" string="Mã số thuế"/>
                                  </group>
 
                                 <group string="Hồ sơ nhân sự">

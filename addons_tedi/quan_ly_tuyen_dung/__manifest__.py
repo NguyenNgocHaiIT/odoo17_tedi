@@ -25,6 +25,8 @@
         "views/recruitment_needs_view.xml",
         "views/recruitment_survey.xml",
 
+        "views/export_recruitment_plan.xml",
+
         "views/menu.xml",
     ],
     "assets": {

@@ -23,6 +23,7 @@ class RecruitmentPlan(models.Model):
         default=fields.Date.context_today,
         readonly=True,
     )
+    director_note=fields.Text(string="Giám đôc ghi chú")
 
     sequence = fields.Integer(string="STT sắp xếp", default=10)
     stt = fields.Integer(string="STT", compute="_compute_stt", store=False, readonly=True)
@@ -94,7 +95,7 @@ class RecruitmentPlan(models.Model):
     # --- TRẠNG THÁI (ĐÃ CẬP NHẬT THEO LUỒNG MỚI) ---
     recruitment_status = fields.Selection([
         ("draft", "Dự thảo"),
-        ("notify", "Thông báo"),  # <-- MỚI: State cho bước Committee thông báo
+        ("notify", "Xác nhận"),  # <-- MỚI: State cho bước Committee thông báo
         ("director_approve", "Chờ duyệt"),  # Dùng lại key cũ cho bước "Chờ GD duyệt"
         ("board_approve", "HĐQT duyệt"),  # Dùng cho kế hoạch Năm
         ("approved", "Đã duyệt"),
@@ -103,6 +104,8 @@ class RecruitmentPlan(models.Model):
     ], string="Trạng thái", default="draft", index=True, required=True, tracking=True)
 
     is_applied_to_jobs = fields.Boolean(string="Đã triển khai (Update Job)", default=False, readonly=True)
+
+
 
     department_responsible = fields.Many2one(
         "hr.department",
@@ -181,6 +184,7 @@ class RecruitmentPlan(models.Model):
         if not self.env.user.has_group(DIRECTOR):
             raise AccessError(_("Chỉ Giám đốc (Director) mới được thực hiện thao tác này."))
 
+
     # ----------------- QUYỀN SỬA ĐỔI (EDIT RULES) -----------------
     def _can_edit_plan_in_state(self, state, op, vals=None):
         u = self.env.user
@@ -220,11 +224,18 @@ class RecruitmentPlan(models.Model):
 
     # 1. Committee: Draft -> Director Approve
     def action_submit(self):
-        self._check_committee()
+        # self._check_committee()
         for rec in self:
             if rec.recruitment_status != "draft":
                 raise ValidationError(_("Chỉ có thể trình duyệt từ trạng thái 'Dự thảo'."))
             rec.recruitment_status = "director_approve"
+
+    def action_draft(self):
+        for rec in self:
+            if rec.recruitment_status == "draft":
+                raise ValidationError(_("Không thể thực hiện từ trạng thái 'Dự thảo'."))
+            rec.recruitment_status = "draft"
+
 
     # 2. Director: Director Approve -> Board Approve
     def action_director_approve_new(self):
@@ -341,10 +352,9 @@ class RecruitmentPlan(models.Model):
 
     # 5. Committee: Complete
     def action_complete(self):
-        self._check_committee()
+        # self._check_committee()
         for rec in self:
-            if rec.recruitment_status != "approved":
-                raise ValidationError(_("Chỉ hoàn thành được khi trạng thái là 'Đã duyệt'."))
+
 
             # (Tùy chọn) Kiểm tra xem Giám đốc đã triển khai chưa?
             # if not rec.is_applied_to_jobs:
