@@ -108,6 +108,15 @@
                 action="action_open_office_internal_document_task"
                 sequence="5"/>
 
+        <!--Menu chi phí phát sinh-->
+        <menuitem
+                id="menu_extra_cost"
+                name="Chi phí phát sinh"
+                parent="office_document_menu_root"
+                action="action_extra_cost"
+                sequence="40"/>
+
+
         <!--Menu cấu hình-->
         <menuitem
                 id="menu_office_document_setting"

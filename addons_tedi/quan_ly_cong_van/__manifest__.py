@@ -7,13 +7,14 @@
 	'sequence': '1',
 	'summary': '',
     'icon': '/quan_ly_cong_van/static/description/icon.png',
-	'depends': [ 'base', 'mail', 'hr', 'project', 'web'],
+	'depends': [ 'base', 'mail', 'hr', 'project', 'web', 'partner_extend'],
 	'data': [
 		'security/office_document_security.xml',
 		'security/ir.model.access.csv',
 		'views/quan_ly_cong_viec.xml',
 		'views/cong_van.xml',
 		'views/cau_hinh.xml',
+        'views/chi_phi_phat_sinh.xml',
 		'views/menu.xml',
 	],
 	'assets': {

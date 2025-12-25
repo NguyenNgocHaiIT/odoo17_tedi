@@ -911,6 +911,61 @@ class OfficeDocument(models.Model):
             + Loại khác: <YYMMDD>.<STT>/<Mã đơn vị>-<Mã loại>
         - STT: 2 chữ số, reset mỗi ngày
         """
+        import re
+
+        def _get_abbreviation_from_name(name, max_length=10):
+            """Lấy viết tắt từ tên đơn vị - Bỏ dấu trước khi xử lý"""
+            if not name:
+                return ''
+
+            import unicodedata
+
+            # Hàm bỏ dấu tiếng Việt
+            def remove_diacritics(text):
+                if not text:
+                    return text
+                # Tách ký tự và dấu
+                text = unicodedata.normalize('NFD', text)
+                # Loại bỏ dấu
+                text = ''.join(c for c in text if unicodedata.category(c) != 'Mn')
+                # Xử lý đ/Đ
+                text = text.replace('đ', 'd').replace('Đ', 'D')
+                return text
+
+            # Bỏ dấu toàn bộ tên
+            name_no_diacritic = remove_diacritics(name)
+
+            # Tách thành các từ (dùng regex đơn giản)
+            words = re.findall(r'[A-Za-z0-9]+', name_no_diacritic)
+
+            result_parts = []
+
+            # Xử lý từng từ
+            for word in words:
+                if not word:
+                    continue
+
+                # Nếu từ toàn bộ là VIẾT HOA hoặc chứa số/ký tự đặc biệt
+                if word.isupper() or any(c.isdigit() or c in '-_/' for c in word):
+                    result_parts.append(word)
+                else:
+                    # Lấy chữ cái đầu và viết hoa
+                    result_parts.append(word[0].upper())
+
+            # Ghép kết quả
+            result = ''.join(result_parts)
+
+            # Giới hạn độ dài
+            if len(result) > max_length:
+                return result[:max_length]
+
+            # Nếu không có kết quả
+            if not result:
+                clean_name = re.sub(r'\s+', '', name_no_diacritic)
+                return clean_name[:max_length].upper()
+
+            return result
+
         phan_loai_id = vals.get('phan_loai_van_ban')
         document_type = vals.get('document_type') or self._context.get('default_document_type') or (
             self.document_type if self else None)
@@ -922,7 +977,7 @@ class OfficeDocument(models.Model):
         current_date = fields.Date.today()
         current_date_str = current_date.strftime('%y%m%d')  # YYMMDD
 
-        def get_next_number(seq_type, is_incoming=False):
+        def get_next_number(is_incoming=False):
             """
             Tạo số theo định dạng mới với STT 2 chữ số reset mỗi ngày
             """
@@ -937,8 +992,7 @@ class OfficeDocument(models.Model):
                     ('create_date', '>=', today_start),
                     ('create_date', '<=', today_end),
                 ]
-                if phan_loai_id:
-                    domain.append(('phan_loai_van_ban', '=', phan_loai_id))
+                number_field = 'so_den_tong_hop'
             else:
                 # Số đi: tìm trong các văn bản đi cùng loại
                 domain = [
@@ -946,8 +1000,10 @@ class OfficeDocument(models.Model):
                     ('create_date', '>=', today_start),
                     ('create_date', '<=', today_end),
                 ]
-                if phan_loai_id:
-                    domain.append(('phan_loai_van_ban', '=', phan_loai_id))
+                number_field = 'so_di_tong_hop'
+
+            if phan_loai_id:
+                domain.append(('phan_loai_van_ban', '=', phan_loai_id))
 
             # Tìm tất cả văn bản cùng loại tạo hôm nay
             existing_docs = self.env['office.document'].search(domain)
@@ -955,7 +1011,6 @@ class OfficeDocument(models.Model):
             # Lấy số STT lớn nhất
             max_seq = 0
             for doc in existing_docs:
-                number_field = 'so_den_tong_hop' if is_incoming else 'so_di_tong_hop'
                 number = getattr(doc, number_field, '')
                 if number and '.' in number:
                     try:
@@ -963,7 +1018,7 @@ class OfficeDocument(models.Model):
                         seq_part = number.split('.')[1].split('/')[0]
                         seq_num = int(seq_part)
                         max_seq = max(max_seq, seq_num)
-                    except:
+                    except (ValueError, IndexError):
                         continue
 
             # STT mới
@@ -981,23 +1036,29 @@ class OfficeDocument(models.Model):
                         ma_don_vi = partner.ma_don_vi.strip()
                     elif partner:
                         # Nếu partner không có mã, lấy tên rút gọn
-                        ma_don_vi = self._get_abbreviation_from_name(partner.name)
-            else:  # internal - lấy từ hr.department
+                        ma_don_vi = _get_abbreviation_from_name(partner.name)
+            else:  # internal - lấy TRỰC TIẾP từ hr.department
                 dept_id = vals.get('don_vi_ban_hanh') or ''
                 if dept_id and isinstance(dept_id, int):
                     dept = self.env['hr.department'].browse(dept_id)
                     if dept:
-                        # Với đơn vị nội bộ, có thể lấy mã từ:
-                        # 1. Company partner liên kết với department
-                        if dept.company_id and dept.company_id.partner_id:
-                            partner = dept.company_id.partner_id
-                            if partner.ma_don_vi:
-                                ma_don_vi = partner.ma_don_vi.strip()
-                            else:
-                                ma_don_vi = self._get_abbreviation_from_name(partner.name)
+                        source_info = f"Department ID: {dept_id}, Name: {dept.name}"
+
+                        # TRƯỜNG HỢP 1: Kiểm tra xem department có field ma_don_vi không
+                        if hasattr(dept, 'ma_don_vi') and dept.ma_don_vi:
+                            ma_don_vi = dept.ma_don_vi.strip()
+
+                        # TRƯỜNG HỢP 2: Kiểm tra field code (mã phòng ban)
+                        elif hasattr(dept, 'code') and dept.code:
+                            ma_don_vi = dept.code.strip()
+
+                        # TRƯỜNG HỢP 3: Lấy từ field abbreviation nếu có
+                        elif hasattr(dept, 'abbreviation') and dept.abbreviation:
+                            ma_don_vi = dept.abbreviation.strip()
+
+                        # TRƯỜNG HỢP 4: Lấy viết tắt từ tên
                         else:
-                            # 2. Hoặc lấy tên phòng ban rút gọn
-                            ma_don_vi = self._get_abbreviation_from_name(dept.name)
+                            ma_don_vi = _get_abbreviation_from_name(dept.name)
 
             # Xử lý nếu không có mã
             if not ma_don_vi:
@@ -1025,39 +1086,18 @@ class OfficeDocument(models.Model):
                     # Loại khác: <YYMMDD>.<STT>/<Mã đơn vị>-<Mã loại>
                     return f"{current_date_str}.{next_seq:02d}/{ma_don_vi}-{ma_loai}"
 
-        # Hàm phụ lấy viết tắt từ tên (dùng khi không có mã)
-        def _get_abbreviation_from_name(self, name):
-            """Lấy viết tắt từ tên đơn vị khi không có mã"""
-            if not name:
-                return ''
-
-            import re
-            # Ưu tiên lấy các từ viết hoa
-            uppercase_words = re.findall(r'[A-Z]+', name)
-            if uppercase_words:
-                result = ''.join(uppercase_words)
-                return result[:8] if len(result) > 8 else result
-
-            # Lấy chữ cái đầu các từ
-            words = re.findall(r'\b\w+\b', name)
-            acronym = ''.join([word[0].upper() for word in words if word])
-            if acronym and len(acronym) <= 8:
-                return acronym
-
-            # Cuối cùng: lấy 8 ký tự đầu
-            return name[:8]
-
         # ========== SỐ ĐẾN (Công văn đến) ==========
         if document_type in ('incoming', 'incoming_internal') and phan_loai_id:
             if not vals.get('so_den_tong_hop'):
-                vals['so_den_tong_hop'] = get_next_number('incoming', is_incoming=True)
+                vals['so_den_tong_hop'] = get_next_number(is_incoming=True)
 
         # ========== SỐ ĐI (Công văn đi) ==========
         if document_type in ('outgoing', 'outgoing_internal') and phan_loai_id:
             if not vals.get('so_di_tong_hop'):
-                vals['so_di_tong_hop'] = get_next_number('outgoing', is_incoming=False)
+                vals['so_di_tong_hop'] = get_next_number(is_incoming=False)
 
         return vals
+
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)

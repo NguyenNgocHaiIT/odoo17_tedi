@@ -26,3 +26,5 @@ access_office_document_category_admin,access_office_document_category,model_offi
 access_assign_task_wizard,access_assign_task_wizard,model_assign_task_wizard,,1,1,1,1
 access_assign_task_wizard_line,access_assign_task_wizard_line,model_assign_task_wizard_line,,1,1,1,1
 access_office_document_chuyen_lanh_dao,access_office_document_chuyen_lanh_dao,model_office_document_chuyen_lanh_dao,,1,1,1,1
+access_extra_cost,access_extra_cost,model_extra_cost,,1,1,1,1
+access_extra_cost_type,access_extra_cost_type,model_extra_cost_type,,1,1,1,1
