@@ -18,7 +18,7 @@
             <field name="name">calendar.event.room.tree</field>
             <field name="model">calendar.event</field>
             <field name="arch" type="xml">
-                <tree>
+                <tree default_order="create_date desc">
                     <field name="name" string="Chủ đề cuộc họp"/>
                     <field name="room" string="Phòng "/>
                     <field name="start" string="Thời gian bắt đầu"/>

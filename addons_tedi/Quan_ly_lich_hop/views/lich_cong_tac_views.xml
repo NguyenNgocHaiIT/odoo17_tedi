@@ -19,7 +19,7 @@
             <field name="name">calendar.event.outside.tree</field>
             <field name="model">calendar.outside</field>
             <field name="arch" type="xml">
-                <tree>
+                <tree default_order="create_date desc">
                     <field name="name" string="Chủ đề cuộc họp"/>
                     <field name="location" string="Địa điểm "/>
                     <field name="start" string="Thời gian bắt đầu"/>
