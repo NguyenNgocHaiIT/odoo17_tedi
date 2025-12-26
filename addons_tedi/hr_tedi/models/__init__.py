@@ -11,3 +11,4 @@ from . import hr_party_title
 from . import hr_employee_training
 from . import file
 from . import  hr_department
+from . import  hr_contract

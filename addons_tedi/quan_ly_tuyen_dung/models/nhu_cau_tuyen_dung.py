@@ -31,7 +31,7 @@ class RecruitmentNeeds(models.Model):
         "recruitment.plan",
         string="Thuộc Kế hoạch Quý",
         # Lấy loại là 'quarter' VÀ trạng thái là 'in_process'
-        domain="[('type', '=', 'quarter'), ('recruitment_status', '=', 'notify')]",
+        domain="[('type', '=', 'quarter'), ('recruitment_status', 'in', ['notify', 'approved', 'in_process'])]",
     )
 
     create_date = fields.Date(
@@ -121,6 +121,9 @@ class RecruitmentNeeds(models.Model):
         self.ensure_one()
         # 1. Dùng sudo() ngay từ đầu để đảm bảo quyền ghi log vào Plan
         plan = self.plan_id.sudo()
+
+        if plan.recruitment_status in ['approved', 'in_process', 'complete']:
+            return
 
         msg_body = f"<b>Cập nhật từ Nhu cầu thực tế ({self.display_name}):</b><ul>"
 

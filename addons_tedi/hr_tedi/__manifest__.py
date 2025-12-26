@@ -18,6 +18,9 @@
         "views/reward_benefit_view.xml",
         "views/hr_department_view.xml",
         "views/employee_position_view.xml",
+        "views/res_ward_view.xml",
+
+        "views/hr_contract_view.xml",
 
         "views/hr_training_field_view.xml"
     ],

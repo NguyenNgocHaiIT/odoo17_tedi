@@ -35,14 +35,14 @@ access_experient_request,access_experient_request_admin,model_experience_request
 
 
 access_recruitment_plan,access_recruitment_plan_admin,model_recruitment_plan,base.group_user,1,0,0,0
-access_recruitment_plan_hr_ro,Recruitment Plan HR RO,model_recruitment_plan,quan_ly_tuyen_dung.group_recruitment_hr_officer,1,0,0,0
+access_recruitment_plan_hr_ro,Recruitment Plan HR RO,model_recruitment_plan,quan_ly_tuyen_dung.group_recruitment_hr_officer,1,1,1,1
 access_recruitment_plan_committee,Recruitment Plan Committee,model_recruitment_plan,quan_ly_tuyen_dung.group_recruitment_committee,1,1,1,1
 
 
 
 
 access_recruitment_plan_detail_committee,Recruitment Plan Detail Committee,model_recruitment_plan_detail,quan_ly_tuyen_dung.group_recruitment_committee,1,1,1,1
-access_recruitment_plan_detail_hr_ro,Recruitment Plan Detail HR RO,model_recruitment_plan_detail,quan_ly_tuyen_dung.group_recruitment_hr_officer,1,0,0,0
+access_recruitment_plan_detail_hr_ro,Recruitment Plan Detail HR RO,model_recruitment_plan_detail,quan_ly_tuyen_dung.group_recruitment_hr_officer,1,1,1,1
 
 access_recruitment_plan_detail,access_recruitment_plan_detail_admin,model_recruitment_plan_detail,base.group_user,1,1,1,1
 
@@ -51,7 +51,7 @@ access_hr_applicant_admin,hr.applicant.admin,model_hr_applicant,base.group_user,
 
 
 access_recruitment_survey,access_recruitment_survey,model_recruitment_survey,base.group_user,1,0,0,0
-access_recruitment_survey_hr,access_recruitment_survey_hr,model_recruitment_survey,quan_ly_tuyen_dung.group_recruitment_hr_officer,1,0,0,0
+access_recruitment_survey_hr,access_recruitment_survey_hr,model_recruitment_survey,quan_ly_tuyen_dung.group_recruitment_hr_officer,1,1,1,1
 access_recruitment_survey_commitee,access_recruitment_survey_commitee,model_recruitment_survey,quan_ly_tuyen_dung.group_recruitment_committee,1,1,1,1
 
 access_recruitment_needs,access_recruitment_needs,model_recruitment_needs,base.group_user,1,1,1,1

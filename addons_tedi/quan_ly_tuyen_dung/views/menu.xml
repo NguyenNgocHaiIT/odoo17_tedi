@@ -28,7 +28,7 @@
               groups="quan_ly_tuyen_dung.group_recruitment_hr_officer"/>
 
       <menuitem id="menu_recruitment_plan_execute"
-              name="Thực hiện kế hoạch tuyển dụng"
+              name="Triển khai tuyển dụng"
               parent="hr_recruitment.menu_hr_recruitment_root"
               sequence="5"
       />

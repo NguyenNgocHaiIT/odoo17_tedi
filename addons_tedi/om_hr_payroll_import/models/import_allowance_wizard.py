@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError
 import base64
 from openpyxl import load_workbook
 from io import BytesIO
@@ -25,27 +25,25 @@ class TediAllowanceImportWizard(models.TransientModel):
             raise UserError(_("Không thể đọc file. Vui lòng kiểm tra định dạng .xlsx. Chi tiết: %s") % str(e))
 
         Allowance = self.env['hr.employee.allowance']
+        AllowanceType = self.env['hr.allowance.type']  # Model danh mục mới
         Employee = self.env['hr.employee']
 
         success_count = 0
         errors = []
-        row_index = 1  # Bắt đầu từ 1 (Header)
+        row_index = 1
 
-        # Cấu trúc file Excel yêu cầu:
-        # Col 0: Month
-        # Col 1: Year
-        # Col 2: Type (VD: meal)
-        # Col 3: Code (Mã phụ cấp)
-        # Col 4: Employee Code
-        # Col 5: Salary Allowance
+        # Cache danh sách loại phụ cấp để tối ưu hiệu năng (Tránh query DB trong vòng lặp)
+        # Dictionary dạng: {'MÃ_EXCEL': ID_DATABASE}
+        # Lưu ý: Mã trong Excel so với mã trong DB nên chuẩn hóa (vd: upper(), strip())
+        allowance_types_map = {
+            rec.code: rec.id for rec in AllowanceType.search([])
+        }
 
-        # Lấy danh sách các key hợp lệ của field type (VD: ['meal', ...])
-        valid_types = [key for key, label in Allowance._fields['type'].selection]
+        # In ra để debug nếu cần
+        # print("Available Types:", allowance_types_map)
 
         for row in sheet.iter_rows(min_row=2, values_only=True):
             row_index += 1
-
-            # Kiểm tra dòng trống hoặc thiếu mã nhân viên (Cột 4 là index 4)
             if not row or len(row) < 5 or row[4] is None:
                 continue
 
@@ -53,12 +51,12 @@ class TediAllowanceImportWizard(models.TransientModel):
                 # 1. Lấy dữ liệu thô
                 raw_month = row[0]
                 raw_year = row[1]
-                raw_type = str(row[2]).strip() if row[2] else False
-                raw_code = str(row[3]).strip() if row[3] else False
+                raw_type_code = str(row[2]).strip() if row[2] else False  # Đây là Mã loại (VD: AN_CA)
+                raw_code = str(row[3]).strip() if row[3] else False  # Đây là Mã chi tiết (nếu có)
                 employee_code = str(row[4]).strip()
                 raw_salary = row[5]
 
-                # 2. Xử lý Month/Year
+                # 2. Validate cơ bản
                 if not raw_month or not raw_year:
                     errors.append(f"Dòng {row_index}: Thiếu Tháng hoặc Năm")
                     continue
@@ -67,37 +65,41 @@ class TediAllowanceImportWizard(models.TransientModel):
                     month_str = str(int(raw_month))
                     year_int = int(raw_year)
                 except ValueError:
-                    errors.append(f"Dòng {row_index}: Tháng/Năm phải là số")
+                    errors.append(f"Dòng {row_index}: Tháng/Năm lỗi định dạng")
                     continue
 
                 if month_str not in [str(i) for i in range(1, 13)]:
                     errors.append(f"Dòng {row_index}: Tháng '{raw_month}' không hợp lệ")
                     continue
 
-                # 3. Kiểm tra Loại phụ cấp (Type)
-                if raw_type not in valid_types:
+                # 3. TÌM ID CỦA LOẠI PHỤ CẤP TỪ MÃ EXCEL
+                if not raw_type_code:
+                    errors.append(f"Dòng {row_index}: Thiếu mã loại phụ cấp (Cột C)")
+                    continue
+
+                allowance_type_id = allowance_types_map.get(raw_type_code)
+
+                # Nếu chưa tìm thấy trong cache, thử search lại trong DB (phòng trường hợp vừa tạo mới mà cache cũ)
+                # hoặc báo lỗi luôn. Ở đây tôi chọn báo lỗi để đảm bảo dữ liệu chuẩn.
+                if not allowance_type_id:
                     errors.append(
-                        f"Dòng {row_index}: Loại phụ cấp '{raw_type}' không hợp lệ (Chấp nhận: {', '.join(valid_types)})")
+                        f"Dòng {row_index}: Mã loại phụ cấp '{raw_type_code}' chưa được khai báo trong Danh mục hệ thống.")
                     continue
 
                 # 4. Tìm nhân viên
                 employee = Employee.search([('employee_code', '=', employee_code)], limit=1)
                 if not employee:
-                    errors.append(f"Dòng {row_index}: Không tìm thấy nhân viên mã '{employee_code}'")
+                    errors.append(f"Dòng {row_index}: Không tìm thấy NV mã '{employee_code}'")
                     continue
 
                 # 5. Kiểm tra trùng lặp
-                # Tiêu chí duy nhất: Nhân viên + Tháng + Năm + Loại + Mã
                 domain = [
                     ('employee_id', '=', employee.id),
                     ('month', '=', month_str),
                     ('year', '=', year_int),
-                    ('type', '=', raw_type),
+                    ('allowance_type_id', '=', allowance_type_id),  # Thay đổi field
                     ('code', '=', raw_code)
-                    # Nếu code trong DB là False/Null thì cần xử lý thêm nếu Excel để trống, nhưng ở đây giả sử nhập khớp
                 ]
-
-                # Nếu code trống, tìm bản ghi có code=False
                 if not raw_code:
                     domain[-1] = ('code', '=', False)
 
@@ -107,7 +109,7 @@ class TediAllowanceImportWizard(models.TransientModel):
                     'employee_id': employee.id,
                     'month': month_str,
                     'year': year_int,
-                    'type': raw_type,
+                    'allowance_type_id': allowance_type_id,  # Lưu ID relation
                     'code': raw_code,
                     'salary_allowance': float(raw_salary or 0),
                     'currency_id': self.env.company.currency_id.id
@@ -121,9 +123,9 @@ class TediAllowanceImportWizard(models.TransientModel):
                 success_count += 1
 
             except Exception as e:
-                errors.append(f"Dòng {row_index}: Lỗi xử lý - {str(e)}")
+                errors.append(f"Dòng {row_index}: Lỗi hệ thống - {str(e)}")
 
-        # Kết quả trả về
+        # --- Phần trả về kết quả giữ nguyên như cũ ---
         msg = f"Hoàn tất! Đã xử lý thành công {success_count} dòng."
         if errors:
             msg += f"\n\nCó {len(errors)} dòng lỗi:\n" + "\n".join(errors[:20])
@@ -134,7 +136,7 @@ class TediAllowanceImportWizard(models.TransientModel):
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': 'Kết quả Import Phụ cấp',
+                    'title': 'Kết quả Import',
                     'message': msg,
                     'type': 'warning',
                     'sticky': True,

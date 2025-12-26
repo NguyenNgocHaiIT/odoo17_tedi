@@ -78,6 +78,19 @@ class HrEmployeePrivate(models.Model):
         help="Chọn chức vụ từ danh mục (VD: Giám đốc, Trưởng phòng, Chuyên viên...)"
     )
 
+    personal_tax_code = fields.Char(string="Mã số thuế")
+
+    @api.onchange('citizen_id')
+    def _onchange_citizen_id_update_tax_code(self):
+        """
+        Khi nhập số CCCD/CMND:
+        - Nếu Mã số thuế đang trống -> Tự động điền bằng số CCCD.
+        - Nếu Mã số thuế đã có dữ liệu -> Giữ nguyên (để người dùng có thể nhập khác nếu muốn).
+        """
+        for rec in self:
+            if rec.citizen_id and not rec.personal_tax_code:
+                rec.personal_tax_code = rec.citizen_id
+
     # Onchange để đánh số lại STT khi giao diện thay đổi (giống logic bạn gửi trước đó)
     @api.onchange('tedi_training_history_ids')
     def _onchange_tedi_training_seq(self):

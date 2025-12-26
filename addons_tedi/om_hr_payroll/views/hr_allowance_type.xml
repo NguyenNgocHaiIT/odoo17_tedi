@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+
+     <record id="view_hr_allowance_type_form" model="ir.ui.view">
+            <field name="name">hr.allowance.type.form</field>
+            <field name="model">hr.allowance.type</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div class="oe_title">
+                            <label for="name" class="oe_edit_only"/>
+                            <h1><field name="name" placeholder="VD: Phụ cấp Ăn trưa"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="code"/>
+                                <field name="sequence"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_hr_allowance_type_tree" model="ir.ui.view">
+            <field name="name">hr.allowance.type.tree</field>
+            <field name="model">hr.allowance.type</field>
+            <field name="arch" type="xml">
+                <tree editable="bottom">
+                    <field name="sequence" widget="handle"/>
+                    <field name="code"/>
+                    <field name="name"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="action_hr_allowance_type_config" model="ir.actions.act_window">
+            <field name="name">Cấu hình Loại Phụ cấp</field>
+            <field name="res_model">hr.allowance.type</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+
+        <menuitem id="menu_hr_allowance_type_config"
+                  name="Danh mục Phụ cấp"
+                  parent="hr.menu_human_resources_configuration"
+                  action="action_hr_allowance_type_config"
+                  sequence="2"/>
+
+        <menuitem id="menu_hr_allowance_type_config"
+                  name="Danh mục Phụ cấp"
+                  parent="menu_hr_payroll_configuration"
+                  action="action_hr_allowance_type_config"
+                  sequence="2"/>
+
+
+    </data>
+</odoo>
