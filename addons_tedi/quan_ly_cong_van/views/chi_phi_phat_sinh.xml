@@ -9,11 +9,12 @@
         <field name="model">extra.cost</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="name" string="Số phiếu"/>
+                <field name="name" string="Mã phiếu"/>
                 <field name="date" string="Ngày tạo"/>
                 <field name="employee_id" string="Người tạo"/>
                 <field name="department_id" string="Đơn vị"/>
-                <field name="total_amount" string="Tổng tiền"/>
+                <field name="total_amount" string="Tổng chi phí"/>
+                <field name="currency_id" string="Tiền tệ"/>
                 <field name="state" string="Trạng thái"/>
             </tree>
         </field>
@@ -58,30 +59,17 @@
 
                 <!-- ===== BODY ===== -->
                 <sheet>
-
-                    <!-- ===== THÔNG TIN CHUNG ===== -->
-                    <div class="oe_title">
-                        <h1>
-                            <field name="name" placeholder="Số phiếu..."/>
-                        </h1>
-                    </div>
-
                     <group>
-                        <group>
+                        <group string="Chi tiết phiếu">
+                            <field name="name" string="Mã phiếu"/>
                             <field name="date" string="Ngày tạo"/>
                             <field name="employee_id" string="Người tạo" readonly="1"/>
                             <field name="department_id" string="Đơn vị" readonly="1"/>
-                        </group>
-                        <group>
                             <field name="company_id" readonly="1"/>
                             <field name="reference" placeholder="Ghi chú..."/>
                         </group>
-                    </group>
 
-                    <separator string="Thông tin chi phí"/>
-
-                    <group>
-                        <group>
+                        <group string="Thông tin chi phí">
                             <field name="cost_type_id"
                                    string="Loại chi phí phát sinh"
                                    required="1"
@@ -90,30 +78,21 @@
 
                             <!-- Hiển thị các trường vé máy bay dựa trên tên loại chi phí -->
                             <field name="airline"
-                                   string="Hãng bay"/>
+                                   string="Hãng hàng không"/>
 
                             <field name="passenger_count"
                                    string="Số người bay"/>
-                        </group>
 
-                        <group>
                             <field name="flight_date"
                                    string="Ngày bay"/>
 
                             <field name="flight_time"
                                    string="Giờ bay"/>
-                        </group>
-                    </group>
-
-                    <separator string="Số tiền"/>
-
-                    <group>
-                        <group>
-                            <field name="amount" string="Số tiền" required="1"/>
-                            <field name="tax_amount" string="Thuế / phí"/>
-                        </group>
-                        <group>
-                            <field name="total_amount" string="Tổng tiền" readonly="1"/>
+                            <label for="amount" string="Tổng chi phí"/>
+                            <div style="display: flex;" >
+                                <field name="amount" required="1"/>
+                                <field name="currency_id"/>
+                            </div>
                         </group>
                     </group>
 

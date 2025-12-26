@@ -11,7 +11,7 @@ class ExtraCost(models.Model):
     _description = "Phiếu chi phí phát sinh"
     _inherit = ["mail.thread", "mail.activity.mixin"]
 
-    name = fields.Char(string="Số phiếu", default="New", readonly=True)
+    name = fields.Char(string="Mã phiếu")
     date = fields.Date(default=fields.Date.today, string="Ngày tạo")
 
     employee_id = fields.Many2one(
@@ -44,7 +44,12 @@ class ExtraCost(models.Model):
     )
 
     # Vé máy bay
-    airline = fields.Char("Hãng bay")
+    airline = fields.Selection([
+        ('Vietnam Airlines', 'Vietnam Airlines'),
+        ('Bamboo Airways', 'Bamboo Airways '),
+        ('Vietjet Air', 'Vietjet Air'),
+        ('SunPhuQuoc Airways', 'SunPhuQuoc Airways'),
+    ], string="Hãng hàng không")
     flight_code = fields.Char("Mã chuyến bay")
     flight_date = fields.Date("Ngày bay")
     flight_time = fields.Char("Giờ bay")
