@@ -6,6 +6,7 @@ from pygments.lexer import default
 from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
 import odoo
+import re
 from odoo.http import request
 import logging
 
@@ -616,6 +617,23 @@ class OfficeDocument(models.Model):
         string="Công văn nội bộ đi liên quan",
         domain="[('document_type','in',['outgoing_internal'])]"
     )
+    incoming_internal_id = fields.Many2one(
+        'office.document',
+        string="Công văn nội bộ đến liên quan",
+        domain="[('document_type','in',['incoming_internal'])]"
+    )
+    outgoing_id = fields.Many2one(
+        'office.document',
+        string="Công văn đi liên quan ",
+        domain="[('document_type','in',['outgoing'])]"
+    )
+    incoming_id = fields.Many2one(
+        'office.document',
+        string="Công văn đến liên quan ",
+        domain="[('document_type','in',['incoming'])]"
+    )
+
+
     can_duyet = fields.Boolean(string='Văn bản có cần duyệt không ?', default=True)
     co_the_but_phe_cong_van_di = fields.Boolean(
         string='Có thể bút phê',
@@ -857,93 +875,226 @@ class OfficeDocument(models.Model):
         if record.task_id:
             record.task_id.da_tao_cong_van = True
 
+        record._sync_related_documents(vals)
+
         return record
 
     def write(self, vals):
-        # 2. Nếu thay đổi phan_loai_van_ban thì cập nhật số tổng hợp
+        # 1. Trường hợp đổi phân loại → cập nhật số
         if 'phan_loai_van_ban' in vals:
-            new_vals_list = []
             for record in self:
                 new_vals = vals.copy()
                 new_vals = record._update_document_numbers(new_vals, is_write=True)
-                new_vals_list.append((record.id, new_vals))
+                super(OfficeDocument, record).write(new_vals)
 
-            # Gọi super.write cho từng record (không còn gọi lại write cho toàn bộ recordset)
-            for record_id, new_vals in new_vals_list:
-                super(OfficeDocument, self.browse(record_id)).write(new_vals)
+            # Sau khi write xong → sync
+            for record in self:
+                record._sync_related_documents(vals)
+
             return True
-        else:
-            # Nếu không thay đổi phân loại → write bình thường
-            return super(OfficeDocument, self).write(vals)
+
+        # 2. Các trường hợp khác → write bình thường
+        res = super(OfficeDocument, self).write(vals)
+
+        # 3. Sync liên kết 2 chiều
+        for record in self:
+            record._sync_related_documents(vals)
+
+        return res
 
     def _update_document_numbers(self, vals, is_write=False):
         """
         Cập nhật so_den_tong_hop và so_di_tong_hop:
-        - Loại bình thường: <YYMMDD>-<Mã loại>-<STT> (STT 4 chữ số)
-        - Quyết định: <YYMMDD>-QĐ-<STT> (STT 4 chữ số)
+        - Công văn đến: <YYMMDD>.<STT>/<Mã đơn vị>-<Mã loại>
+        - Công văn đi:
+            + Loại Công văn (CV): <YYMMDD>.<STT>/TEDI-<Mã đơn vị>
+            + Loại khác: <YYMMDD>.<STT>/<Mã đơn vị>-<Mã loại>
+        - STT: 2 chữ số, reset mỗi ngày
         """
+        import re
+
+        def _get_abbreviation_from_name(name, max_length=10):
+            """Lấy viết tắt từ tên đơn vị - Bỏ dấu trước khi xử lý"""
+            if not name:
+                return ''
+
+            import unicodedata
+
+            # Hàm bỏ dấu tiếng Việt
+            def remove_diacritics(text):
+                if not text:
+                    return text
+                # Tách ký tự và dấu
+                text = unicodedata.normalize('NFD', text)
+                # Loại bỏ dấu
+                text = ''.join(c for c in text if unicodedata.category(c) != 'Mn')
+                # Xử lý đ/Đ
+                text = text.replace('đ', 'd').replace('Đ', 'D')
+                return text
+
+            # Bỏ dấu toàn bộ tên
+            name_no_diacritic = remove_diacritics(name)
+
+            # Tách thành các từ (dùng regex đơn giản)
+            words = re.findall(r'[A-Za-z0-9]+', name_no_diacritic)
+
+            result_parts = []
+
+            # Xử lý từng từ
+            for word in words:
+                if not word:
+                    continue
+
+                # Nếu từ toàn bộ là VIẾT HOA hoặc chứa số/ký tự đặc biệt
+                if word.isupper() or any(c.isdigit() or c in '-_/' for c in word):
+                    result_parts.append(word)
+                else:
+                    # Lấy chữ cái đầu và viết hoa
+                    result_parts.append(word[0].upper())
+
+            # Ghép kết quả
+            result = ''.join(result_parts)
+
+            # Giới hạn độ dài
+            if len(result) > max_length:
+                return result[:max_length]
+
+            # Nếu không có kết quả
+            if not result:
+                clean_name = re.sub(r'\s+', '', name_no_diacritic)
+                return clean_name[:max_length].upper()
+
+            return result
+
         phan_loai_id = vals.get('phan_loai_van_ban')
         document_type = vals.get('document_type') or self._context.get('default_document_type') or (
             self.document_type if self else None)
 
+        # Bỏ qua Quyết định
+        if document_type == 'resolution':
+            return vals
+
         current_date = fields.Date.today()
         current_date_str = current_date.strftime('%y%m%d')  # YYMMDD
 
-        def get_daily_sequence(seq_code_base, name_base, prefix_without_date):
-            seq_code = f"{seq_code_base}.{current_date_str}"
-            expected_prefix = f"{current_date_str}-{prefix_without_date}"
+        def get_next_number(is_incoming=False):
+            """
+            Tạo số theo định dạng mới với STT 2 chữ số reset mỗi ngày
+            """
+            # Tìm số lớn nhất đã tồn tại cho loại này trong ngày hôm nay
+            today_start = fields.Datetime.start_of(current_date, 'day')
+            today_end = fields.Datetime.end_of(current_date, 'day')
 
-            seq = self.env['ir.sequence'].sudo().search([('code', '=', seq_code)], limit=1)
-            if seq:
-                # ⚠️ cập nhật prefix nếu sai
-                if seq.prefix != expected_prefix:
-                    seq.write({'prefix': expected_prefix})
+            if is_incoming:
+                # Số đến: tìm trong các văn bản đến cùng loại
+                domain = [
+                    ('document_type', 'in', ['incoming', 'incoming_internal']),
+                    ('create_date', '>=', today_start),
+                    ('create_date', '<=', today_end),
+                ]
+                number_field = 'so_den_tong_hop'
             else:
-                seq = self.env['ir.sequence'].sudo().create({
-                    'name': f"{current_date_str} - {name_base}",
-                    'code': seq_code,
-                    'prefix': expected_prefix,
-                    'padding': 4,
-                    'company_id': False,
-                    'use_date_range': False,
-                })
-            return seq
+                # Số đi: tìm trong các văn bản đi cùng loại
+                domain = [
+                    ('document_type', 'in', ['outgoing', 'outgoing_internal']),
+                    ('create_date', '>=', today_start),
+                    ('create_date', '<=', today_end),
+                ]
+                number_field = 'so_di_tong_hop'
 
-        # ========== SỐ ĐẾN ==========
-        if phan_loai_id:
-            phan_loai = self.env['office.document.category'].browse(phan_loai_id)
-            if not phan_loai.exists() or not phan_loai.code:
-                raise UserError("Phân loại văn bản chưa có mã (code)!")
-
-            code = phan_loai.code
-            seq_den = get_daily_sequence(
-                f'den.{code}',
-                f'Số đến - {code}',
-                f'{code}-'
-            )
-            if not vals.get('so_den_tong_hop'):
-                vals['so_den_tong_hop'] = seq_den.next_by_id()
-
-        # ========== SỐ ĐI ==========
-        if document_type == 'resolution':
-            #seq_qd = get_daily_sequence(
-            #    'di.resolution',
-            #    'Số đi - Quyết định',
-            #    'QĐ-'
-            #)
-            #if not vals.get('so_di_tong_hop'):
-            #    vals['so_di_tong_hop'] = seq_qd.next_by_id()
-            pass
-        else:
             if phan_loai_id:
-                code = self.env['office.document.category'].browse(phan_loai_id).code
-                seq_di = get_daily_sequence(
-                    f'di.{code}',
-                    f'Số đi - {code}',
-                    f'{code}-'
-                )
-                if not vals.get('so_di_tong_hop'):
-                    vals['so_di_tong_hop'] = seq_di.next_by_id()
+                domain.append(('phan_loai_van_ban', '=', phan_loai_id))
+
+            # Tìm tất cả văn bản cùng loại tạo hôm nay
+            existing_docs = self.env['office.document'].search(domain)
+
+            # Lấy số STT lớn nhất
+            max_seq = 0
+            for doc in existing_docs:
+                number = getattr(doc, number_field, '')
+                if number and '.' in number:
+                    try:
+                        # Tách phần STT: YYMMDD.STT/...
+                        seq_part = number.split('.')[1].split('/')[0]
+                        seq_num = int(seq_part)
+                        max_seq = max(max_seq, seq_num)
+                    except (ValueError, IndexError):
+                        continue
+
+            # STT mới
+            next_seq = max_seq + 1
+
+            # Lấy MÃ ĐƠN VỊ từ res.partner hoặc hr.department
+            ma_don_vi = ''
+
+            if document_type in ('incoming', 'outgoing'):
+                # Lấy từ res.partner (đơn vị bên ngoài)
+                partner_id = vals.get('don_vi_ban_hanh_ngoai') or ''
+                if partner_id and isinstance(partner_id, int):
+                    partner = self.env['res.partner'].browse(partner_id)
+                    if partner and partner.ma_don_vi:
+                        ma_don_vi = partner.ma_don_vi.strip()
+                    elif partner:
+                        # Nếu partner không có mã, lấy tên rút gọn
+                        ma_don_vi = _get_abbreviation_from_name(partner.name)
+            else:  # internal - lấy TRỰC TIẾP từ hr.department
+                dept_id = vals.get('don_vi_ban_hanh') or ''
+                if dept_id and isinstance(dept_id, int):
+                    dept = self.env['hr.department'].browse(dept_id)
+                    if dept:
+                        source_info = f"Department ID: {dept_id}, Name: {dept.name}"
+
+                        # TRƯỜNG HỢP 1: Kiểm tra xem department có field ma_don_vi không
+                        if hasattr(dept, 'ma_don_vi') and dept.ma_don_vi:
+                            ma_don_vi = dept.ma_don_vi.strip()
+
+                        # TRƯỜNG HỢP 2: Kiểm tra field code (mã phòng ban)
+                        elif hasattr(dept, 'code') and dept.code:
+                            ma_don_vi = dept.code.strip()
+
+                        # TRƯỜNG HỢP 3: Lấy từ field abbreviation nếu có
+                        elif hasattr(dept, 'abbreviation') and dept.abbreviation:
+                            ma_don_vi = dept.abbreviation.strip()
+
+                        # TRƯỜNG HỢP 4: Lấy viết tắt từ tên
+                        else:
+                            ma_don_vi = _get_abbreviation_from_name(dept.name)
+
+            # Xử lý nếu không có mã
+            if not ma_don_vi:
+                ma_don_vi = 'TEDI'  # Mã mặc định
+
+            # Lấy mã loại
+            ma_loai = ''
+            if phan_loai_id:
+                phan_loai = self.env['office.document.category'].browse(phan_loai_id)
+                if phan_loai.exists() and phan_loai.code:
+                    ma_loai = phan_loai.code
+            if not ma_loai:
+                ma_loai = 'CV'  # Mã mặc định
+
+            # Tạo số theo định dạng
+            if is_incoming:
+                # Công văn đến: <YYMMDD>.<STT>/<Mã đơn vị>-<Mã loại>
+                return f"{current_date_str}.{next_seq:02d}/{ma_don_vi}-{ma_loai}"
+            else:
+                # Công văn đi
+                if ma_loai == 'CV':
+                    # Loại Công văn: <YYMMDD>.<STT>/TEDI-<Mã đơn vị>
+                    return f"{current_date_str}.{next_seq:02d}/TEDI-{ma_don_vi}"
+                else:
+                    # Loại khác: <YYMMDD>.<STT>/<Mã đơn vị>-<Mã loại>
+                    return f"{current_date_str}.{next_seq:02d}/{ma_don_vi}-{ma_loai}"
+
+        # ========== SỐ ĐẾN (Công văn đến) ==========
+        if document_type in ('incoming', 'incoming_internal') and phan_loai_id:
+            if not vals.get('so_den_tong_hop'):
+                vals['so_den_tong_hop'] = get_next_number(is_incoming=True)
+
+        # ========== SỐ ĐI (Công văn đi) ==========
+        if document_type in ('outgoing', 'outgoing_internal') and phan_loai_id:
+            if not vals.get('so_di_tong_hop'):
+                vals['so_di_tong_hop'] = get_next_number(is_incoming=False)
 
         return vals
 
@@ -1258,6 +1409,191 @@ class OfficeDocument(models.Model):
             raise UserError("Chỉ văn thư mới có quyền xóa bản ghi này!")
 
         return super().unlink()
+
+    def _sync_related_documents(self, vals):
+        if self.env.context.get('skip_link_sync'):
+            return
+
+        for rec in self:
+            ctx = dict(self.env.context, skip_link_sync=True)
+
+            # Chỉ sync nếu không có kết nối nào khác (đảm bảo single connection)
+            # Kiểm tra xem công văn đích đã có kết nối chưa
+
+            # Công văn đến → công văn đi
+            if 'outgoing_id' in vals and rec.outgoing_id:
+                # Kiểm tra xem công văn đi đã có incoming_id chưa
+                if rec.outgoing_id.incoming_id and rec.outgoing_id.incoming_id.id != rec.id:
+                    # Công văn đi đã được kết nối với công văn đến khác
+                    raise ValidationError(
+                        f"Công văn '{rec.outgoing_id.trich_yeu}' "
+                        f"đã được kết nối với công văn đến khác. "
+                        f"Vui lòng chọn công văn đi khác."
+                    )
+                rec.outgoing_id.with_context(ctx).write({
+                    'incoming_id': rec.id
+                })
+
+            # Công văn đi → công văn đến
+            if 'incoming_id' in vals and rec.incoming_id:
+                # Kiểm tra xem công văn đến đã có outgoing_id chưa
+                if rec.incoming_id.outgoing_id and rec.incoming_id.outgoing_id.id != rec.id:
+                    raise ValidationError(
+                        f"Công văn '{rec.incoming_id.trich_yeu}' "
+                        f"đã được kết nối với công văn đi khác. "
+                        f"Vui lòng chọn công văn đến khác."
+                    )
+                rec.incoming_id.with_context(ctx).write({
+                    'outgoing_id': rec.id
+                })
+
+            # Nội bộ đến → nội bộ đi
+            if 'outgoing_internal_id' in vals and rec.outgoing_internal_id:
+                if rec.outgoing_internal_id.incoming_internal_id and rec.outgoing_internal_id.incoming_internal_id.id != rec.id:
+                    raise ValidationError(
+                        f"Công văn '{rec.outgoing_internal_id.trich_yeu}' "
+                        f"đã được kết nối với công văn nội bộ đến khác. "
+                        f"Vui lòng chọn công văn nội bộ đi khác."
+                    )
+                rec.outgoing_internal_id.with_context(ctx).write({
+                    'incoming_internal_id': rec.id
+                })
+
+            # Nội bộ đi → nội bộ đến
+            if 'incoming_internal_id' in vals and rec.incoming_internal_id:
+                if rec.incoming_internal_id.outgoing_internal_id and rec.incoming_internal_id.outgoing_internal_id.id != rec.id:
+                    raise ValidationError(
+                        f"Công văn '{rec.incoming_internal_id.trich_yeu}' "
+                        f"đã được kết nối với công văn nội bộ đi khác. "
+                        f"Vui lòng chọn công văn nội bộ đến khác."
+                    )
+                rec.incoming_internal_id.with_context(ctx).write({
+                    'outgoing_internal_id': rec.id
+                })
+
+    # Thêm các trường để kiểm tra
+    is_linked_as_incoming = fields.Boolean(
+        string="Đã được kết nối như công văn đến",
+        compute='_compute_linked_status',
+        store=False
+    )
+    is_linked_as_outgoing = fields.Boolean(
+        string="Đã được kết nối như công văn đi",
+        compute='_compute_linked_status',
+        store=False
+    )
+    is_linked_as_incoming_internal = fields.Boolean(
+        string="Đã được kết nối như công văn nội bộ đến",
+        compute='_compute_linked_status',
+        store=False
+    )
+    is_linked_as_outgoing_internal = fields.Boolean(
+        string="Đã được kết nối như công văn nội bộ đi",
+        compute='_compute_linked_status',
+        store=False
+    )
+
+    @api.depends('outgoing_id', 'incoming_id', 'outgoing_internal_id', 'incoming_internal_id')
+    def _compute_linked_status(self):
+        """Tính toán trạng thái kết nối"""
+        for rec in self:
+            rec.is_linked_as_incoming = bool(rec.incoming_id)
+            rec.is_linked_as_outgoing = bool(rec.outgoing_id)
+            rec.is_linked_as_incoming_internal = bool(rec.incoming_internal_id)
+            rec.is_linked_as_outgoing_internal = bool(rec.outgoing_internal_id)
+
+    @api.constrains(
+        'outgoing_internal_id', 'incoming_internal_id',
+        'outgoing_id', 'incoming_id'
+    )
+    def _check_single_connection(self):
+        """Kiểm tra mỗi công văn chỉ được kết nối với một công văn khác"""
+        for rec in self:
+            # Đếm số lượng kết nối
+            connections = []
+            if rec.outgoing_internal_id:
+                connections.append(('outgoing_internal_id', rec.outgoing_internal_id.display_name))
+            if rec.incoming_internal_id:
+                connections.append(('incoming_internal_id', rec.incoming_internal_id.display_name))
+            if rec.outgoing_id:
+                connections.append(('outgoing_id', rec.outgoing_id.display_name))
+            if rec.incoming_id:
+                connections.append(('incoming_id', rec.incoming_id.display_name))
+
+            # Kiểm tra nếu có nhiều hơn 1 kết nối
+            if len(connections) > 1:
+                connection_names = ", ".join([f"{field}: {name}" for field, name in connections])
+                raise ValidationError(
+                    f"Mỗi công văn chỉ được kết nối với một công văn khác. "
+                    f"Hiện tại có {len(connections)} kết nối: {connection_names}"
+                )
+
+    @api.constrains('outgoing_internal_id')
+    def _check_outgoing_internal_unique(self):
+        """Kiểm tra outgoing_internal_id không được trùng"""
+        for rec in self:
+            if rec.outgoing_internal_id:
+                # Kiểm tra xem công văn đã được kết nối chưa
+                existing = self.search([
+                    ('outgoing_internal_id', '=', rec.outgoing_internal_id.id),
+                    ('id', '!=', rec.id)
+                ], limit=1)
+                if existing:
+                    raise ValidationError(
+                        f"Công văn '{rec.outgoing_internal_id.trich_yeu}' "
+                        f"đã được kết nối với công văn '{existing.trich_yeu}'. "
+                        f"Mỗi công văn chỉ được kết nối một lần."
+                    )
+
+    @api.constrains('incoming_internal_id')
+    def _check_incoming_internal_unique(self):
+        """Kiểm tra incoming_internal_id không được trùng"""
+        for rec in self:
+            if rec.incoming_internal_id:
+                existing = self.search([
+                    ('incoming_internal_id', '=', rec.incoming_internal_id.id),
+                    ('id', '!=', rec.id)
+                ], limit=1)
+                if existing:
+                    raise ValidationError(
+                        f"Công văn '{rec.incoming_internal_id.trich_yeu}' "
+                        f"đã được kết nối với công văn '{existing.trich_yeu}'. "
+                        f"Mỗi công văn chỉ được kết nối một lần."
+                    )
+
+    @api.constrains('outgoing_id')
+    def _check_outgoing_unique(self):
+        """Kiểm tra outgoing_id không được trùng"""
+        for rec in self:
+            if rec.outgoing_id:
+                existing = self.search([
+                    ('outgoing_id', '=', rec.outgoing_id.id),
+                    ('id', '!=', rec.id)
+                ], limit=1)
+                if existing:
+                    raise ValidationError(
+                        f"Công văn '{rec.outgoing_id.trich_yeu}' "
+                        f"đã được kết nối với công văn '{existing.trich_yeu}'. "
+                        f"Mỗi công văn chỉ được kết nối một lần."
+                    )
+
+    @api.constrains('incoming_id')
+    def _check_incoming_unique(self):
+        """Kiểm tra incoming_id không được trùng"""
+        for rec in self:
+            if rec.incoming_id:
+                existing = self.search([
+                    ('incoming_id', '=', rec.incoming_id.id),
+                    ('id', '!=', rec.id)
+                ], limit=1)
+                if existing:
+                    raise ValidationError(
+                        f"Công văn '{rec.incoming_id.trich_yeu}' "
+                        f"đã được kết nối với công văn '{existing.trich_yeu}'. "
+                        f"Mỗi công văn chỉ được kết nối một lần."
+                    )
+
+
 
 class AssignTaskWizard(models.TransientModel):
     _name = 'assign.task.wizard'
