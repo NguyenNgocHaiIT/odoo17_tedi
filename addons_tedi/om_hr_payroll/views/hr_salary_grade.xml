@@ -2,19 +2,20 @@
 <odoo>
     <data>
         <record id="hr_salary_grade_view_tree" model="ir.ui.view">
-        <field name="name">hr_salary_grade_view_tree</field>
-        <field name="model">hr.salary.grade</field>
-        <field name="arch" type="xml">
-            <tree editable="bottom">
-                <field name="name"/>
-                <field name="code"/>
-                <field name="salary_coefficient"/>
-                <field name="salary_grade"/>
-                <field name="advance_amount"/>
-                <field name="bonus_rate"/>
-            </tree>
-        </field>
-    </record>
+            <field name="name">hr_salary_grade_view_tree</field>
+            <field name="model">hr.salary.grade</field>
+            <field name="arch" type="xml">
+                <tree editable="bottom">
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="salary_coefficient"/>
+                    <field name="salary_grade"/>
+                    <field name="advance_amount"/>
+                    <field name="bonus_rate"/>
+                    <field name="salary_increment_period" string="Thời hạn nâng lương(tháng)"/>
+                </tree>
+            </field>
+        </record>
 
         <record id="hr_salary_grade_action" model="ir.actions.act_window">
             <field name="name">Cấu hình bậc lương</field>
