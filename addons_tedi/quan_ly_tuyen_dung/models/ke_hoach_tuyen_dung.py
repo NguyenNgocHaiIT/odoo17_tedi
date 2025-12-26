@@ -275,37 +275,67 @@ class RecruitmentPlan(models.Model):
             rec.recruitment_status = "in_process"
 
     def action_director_approve_quarter(self):
-        """
-        Kế hoạch Quý: Giám đốc duyệt thẳng từ Dự thảo -> Đã duyệt.
-        Bỏ qua bước Trình duyệt và HĐQT.
-        """
         self._check_director()
+        today = fields.Date.context_today(self)  # Lấy ngày hiện tại
+
         for rec in self:
             if rec.type != 'quarter':
                 raise ValidationError(_("Hành động này chỉ dành cho Kế hoạch Quý."))
 
-            if rec.recruitment_status != 'draft':
-                raise ValidationError(_("Chỉ có thể duyệt khi kế hoạch đang ở trạng thái 'Dự thảo'."))
+            # Logic cũ: Phải từ 'director_approve' (Chờ duyệt) mới được duyệt
+            if rec.recruitment_status != 'director_approve':
+                raise ValidationError(_("Chỉ có thể phê duyệt khi kế hoạch đang ở trạng thái 'Chờ duyệt'."))
 
-            # Chuyển thẳng sang Approved
-            rec.recruitment_status = "approved"
+            # --- LOGIC MỚI: KIỂM TRA NGÀY ĐỂ SET TRẠNG THÁI ---
 
-            # Log lại
-            rec.message_post(body=_("Giám đốc đã phê duyệt Kế hoạch Quý (Duyệt nhanh)."))
+            # Trường hợp 1: Đã đến hạn hoặc quá hạn (Duyệt xong chạy luôn)
+            if rec.plan_execute_date and today >= rec.plan_execute_date:
+                rec.recruitment_status = "in_process"
+
+                # Quan trọng: Nếu nhảy cóc sang in_process thì phải cập nhật Job ngay
+                if not rec.is_applied_to_jobs:
+                    rec._apply_recruitment_to_jobs()
+                    rec.is_applied_to_jobs = True
+
+                rec.message_post(
+                    body=_("Giám đốc đã phê duyệt. Kế hoạch được tự động triển khai do đã đến thời gian thực hiện."))
+
+            # Trường hợp 2: Chưa đến hạn (Duyệt xong nằm chờ)
+            else:
+                rec.recruitment_status = "approved"
+                rec.message_post(body=_("Giám đốc đã phê duyệt Kế hoạch Quý (Chờ đến ngày triển khai)."))
 
     # --- HÀM TẠO 4 KẾ HOẠCH CON ---
     def _generate_quarterly_plans(self):
         self.ensure_one()
-        quarters_map = {1: 'qty_q1', 2: 'qty_q2', 3: 'qty_q3', 4: 'qty_q4'}
 
-        for q_num, field_qty in quarters_map.items():
+        # 1. Xác định NĂM của kế hoạch (Lấy từ ngày thực hiện KH Năm)
+        base_year = self.plan_execute_date.year if self.plan_execute_date else fields.Date.today().year
+
+        # 2. Cấu hình mapping: Quý -> Field số lượng -> Tháng bắt đầu
+        quarters_config = {
+            1: {'field': 'qty_q1', 'month': 1},  # Quý 1 bắt đầu tháng 1
+            2: {'field': 'qty_q2', 'month': 4},  # Quý 2 bắt đầu tháng 4
+            3: {'field': 'qty_q3', 'month': 7},  # Quý 3 bắt đầu tháng 7
+            4: {'field': 'qty_q4', 'month': 10}  # Quý 4 bắt đầu tháng 10
+        }
+
+        for q_num, config in quarters_config.items():
+            field_qty = config['field']
+            start_month = config['month']
+
+            # Tên kế hoạch con
             plan_name = f"{self.plan_name} - Quý {q_num}"
 
-            # Check tồn tại
+            # Check tồn tại để tránh tạo trùng
             existing = self.env['recruitment.plan'].search([
                 ('parent_id', '=', self.id), ('plan_name', '=', plan_name)
             ], limit=1)
             if existing: continue
+
+            # --- TÍNH NGÀY THỰC HIỆN CHO QUÝ ---
+            # Ngày 1 của tháng bắt đầu quý (VD: 01/04/2025)
+            q_execute_date = date(base_year, start_month, 1)
 
             # Tạo Header Quý
             plan_vals = {
@@ -313,7 +343,10 @@ class RecruitmentPlan(models.Model):
                 'type': 'quarter',
                 'parent_id': self.id,
                 'recruitment_status': 'draft',
-                'plan_execute_date': self.plan_execute_date,
+
+                # Quan trọng: Gán ngày thực hiện chuẩn theo quý
+                'plan_execute_date': q_execute_date,
+
                 'people_suggestion': self.people_suggestion.id,
                 'department_responsible': self.department_responsible.id,
                 'plan_purpose': f"Triển khai Quý {q_num} theo kế hoạch năm: {self.plan_code}",
@@ -323,11 +356,8 @@ class RecruitmentPlan(models.Model):
             # Tạo Lines Quý
             detail_lines = []
             for line in self.recruitment_plan_detail_ids:
-
-                # --- UPDATE: Bỏ qua dòng đã bị Từ chối ---
                 if line.state == 'rejected':
                     continue
-                # -----------------------------------------
 
                 qty_in_quarter = getattr(line, field_qty, 0)
                 if qty_in_quarter > 0:
@@ -337,15 +367,12 @@ class RecruitmentPlan(models.Model):
                         'experient_request_id': line.experient_request_id.id,
                         'professional_qualification': line.professional_qualification,
                         'note': line.note,
-
-                        # --- QUAN TRỌNG: TRUYỀN SỐ LƯỢNG VÀ ĐƠN GIÁ ---
                         'requested_quantity': qty_in_quarter,
                         'expense_per_head': line.expense_per_head,
-                        # ---------------------------------------------
                     }
                     detail_lines.append((0, 0, line_vals))
 
-            # Chỉ tạo kế hoạch quý nếu có ít nhất 1 dòng chi tiết hợp lệ
+            # Chỉ tạo nếu có dữ liệu
             if detail_lines:
                 plan_vals['recruitment_plan_detail_ids'] = detail_lines
                 self.env['recruitment.plan'].create(plan_vals)
@@ -400,8 +427,8 @@ class RecruitmentPlan(models.Model):
                     plan_date = datetime.strptime(rec.plan_execute_date, '%Y-%m-%d').date()
                 else:
                     plan_date = rec.plan_execute_date
-                if plan_date < date.today():
-                    raise ValidationError("Ngày thực hiện không được nhỏ hơn ngày hiện tại.")
+                # if plan_date < date.today():
+                #     raise ValidationError("Ngày thực hiện không được nhỏ hơn ngày hiện tại.")
 
         # ----------------- CÁC HÀM XỬ LÝ LUỒNG QUÝ (MỚI) -----------------
 

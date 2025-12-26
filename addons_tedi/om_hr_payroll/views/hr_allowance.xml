@@ -8,7 +8,7 @@
             <tree editable="bottom">
                 <field name="month"/>
                 <field name="year"/>
-                <field name="type"/>
+                <field name="allowance_type_id"/>
                 <field name="code"/>
                 <field name="employee_id"/>
                 <field name="salary_allowance"/>
@@ -27,5 +27,8 @@
                 action="hr_employee_allowance_action"
                 parent="menu_hr_payroll_root"
                 sequence="10"/>
+
+
+
     </data>
 </odoo>

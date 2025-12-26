@@ -38,9 +38,11 @@
         'views/hr_work_entry_view.xml',
         'views/hr_insurance.xml',
         'views/hr_allowance.xml',
+        'views/hr_allowance_type.xml',
         'data/mail_template.xml',
         'data/cau_truc_luong_lan_1.xml',
         'data/cau_truc_luong_lan_2.xml',
+
     ],
     'images': ['static/description/banner.png'],
     'application': True,

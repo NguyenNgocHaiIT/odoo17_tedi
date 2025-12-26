@@ -23,6 +23,17 @@ class HrContract(models.Model):
         ('bi-monthly', 'Bi-monthly'),
     ], string='Scheduled Pay', index=True, default='monthly',
     help="Defines the frequency of the wage payment.")
+
+    allowance_ids = fields.One2many('hr.contract.allowance', 'contract_id', string="Các khoản phụ cấp")
+
+    # Hàm tính tổng phụ cấp (Optional - nếu bạn muốn hiện tổng ngoài contract)
+    total_allowance = fields.Monetary(string="Tổng phụ cấp", compute="_compute_total_allowance", store=True)
+
+    @api.depends('allowance_ids.amount')
+    def _compute_total_allowance(self):
+        for rec in self:
+            rec.total_allowance = sum(line.amount for line in rec.allowance_ids)
+
     resource_calendar_id = fields.Many2one(required=True, help="Employee's working schedule.")
     hra = fields.Monetary(string='HRA', help="House rent allowance.")
     travel_allowance = fields.Monetary(string="Travel Allowance", help="Travel allowance")

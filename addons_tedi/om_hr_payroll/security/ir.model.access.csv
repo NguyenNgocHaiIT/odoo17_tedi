@@ -17,3 +17,5 @@ access_payslip_lines_contribution_register_hr_user,payslip.lines.contribution.re
 access_hr_salary_grade,access_hr_salary_grade,model_hr_salary_grade,,1,1,1,1
 access_hr_employee_insurance,access_hr_employee_insurance,model_hr_employee_insurance,,1,1,1,1
 access_hr_employee_allowance,access_hr_employee_allowance,model_hr_employee_allowance,,1,1,1,1
+access_hr_allowance_type,access_hr_allowance_type,model_hr_allowance_type,,1,1,1,1
+access_model_hr_contract_allowance,access_model_hr_contract_allowance,model_hr_contract_allowance,,1,1,1,1

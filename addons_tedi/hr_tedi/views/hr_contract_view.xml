@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="hr_contract_view_form_inherit_custom_duration" model="ir.ui.view">
+            <field name="name">hr.contract.view.form.inherit.custom.duration</field>
+            <field name="model">hr.contract</field>
+            <field name="inherit_id" ref="hr_contract.hr_contract_view_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='contract_type_id']" position="after">
+                    <field name="contract_category" widget="radio" options="{'horizontal': true}"/>
+
+                    <field name="official_contract_type"
+                           widget="radio"
+                           options="{'horizontal': true}"
+                           invisible="contract_category != 'official'"
+                           required="contract_category == 'official'"/>
+
+                    <field name="duration_months"
+                           string="Thời hạn (Tháng)"
+                           invisible="official_contract_type != 'fixed_term'"
+                           required="official_contract_type == 'fixed_term'"/>
+                </xpath>
+
+                <xpath expr="//field[@name='date_end']" position="attributes">
+                    <attribute name="invisible">official_contract_type == 'indefinite_term'</attribute>
+
+                    <attribute name="required">official_contract_type == 'fixed_term'</attribute>
+
+                    </xpath>
+
+            </field>
+        </record>
+    </data>
+</odoo>
