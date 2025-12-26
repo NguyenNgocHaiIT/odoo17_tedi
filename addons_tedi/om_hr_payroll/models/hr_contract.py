@@ -29,6 +29,28 @@ class HrContract(models.Model):
     # Hàm tính tổng phụ cấp (Optional - nếu bạn muốn hiện tổng ngoài contract)
     total_allowance = fields.Monetary(string="Tổng phụ cấp", compute="_compute_total_allowance", store=True)
 
+    @api.model
+    def default_get(self, fields_list):
+        # 1. Lấy các giá trị mặc định thông thường của Odoo
+        res = super(HrContract, self).default_get(fields_list)
+
+        # 2. Kiểm tra nếu trường allowance_ids cần hiển thị
+        if 'allowance_ids' in fields_list:
+            # Tìm tất cả các loại phụ cấp đang có trong hệ thống
+            allowance_types = self.env['hr.allowance.type'].search([])
+
+            lines = []
+            for allowance in allowance_types:
+                # Cú pháp (0, 0, {values}) dùng để tạo mới dòng One2many trên RAM (chưa lưu vào DB)
+                lines.append((0, 0, {
+                    'allowance_type_id': allowance.id,
+                    'amount': 0,  # Mặc định tiền là 0
+                    'note': ''
+                }))
+            # Gán danh sách dòng vào kết quả trả về
+            res['allowance_ids'] = lines
+        return res
+
     @api.depends('allowance_ids.amount')
     def _compute_total_allowance(self):
         for rec in self:

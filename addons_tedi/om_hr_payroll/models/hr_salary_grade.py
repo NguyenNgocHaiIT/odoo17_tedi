@@ -12,6 +12,7 @@ class HrSalaryGrade(models.Model):
     bonus_rate = fields.Float("Tỉ lệ thưởng")
     salary_grade = fields.Float('Giá trị lương theo bậc')
     luong_chuc_danh = fields.Float(compute='luong_chuc_danh_compute', store=True)
+    salary_increment_period = fields.Integer(string="Thời hạn nâng lương")
 
     @api.depends('salary_grade', 'salary_coefficient')
     def luong_chuc_danh_compute(self):

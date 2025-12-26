@@ -12,7 +12,10 @@ class HrEmployeeAllowance(models.Model):
         required=True,
         ondelete='restrict'
     )
-    code = fields.Char('Mã phụ cấp')
+    code = fields.Char('Mã phụ cấp',
+                       store=True,
+                       related='allowance_type_id.code',)
+
     employee_id = fields.Many2one(
         'hr.employee',
         string='Nhân viên',
