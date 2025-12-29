@@ -2,124 +2,121 @@
 <odoo>
 
     <!-- ============================= -->
-    <!-- TREE VIEW -->
+    <!-- FORM VIEW – CHI PHÍ VÉ MÁY BAY -->
     <!-- ============================= -->
-    <record id="view_extra_cost_tree" model="ir.ui.view">
-        <field name="name">extra.cost.tree</field>
-        <field name="model">extra.cost</field>
-        <field name="arch" type="xml">
-            <tree>
-                <field name="name" string="Mã phiếu"/>
-                <field name="date" string="Ngày tạo"/>
-                <field name="employee_id" string="Người tạo"/>
-                <field name="department_id" string="Đơn vị"/>
-                <field name="total_amount" string="Tổng chi phí"/>
-                <field name="currency_id" string="Tiền tệ"/>
-                <field name="state" string="Trạng thái"/>
-            </tree>
-        </field>
-    </record>
-
-    <!-- ============================= -->
-    <!-- FORM VIEW -->
-    <!-- ============================= -->
-    <record id="view_extra_cost_form" model="ir.ui.view">
-        <field name="name">extra.cost.form</field>
-        <field name="model">extra.cost</field>
+    <record id="view_hr_expense_airlines_form" model="ir.ui.view">
+        <field name="name">hr.expense.airlines.form</field>
+        <field name="model">hr.expense</field>
         <field name="arch" type="xml">
 
-            <form string="Phiếu chi phí phát sinh">
+            <form string="Phiếu chi phí vé máy bay">
 
                 <!-- ===== HEADER ===== -->
                 <header>
                     <button name="action_submit"
                             string="Trình duyệt"
                             type="object"
-                            invisible="state != 'draft'"
-                            class="btn-primary"/>
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
 
-                    <button name="action_approve"
+                    <button name="action_approve_expense"
                             string="Duyệt"
                             type="object"
-                            invisible="state != 'submitted'"
-                            groups="quan_ly_cong_van.group_van_thu"
-                            class="btn-success"/>
+                            class="btn-success"
+                            groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                            invisible="state != 'submitted'"/>
 
-                    <button name="action_reject"
+                    <button name="action_refuse_expense"
                             string="Từ chối"
                             type="object"
-                            invisible="state != 'submitted'"
-                            groups="quan_ly_cong_van.group_van_thu"
-                            class="btn-danger"/>
+                            class="btn-danger"
+                            groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                            invisible="state != 'submitted'"/>
 
                     <field name="state"
                            widget="statusbar"
-                           statusbar_visible="draft,submitted,approved"/>
+                           statusbar_visible="draft,submitted,approved,refused"/>
                 </header>
 
                 <!-- ===== BODY ===== -->
                 <sheet>
+
+                    <!-- ===== THÔNG TIN CHUNG ===== -->
                     <group>
-                        <group string="Chi tiết phiếu">
-                            <field name="name" string="Mã phiếu"/>
-                            <field name="date" string="Ngày tạo"/>
-                            <field name="employee_id" string="Người tạo" readonly="1"/>
-                            <field name="department_id" string="Đơn vị" readonly="1"/>
-                            <field name="company_id" readonly="1"/>
-                            <field name="reference" placeholder="Ghi chú..."/>
+                        <group string="Thông tin phiếu">
+                            <field name="name" placeholder="Mô tả chi phí"/>
+                            <field name="date" string="Ngày tạo phiếu"/>
+                            <field name="employee_id" string="Người tạo"/>
+                            <field name="department_id" string="Đơn vị"/>
+                            <field name="company_id" string="Công ty"/>
                         </group>
 
                         <group string="Thông tin chi phí">
-                            <field name="cost_type_id"
-                                   string="Loại chi phí phát sinh"
-                                   required="1"
-                                   options="{'no_open': True, 'no_create': True}"
-                                   context="{'search_default_name': 'Mua vé máy bay'}"/>
 
-                            <!-- Hiển thị các trường vé máy bay dựa trên tên loại chi phí -->
-                            <field name="airline"
-                                   string="Hãng hàng không"/>
-
+                            <field name="product_id" string="Loại chi phí"/>
+                            <field name="product_code" invisible="1"/>
                             <field name="passenger_count"
-                                   string="Số người bay"/>
-
-                            <field name="flight_date"
-                                   string="Ngày bay"/>
-
-                            <field name="flight_time"
-                                   string="Giờ bay"/>
-                            <label for="amount" string="Tổng chi phí"/>
-                            <div style="display: flex;" >
-                                <field name="amount" required="1"/>
+                                   string="Số người bay"
+                                   invisible="product_code != 'AIRLINES'"/>
+                            <label for="predict_amount" string="Chi phí dự kiến"/>
+                            <div style="display:flex;">
+                                <field name="predict_amount" widget="monetary"
+                                       options="{'currency_field': 'currency_id'}"/>
                                 <field name="currency_id"/>
                             </div>
+                            <label for="total_amount" string="Chi phí thực tế"/>
+                            <div style="display:flex;">
+                                <field name="total_amount" widget="monetary"
+                                       options="{'currency_field': 'currency_id'}"/>
+                                <field name="currency_id"/>
+                            </div>
+
+                            <field name="description" string="Ghi chú" placeholder="Ghi chú thêm..."/>
+                            <field name="attachment_ids"
+                               widget="many2many_binary"/>
                         </group>
                     </group>
 
-                    <separator string="File đính kèm"/>
-
-                    <group>
-                        <field name="attachment_ids"
-                               string="File đính kèm"
-                               widget="many2many_binary"/>
-                    </group>
-
                 </sheet>
-
             </form>
+
         </field>
     </record>
 
     <!-- ============================= -->
-    <!-- ACTION -->
+    <!-- TREE VIEW – CHI PHÍ VÉ MÁY BAY -->
     <!-- ============================= -->
-    <record id="action_extra_cost" model="ir.actions.act_window">
-        <field name="name">Phiếu chi phí phát sinh</field>
-        <field name="res_model">extra.cost</field>
-        <field name="view_mode">tree,form</field>
-        <field name="view_ids" eval="[(5, 0, 0),
-                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_extra_cost_tree')}),
-                (0, 0, {'view_mode': 'form', 'view_id': ref('view_extra_cost_form')})]"/>
+    <record id="view_hr_expense_airlines_tree" model="ir.ui.view">
+        <field name="name">hr.expense.airlines.tree</field>
+        <field name="model">hr.expense</field>
+        <field name="arch" type="xml">
+            <tree >
+                <field name="name"/>
+                <field name="date"/>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="passenger_count"/>
+                <field name="total_amount_currency" string="Tổng chi phí"/>
+                <field name="state"/>
+            </tree>
+        </field>
     </record>
+
+    <!-- ============================= -->
+    <!-- ACTION – CHI PHÍ VÉ MÁY BAY -->
+    <!-- ============================= -->
+    <record id="action_hr_expense_airlines" model="ir.actions.act_window">
+        <field name="name">Chi phí phát sinh</field>
+        <field name="res_model">hr.expense</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('product_code','=','AIRLINES')]</field>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_hr_expense_airlines_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_hr_expense_airlines_form')})
+        ]"/>
+    </record>
+
+
 
 </odoo>

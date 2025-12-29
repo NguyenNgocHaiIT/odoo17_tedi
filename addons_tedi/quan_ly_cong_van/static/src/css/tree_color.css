@@ -28,5 +28,4 @@ body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-red-ro
 .o_ellipsis {
     white-space: nowrap !important;
     overflow: hidden !important;
-    text-overflow: ellipsis !important;
 }

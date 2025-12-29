@@ -651,6 +651,13 @@ class OfficeDocument(models.Model):
 
     task_id = fields.Many2one('project.task', string="Công việc liên quan")
 
+    # Thêm trường ngày tạo bổ sung
+    ngay_tao_bo_sung = fields.Date(
+        string='Ngày tạo bổ sung',
+    )
+
+    is_cong_van_bo_sung = fields.Boolean(string="Là công văn bổ sung", default=False)
+
     def phan_phat(self):
         return {
             'name': 'Phân phát',
@@ -974,7 +981,14 @@ class OfficeDocument(models.Model):
         if document_type == 'resolution':
             return vals
 
-        current_date = fields.Date.today()
+        # Xác định ngày để tạo số - ƯU TIÊN ngay_tao_bo_sung
+        ngay_tao_bo_sung = vals.get('ngay_tao_bo_sung')
+        if ngay_tao_bo_sung:
+            # Sử dụng ngày tạo bổ sung nếu có
+            current_date = fields.Date.from_string(ngay_tao_bo_sung)
+        else:
+            # Sử dụng ngày hiện tại
+            current_date = fields.Date.today()
         current_date_str = current_date.strftime('%y%m%d')  # YYMMDD
 
         def get_next_number(is_incoming=False):
@@ -1592,8 +1606,6 @@ class OfficeDocument(models.Model):
                         f"đã được kết nối với công văn '{existing.trich_yeu}'. "
                         f"Mỗi công văn chỉ được kết nối một lần."
                     )
-
-
 
 class AssignTaskWizard(models.TransientModel):
     _name = 'assign.task.wizard'
