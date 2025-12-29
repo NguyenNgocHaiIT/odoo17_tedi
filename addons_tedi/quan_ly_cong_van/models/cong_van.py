@@ -658,6 +658,25 @@ class OfficeDocument(models.Model):
 
     is_cong_van_bo_sung = fields.Boolean(string="Là công văn bổ sung", default=False)
 
+    ngay_tao = fields.Date(
+        string="Ngày tạo",
+        compute="_compute_ngay_hieu_luc",
+        store=True,
+        index=True,
+    )
+
+    @api.depends('ngay_tao_bo_sung', 'create_date')
+    def _compute_ngay_hieu_luc(self):
+        for rec in self:
+            if rec.ngay_tao_bo_sung:
+                rec.ngay_hieu_luc = rec.ngay_tao_bo_sung
+            else:
+                rec.ngay_hieu_luc = (
+                    rec.create_date.date()
+                    if rec.create_date
+                    else fields.Date.today()
+                )
+
     def phan_phat(self):
         return {
             'name': 'Phân phát',
@@ -995,24 +1014,19 @@ class OfficeDocument(models.Model):
             """
             Tạo số theo định dạng mới với STT 2 chữ số reset mỗi ngày
             """
-            # Tìm số lớn nhất đã tồn tại cho loại này trong ngày hôm nay
-            today_start = fields.Datetime.start_of(current_date, 'day')
-            today_end = fields.Datetime.end_of(current_date, 'day')
 
             if is_incoming:
                 # Số đến: tìm trong các văn bản đến cùng loại
                 domain = [
                     ('document_type', 'in', ['incoming', 'incoming_internal']),
-                    ('create_date', '>=', today_start),
-                    ('create_date', '<=', today_end),
+                    ('ngay_hieu_luc', '=', current_date),
                 ]
                 number_field = 'so_den_tong_hop'
             else:
                 # Số đi: tìm trong các văn bản đi cùng loại
                 domain = [
                     ('document_type', 'in', ['outgoing', 'outgoing_internal']),
-                    ('create_date', '>=', today_start),
-                    ('create_date', '<=', today_end),
+                    ('ngay_hieu_luc', '=', current_date),
                 ]
                 number_field = 'so_di_tong_hop'
 
