@@ -660,18 +660,18 @@ class OfficeDocument(models.Model):
 
     ngay_tao = fields.Date(
         string="Ngày tạo",
-        compute="_compute_ngay_hieu_luc",
+        compute="_compute_ngay_tao",
         store=True,
         index=True,
     )
 
     @api.depends('ngay_tao_bo_sung', 'create_date')
-    def _compute_ngay_hieu_luc(self):
+    def _compute_ngay_tao(self):
         for rec in self:
             if rec.ngay_tao_bo_sung:
-                rec.ngay_hieu_luc = rec.ngay_tao_bo_sung
+                rec.ngay_tao = rec.ngay_tao_bo_sung
             else:
-                rec.ngay_hieu_luc = (
+                rec.ngay_tao = (
                     rec.create_date.date()
                     if rec.create_date
                     else fields.Date.today()
