@@ -1026,7 +1026,7 @@ class OfficeDocument(models.Model):
                 # Số đi: tìm trong các văn bản đi cùng loại
                 domain = [
                     ('document_type', 'in', ['outgoing', 'outgoing_internal']),
-                    ('ngay_hieu_luc', '=', current_date),
+                    ('ngay_tao', '=', current_date),
                 ]
                 number_field = 'so_di_tong_hop'
 
