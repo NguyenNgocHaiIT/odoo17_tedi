@@ -62,7 +62,7 @@
                         <group col="12">
                             <group colspan="5">
                                 <field name="is_cong_van_bo_sung" string="Là công văn bổ sung" invisible="not (is_van_thu or not_is_van_thu)"/>
-                                <field name="ngay_tao_bo_sung" string="Ngày bổ sung" invisible="not is_cong_van_bo_sung or not (is_van_thu or not_is_van_thu)"/>
+                                <field name="ngay_tao_bo_sung" string="Ngày bổ sung" required="is_cong_van_bo_sung" invisible="not is_cong_van_bo_sung or not (is_van_thu or not_is_van_thu)"/>
                                 <field name="outgoing_internal_id" string="Công văn nội bộ đi liên quan"
                                        invisible="document_type != 'incoming_internal'"
                                        readonly="not (is_van_thu or not_is_van_thu)"
@@ -297,7 +297,7 @@
                         <group col="12">
                             <group colspan="5">
                                 <field name="is_cong_van_bo_sung" string="Là công văn bổ sung" invisible="tt_vb != 'draft'"/>
-                                <field name="ngay_tao_bo_sung" string="Ngày bổ sung" invisible="not is_cong_van_bo_sung or tt_vb != 'draft'"/>
+                                <field name="ngay_tao_bo_sung" string="Ngày bổ sung" required="is_cong_van_bo_sung" invisible="not is_cong_van_bo_sung or tt_vb != 'draft'"/>
                                 <field name="incoming_internal_id" string="Công văn nội bộ đến liên quan"
                                        invisible="document_type != 'outgoing_internal'"
                                        readonly="tt_vb != 'draft'"
