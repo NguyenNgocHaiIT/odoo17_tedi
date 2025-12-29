@@ -27,7 +27,7 @@ class Calendar(models.Model):
         "hr.department",
         'calendar_don_vi_tham_gia_rel',
         'calendar_event_id', 'department_id',
-        string='Đơn vị đồng xử lý'
+        string='Đơn vị tham gia'
     )
 
     # State mới có thêm 'pending'
@@ -70,6 +70,18 @@ class Calendar(models.Model):
     # --- Fields phân quyền ---
     can_approve_meeting = fields.Boolean(compute="_compute_permissions")
     can_approve_room = fields.Boolean(compute="_compute_permissions")
+
+    is_current_user_creator = fields.Boolean(
+        compute='_compute_is_current_user_creator',
+        string='Is Current User Creator',
+        store=False
+    )
+
+    @api.depends_context('uid')
+    def _compute_is_current_user_creator(self):
+        current_user = self.env.user
+        for rec in self:
+            rec.is_current_user_creator = rec.create_uid.id == current_user.id
 
     # --- 2. LOGIC PHÂN QUYỀN (ĐÃ SỬA) ---
     @api.depends_context('uid')
