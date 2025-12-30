@@ -1,3 +1,5 @@
+from email.policy import default
+
 from odoo import api, models, fields
 from odoo.exceptions import UserError
 from datetime import timedelta
@@ -74,6 +76,7 @@ class Calendar(models.Model):
     is_current_user_creator = fields.Boolean(
         compute='_compute_is_current_user_creator',
         string='Is Current User Creator',
+        default=True,
         store=False
     )
 
