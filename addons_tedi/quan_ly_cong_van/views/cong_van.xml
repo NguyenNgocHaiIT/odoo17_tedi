@@ -306,7 +306,7 @@
                                        widget="many2one_clickable"/>
                                 <field name="incoming_id" string="Công văn đến liên quan"
                                        invisible="document_type != 'outgoing'"
-                                       rreadonly="not (is_van_thu or not_is_van_thu)"
+                                       readonly="not (is_van_thu or not_is_van_thu)"
                                        widget="many2one_clickable"/>
                                 <field name="document_type" invisible="1"/>
                                 <field name="so_di_tong_hop" readonly="1"/>
