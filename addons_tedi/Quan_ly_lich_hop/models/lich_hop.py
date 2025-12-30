@@ -1,3 +1,5 @@
+from email.policy import default
+
 from odoo import api, models, fields
 from odoo.exceptions import UserError
 from datetime import timedelta
@@ -74,6 +76,7 @@ class Calendar(models.Model):
     is_current_user_creator = fields.Boolean(
         compute='_compute_is_current_user_creator',
         string='Is Current User Creator',
+        default=True,
         store=False
     )
 
@@ -81,7 +84,14 @@ class Calendar(models.Model):
     def _compute_is_current_user_creator(self):
         current_user = self.env.user
         for rec in self:
-            rec.is_current_user_creator = rec.create_uid.id == current_user.id
+            # Xử lý trường hợp đang tạo mới (chưa có ID)
+            if not rec.id:
+                # Khi đang tạo mới, mặc định cho phép chỉnh sửa
+                rec.is_current_user_creator = True
+            elif rec.create_uid:
+                rec.is_current_user_creator = rec.create_uid.id == current_user.id
+            else:
+                rec.is_current_user_creator = False
 
     # --- 2. LOGIC PHÂN QUYỀN (ĐÃ SỬA) ---
     @api.depends_context('uid')
