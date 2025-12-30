@@ -12,6 +12,9 @@
     <record id="project_todo.menu_todo_todos" model="ir.ui.menu">
         <field name="active" eval="False"/>
     </record>
+    <record id="hr_expense.menu_hr_expense_root" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
     <record id="event.event_main_menu" model="ir.ui.menu">
         <field name="active" eval="False"/>
     </record>

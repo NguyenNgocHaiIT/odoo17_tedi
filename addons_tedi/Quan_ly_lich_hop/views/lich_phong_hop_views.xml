@@ -18,7 +18,7 @@
             <field name="name">calendar.event.room.tree</field>
             <field name="model">calendar.event</field>
             <field name="arch" type="xml">
-                <tree>
+                <tree default_order="create_date desc">
                     <field name="name" string="Chủ đề cuộc họp"/>
                     <field name="room" string="Phòng "/>
                     <field name="start" string="Thời gian bắt đầu"/>
@@ -53,11 +53,11 @@
                                 class="btn-success"
                                 invisible="not can_approve_room"/>
 
-                         <button name="action_reject_room"
-                                    string="Từ chối Phòng"
-                                    type="object"
-                                    class="btn-danger"
-                                    invisible="not can_approve_room"/>
+                        <button name="action_reject_room"
+                                string="Từ chối Phòng"
+                                type="object"
+                                class="btn-danger"
+                                invisible="not can_approve_room"/>
 
                         <button name="action_complete"
                                 string="Hoàn thành"
@@ -67,10 +67,12 @@
                                 invisible="state != 'approved'"
                                 confirm="Xác nhận cuộc họp đã kết thúc và phòng đã được trả?"/>
 
-                        <button name="on_TV" string="Xem lịch trên TV" type="object"/>
+                        <button name="on_TV" string="Xem lịch trên TV" type="object" />
 
                         <field name="room_sign" widget="statusbar" statusbar_visible="approved,completed"/>
                     </header>
+
+                    <field name="is_current_user_creator" invisible="1"/>
 
                     <sheet>
                         <widget name="web_ribbon" title="Đã hoàn thành" bg_color="bg-info" invisible="state != 'completed'"/>
@@ -79,29 +81,29 @@
                         <div class="oe_title">
                             <label for="name" string="Chủ đề cuộc họp"/>
                             <h1>
-                                <field name="name" readonly="state == 'completed'" />
+                                <field name="name" readonly="not is_current_user_creator or state == 'completed'" />
                             </h1>
                         </div>
 
                         <group>
                             <group>
-                                <field name="room" string="Phòng" readonly="state == 'completed'"/>
+                                <field name="room" string="Phòng" readonly="not is_current_user_creator or state == 'completed'"/>
                                 <label for="start" string="Thời gian" />
                                 <div style="display: flex;" >
-                                    <field name="start" class="oe_inline" style="flex:1;" readonly="state == 'completed'"/>
+                                    <field name="start" class="oe_inline" style="flex:1;" readonly="not is_current_user_creator or state == 'completed'"/>
                                     <span class="o_form_label" style="padding: 0 4px;">→</span>
-                                    <field name="stop" class="oe_inline" style="flex:1;" readonly="state == 'completed'"/>
+                                    <field name="stop" class="oe_inline" style="flex:1;" readonly="not is_current_user_creator or state == 'completed'"/>
                                 </div>
 
-                                <field name="name" string="Nội dung" readonly="state == 'completed'"/>
-                                <field name="room_materials" widget="many2many_tags" string="Thông tin khác" readonly="state == 'completed'"/>
+                                <field name="name" string="Nội dung" readonly="not is_current_user_creator or state == 'completed'"/>
+                                <field name="room_materials" widget="many2many_tags" string="Thông tin khác" readonly="not is_current_user_creator or state == 'completed'"/>
                             </group>
 
                             <group>
-                                <field name="chu_tri" string="Người chủ trì" readonly="state == 'completed'"/>
-                                <field name="lanh_dao" string="Lãnh đạo" readonly="state == 'completed'" widget="many2many_tags"/>
-                                <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia" readonly="state == 'completed'"/>
-                                <field name="employee_ids" widget="many2many_tags" string="Người tham gia" readonly="state == 'completed'"/>
+                                <field name="chu_tri" string="Người chủ trì" readonly="not is_current_user_creator or state == 'completed'"/>
+                                <field name="lanh_dao" string="Lãnh đạo" readonly="not is_current_user_creator or state == 'completed'" widget="many2many_tags"/>
+                                <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia" readonly="not is_current_user_creator or state == 'completed'"/>
+                                <field name="employee_ids" widget="many2many_tags" string="Người tham gia" readonly="not is_current_user_creator or state == 'completed'"/>
                             </group>
                         </group>
                     </sheet>

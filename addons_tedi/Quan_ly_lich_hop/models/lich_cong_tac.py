@@ -21,6 +21,18 @@ class CalendarOutside(models.Model):
 
     can_approve_meeting = fields.Boolean(compute="_compute_permissions")
 
+    is_current_user_creator = fields.Boolean(
+        compute='_compute_is_current_user_creator',
+        string='Is Current User Creator',
+        store=False
+    )
+
+    @api.depends_context('uid')
+    def _compute_is_current_user_creator(self):
+        current_user = self.env.user
+        for rec in self:
+            rec.is_current_user_creator = rec.create_uid.id == current_user.id
+
     @api.depends_context('uid')
     @api.depends('create_uid', 'state')
     def _compute_permissions(self):

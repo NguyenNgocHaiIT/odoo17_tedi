@@ -113,7 +113,7 @@
                 id="menu_extra_cost"
                 name="Chi phí phát sinh"
                 parent="office_document_menu_root"
-                action="action_extra_cost"
+                action="action_hr_expense_airlines"
                 sequence="40"/>
 
 
