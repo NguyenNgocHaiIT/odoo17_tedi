@@ -328,7 +328,7 @@
                                 <!--                                <field name="nguoi_soan_thao"/>-->
                                 <!--                                <field name="dv_theo_doi_chinh"/>-->
                                 <!--                                <field name="phoi_hop_xu_ly"/>-->
-                                <field name="so_hieu" readonly="tt_vb != 'draft'" required="1"/>
+                                <field name="so_hieu" readonly="tt_vb != 'draft'"/>
                                 <field name="ngay_ban_hanh" readonly="tt_vb != 'draft'" required="1"/>
                                 <field name="ngay_xuat" readonly="tt_vb != 'draft'" required="1"/>
 

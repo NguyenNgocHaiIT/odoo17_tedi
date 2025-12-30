@@ -842,6 +842,10 @@ class OfficeDocument(models.Model):
         if 'ngay_bat_dau' in vals and not vals.get('han_ket_thuc'):
             vals['han_ket_thuc'] = fields.Date.from_string(vals['ngay_bat_dau']) + timedelta(days=7)
 
+        user = self.env.user
+        if user.has_group('quan_ly_cong_van.group_van_thu'):
+            vals['can_duyet'] = False
+
         can_duyet_val = vals.get('can_duyet', self._fields['can_duyet'].default(self))
         document_type_val = vals.get('document_type')
         user = self.env.user
@@ -862,11 +866,6 @@ class OfficeDocument(models.Model):
         ):
             vals['tt_vb'] = 'da_duyet'
 
-        elif (
-                user.has_group('quan_ly_cong_van.group_van_thu')
-                and document_type_val in ('outgoing', 'outgoing_internal','resolution')
-        ):
-            vals['tt_vb'] = 'da_duyet'
         elif (
                 user.has_group('quan_ly_cong_van.group_don_vi_xu_ly')
                 and document_type_val in ('incoming', 'incoming_internal')
