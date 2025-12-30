@@ -648,7 +648,7 @@ class OfficeDocument(models.Model):
         store=False  # Không lưu vào database, tính toán real-time
     )
 
-    ngay_xuat = fields.Date(string='Ngày xuất')
+    ngay_xuat = fields.Date(string='Ngày xuất', default=fields.Date.context_today)
 
     task_id = fields.Many2one('project.task', string="Công việc liên quan")
 
@@ -680,6 +680,44 @@ class OfficeDocument(models.Model):
         compute='_compute_edit_permission',
         store=False
     )
+
+    def name_get(self):
+        result = []
+        for record in self:
+            # Ưu tiên hiển thị số công văn
+            display_value = ""
+
+            if record.document_type in ['incoming', 'incoming_internal']:
+                if record.so_den_tong_hop:
+                    display_value = f"{record.so_den_tong_hop}"
+            elif record.document_type in ['outgoing', 'outgoing_internal']:
+                if record.so_di_tong_hop:
+                    display_value = f"{record.so_di_tong_hop}"
+            # Nếu không có số, mới dùng trích yếu
+            if not display_value:
+                display_value = record.trich_yeu or ''
+
+            result.append((record.id, display_value))
+        return result
+
+    # Thêm phương thức search để tìm kiếm theo số công văn
+    @api.model
+    def name_search(self, name='', args=None, operator='ilike', limit=100):
+        args = args or []
+        domain = []
+
+        if name:
+            # Tìm kiếm theo số công văn (so_den_tong_hop, so_di_tong_hop, so_hieu)
+            domain = ['|', '|', '|',
+                      ('so_den_tong_hop', operator, name),
+                      ('so_di_tong_hop', operator, name),
+                      ('trich_yeu', operator, name)]
+
+        # Kết hợp domain tìm kiếm với các điều kiện khác
+        combined_domain = args + domain if args else domain
+        records = self.search(combined_domain, limit=limit)
+
+        return records.name_get()
 
     @api.depends('create_uid')
     def _compute_truong_don_vi_duyet(self):
@@ -1105,7 +1143,7 @@ class OfficeDocument(models.Model):
             # Lấy MÃ ĐƠN VỊ từ res.partner hoặc hr.department
             ma_don_vi = ''
 
-            if document_type in ('incoming', 'outgoing'):
+            if document_type in ('incoming'):
                 # Lấy từ res.partner (đơn vị bên ngoài)
                 partner_id = vals.get('don_vi_ban_hanh_ngoai') or ''
                 if partner_id and isinstance(partner_id, int):
@@ -1406,7 +1444,7 @@ class OfficeDocument(models.Model):
                 continue
 
             # Kiểm tra trùng cho công văn nội bộ
-            if rec.document_type in ['incoming_internal', 'outgoing_internal', 'resolution'] and rec.don_vi_ban_hanh:
+            if rec.document_type in ['incoming_internal', 'outgoing_internal', 'resolution', 'outgoing'] and rec.don_vi_ban_hanh:
                 domain = [
                     ('id', '!=', rec.id),
                     ('document_type', '=', rec.document_type),
@@ -1423,7 +1461,7 @@ class OfficeDocument(models.Model):
                     )
 
             # Kiểm tra trùng cho công văn bên ngoài
-            elif rec.document_type in ['incoming', 'outgoing'] and rec.don_vi_ban_hanh_ngoai:
+            elif rec.document_type in ['incoming'] and rec.don_vi_ban_hanh_ngoai:
                 domain = [
                     ('id', '!=', rec.id),
                     ('document_type', '=', rec.document_type),
@@ -1997,3 +2035,28 @@ class ChuyenLanhDaoWizard(models.TransientModel):
 
     def cancel(self):
         return {'type': 'ir.actions.act_window_close'}
+
+class HrEmployee(models.Model):
+    _inherit = 'hr.employee'
+
+    @api.model
+    def name_search(self, name='', args=None, operator='ilike', limit=100):
+        # Chỉ áp dụng cho wizard phân phát
+        if self.env.context.get('phan_phat_full_label'):
+            args = args or []
+            domain = args + ['|', '|',
+                ('name', operator, name),
+                ('department_id.name', operator, name),
+                ('position_id.name', operator, name),
+            ]
+            employees = self.search(domain, limit=limit)
+            return [
+                (
+                    emp.id,
+                    f"{emp.name} - {emp.department_id.name or ''} - {emp.position_id.name or ''}".strip(' -')
+                )
+                for emp in employees
+            ]
+
+        # Mặc định: giữ nguyên hành vi gốc
+        return super().name_search(name, args, operator, limit)

@@ -75,11 +75,11 @@
                                 <field name="so_den_tong_hop" string="Số công văn" readonly="1"/>
                                 <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                                 <field name="don_vi_ban_hanh"
-                                       invisible="not (document_type in ('incoming_internal','outgoing_internal','resolution'))"
+                                       invisible="not (document_type in ('incoming_internal','outgoing_internal','resolution','outgoing'))"
                                        readonly="not (is_van_thu or not_is_van_thu)" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
                                 <field name="don_vi_ban_hanh_ngoai"
-                                       invisible="not (document_type in ('incoming','outgoing'))"
+                                       invisible="not (document_type in ('incoming'))"
                                        readonly="not (is_van_thu or not_is_van_thu)" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
                                 <field name="lanh_dao_xu_ly" string="Lãnh đạo phụ trách" widget="many2many_tags"
@@ -173,7 +173,7 @@
                                     <tree default_order="sequence, id"
                                           decoration-section_dark="is_section"
                                           expandable="1"
-                                          class="o_office_document_detail2_tree"
+                                          class="excel_style_list_view"
                                           create="false" edit="false" delete="false">
                                         <field name="allow_assign" column_invisible="1"/>
 
@@ -239,7 +239,7 @@
                 <tree default_order="create_date desc">
                     <field name="ngay_ban_hanh" class="o_ellipsis"/>
                     <field name="so_di_tong_hop" class="o_ellipsis"/>
-                    <field name="so_hieu" class="o_ellipsis"/>
+                    <field name="so_hieu" class="o_ellipsis" column_invisible="1"/>
                     <field name="trich_yeu" class="o_ellipsis"/>
                     <field name="but_phe" class="o_ellipsis"/>
                     <field name="don_vi_ban_hanh" class="o_ellipsis"/>
@@ -287,10 +287,13 @@
                                 confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
                     </header>
                     <sheet>
+                        <field name="is_van_thu" invisible="1"/>
+                        <field name="not_is_van_thu" invisible="1"/>
                         <field name="can_create_don_vi" invisible="1"/>
                         <field name="is_truong_don_vi" invisible="1"/>
                         <field name="show_skip_button" invisible="1"/>
                         <field name="co_the_but_phe_cong_van_di" invisible="1"/>
+
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu" readonly="tt_vb != 'draft'" required="1"/>
                         <group col="12">
@@ -299,44 +302,44 @@
                                 <field name="ngay_tao_bo_sung" string="Ngày bổ sung" required="is_cong_van_bo_sung" invisible="not is_cong_van_bo_sung or tt_vb != 'draft'"/>
                                 <field name="incoming_internal_id" string="Công văn nội bộ đến liên quan"
                                        invisible="document_type != 'outgoing_internal'"
-                                       readonly="tt_vb != 'draft'"
+                                       readonly="not (is_van_thu or not_is_van_thu)"
                                        widget="many2one_clickable"/>
                                 <field name="incoming_id" string="Công văn đến liên quan"
                                        invisible="document_type != 'outgoing'"
-                                       readonly="tt_vb != 'draft'"
+                                       readonly="not (is_van_thu or not_is_van_thu)"
                                        widget="many2one_clickable"/>
                                 <field name="document_type" invisible="1"/>
                                 <field name="so_di_tong_hop" readonly="1"/>
                                 <field name="tt_vb" readonly="1"/>
-                                <field name="so_hieu" readonly="tt_vb != 'draft'"/>
+                                <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="don_vi_ban_hanh"
-                                       invisible="not (document_type in ('incoming_internal','outgoing_internal','resolution'))"
-                                       readonly="tt_vb != 'draft'" required="1"
+                                       invisible="not (document_type in ('incoming_internal','outgoing_internal','resolution','outgoing'))"
+                                       readonly="not (is_van_thu or not_is_van_thu)" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
                                 <field name="don_vi_ban_hanh_ngoai"
-                                       invisible="not (document_type in ('incoming','outgoing'))"
-                                       readonly="tt_vb != 'draft'" required="1"
+                                       invisible="not (document_type in ('incoming'))"
+                                       readonly="not (is_van_thu or not_is_van_thu)" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
-                                <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách" readonly="tt_vb != 'draft'"
+                                <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách" readonly="not (is_van_thu or not_is_van_thu)"
                                        required="1"/>
                                 <!--                                <field name="don_vi_soan_thao"/>-->
 
                                 <!--                                <field name="ngay_ky"/>-->
                                 <!--                                <field name="nguoi_ky"/>-->
-                                <field name="do_khan" readonly="tt_vb != 'draft'" required="1"/>
-                                <field name="phan_loai_van_ban" readonly="tt_vb != 'draft'" required="1"/>
+                                <field name="do_khan" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                <field name="phan_loai_van_ban" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                                 <!--                                <field name="nguoi_soan_thao"/>-->
                                 <!--                                <field name="dv_theo_doi_chinh"/>-->
                                 <!--                                <field name="phoi_hop_xu_ly"/>-->
-                                <field name="ngay_ban_hanh" readonly="tt_vb != 'draft'" required="1"/>
-                                <field name="ngay_xuat" readonly="tt_vb != 'draft'" required="1"/>
+                                <field name="ngay_ban_hanh" readonly="not (is_van_thu or not_is_van_thu)"/>
+                                <field name="ngay_xuat" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
 
-                                <field name="chuyen_ngoai" string="Chuyển ngoài" readonly="tt_vb != 'draft'"
+                                <field name="chuyen_ngoai" string="Chuyển ngoài" readonly="not (is_van_thu or not_is_van_thu)"
                                        required="1"/>
                                 <field name="ngay_chuyen_ngoai" invisible="not chuyen_ngoai"
-                                       readonly="tt_vb != 'draft'"/>
+                                       readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="dia_diem_chuyen_ngoai" invisible="not chuyen_ngoai"
-                                       readonly="tt_vb != 'draft'"/>
+                                       readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="can_duyet" invisible="1"/>
                                 <!--                                <field name="so_di_theo_so"/>-->
                                 <!--                                <field name="so_vb"/>-->
@@ -349,7 +352,7 @@
                                 <!--                                <field name="so_di_tong_hop_so_den_theo_so"/>-->
                             </group>
                             <group colspan="7">
-                                <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'"
+                                <field name="attachment" widget="pdf_viewer" readonly="not (is_van_thu or not_is_van_thu)"
                                        style="width: 100%;"/>
                             </group>
                         </group>
@@ -403,7 +406,7 @@
                                           decoration-bf="is_section"
                                           decoration-italic="is_section"
                                           expandable="1"
-                                          class="o_office_document_detail2_tree"
+                                          class="excel_style_list_view"
                                           create="false" edit="false" delete="false">
 
                                         <field name="allow_assign" column_invisible="1"/>
@@ -517,6 +520,8 @@
 
                     </header>
                     <sheet>
+                        <field name="is_van_thu" invisible="1"/>
+                        <field name="not_is_van_thu" invisible="1"/>
                         <field name="can_create_don_vi" invisible="1"/>
                         <field name="show_skip_button" invisible="1"/>
                         <field name="co_the_but_phe_cong_van_di" invisible="1"/>
@@ -524,46 +529,46 @@
                         <field name="document_type" invisible="1"/>
 
                         <label for="trich_yeu" string="Trích yếu"/>
-                        <field name="trich_yeu" readonly="tt_vb != 'draft'" required="1"/>
+                        <field name="trich_yeu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                         <group col="12">
                             <group colspan="5">
                                 <field name="tt_vb" readonly="1"/>
                                 <field name="so_di_tong_hop" string="Số quyết định"
                                        required="document_type == 'resolution'"
                                        invisible="document_type != 'resolution'"
-                                       readonly="tt_vb != 'draft'"/>
+                                       readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="so_di_tong_hop" string="Số văn bản"
                                        required="document_type == 'director'"
                                        invisible="document_type != 'director'"
-                                       readonly="tt_vb != 'draft'"/>
-                                <field name="so_hieu" readonly="tt_vb != 'draft'" required="1"/>
-                                <field name="phan_loai_van_ban" readonly="tt_vb != 'draft'"
+                                       readonly="not (is_van_thu or not_is_van_thu)"/>
+                                <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                <field name="phan_loai_van_ban" readonly="not (is_van_thu or not_is_van_thu)"
                                        invisible="document_type != 'director'"
                                        required="1"/>
-                                <field name="don_vi_ban_hanh" readonly="tt_vb != 'draft'" required="1"
+                                <field name="don_vi_ban_hanh" readonly="not (is_van_thu or not_is_van_thu)" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
-                                <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách" readonly="tt_vb != 'draft'"
+                                <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách" readonly="not (is_van_thu or not_is_van_thu)"
                                        required="1"/>
                                 <!--                                <field name="don_vi_soan_thao"/>-->
 
                                 <!--                                <field name="ngay_ky"/>-->
                                 <!--                                <field name="nguoi_ky"/>-->
-                                <field name="do_khan" readonly="tt_vb != 'draft'" required="1"/>
+                                <field name="do_khan" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
 
                                 <!--                                <field name="nguoi_soan_thao"/>-->
                                 <!--                                <field name="dv_theo_doi_chinh"/>-->
                                 <!--                                <field name="phoi_hop_xu_ly"/>-->
-                                <field name="ngay_ban_hanh" readonly="tt_vb != 'draft'" required="1"/>
-                                <field name="ngay_xuat" readonly="tt_vb != 'draft'" required="1"/>
+                                <field name="ngay_ban_hanh" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                <field name="ngay_xuat" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
 
-                                <field name="chuyen_ngoai" string="Chuyển ngoài" readonly="tt_vb != 'draft'"
+                                <field name="chuyen_ngoai" string="Chuyển ngoài" readonly="not (is_van_thu or not_is_van_thu)"
                                        required="1"/>
                                 <field name="dia_diem_chuyen_ngoai" invisible="not chuyen_ngoai"
-                                       readonly="tt_vb != 'draft'"/>
+                                       readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="ngay_chuyen_ngoai" invisible="not chuyen_ngoai"
-                                       readonly="tt_vb != 'draft'"/>
+                                       readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="can_duyet" groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
-                                       readonly="tt_vb != 'draft'"/>
+                                       readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <!--                                <field name="so_di_theo_so"/>-->
                                 <!--                                <field name="so_vb"/>-->
                                 <!--                                <field name="ngay_hieu_luc"/>-->
@@ -575,7 +580,7 @@
                                 <!--                                <field name="so_di_tong_hop_so_den_theo_so"/>-->
                             </group>
                             <group colspan="7">
-                                <field name="attachment" widget="pdf_viewer" readonly="tt_vb != 'draft'"
+                                <field name="attachment" widget="pdf_viewer" readonly="not (is_van_thu or not_is_van_thu)"
                                        style="width: 100%;"/>
                             </group>
                         </group>
@@ -625,7 +630,7 @@
                             <page string="Phân phát">
                                 <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
                                 <field name="detail2" readonly="1">
-                                    <tree readonly="1">
+                                    <tree readonly="1" class="excel_style_list_view">
                                         <field name="nguoi_nhap_y_kien" string="Họ tên"/>
                                         <field name="noi_dung_chi_dao" string="Nội dung"/>
                                         <field name="nhom_phong_ban" string="Phòng ban"/>
@@ -708,8 +713,12 @@
                         <!-- Nhóm cho cá nhân -->
                         <group invisible="loai_phan_phat == 'don_vi'" string="Cho cá nhân">
                             <group>
-                                <field name="ca_nhan_xu_ly_chinh" widget="many2many_tags"/>
-                                <field name="ca_nhan_dong_xu_ly" widget="many2many_tags"/>
+                                <field name="ca_nhan_xu_ly_chinh"
+                                       widget="many2many_tags"
+                                       context="{'phan_phat_full_label': True}"/>
+                                <field name="ca_nhan_dong_xu_ly"
+                                       widget="many2many_tags"
+                                       context="{'phan_phat_full_label': True}"/>
                             </group>
                             <group/>
                         </group>

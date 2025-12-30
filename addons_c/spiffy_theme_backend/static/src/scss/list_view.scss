@@ -545,3 +545,62 @@ body.o_web_client {
         }
     }
 }
+
+/* ========================= */
+/* CUSTOM THEME VARIABLES    */
+/* ========================= */
+html{
+    &[data-theme-style="excel_style"]{
+        --border-radius-lg: 0;
+        --border-radius-md: 10px;
+        --border-radius-sm: 6px;
+        --border-radius-xl: 50px;
+        --table-border-spacing: 0em;
+    }
+}
+
+/* ========================= */
+/* EXCEL STYLE LIST VIEW     */
+/* ========================= */
+.excel_style_list_view .o_list_table {
+    border-collapse: collapse !important;
+    width: 100%;
+    border: 2px solid #cfcfcf !important;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+/* Header */
+.excel_style_list_view .o_list_table thead th {
+    background-color: #f0f8ff;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 600;
+    border: 1.5px solid #cfcfcf !important;
+    padding: 10px 12px;
+}
+
+/* Body cells */
+.excel_style_list_view .o_list_table tbody td {
+    border: 1.5px solid #cfcfcf !important;
+    padding: 8px 12px;
+    vertical-align: middle;
+}
+
+/* Checkbox column căn giữa */
+.excel_style_list_view .o_list_table th.o_list_record_selector,
+.excel_style_list_view .o_list_table td.o_list_record_selector {
+    text-align: center;
+}
+
+.excel_style_list_view .o_list_table thead {
+    border: 2px solid #cfcfcf !important;
+}
+
+/* Thêm theme cho toàn bộ khi có class này */
+body.excel_style_theme {
+    --border-radius-lg: 0;
+    --border-radius-md: 10px;
+    --border-radius-sm: 6px;
+    --border-radius-xl: 50px;
+}
