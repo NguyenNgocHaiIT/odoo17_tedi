@@ -545,12 +545,13 @@ class OfficeDocument(models.Model):
     vb_nhan = fields.Char('Văn bản nhận')
     tt_vb = fields.Selection([
         ('draft', 'Nhập thông tin'),#thường
+        ('cho_truong_don_vi_duyet', 'Trình TĐV'),
         ('cho_duyet', 'Chờ duyệt'),#vàng
         ('da_duyet', 'Đã duyệt'),#vàng
         ('cho_but_phe', 'Chờ bút phê'),#vàng
         ('cho_phan_phat', 'Chờ phân phát'),#vàng
         ('cho_xu_ly', 'Đã phân phát'),#xanh
-        ('phat_hanh', 'Phát hành'),#xanh
+        ('phat_hanh', 'Đã phát hành'),#xanh
         ('huy', 'Đã hủy'),
     ], string='Trạng thái văn bản', default='draft', tracking=True)
     dv_xu_ly_chinh = fields.Many2one(
@@ -664,6 +665,51 @@ class OfficeDocument(models.Model):
         store=True,
         index=True,
     )
+
+    # Thêm vào class OfficeDocument
+    truong_don_vi_duyet = fields.Many2one(
+        'hr.employee',
+        string='Trưởng đơn vị duyệt',
+        compute='_compute_truong_don_vi_duyet',
+        store=True,
+    )
+
+
+    # Thêm kiểm tra quyền cho trưởng đơn vị
+    is_truong_don_vi = fields.Boolean(
+        compute='_compute_edit_permission',
+        store=False
+    )
+
+    @api.depends('create_uid')
+    def _compute_truong_don_vi_duyet(self):
+        """Tính toán trưởng đơn vị duyệt dựa trên phòng ban của người tạo"""
+        for rec in self:
+            current_user = self.env.user
+
+            # Nếu đang ở chế độ tạo mới (chưa có ID)
+            if not rec.id:
+                # Sử dụng người dùng hiện tại
+                employee = self.env['hr.employee'].search(
+                    [('user_id', '=', current_user.id)],
+                    limit=1
+                )
+            else:
+                # Nếu đã tạo, sử dụng create_uid
+                if rec.create_uid:
+                    employee = self.env['hr.employee'].search(
+                        [('user_id', '=', rec.create_uid.id)],
+                        limit=1
+                    )
+                else:
+                    employee = False
+
+            # Tìm manager của phòng ban nhân viên
+            if employee and employee.department_id and employee.department_id.manager_id:
+                rec.truong_don_vi_duyet = employee.department_id.manager_id
+            else:
+                rec.truong_don_vi_duyet = False
+
 
     @api.depends('ngay_tao_bo_sung', 'create_date')
     def _compute_ngay_tao(self):
@@ -809,6 +855,11 @@ class OfficeDocument(models.Model):
     def approve(self):
         self.ensure_one()
         self.tt_vb = 'da_duyet'
+        return True
+
+    def approve_cong_van_di(self):
+        self.ensure_one()
+        self.tt_vb = 'cho_but_phe'
         return True
 
     def read(self, field_list=None, load='_classic_read'):
@@ -1290,8 +1341,20 @@ class OfficeDocument(models.Model):
 
     @api.depends('tt_vb')
     def _compute_edit_permission(self):
+        """Tính toán quyền chỉnh sửa - cập nhật để thêm trưởng đơn vị"""
         user = self.env.user
         is_van_thu_user = user.has_group('quan_ly_cong_van.group_van_thu')
+        is_truong_don_vi_user = False
+
+        # Kiểm tra xem user có phải là trưởng đơn vị không
+        current_employee = self.env['hr.employee'].search(
+            [('user_id', '=', user.id)], limit=1
+        )
+        if current_employee:
+            # Kiểm tra xem nhân viên có là manager của phòng ban nào không
+            is_truong_don_vi_user = self.env['hr.department'].search_count([
+                ('manager_id', '=', current_employee.id)
+            ]) > 0
 
         for rec in self:
             # Văn thư: draft hoặc chờ duyệt thì sửa được
@@ -1304,6 +1367,11 @@ class OfficeDocument(models.Model):
             rec.not_is_van_thu = (
                     not is_van_thu_user and
                     rec.tt_vb == 'draft'
+            )
+
+            # Trưởng đơn vị: có thể duyệt khi ở trạng thái chờ trưởng đơn vị duyệt
+            rec.is_truong_don_vi = (
+                    is_truong_don_vi_user
             )
 
     show_skip_button = fields.Boolean(
@@ -1619,6 +1687,65 @@ class OfficeDocument(models.Model):
                         f"đã được kết nối với công văn '{existing.trich_yeu}'. "
                         f"Mỗi công văn chỉ được kết nối một lần."
                     )
+
+    def trinh_truong_don_vi(self):
+        """Trình văn bản lên trưởng đơn vị duyệt"""
+        self.ensure_one()
+
+        # Cập nhật trạng thái
+        self.tt_vb = 'cho_truong_don_vi_duyet'
+
+        # Gửi thông báo cho trưởng đơn vị
+        self._send_notification_to_truong_don_vi()
+
+        return True
+
+    def _send_notification_to_truong_don_vi(self):
+        """Gửi thông báo cho trưởng đơn vị"""
+        truong_don_vi = self.truong_don_vi_duyet
+        if not truong_don_vi or not truong_don_vi.user_id:
+            return
+
+        doc_url = self.get_form_url()
+        partner = truong_don_vi.user_id.partner_id
+
+        # 1. Gửi email
+        try:
+            email = truong_don_vi.work_email or truong_don_vi.user_id.email
+            if email:
+                body_html = f"""
+                    <p>Xin chào {truong_don_vi.name},</p>
+                    <p>Văn bản <b>{self.trich_yeu}</b> cần được bạn duyệt.</p>
+                    <p>
+                        <a href="{doc_url}" style="background:#4CAF50;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                            Xem chi tiết văn bản
+                        </a>
+                    </p>
+                    <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
+                """
+                self.env['mail.mail'].sudo().create({
+                    'subject': f"[Văn bản cần duyệt] {self.trich_yeu}",
+                    'email_to': email,
+                    'email_from': self.env.user.email or 'no-reply@company.com',
+                    'body_html': body_html,
+                }).send()
+        except Exception as e:
+            _logger.warning(f"Gửi mail thất bại cho {truong_don_vi.name}: {str(e)}")
+
+        # 2. Gửi popup/notification
+        try:
+            self.env['bus.bus']._sendone(
+                partner,
+                'simple_notification',
+                {
+                    'title': 'Văn bản cần duyệt',
+                    'message': f"Văn bản '{self.trich_yeu}' cần được bạn duyệt.",
+                    'sticky': False,
+                    'type': 'info',
+                }
+            )
+        except Exception as e:
+            _logger.warning(f"Gửi notification thất bại cho {truong_don_vi.name}: {str(e)}")
 
 class AssignTaskWizard(models.TransientModel):
     _name = 'assign.task.wizard'
