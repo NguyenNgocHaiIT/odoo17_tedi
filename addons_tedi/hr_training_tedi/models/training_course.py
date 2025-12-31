@@ -24,6 +24,12 @@ class TrainingCourse(models.Model):
                                           "training_field_id",
                                             string = "Lĩnh vực")
 
+    training_field_id = fields.Many2one("training.field", string="Nhóm đào tạo")
+    training_level = fields.Selection([
+        ("basic", "Cơ bản"),
+        ("advance","Nâng cao")
+    ], string="Mức độ")
+
     def _check_participant(self):
         if self.env.user.has_group(PARTICIPANT):
             raise AccessError(_("Participant không được thực hiện thao tác này"))

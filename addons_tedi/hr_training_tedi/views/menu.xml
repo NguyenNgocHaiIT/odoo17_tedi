@@ -5,7 +5,7 @@
         <menuitem
             id="training_tedi_root"
             name="Đào tạo"
-            sequence="0"
+            sequence="8"
         />
 
         <menuitem id="menu_training_plan_lod"

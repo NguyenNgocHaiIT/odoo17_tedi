@@ -85,18 +85,16 @@
                         <group>
                             <group>
                                 <field name="is_valid_approver" invisible="1"/>
-                                <field name="type" widget="radio" options="{'horizontal': true}" readonly="1" force_save="1" invisible="1"/>
 
+                                <field name="type" widget="radio" options="{'horizontal': true}" readonly="1" force_save="1" invisible="1"/>
                                 <field name="name" string="Đợt đăng ký"
                                        invisible="type != 'year'"
                                        required="type == 'year'"
                                        readonly="state != 'draft'"/>
-
                                 <field name="participation_id"
                                        invisible="type != 'actual'"
                                        required="type == 'actual'"
                                        readonly="state != 'draft'"/>
-
                                 <field name="user_id" readonly="1"/>
                             </group>
                             <group>
@@ -110,15 +108,13 @@
                                     <tree editable="bottom">
                                         <field name="course_id"/>
                                         <field name="training_field_id"/>
+                                        <field name="training_level"/>
+                                        <field name="type"/>
                                         <field name="note"/>
                                     </tree>
                                 </field>
                             </page>
                         </notebook>
-
-                        <div class="alert alert-info text-center" role="alert" invisible="type != 'actual'" style="margin-top: 10px;">
-                            <i class="fa fa-info-circle"/> Bạn đang đăng ký bổ sung vào lớp học đã có. Sau khi được duyệt, bạn sẽ tự động được thêm vào danh sách học viên.
-                        </div>
                     </sheet>
                 </form>
             </field>
