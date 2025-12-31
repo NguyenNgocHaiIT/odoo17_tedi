@@ -39,8 +39,7 @@
                         <button name="but_phe_action" string="Bút phê" type="object"
                                 invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_den"/>
                         <button name="phan_phat" string="Phân phát" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh'))"/>
+                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh')) or not show_phan_phat_button"/>
                         <button name="huy" string="Hủy" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb == 'huy'"
@@ -59,6 +58,7 @@
                         <field name="is_van_thu" invisible="1"/>
                         <field name="not_is_van_thu" invisible="1"/>
                         <field name="co_the_but_phe_cong_van_den" invisible="1"/>
+                        <field name="show_phan_phat_button" invisible="1"/>
                         <group col="12">
                             <group colspan="5">
                                 <field name="is_cong_van_bo_sung" string="Là công văn bổ sung" invisible="not (is_van_thu or not_is_van_thu)"/>
@@ -170,19 +170,16 @@
                                 <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
                                 <field name="detail2"
                                        options="{'no_open': True, 'no_create': True, 'no_edit': True, 'no_delete': True}">
-                                    <tree default_order="sequence, id"
-                                          decoration-section_dark="is_section"
-                                          expandable="1"
-                                          class="excel_style_list_view"
+                                    <tree class="excel_style_list_view"
                                           create="false" edit="false" delete="false">
-                                        <field name="allow_assign" column_invisible="1"/>
+                                        <!--<field name="allow_assign" column_invisible="1"/>-->
 
                                         <field name="nguoi_nhap_y_kien" string="Họ tên"/>
                                         <field name="noi_dung_chi_dao" string="Trách nhiệm"/>
                                         <field name="nhom_phong_ban" string="Phòng ban"/>
                                         <field name="thoi_diem_chi_dao" string="Thời gian phân phát"/>
                                         <field name="view_time" string="Thời gian đọc văn bản"/>
-                                        <field name="cong_viec" string="Công việc được giao" invisible="is_section"/>
+                                        <!--<field name="cong_viec" string="Công việc được giao" invisible="is_section"/>
 
 
                                         <button name="action_open_assign_wizard"
@@ -192,7 +189,7 @@
                                                 class="oe_highlight"
                                                 invisible="not is_section or not allow_assign"/>
 
-                                        <field name="is_section" column_invisible="1"/>
+                                        <field name="is_section" column_invisible="1"/>-->
 
                                         <button name="unlink"
                                                 type="object"
@@ -275,8 +272,7 @@
                         <button name="skip" string="Bỏ qua" type="object"
                                 invisible="not show_skip_button"/>
                         <button name="phan_phat" string="Phân phát" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh'))"/>
+                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh')) or not show_phan_phat_button"/>
                         <button name="huy" string="Hủy" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb == 'huy'"
@@ -293,6 +289,7 @@
                         <field name="is_truong_don_vi" invisible="1"/>
                         <field name="show_skip_button" invisible="1"/>
                         <field name="co_the_but_phe_cong_van_di" invisible="1"/>
+                        <field name="show_phan_phat_button" invisible="1"/>
 
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu" readonly="tt_vb != 'draft'" required="1"/>
@@ -402,29 +399,25 @@
                             <page string="Phân phát">
                                 <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
                                 <field name="detail2" options="{'no_create': True, 'no_edit': True, 'no_delete': True}">
-                                    <tree default_order="is_section desc, nguoi_quan_ly, sequence, id"
-                                          decoration-bf="is_section"
-                                          decoration-italic="is_section"
-                                          expandable="1"
-                                          class="excel_style_list_view"
+                                    <tree class="excel_style_list_view"
                                           create="false" edit="false" delete="false">
 
-                                        <field name="allow_assign" column_invisible="1"/>
-                                        <field name="is_section" column_invisible="1"/>
+                                        <!--<field name="allow_assign" column_invisible="1"/>
+                                        <field name="is_section" column_invisible="1"/>-->
 
                                         <field name="nguoi_nhap_y_kien" string="Họ tên"/>
                                         <field name="noi_dung_chi_dao" string="Trách nhiệm"/>
                                         <field name="nhom_phong_ban" string="Phòng ban"/>
                                         <field name="thoi_diem_chi_dao" string="Thời gian phân phát"/>
                                         <field name="view_time" string="Thời gian đọc văn bản"/>
-                                        <field name="cong_viec" string="Công việc được giao" invisible="is_section"/>
+                                        <!--<field name="cong_viec" string="Công việc được giao" invisible="is_section"/>
 
                                         <button name="action_open_assign_wizard"
                                                 string="Giao việc"
                                                 type="object"
                                                 icon="fa-tasks"
                                                 class="oe_highlight"
-                                                invisible="not is_section or not allow_assign"/>
+                                                invisible="not is_section or not allow_assign"/>-->
                                         <button name="unlink"
                                                 type="object"
                                                 icon="fa-trash"
@@ -507,8 +500,7 @@
                         <button name="skip" string="Bỏ qua" type="object"
                                 invisible="not show_skip_button"/>
                         <button name="phan_phat" string="Phân phát" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'phat_hanh'))"/>
+                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh')) or not show_phan_phat_button"/>
                         <button name="huy" string="Hủy" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb == 'huy'"
@@ -527,6 +519,7 @@
                         <field name="co_the_but_phe_cong_van_di" invisible="1"/>
                         <field name="tt_vb" invisible="1"/>
                         <field name="document_type" invisible="1"/>
+                        <field name="show_phan_phat_button" invisible="1"/>
 
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
@@ -798,7 +791,7 @@
         </record>
 
 
-        <record id="view_assign_task_wizard_form" model="ir.ui.view">
+        <!--<record id="view_assign_task_wizard_form" model="ir.ui.view">
             <field name="name">assign.task.wizard.form</field>
             <field name="model">assign.task.wizard</field>
             <field name="arch" type="xml">
@@ -816,7 +809,7 @@
                     </footer>
                 </form>
             </field>
-        </record>
+        </record>-->
 
         <record id="view_chuyen_lanh_dao_wizard_form" model="ir.ui.view">
             <field name="name">office.document.chuyen.lanh.dao.form</field>
