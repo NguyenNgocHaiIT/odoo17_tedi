@@ -161,7 +161,6 @@ class PhanPhat(models.TransientModel):
                     'nhom_phong_ban': emp.department_id.name or 'Không xác định',
                     'noi_dung_chi_dao': role,
                     'thoi_diem_chi_dao': fields.Datetime.now(),
-                    'chuc_vu': 'quan_ly',
                 })
 
         if lines_to_create:
@@ -420,7 +419,33 @@ class OfficeDocumentDetail2(models.Model):
     view_time = fields.Datetime('Thời gian xem', readonly=True)
     office_document_id = fields.Many2one('office.document')
 
-    chuc_vu = fields.Selection([
+    allow_phan_phat = fields.Boolean(
+        string='Có thể phân phát',
+        compute='_compute_allow_phan_phat',
+        store=False
+    )
+
+    @api.depends('nguoi_nhap_y_kien')
+    def _compute_allow_phan_phat(self):
+        """Tính toán quyền phân phát - cho phép nếu là manager của phòng ban"""
+        for rec in self:
+            rec.allow_phan_phat = False
+
+            if rec.nguoi_nhap_y_kien and rec.nhom_phong_ban:
+                # Kiểm tra xem nhân viên có phải là manager của phòng ban không
+                department = self.env['hr.department'].search([
+                    ('name', '=', rec.nhom_phong_ban)
+                ], limit=1)
+
+                if department:
+                    # Kiểm tra nếu nhân viên này là manager của phòng ban
+                    is_manager = (
+                            rec.nguoi_nhap_y_kien.id == department.manager_id.id or
+                            rec.nguoi_nhap_y_kien.id in department.manager_ids.ids
+                    )
+                    rec.allow_phan_phat = is_manager
+
+    '''chuc_vu = fields.Selection([
         ('quan_ly', 'QUản lý'),
         ('nhan_vien', 'Nhân viên'),
     ], string='Chức vụ')
@@ -450,12 +475,12 @@ class OfficeDocumentDetail2(models.Model):
                 'default_detail_id': self.id,
                 'default_office_document_id': self.office_document_id.id,
             },
-        }
+        }'''
 
-    @api.depends('chuc_vu')
+    '''@api.depends('chuc_vu')
     def _compute_is_section(self):
         for rec in self:
-            rec.is_section = (rec.chuc_vu == 'quan_ly')
+            rec.is_section = (rec.chuc_vu == 'quan_ly')'''
 
     @api.depends('nguoi_nhap_y_kien')
     def _compute_nhom_phong_ban(self):
@@ -465,14 +490,14 @@ class OfficeDocumentDetail2(models.Model):
                 rec.nhom_phong_ban = rec.nguoi_nhap_y_kien.department_id.name
 
 
-    allow_assign = fields.Boolean(compute='_compute_allow_assign')
+    '''allow_assign = fields.Boolean(compute='_compute_allow_assign')
 
     @api.depends('nguoi_nhap_y_kien')
     def _compute_allow_assign(self):
         # Cho phép giao việc nếu người hiện tại là employee đã nhập ý kiến
         current_employee = self.env['hr.employee'].search([('user_id', '=', self.env.user.id)], limit=1)
         for rec in self:
-            rec.allow_assign = (rec.nguoi_nhap_y_kien.id == current_employee.id if current_employee else False)
+            rec.allow_assign = (rec.nguoi_nhap_y_kien.id == current_employee.id if current_employee else False)'''
 
 
 class OfficeDocumentDetail3(models.Model):
@@ -1785,7 +1810,42 @@ class OfficeDocument(models.Model):
         except Exception as e:
             _logger.warning(f"Gửi notification thất bại cho {truong_don_vi.name}: {str(e)}")
 
-class AssignTaskWizard(models.TransientModel):
+    show_phan_phat_button = fields.Boolean(
+        compute='_compute_show_phan_phat_button',
+        store=False
+    )
+
+    def _compute_show_phan_phat_button(self):
+        """Tính toán khi nào hiển thị nút phân phát"""
+        user = self.env.user
+        is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
+
+        for rec in self:
+            # Mặc định: văn thư có thể phân phát
+            if is_van_thu:
+                rec.show_phan_phat_button = True
+                continue
+
+            # Kiểm tra nếu người dùng là manager trong detail2
+            current_employee = self.env['hr.employee'].search([
+                ('user_id', '=', user.id)
+            ], limit=1)
+
+            if not current_employee:
+                rec.show_phan_phat_button = False
+                continue
+
+            # Tìm detail2 record của người dùng hiện tại
+            user_detail = rec.detail2.filtered(
+                lambda d: d.nguoi_nhap_y_kien.id == current_employee.id
+            )
+
+            # Nếu có record và có quyền phân phát
+            rec.show_phan_phat_button = any(
+                detail.allow_phan_phat for detail in user_detail
+            )
+
+'''class AssignTaskWizard(models.TransientModel):
     _name = 'assign.task.wizard'
     _description = 'Giao việc - Danh sách từng người'
 
@@ -1933,7 +1993,7 @@ class AssignTaskWizardLine(models.TransientModel):
             ('department_id.name', '=', department_name)
         ])
         return {'domain': {'nguoi_nhap_y_kien': [('id', 'in', employees.ids)] if employees else [('id', '=', False)]}}
-
+'''
 
 class ChuyenLanhDaoWizard(models.TransientModel):
     _name = 'office.document.chuyen.lanh.dao'
