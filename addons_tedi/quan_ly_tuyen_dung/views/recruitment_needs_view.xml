@@ -46,7 +46,7 @@
                                         <field name="job_id"/>
                                         <field name="current_employee_count" string="NS hiện có" readonly="1"/>
                                         <field name="amount" sum="Tổng SL"/>
-                                        <field name="expected_salary" widget="monetary"/>
+                                        <field name="job_expected_salary"/>
 
                                         <field name="progress_summary"
                                                string="Tiến độ (Q1-4)"
@@ -119,7 +119,7 @@
                                         <field name="job_id"/>
                                         <field name="current_employee_count" string="NS hiện có" readonly="1"/>
                                         <field name="amount" sum="Tổng SL"/>
-                                        <field name="expected_salary" widget="monetary"/>
+                                        <field name="job_expected_salary"/>
                                         <field name="experience_id"/>
                                         <field name="professional_qualification"/>
                                         <field name="note"/>
