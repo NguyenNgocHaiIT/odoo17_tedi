@@ -39,10 +39,12 @@ class TrainingPlanParticipation(models.Model):
     )
 
     state = fields.Selection([
-        ('not_started', 'Chưa bắt đầu'),
+        ('draft', 'Dự thảo'),
+        ('pending', 'Chờ duyệt'),
+        ('approved', 'Đã duyệt'),  # Sẵn sàng (Chờ đến ngày hoặc bấm Start)
         ('in_progress', 'Đang diễn ra'),
         ('finished', 'Đã kết thúc')
-    ], string="Trạng thái", compute="_compute_state", store=True, readonly=False)
+    ], string="Trạng thái", default='draft', tracking=True, index=True)
 
     plan_state = fields.Selection(
         related='training_plan_id.state',
@@ -122,52 +124,109 @@ class TrainingPlanParticipation(models.Model):
     @api.model
     def _cron_update_training_state(self):
         """
-        Scheduled Action gọi hàm này mỗi ngày.
+        Chạy mỗi ngày (ví dụ 00:00 hoặc 07:00 sáng).
+        Tự động chuyển trạng thái dựa trên ngày tháng nếu người dùng quên bấm.
         """
         today = fields.Date.context_today(self)
-        # Chỉ quét các bản ghi chưa 'finished'
-        records = self.search([('state', '!=', 'finished')])
-        for rec in records:
-            rec._update_state_logic(today)
+
+        # 1. TỰ ĐỘNG BẮT ĐẦU (Approved -> In Progress)
+        # Điều kiện: Đã duyệt + Đến/Quá ngày bắt đầu + Chưa bắt đầu
+        to_start = self.search([
+            ('state', '=', 'approved'),
+            ('start_date', '<=', today),
+            ('start_date', '!=', False)
+        ])
+        for rec in to_start:
+            rec.write({'state': 'in_progress'})
+            # Ghi log để biết là hệ thống tự chạy
+            rec.message_post(body=_("Hệ thống tự động bắt đầu lớp học do đã đến ngày dự kiến."))
+
+        # 2. TỰ ĐỘNG KẾT THÚC (In Progress -> Finished)
+        # Điều kiện: Đang diễn ra + Quá ngày kết thúc + Có ngày kết thúc
+        to_end = self.search([
+            ('state', '=', 'in_progress'),
+            ('end_date', '<', today),  # Quá hạn (ví dụ end_date=hôm qua)
+            ('end_date', '!=', False)
+        ])
+        for rec in to_end:
+            rec.write({
+                'state': 'finished',
+                'is_manually_ended': False  # Đánh dấu là tự động
+            })
+            rec.message_post(body=_("Hệ thống tự động kết thúc lớp học do đã quá ngày dự kiến."))
+
+
+    def action_submit(self):
+        """Manager trình duyệt lớp học"""
+        for rec in self:
+            if rec.state != 'draft':
+                raise ValidationError(_("Chỉ được trình duyệt từ trạng thái Dự thảo."))
+            rec.state = 'pending'
+
+    def action_approve(self):
+        """Giám đốc duyệt lớp học"""
+        # Check quyền General Director ở XML hoặc ở đây
+        if not self.env.user.has_group('hr_training_tedi.group_training_general_director'):
+            raise AccessError(_("Chỉ Giám đốc mới được duyệt lớp học."))
+
+        for rec in self:
+            if rec.state != 'pending':
+                raise ValidationError(_("Chỉ được duyệt khi đang chờ duyệt."))
+            rec.state = 'approved'
+
+
+    def action_reject(self):
+        """Giám đốc từ chối"""
+        if not self.env.user.has_group('hr_training_tedi.group_training_general_director'):
+            raise AccessError(_("Chỉ Giám đốc mới được từ chối."))
+
+        for rec in self:
+            if rec.state != 'pending':
+                raise ValidationError(_("Chỉ được từ chối khi đang chờ duyệt."))
+            rec.state = 'draft'
 
     # =========================================================
     # 4. ACTION BUTTONS (THỦ CÔNG)
     # =========================================================
 
     def action_start(self):
-        """Nút Bắt đầu"""
+        """Manager bấm Bắt đầu đào tạo (Chuyển sang In Progress)"""
+        # Điều kiện: Phải Đã duyệt (Approved)
         for rec in self:
-            if rec.training_plan_id.state != 'approved':
-                raise ValidationError(_("Không thể bắt đầu đào tạo khi Kế hoạch chưa được duyệt!"))
+            if rec.state != 'approved':
+                raise ValidationError(_("Lớp học phải được Giám đốc phê duyệt trước khi bắt đầu."))
 
-        today = fields.Date.context_today(self)
-        for rec in self:
-            # [QUAN TRỌNG] Reset cờ thủ công để tính lại theo ngày tháng
-            rec.is_manually_ended = False
-
+            # Cập nhật ngày bắt đầu thực tế (nếu chưa có)
+            today = fields.Date.context_today(self)
             if rec.training_plan_detail_id:
                 rec.training_plan_detail_id.write({'start_date': today})
 
+            rec.state = 'in_progress'
+
     def action_end(self):
-        """Nút Kết thúc"""
+        """Kết thúc đào tạo"""
         today = fields.Date.context_today(self)
         for rec in self:
-            if rec.training_plan_detail_id:
-                # Kiểm tra logic: Không cho phép kết thúc nếu ngày bắt đầu (dự kiến) nằm ở tương lai
-                # start_date > today: Lỗi
-                # start_date == today: OK (cho phép sáng bắt đầu, chiều kết thúc)
-                if rec.start_date and rec.start_date > today:
-                    raise ValidationError(_("Không thể kết thúc vì ngày bắt đầu (dự kiến) lớn hơn hôm nay."))
+            if rec.state != 'in_progress':
+                raise ValidationError(_("Lớp học chưa bắt đầu, không thể kết thúc."))
 
-                # Ghi ngày kết thúc
+            if rec.training_plan_detail_id:
+                if rec.start_date and rec.start_date > today:
+                    raise ValidationError(_("Ngày bắt đầu lớn hơn hôm nay, không thể kết thúc."))
                 rec.training_plan_detail_id.write({'end_date': today})
 
-                # [QUAN TRỌNG] Đánh dấu đã kết thúc thủ công -> Để ép state về 'finished'
-                rec.is_manually_ended = True
+            rec.is_manually_ended = True
+            rec.state = 'finished'
 
-                # Gọi lại compute ngay lập tức để cập nhật giao diện
-                rec._compute_state()
+    def action_draft(self):
+        """Chuyển trạng thái về Dự thảo để chỉnh sửa"""
+        for rec in self:
+            # Chỉ cho phép khi đang chờ duyệt hoặc đã duyệt (nhưng chưa bắt đầu)
+            # Nếu đã 'in_progress' hoặc 'finished' thì không nên cho về draft tùy tiện (trừ admin)
+            if rec.state in ['in_progress', 'finished']:
+                raise ValidationError(_("Lớp học đã bắt đầu hoặc kết thúc, không thể điều chỉnh lại từ đầu."))
 
+            rec.state = 'draft'
     # =========================================================
     # 5. CÁC FIELDS KHÁC (GIỮ NGUYÊN)
     # =========================================================
@@ -195,34 +254,34 @@ class TrainingPlanParticipation(models.Model):
         string="Từ ngày",
         related='training_plan_detail_id.start_date',
         store=True,
-        readonly=True
+        # readonly=True
     )
 
     end_date = fields.Date(
         string="Đến ngày",
         related='training_plan_detail_id.end_date',
         store=True,
-        readonly=True
+        # readonly=True
     )
 
     training_location = fields.Char(
         string="Địa điểm đào tạo",
         related='training_plan_detail_id.training_location',
-        readonly=True
+        # readonly=True
     )
 
     currency_id = fields.Many2one(
         'res.currency',
         related='training_plan_detail_id.currency_id',
         string="Tiền tệ",
-        readonly=True
+        # readonly=True
     )
 
     training_fee_per_person = fields.Monetary(
         string="Chi phí/người",
         related='training_plan_detail_id.training_fee_per_person',
         currency_field='currency_id',
-        readonly=True
+        # readonly=True
     )
 
     training_total_fee = fields.Monetary(
