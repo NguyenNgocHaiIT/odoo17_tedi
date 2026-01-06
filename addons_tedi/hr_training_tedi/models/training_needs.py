@@ -2,14 +2,14 @@ from email.policy import default
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
-import logging
+
 HR_OFFICER          = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
 PARTICIPANT         = "hr_training_tedi.group_training_participant"
 UNIT_MANAGER        = "hr_training_tedi.group_training_unit_manager"
 GENERAL_DIRECTOR    = "hr_training_tedi.group_training_general_director"
 BASE                = "base.group_user"
 
-_logger = logging.getLogger(__name__)
+
 class TrainingNeeds(models.Model):
     _name = 'trainings.needs'
     _description = 'Training Needs'
@@ -54,7 +54,7 @@ class TrainingNeeds(models.Model):
         "training.plan.participation",
         string="Lớp học (Đợt đào tạo)",
         # Chỉ lấy các lớp chưa kết thúc để bổ sung
-        domain="[('state', 'in', ['approved', 'in_progress','pending','draft'])]",
+        domain="[('state', 'in', ['not_started', 'in_progress'])]",
     )
 
     # Đợt khảo sát (Chỉ bắt buộc cho Nhu cầu Năm)
@@ -92,79 +92,44 @@ class TrainingNeeds(models.Model):
         store=False  # Bắt buộc False để luôn tính lại mỗi khi mở form
     )
 
+    @api.depends('user_id')
     @api.depends('user_id', 'state')
     def _compute_is_valid_approver(self):
-        # 1. LẤY THÔNG TIN NGƯỜI ĐANG LOGIN
+        # Lấy user đang login
         current_user = self.env.user
-        current_employee = current_user.employee_id
-
-        # Log thông tin cơ bản
-        _logger.info(f"\n========== DEBUG TRAINING NEEDS APPROVAL ==========")
-        _logger.info(f"User đang login: {current_user.name} (ID: {current_user.id})")
-
-        has_group_unit_manager = current_user.has_group('hr_training_tedi.group_training_unit_manager')
-        has_group_admin = current_user.has_group('base.group_system')
-
-        _logger.info(f"Quyền Unit Manager: {has_group_unit_manager}")
-        _logger.info(f"Quyền Admin hệ thống: {has_group_admin}")
-
-        # Check liên kết nhân viên
-        if not current_employee:
-            _logger.warning(">>> User này chưa liên kết với Nhân viên (Employee) -> FALSE")
-            for rec in self:
-                rec.is_valid_approver = False
-            return
-
-        current_dept = current_employee.department_id
-        _logger.info(f"Phòng ban của User login: {current_dept.name if current_dept else 'Không có'}")
+        current_dept = current_user.employee_id.department_id
 
         for rec in self:
             rec.is_valid_approver = False
-            _logger.info(f"--- Kiểm tra phiếu ID: {rec.id} ---")
 
-            # 1. Check Trạng thái
+            # 1. Nếu không phải trạng thái chờ duyệt -> False luôn
             if rec.state != 'pending':
-                _logger.info(f"Trạng thái là {rec.state} (Ko phải pending) -> FALSE")
                 continue
 
-            # 2. Check quyền nhóm Unit Manager
-            if not has_group_unit_manager:
-                _logger.info("User không có nhóm Unit Manager -> FALSE")
+            # 2. Nếu User không có quyền Trưởng đơn vị -> False
+            if not current_user.has_group('hr_training_tedi.group_training_unit_manager'):
                 continue
 
-            # 3. Check Người tạo phiếu
-            owner_employee = rec.user_id.employee_id
-            owner_dept = owner_employee.department_id
-            _logger.info(f"Người tạo phiếu: {rec.user_id.name}, Phòng: {owner_dept.name if owner_dept else 'Không có'}")
+            # 3. LOGIC CỐT LÕI: SO SÁNH PHÒNG BAN
+            # Lấy phòng ban của người tạo đơn
+            owner_dept = rec.user_id.employee_id.department_id
 
-            if not owner_employee or not owner_dept:
-                _logger.info("Người tạo phiếu không có Employee hoặc Phòng ban -> FALSE (Admin có thể ngoại lệ)")
-                # Nếu muốn Admin duyệt được cả phiếu lỗi phòng ban thì để đoạn check Admin lên trước
-
-            # 4. Check Quyền Admin (Bỏ qua logic phòng ban)
-            if has_group_admin:
-                _logger.info("User là Admin hệ thống -> TRUE (Bỏ qua check phòng ban)")
-                rec.is_valid_approver = True
-                continue
-
-            # 5. LOGIC PHÒNG BAN
-            # Điều kiện: Phòng của người tạo phải là CON hoặc CHÍNH LÀ phòng của người duyệt
             if current_dept and owner_dept:
-                is_valid = self.env['hr.department'].search_count([
+                # Kiểm tra: Phòng ban người tạo (owner) có thuộc nhánh con (hoặc chính nó)
+                # của phòng ban User đang login (current) không?
+                # Toán tử 'child_of' trong domain xử lý việc này.
+                is_sub_branch = self.env['hr.department'].search_count([
                     ('id', '=', owner_dept.id),
                     ('id', 'child_of', current_dept.id)
                 ])
 
-                if is_valid > 0:
-                    _logger.info(f"CHECK DEPT: Phòng '{owner_dept.name}' LÀ CON của '{current_dept.name}' -> TRUE")
+                if is_sub_branch > 0:
                     rec.is_valid_approver = True
-                else:
-                    _logger.info(
-                        f"CHECK DEPT: Phòng '{owner_dept.name}' KHÔNG LIÊN QUAN '{current_dept.name}' -> FALSE")
-            else:
-                _logger.info("Thiếu thông tin phòng ban của User hoặc Owner -> FALSE")
 
-            _logger.info(f"===> KẾT QUẢ CUỐI CÙNG CHO PHIẾU {rec.id}: {rec.is_valid_approver}")
+            # (Tùy chọn) Nếu là Admin hệ thống (id=1 hoặc group Admin) thì luôn cho duyệt?
+            # Nếu bạn muốn Admin cũng bị chặn nếu khác phòng ban thì bỏ đoạn dưới đi.
+            if current_user.has_group('base.group_system'):
+                rec.is_valid_approver = True
 
     @api.constrains('line_ids', 'type')
     def _check_lines_unique_course(self):
@@ -374,21 +339,7 @@ class TrainingNeedsLine(models.Model):
     )
 
     course_id = fields.Many2one("training.course", string="Tên khoá đào tạo")
-    training_field_id = fields.Many2one(
-        'training.field',
-        string="Nhóm đào tạo",
-        related='course_id.training_field_id',
-        store=True,  # Lưu vào DB để search/report
-    )
-    training_level = fields.Selection([
-        ("basic", "Cơ bản"),
-        ("advance", "Nâng cao")
-    ], string="Mức độ" , related='course_id.training_level')
-    type = fields.Selection([
-        ("long-term", "Dài hạn"),
-        ("short-term", "Ngắn hạn")
-    ], string="Loại hình", related='course_id.type')
-
+    training_field_id = fields.Many2one('training.field', string="Lĩnh vực")
 
     # Link đến chi tiết tham gia (được update khi Plan được tạo)
     participation_detail_id = fields.Many2one(
