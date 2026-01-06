@@ -13,13 +13,10 @@
         'mail',
         'hr_contract',
         'hr_holidays',
-        'hr_tedi'
     ],
     'data': [
         'security/hr_payroll_security.xml',
         'security/ir.model.access.csv',
-        'security/hr_kpi_manager.xml',
-        'data/kpi_data.xml',
         'data/hr_payroll_sequence.xml',
         'data/hr_payroll_category.xml',
         'data/hr_payroll_data.xml',
@@ -41,8 +38,6 @@
         'views/hr_work_entry_view.xml',
         'views/hr_insurance.xml',
         'views/hr_allowance.xml',
-        'views/evaluation_KPI_view.xml',
-        'views/evaluation_group_KPI.xml',
         'views/hr_allowance_type.xml',
         'data/mail_template.xml',
         'data/cau_truc_luong_lan_1.xml',
