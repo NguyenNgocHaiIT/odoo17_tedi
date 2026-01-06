@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-inherit="documents.DocumentsSearchPanelItemSettingsPopover" t-inherit-mode="extension">
+
+        <xpath expr="//div[hasclass('o_search_panel_value_edit')]" position="inside">
+            <a t-on-click.stop.prevent="props.onShare"
+               class="py-1 list-group-item list-group-item-action list-group-item-danger cursor-pointer">
+                Share
+            </a>
+        </xpath>
+
+    </t>
+
+</templates>

@@ -9,14 +9,18 @@
                     <sheet>
                     <group>
                         <field name="link_share" widget="CopyClipboardChar" options="{'string': 'Copy Link'}"/>
-                    </group>
-                    <group col="4">
-                        Public Access <field name="public_access"/>
-                        <field name="role_access_ids"  widget="many2many_checkboxes" invisible="not public_access"/>
-                    </group>
-                    
+                        <field name="access_token" invisible="1"/>
                         <group>
-                            <field name="user_role_permision_ids" widget="one2many">
+                            <field name="all_user"/>
+                        </group>
+                        <group>
+                            <field name="is_dow" invisible="not all_user"/>
+                            <field name="is_view" invisible="not all_user"/>
+                            <field name="is_edit" invisible="not all_user"/>
+                        </group>
+                    </group>
+                        <group>
+                            <field name="user_role_permision_ids" widget="one2many" invisible="all_user">
                                 <tree editable="bottom">
                                     <field name="user_id"/>
                                     <field name="role_access_ids" widget="many2many_tags"/>
@@ -34,10 +38,6 @@
             <field name="arch" type="xml">
                 <form string="Document Share">
                     <sheet>
-                    <group>
-                        Public Access <field name="public_access"/>
-                        <field name="role_access_ids"  widget="many2many_checkboxes" invisible="not public_access"/>
-                    </group>
 
                         <group>
                             <field name="user_role_permision_ids" widget="one2many">
@@ -69,7 +69,7 @@
 
         <!-- Action -->
         <record id="action_document_share" model="ir.actions.act_window">
-            <field name="name">Document Shares</field> 
+            <field name="name">Document Shares</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">document.share</field>
             <field name="view_mode">tree,form</field>  

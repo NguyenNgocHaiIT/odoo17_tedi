@@ -166,11 +166,13 @@ msgid "Document Directory"
 msgstr "Thư mục Tài liệu"
 
 #. module: onlyoffice_custom
+#. odoo-python
+#: code:addons/onlyoffice_custom/models/document_document.py:0
 #: model:ir.model,name:onlyoffice_custom.model_document_share
-#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_directory__document_share_id
-#: model:ir.model.fields,field_description:onlyoffice_custom.field_ir_attachment__document_share_id
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_documents_document__document_share_id
 #: model_terms:ir.ui.view,arch_db:onlyoffice_custom.document_share_view_form
 #: model_terms:ir.ui.view,arch_db:onlyoffice_custom.document_share_view_form_folder
+#, python-format
 msgid "Document Share"
 msgstr "Chia sẻ Tài liệu"
 
@@ -834,9 +836,11 @@ msgstr "Người dùng Tài liệu"
 msgid "Docx file"
 msgstr "Tệp Docx"
 
-#. module: windx_documents_management_preview
+#. module: onlyoffice_custom
 #. odoo-javascript
-#: code:addons/windx_documents_management_preview/static/src/many2many_binary/many2many_binary_field_patch.xml:0
+#: code:addons/onlyoffice_custom/static/src/xml/m2m_field_preview.xml:0
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__is_dow
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_documents_document__download
 #, python-format
 msgid "Download"
 msgstr "Tải xuống"
@@ -1471,3 +1475,37 @@ msgstr "Hành động báo cáo"
 msgid "Save Report"
 msgstr "Lưu vào tệp"
 
+#. module: documents
+#: model:ir.actions.act_window,name:documents.folder_action
+#: model:ir.ui.menu,name:documents.folder_menu
+#: model_terms:ir.ui.view,arch_db:documents.folder_view_tree
+msgid "Workspaces"
+msgstr "Khu vực làm việc"
+
+#. module: documents
+#: model:ir.model.fields,field_description:documents.field_documents_folder__parent_folder_id
+#: model_terms:ir.ui.view,arch_db:documents.folder_view_search
+msgid "Parent Workspace"
+msgstr "Thư mục cha"
+
+#. module: documents
+#: model:ir.model.fields,field_description:documents.field_documents_share__document_ids
+msgid "Shared Documents"
+msgstr "Chia sẻ tài liệu"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__all_user
+msgid "Set all Users"
+msgstr "Chia sẻ cho tất cả người dùng hệ thống"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__is_edit
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_documents_document__edit
+msgid "Edit"
+msgstr "Sửa"
+
+#. module: onlyoffice_custom
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_document_share__is_view
+#: model:ir.model.fields,field_description:onlyoffice_custom.field_documents_document__view
+msgid "View"
+msgstr "Xem"

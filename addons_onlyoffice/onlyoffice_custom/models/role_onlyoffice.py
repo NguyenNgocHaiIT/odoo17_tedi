@@ -7,3 +7,4 @@ class RoleOnlyOffice(models.Model):
     _rec_name = "role_access"
 
     role_access = fields.Char('Role Access')
+    code = fields.Char('Code')
