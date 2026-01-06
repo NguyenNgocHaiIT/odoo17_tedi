@@ -19,3 +19,9 @@ access_hr_employee_insurance,access_hr_employee_insurance,model_hr_employee_insu
 access_hr_employee_allowance,access_hr_employee_allowance,model_hr_employee_allowance,,1,1,1,1
 access_hr_allowance_type,access_hr_allowance_type,model_hr_allowance_type,,1,1,1,1
 access_model_hr_contract_allowance,access_model_hr_contract_allowance,model_hr_contract_allowance,,1,1,1,1
+access_evaluation_group,evaluation.group,model_evaluation_group,,1,1,1,1
+access_evaluation_criteria,evaluation.criteria,model_evaluation_criteria,,1,1,1,1
+access_evaluation_criteria_line,evaluation.criteria.line,model_evaluation_criteria_line,,1,1,1,1
+access_evaluation_kpi,evaluation.kpi,model_evaluation_kpi,,1,1,1,1
+access_evaluation_kpi_line,evaluation.kpi.line,model_evaluation_kpi_line,,1,1,1,1
+access_evaluation_kpi_classification,access_evaluation_kpi_classification,model_evaluation_kpi_classification,,1,1,1,1

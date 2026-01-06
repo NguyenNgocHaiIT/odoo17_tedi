@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_evaluation_group_tree" model="ir.ui.view">
+            <field name="name">evaluation.group.tree</field>
+            <field name="model">evaluation.group</field>
+            <field name="arch" type="xml">
+                <tree string="Nhóm đánh giá" editable="bottom">
+                    <field name="code"/>
+                    <field name="name" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="action_evaluation_group" model="ir.actions.act_window">
+            <field name="name">Nhóm đánh giá</field>
+            <field name="res_model">evaluation.group</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+
+        <record id="view_evaluation_criteria_tree" model="ir.ui.view">
+            <field name="name">evaluation.criteria.tree</field>
+            <field name="model">evaluation.criteria</field>
+            <field name="arch" type="xml">
+                <tree string="Tiêu chí đánh giá">
+                    <field name="code"/>
+                    <field name="name"/>
+                    <field name="evaluation_group_id"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_evaluation_criteria_form" model="ir.ui.view">
+            <field name="name">evaluation.criteria.form</field>
+            <field name="model">evaluation.criteria</field>
+            <field name="arch" type="xml">
+                <form string="Tiêu chí đánh giá">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name" placeholder="Ví dụ: Kỹ năng chuyên môn"/>
+                                <field name="evaluation_group_id"/>
+                            </group>
+                            <group>
+                                <field name="code"/>
+
+                            </group>
+                        </group>
+
+                        <notebook>
+                            <page string="Mục tiêu nhiệm vụ/công việc">
+                                <field name="line_ids">
+                                    <tree editable="bottom">
+                                        <field name="content"/>
+                                        <field name="percent" sum="Tổng tỷ trọng"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_evaluation_criteria" model="ir.actions.act_window">
+            <field name="name">Tiêu chí đánh giá</field>
+            <field name="res_model">evaluation.criteria</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+
+        <record id="view_evaluation_kpi_classification_tree" model="ir.ui.view">
+            <field name="name">evaluation.kpi.classification.tree</field>
+            <field name="model">evaluation.kpi.classification</field>
+            <field name="arch" type="xml">
+                <tree string="Xếp loại kết quả thực hiện" editable="bottom">
+                    <field name="min_score"/>
+                    <field name="max_score"/>
+                    <field name="k_coefficient"/>
+                    <field name="classification"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="action_evaluation_kpi_classification" model="ir.actions.act_window">
+            <field name="name">Xếp loại kết quả thực hiện</field>
+            <field name="res_model">evaluation.kpi.classification</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+
+
+
+<!--        <menuitem id="menu_evaluation_config" name="Cấu hình" parent="menu_hr_payroll_root" sequence="100"/>-->
+        <menuitem id="menu_evaluation_kpi_classification"
+                  name="Xếp loại kết quả"
+                  parent="menu_hr_payroll_configuration"
+                  action="action_evaluation_kpi_classification"
+                  sequence="50"/>
+
+        <menuitem id="menu_evaluation_group"
+                  name="Nhóm đánh giá"
+                  parent="menu_hr_payroll_configuration"
+                  action="action_evaluation_group"
+                  sequence="12"/>
+
+        <menuitem id="menu_evaluation_criteria"
+                  name="Tiêu chí đánh giá"
+                  parent="menu_hr_payroll_configuration"
+                  action="action_evaluation_criteria"
+                  sequence="12"/>
+
+    </data>
+</odoo>
