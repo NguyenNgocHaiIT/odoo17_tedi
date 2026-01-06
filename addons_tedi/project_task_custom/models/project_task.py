@@ -22,6 +22,11 @@ from .gantt_utils import (
     CLOSED_STATES,
 )
 
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
 PROJECT_TASK_WRITABLE_FIELDS = {
     'planned_date_begin',
 }
@@ -30,7 +35,7 @@ PROJECT_TASK_WRITABLE_FIELDS = {
 class Task(models.Model):
     _inherit = "project.task"
 
-    planned_date_begin = fields.Datetime("Start date", tracking=True)
+    planned_date_begin = fields.Datetime("Ngày bắt đầu", tracking=True, default=lambda self: fields.Datetime.now())
     # planned_date_start is added to be able to display tasks in calendar view because both start and end date are mandatory
     planned_date_start = fields.Datetime(compute="_compute_planned_date_start", inverse='_inverse_planned_date_start', search="_search_planned_date_start")
     partner_mobile = fields.Char(related='partner_id.mobile', readonly=False)
@@ -62,15 +67,52 @@ class Task(models.Model):
     def SELF_WRITABLE_FIELDS(self):
         return super().SELF_WRITABLE_FIELDS | PROJECT_TASK_WRITABLE_FIELDS
 
-    def default_get(self, fields_list):
-        result = super().default_get(fields_list)
-        planned_date_begin = result.get('planned_date_begin', self.env.context.get('planned_date_begin', False))
-        date_deadline = result.get('date_deadline', self.env.context.get('date_deadline', False))
+    @api.model
+    def default_get(self, default_fields):
+        """Override hoàn toàn để kiểm soát flow"""
+        _logger.info("=== CUSTOM DEFAULT_GET ===")
+        _logger.info(f"Context: {self._context}")
+        _logger.info(f"Requested fields: {default_fields}")
+
+        # Gọi parent default_get
+        vals = super(Task, self).default_get(default_fields)  # Gọi đúng parent
+
+        _logger.info(f"Values from parent: {vals}")
+
+        # QUAN TRỌNG: Đảm bảo project_id luôn được giữ nguyên
+        context_project_id = self._context.get('default_project_id')
+        if context_project_id and not vals.get('project_id'):
+            _logger.info(f"Setting project_id from context: {context_project_id}")
+            vals['project_id'] = context_project_id
+
+        # Xử lý planned dates của bạn
+        planned_date_begin = vals.get('planned_date_begin', self.env.context.get('planned_date_begin', False))
+        date_deadline = vals.get('date_deadline', self.env.context.get('date_deadline', False))
+
         if planned_date_begin and date_deadline:
-            user_id = result.get('user_id', None)
-            planned_date_begin, date_deadline = self._calculate_planned_dates(planned_date_begin, date_deadline, user_id)
-            result.update(planned_date_begin=planned_date_begin, date_deadline=date_deadline)
-        return result
+            # Logic tính toán dates của bạn
+            user_id = None
+            if vals.get('user_ids'):
+                # Extract user_id từ command list
+                for cmd in vals['user_ids']:
+                    if cmd[0] == Command.LINK:
+                        user_id = cmd[1]
+                        break
+
+            planned_date_begin, date_deadline = self._calculate_planned_dates(
+                planned_date_begin, date_deadline, user_id
+            )
+            vals.update({
+                'planned_date_begin': planned_date_begin,
+                'date_deadline': date_deadline
+            })
+
+        # Đảm bảo luôn có planned_date_begin nếu chưa có
+        if not vals.get('planned_date_begin') and 'planned_date_begin' in default_fields:
+            vals['planned_date_begin'] = fields.Datetime.now()
+
+        _logger.info(f"Final values: {vals}")
+        return vals
 
     def action_unschedule_task(self):
         self.write({
@@ -316,37 +358,6 @@ class Task(models.Model):
             '&', ("planned_date_begin", "!=", False), ("planned_date_begin", operator, value),
             '&', '&', ("planned_date_begin", "=", False), ("date_deadline", "!=", False), ("date_deadline", operator, value),
         ]
-
-    def write(self, vals):
-        compute_default_planned_dates = None
-        date_start_update = 'planned_date_begin' in vals and vals['planned_date_begin'] is not False
-        date_end_update = 'date_deadline' in vals and vals['date_deadline'] is not False
-        if not self._context.get('fsm_mode', False) \
-           and not self._context.get('smart_task_scheduling', False) \
-           and date_start_update and date_end_update:  # if fsm_mode=True then the processing in industry_fsm module is done for these dates.
-            compute_default_planned_dates = self.filtered(lambda task: not task.date_deadline)
-
-        # if date_end was set to False, so we set planned_date_begin to False
-        if not vals.get('date_deadline', True):
-            vals['planned_date_begin'] = False
-
-        res = super().write(vals)
-
-        if compute_default_planned_dates:
-            # Take the default planned dates
-            planned_date_begin = vals.get('planned_date_begin', False)
-            date_deadline = vals.get('date_deadline', False)
-
-            # Then sort the tasks by resource_calendar and finally compute the planned dates
-            tasks_by_resource_calendar_dict = compute_default_planned_dates._get_tasks_by_resource_calendar_dict()
-            for (calendar, tasks) in tasks_by_resource_calendar_dict.items():
-                date_start, date_stop = self._calculate_planned_dates(planned_date_begin, date_deadline, calendar=calendar)
-                tasks.write({
-                    'planned_date_begin': date_start,
-                    'date_deadline': date_stop,
-                })
-
-        return res
 
     @api.model
     def _group_expand_user_ids(self, users, domain, order):
@@ -1301,8 +1312,37 @@ class Task(models.Model):
                     if 'display_in_project' not in vals:
                         vals['display_in_project'] = True
 
+        # Xử lý logic từ hàm write thứ hai (original logic)
+        compute_default_planned_dates = None
+        date_start_update = 'planned_date_begin' in vals and vals['planned_date_begin'] is not False
+        date_end_update = 'date_deadline' in vals and vals['date_deadline'] is not False
+        if not self._context.get('fsm_mode', False) \
+                and not self._context.get('smart_task_scheduling', False) \
+                and date_start_update and date_end_update:  # if fsm_mode=True then the processing in industry_fsm module is done for these dates.
+            compute_default_planned_dates = self.filtered(lambda task: not task.date_deadline)
+
+        # if date_end was set to False, so we set planned_date_begin to False
+        if not vals.get('date_deadline', True):
+            vals['planned_date_begin'] = False
+
         # Gọi super
         result = super().write(vals)
+
+        # Xử lý tính toán planned dates (từ hàm write thứ hai)
+        if compute_default_planned_dates:
+            # Take the default planned dates
+            planned_date_begin = vals.get('planned_date_begin', False)
+            date_deadline = vals.get('date_deadline', False)
+
+            # Then sort the tasks by resource_calendar and finally compute the planned dates
+            tasks_by_resource_calendar_dict = compute_default_planned_dates._get_tasks_by_resource_calendar_dict()
+            for (calendar, tasks) in tasks_by_resource_calendar_dict.items():
+                date_start, date_stop = self._calculate_planned_dates(planned_date_begin, date_deadline,
+                                                                      calendar=calendar)
+                tasks.write({
+                    'planned_date_begin': date_start,
+                    'date_deadline': date_stop,
+                })
 
         # Cập nhật display_in_project cho subtask con nếu cần
         if 'display_in_project' in vals:
@@ -1329,3 +1369,24 @@ class Task(models.Model):
             print(f"Fixed {len(subtasks)} subtasks")
 
         return True
+
+    def default_get_debug(self, fields_list):
+        """Debug default_get xem có reset project_id không"""
+        result = super().default_get(fields_list)
+
+        _logger.info("=== DEFAULT_GET DEBUG ===")
+        _logger.info(f"Fields: {fields_list}")
+        _logger.info(f"Result BEFORE super: {result}")
+        _logger.info(f"Context active_model: {self._context.get('active_model')}")
+        _logger.info(f"Context active_id: {self._context.get('active_id')}")
+        _logger.info(f"Context default_project_id: {self._context.get('default_project_id')}")
+
+        return result
+
+    @api.onchange('project_id')
+    def _onchange_project_id(self):
+        """Debug onchange project_id"""
+        _logger.info("=== ONCHANGE PROJECT_ID DEBUG ===")
+        _logger.info(f"Task: {self.id if self.id else 'New'}")
+        _logger.info(f"Current project_id: {self.project_id.id if self.project_id else None}")
+        _logger.info(f"Context: {self._context}")
