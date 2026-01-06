@@ -1,6 +1,6 @@
 .o_gantt_row_header {
     display: grid !important;
-    grid-template-columns: minmax(150px, 1fr) 120px 120px 80px 130px!important;
+    grid-template-columns: minmax(190px, 1fr) 100px 100px 80px 130px!important;
     text-overflow: ellipsis !important;
     gap: 0 !important;
 }
@@ -26,7 +26,7 @@
 /* Grid layout cho title container - phải khớp với row header */
 .o_gantt_title_container {
     display: grid !important;
-    grid-template-columns: minmax(150px, 1fr) 120px 120px 80px 130px!important;
+    grid-template-columns: minmax(190px, 1fr) 100px 100px 80px 130px!important;
     text-overflow: ellipsis !important;
     gap: 0 !important;
     border-bottom: 1px solid #dee2e6;
@@ -180,10 +180,76 @@
     color: #000 !important;
 }
 
-/* Thêm vào file CSS */
+
 .o_gantt_pill {
     background-color: rgba(240, 240, 240, 0.5) !important; /* Màu nền mặc định */
     background-image: none !important; /* Xóa gradient khi không cần */
     height: 80% !important;
+}
+
+/* Make expand/collapse icon clearly clickable */
+.o_gantt_row_title i.fa-plus,
+.o_gantt_row_title i.fa-minus {
+    cursor: pointer !important;
+    min-width: 16px;
+    min-height: 16px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    transition: all 0.2s;
+}
+
+.o_gantt_row_title i.fa-plus:hover,
+.o_gantt_row_title i.fa-minus:hover {
+    background-color: #e9ecef;
+    transform: scale(1.1);
+}
+
+/* Visual feedback for tasks with subtasks */
+.o_task_with_subtasks .o_gantt_row_title {
+    border-radius: 4px;
+}
+
+/* Subtask indentation */
+.o_gantt_subtask .o_gantt_row_title {
+    padding-left: 40px !important;
+}
+
+/* Đảm bảo connectors hiển thị đúng */
+.o_gantt_connector {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.o_gantt_connector svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* Style cho parent-child connectors */
+.o_parent_child_connector .o_connector_stroke,
+.o_parent_child_connector .o_connector_stroke_hover_ease {
+    stroke-width: 2px;
+    stroke: rgba(74, 144, 226, 0.6); /* Màu xanh dương */
+    stroke-dasharray: 5, 5; /* Đường gạch */
+}
+
+/* Khi hover */
+.o_parent_child_connector:hover .o_connector_stroke,
+.o_parent_child_connector:hover .o_connector_stroke_hover_ease {
+    stroke-width: 3px;
+    stroke: rgba(74, 144, 226, 1);
+}
+
+/* Dependency connectors (màu khác) */
+.o_gantt_connector:not(.o_parent_child_connector) .o_connector_stroke {
+    stroke: rgba(143, 143, 143, 0.5);
 }
 

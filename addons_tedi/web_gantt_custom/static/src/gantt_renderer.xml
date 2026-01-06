@@ -171,34 +171,77 @@
                 o_sample_data_disabled: isDisabled(row),
                 o_gantt_row_sidebar_empty: !row.name,
                 o_gantt_group: row.isGroup,
+                o_gantt_task: !row.isGroup and !row.isSubtask,
+                o_gantt_subtask: row.isSubtask,
                 o_gantt_hoverable: isHoverable(row),
                 o_mobile_progress_bar: row.progressBar and isTouchDevice,
                 o_group_open: !model.isClosed(row.id),
+                o_task_with_children: row.hasSubtasks,
+                o_subtasks_expanded: row.subtasksExpanded,
             }"
             t-att-style="getGridPosition({ row: row.grid.row })"
             t-att-data-row-id="row.id"
-            t-on-click.synthetic="() => row.isGroup and this.model.toggleRow(row.id)"
+            t-on-click.synthetic="(ev) => onRowHeaderClick(ev, row)"
         >
-            <!-- Cột 1: Tên dự án -->
+            <!-- Cột 1: Tên task với thụt lề và icon -->
             <div
-                class="o_gantt_row_title d-flex align-items-center h-100 pe-1 border-end"
-                t-att-class="{ 'fw-bold': row.isGroup }"
+                class="o_gantt_row_title d-flex align-items-center h-100 pe-1 border-end position-relative"
+                t-att-class="{ 'fw-bold': row.isGroup or row.hasSubtasks }"
                 t-att-title="row.name or ''"
+                t-att-style="`padding-left: ${(row.groupLevel || 0) * 20 + 12}px`"
             >
-                <i t-if="row.isGroup" t-attf-class="fa small fa-{{ model.isClosed(row.id) ? 'plus' : 'minus' }} pt-1 me-2" />
-                <span t-if="row.thumbnailUrl and row.resId"
-                    class="o_gantt_row_thumbnail_wrapper"
-                    t-att-class="{ 'me-1' : row.isGroup }"
-                >
-                    <img t-att-src="row.thumbnailUrl" class="o_gantt_row_thumbnail o_avatar rounded"/>
-                </span>
-                <span class="text-truncate flex-grow-1">
+                <!-- Vertical connecting line cho ALL subtasks (ở mọi level) -->
+                <div t-if="row.isSubtask"
+                     class="o_gantt_subtask_line position-absolute"
+                     t-att-style="`left: ${((row.groupLevel || 0) - 1) * 20 + 12}px`">
+                </div>
+
+                <!-- Icon cho GROUP (dự án) - chỉ level 0 -->
+                <button t-if="row.isGroup"
+                        class="btn btn-link p-0 me-2 o_gantt_group_icon"
+                        t-on-click.stop="(ev) => onRowHeaderClick(ev, row)">
+                    <i t-attf-class="fa fa-{{ model.isClosed(row.id) ? 'caret-right' : 'caret-down' }} text-primary"
+                       style="font-size: 14px;"/>
+                </button>
+
+                <!-- Sử dụng cùng một container với kích thước cố định -->
+                <div class="me-2 d-flex align-items-center justify-content-center"
+                     style="width: 16px; height: 16px; flex-shrink: 0;">
+
+                    <!-- TASK CÓ SUBTASKS - sử dụng span với role button để đồng nhất -->
+                    <span t-if="row.hasSubtasks and !row.isGroup"
+                          class="o_gantt_expand_btn d-flex align-items-center justify-content-center w-100 h-100 cursor-pointer"
+                          role="button"
+                          tabindex="0"
+                          t-on-click.stop="(ev) => onRowHeaderClick(ev, row)"
+                          t-on-keydown.stop="(ev) => ev.key === 'Enter' &amp;&amp; onRowHeaderClick(ev, row)">
+                        <i t-attf-class="fa {{ row.expandIcon || 'fa-plus' }} o_gantt_expand_icon"
+                           style="font-size: 12px; line-height: 1;"/>
+                    </span>
+
+                    <!-- SUBTASK LEAF - cùng container, cùng style -->
+                    <span t-elif="!row.isGroup and !row.hasSubtasks"
+                          class="o_gantt_leaf_icon d-flex align-items-center justify-content-center w-100 h-100">
+                        <i class="fa fa-circle text-muted"
+                           style="font-size: 6px;"/>
+                    </span>
+
+                </div>
+
+                <!-- Tên task/group -->
+                <span class="text-truncate flex-grow-1"
+                      t-att-class="{
+                          'text-primary fw-bold': row.isGroup,
+                          'text-body': !row.isGroup
+                      }">
                     <t t-esc="row.name" />
                 </span>
+
             </div>
 
-            <!-- Cột 2: Ngày bắt đầu -->
-            <div class="o_gantt_row_info d-flex align-items-center h-100 px-2 border-end small text-nowrap justify-content-center">
+            <!-- Các cột còn lại giữ nguyên -->
+            <div class="o_gantt_row_info d-flex align-items-center h-100 px-2 border-end small text-nowrap justify-content-center"
+                 t-att-class="{ 'text-muted fst-italic': row.isSubtask }">
                 <t t-if="row.isGroup">
                     <t t-esc="getAggregatedStartDate(row)"/>
                 </t>
@@ -207,8 +250,8 @@
                 </t>
             </div>
 
-            <!-- Cột 3: Ngày kết thúc -->
-            <div class="o_gantt_row_info d-flex align-items-center h-100 px-2 border-end small text-nowrap justify-content-center">
+            <div class="o_gantt_row_info d-flex align-items-center h-100 px-2 border-end small text-nowrap justify-content-center"
+                 t-att-class="{ 'text-muted fst-italic': row.isSubtask }">
                 <t t-if="row.isGroup">
                     <t t-esc="getAggregatedEndDate(row)"/>
                 </t>
@@ -217,8 +260,8 @@
                 </t>
             </div>
 
-            <!-- Cột 4: Thời lượng -->
-            <div class="o_gantt_row_info d-flex align-items-center h-100 px-2 border-end small text-nowrap justify-content-center">
+            <div class="o_gantt_row_info d-flex align-items-center h-100 px-2 border-end small text-nowrap justify-content-center"
+                 t-att-class="{ 'text-muted fst-italic': row.isSubtask }">
                 <t t-if="row.isGroup">
                     <t t-esc="getAggregatedDuration(row)"/>
                 </t>
@@ -227,9 +270,8 @@
                 </t>
             </div>
 
-
-            <!-- Cột 5: Người phụ trách -->
             <div class="o_gantt_row_info d-flex align-items-center h-100 px-2 border-end small text-nowrap justify-content-start"
+                 t-att-class="{ 'text-muted fst-italic': row.isSubtask }"
                  t-att-title="row.isGroup ? getAggregatedAssignees(row) : getTaskAssignees(row)">
                 <span class="text-truncate w-100">
                     <t t-if="row.isGroup">
@@ -246,6 +288,7 @@
             </t>
         </div>
     </t>
+
 
     <t t-name="web_gantt.GanttRenderer.RowContent">
         <!-- Cells -->
