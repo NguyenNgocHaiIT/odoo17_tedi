@@ -1729,44 +1729,46 @@ export class GanttRenderer extends Component {
      */
     processRow(row, pills) {
         console.log('=== PROCESS ROW START ===');
-        console.log('Row:', {
-            name: row.name || row.display_name,
+        console.log('Row input:', {
+            name: row.name,
             id: row.id,
             isGroup: row.isGroup,
+            groupField: row.groupField,
+            groupLevel: row.groupLevel,
+            groupedBy: row.groupedBy,
+            hasRecordIds: !!row.recordIds,
+            recordIdsCount: row.recordIds?.length,
+            hasSubRows: !!row.rows,
+            subRowsCount: row.rows?.length,
             hasRecord: !!row.record,
-            recordId: row.record?.id || row.resId
         });
 
         const { GROUP_ROW_SPAN, ROW_SPAN } = this.constructor;
         const { dependencyField, fields } = this.model.metaData;
 
-        // =================== TRƯỜNG HỢP: Task có subtasks ===================
-         let recordId = null;
-
+        // Lấy recordId
+        let recordId = null;
         if (row.record && row.record.id) {
             recordId = row.record.id;
         } else if (row.resId) {
             recordId = row.resId;
         } else if (row.id && typeof row.id === 'string' && row.id.includes('_task_')) {
-            // Trường hợp task được tạo từ multi-level group
-            // Format: "[{\"project_id\":[5,\"Dự án 1\"]}]_task_64"
             const match = row.id.match(/_task_(\d+)$/);
             if (match) {
                 recordId = parseInt(match[1], 10);
             }
         }
 
-        if (!row.isGroup && recordId) {
-            const hasSubtasks = this.parentChildMapping &&
-                               this.parentChildMapping[recordId] &&
-                               this.parentChildMapping[recordId].length > 0;
+        // Kiểm tra subtasks
+        const hasSubtasks = recordId &&
+                           this.parentChildMapping &&
+                           this.parentChildMapping[recordId] &&
+                           this.parentChildMapping[recordId].length > 0;
 
-            console.log(`Task ${recordId} (${row.name}) has subtasks from parentChildMapping:`, hasSubtasks);
-
-            if (hasSubtasks) {
-                console.log(`Processing TASK WITH SUBTASKS (ID: ${recordId})`);
-                return this.processTaskWithSubtasks(row, pills);
-            }
+        // Task có subtasks
+        if (!row.isGroup && recordId && hasSubtasks) {
+            console.log(`✓ Processing TASK WITH SUBTASKS (ID: ${recordId})`);
+            return this.processTaskWithSubtasks(row, pills);
         }
 
         const {
@@ -1786,31 +1788,57 @@ export class GanttRenderer extends Component {
             record,
         } = row;
 
-        // =================== TRƯỜNG HỢP 1: Group có recordIds (multi-level) ===================
+        // ============ QUAN TRỌNG: ĐIỀU KIỆN PHÁT HIỆN GROUP ============
+
+        // 1. Kiểm tra isGroup flag
+        if (isGroup === true) {
+            console.log(`✓ Detected GROUP by isGroup flag: ${name}`);
+
+            const currentGroupField = groupField || (groupedBy && groupedBy[groupLevel]);
+
+            if (currentGroupField && recordIds && recordIds.length > 0) {
+                console.log(`  → MULTI-LEVEL GROUP (field: ${currentGroupField})`);
+                return this.processMultiLevelGroup(row, pills, groupLevel, currentGroupField);
+            } else {
+                console.log(`  → REGULAR GROUP`);
+                return this.processGroupRow(row, pills);
+            }
+        }
+
+        // 2. ✅ THÊM: Kiểm tra nếu có groupField và recordIds (BẤT KỂ isGroup)
         const currentGroupField = groupField || (groupedBy && groupedBy[groupLevel]);
-        if (currentGroupField && recordIds && recordIds.length > 0) {
-            console.log('Processing as MULTI-LEVEL GROUP');
+        if (currentGroupField && recordIds && recordIds.length > 0 && !record) {
+            console.log(`✓ Detected GROUP by groupField + recordIds: ${name} (field: ${currentGroupField})`);
             return this.processMultiLevelGroup(row, pills, groupLevel, currentGroupField);
         }
 
-        // =================== TRƯỜNG HỢP 2: Group thông thường ===================
-        if (isGroup || (subRows && subRows.length > 0)) {
-            console.log('Processing as REGULAR GROUP');
+        // 3. Kiểm tra có subRows
+        if (subRows && subRows.length > 0 && !record) {
+            console.log(`✓ Detected GROUP by subRows: ${name} (${subRows.length} sub-rows)`);
             return this.processGroupRow(row, pills);
         }
 
-        // =================== TRƯỜNG HỢP 3: SUBTASK (có parent_id) ===================
+        // 4. ✅ THÊM: Kiểm tra pattern của ID (JSON stringified grouping)
+        if (typeof id === 'string' && id.startsWith('[{') && recordIds && recordIds.length > 0) {
+            console.log(`✓ Detected GROUP by ID pattern: ${name}`);
+            const detectedGroupField = currentGroupField || this.extractGroupFieldFromId(id);
+            if (detectedGroupField) {
+                return this.processMultiLevelGroup(row, pills, groupLevel, detectedGroupField);
+            }
+        }
+
+        // 5. Subtask
         if (record && record.parent_id && !isGroup) {
-            console.log('Processing as SUBTASK');
+            console.log(`✓ Detected SUBTASK: ${record.display_name}`);
             return this.processSubtaskRow(row, pills);
         }
 
-        // =================== TRƯỜNG HỢP 4: TASK THÔNG THƯỜNG ===================
-        console.log('Processing as REGULAR TASK');
+        // 6. Regular task
+        console.log(`✓ Processing as REGULAR TASK: ${name || record?.display_name}`);
 
         const result = { rows: [], pillsToProcess: [] };
 
-        // Tìm pills cho task này
+        // Tìm pills cho task
         const rowPills = [];
         const remainingPills = [];
 
@@ -1831,24 +1859,22 @@ export class GanttRenderer extends Component {
                 }
             }
         } else {
-            console.error('Row has no recordIds and no record!');
+            console.error('❌ Row has no recordIds and no record!', row);
             result.pillsToProcess = pills;
             return result;
         }
 
         console.log(`Found ${rowPills.length} pills for this row`);
 
-        // Tạo row cho task
+        // Tạo task rows
         for (const pill of rowPills) {
             const taskRow = this.createTaskRow(row, pill);
 
-            // QUAN TRỌNG: Set hasSubtasks cho task row
             if (hasSubtasks) {
                 taskRow.hasSubtasks = true;
                 taskRow.isExpandable = true;
                 taskRow.subtasksExpanded = !this.model.isSubtaskGroupClosed(taskRow.id);
                 taskRow.expandIcon = taskRow.subtasksExpanded ? 'fa-minus' : 'fa-plus';
-                console.log(`✓ Task row ${taskRow.name} has subtasks, expanded: ${taskRow.subtasksExpanded}`);
             }
 
             result.rows.push(taskRow);
@@ -2533,7 +2559,8 @@ export class GanttRenderer extends Component {
             consolidate,
             fromServer,
             groupedByField,
-            groupLevel,
+            groupedBy,
+            groupLevel = 0,
             id,
             name,
             progressBar,
@@ -2541,17 +2568,26 @@ export class GanttRenderer extends Component {
             rows: subRows,
             unavailabilities,
             recordIds,
+            groupField,
         } = row;
 
-        console.log(`Processing regular group: ${name} with ${subRows?.length} sub-rows`);
+        console.log(`Processing regular group: ${name}`);
+        console.log('Group details:', {
+            groupField: groupField || groupedByField,
+            groupLevel,
+            recordIdsCount: recordIds?.length,
+            subRowsCount: subRows?.length,
+            hasUnavailabilities: !!unavailabilities
+        });
 
         const remainingPills = [];
         let rowPills = [];
         const groupPills = [];
 
+        // Tìm pills thuộc group này
         for (const pill of pills) {
             const { record } = pill;
-            const pushPill = recordIds.includes(record.id);
+            const pushPill = recordIds && recordIds.includes(record.id);
             if (pushPill) {
                 const rowPill = { ...pill };
                 rowPills.push(rowPill);
@@ -2564,7 +2600,7 @@ export class GanttRenderer extends Component {
         const baseSpan = GROUP_ROW_SPAN;
         let span = baseSpan;
 
-        // LUÔN TẠO ROW CHO DỰ ÁN, ngay cả khi không có pills
+        // LUÔN TẠO ROW CHO GROUP
         if (rowPills.length && this.shouldComputeAggregateValues(row)) {
             const groups = this.aggregatePills(rowPills);
             const maxAggregateValue = Math.max(
@@ -2589,15 +2625,18 @@ export class GanttRenderer extends Component {
             this.pills[rowPill.id] = rowPill;
         }
 
-        // LUÔN TẠO ROW CHO DỰ ÁN
+        // QUAN TRỌNG: Tạo group row ngay cả khi không có pills
+        const currentGroupField = groupField || groupedByField;
         const processedRow = {
             fromServer,
-            groupedByField,
+            groupedByField: currentGroupField,
+            groupedBy,
             groupLevel,
+            groupField: currentGroupField,
             id,
-            isGroup: true,
+            isGroup: true, // QUAN TRỌNG
             name,
-            pills: rowPills, // Có thể là mảng rỗng
+            pills: rowPills,
             progressBar,
             resId,
             grid: {
@@ -2609,22 +2648,29 @@ export class GanttRenderer extends Component {
 
         this.topOffset += span;
 
-        const field = this.model.metaData.thumbnails[groupedByField];
-        if (field) {
-            const model = this.model.metaData.fields[groupedByField].relation;
-            processedRow.thumbnailUrl = url("/web/image", {
-                model,
-                id: resId,
-                field,
-            });
+        // Thêm thumbnail nếu có
+        const field = this.model.metaData.thumbnails?.[currentGroupField];
+        if (field && resId) {
+            const model = this.model.metaData.fields[currentGroupField]?.relation;
+            if (model) {
+                processedRow.thumbnailUrl = url("/web/image", {
+                    model,
+                    id: resId,
+                    field,
+                });
+            }
+        }
+
+        // Xử lý unavailabilities
+        if (unavailabilities) {
+            processedRow.cellColors = this.getRowCellColors(unavailabilities);
         }
 
         const result = { rows: [processedRow], pillsToProcess: remainingPills };
 
-        // Xử lý các sub-rows (tasks) nếu group không bị đóng
+        // Xử lý sub-content nếu group được mở
         let pillsToProcess = groupPills;
         if (!this.model.isClosed(id)) {
-            // ƯU TIÊN: Xử lý sub-rows từ server
             if (subRows && subRows.length > 0) {
                 console.log(`Processing ${subRows.length} sub-rows for group ${name}`);
                 for (const subRow of subRows) {
@@ -2632,9 +2678,7 @@ export class GanttRenderer extends Component {
                     result.rows.push(...res.rows);
                     pillsToProcess = res.pillsToProcess;
                 }
-            }
-            // FALLBACK: Nếu không có sub-rows, tạo task rows từ pills
-            else if (groupPills.length > 0) {
+            } else if (groupPills.length > 0) {
                 console.log(`Creating ${groupPills.length} task rows for group ${name}`);
                 for (const pill of groupPills) {
                     const taskRow = this.createTaskRow(processedRow, pill);
@@ -2642,6 +2686,8 @@ export class GanttRenderer extends Component {
                 }
                 pillsToProcess = remainingPills;
             }
+        } else {
+            console.log(`Group ${name} is CLOSED`);
         }
 
         console.log(`Regular group result: ${result.rows.length} rows created`);

@@ -673,15 +673,24 @@ export class GanttModel extends Model {
 
         data.records = this._parseServerData(metaData, records);
         // Nếu không có grouping (hoặc grouping không phải project_id), dùng cấu trúc cây task
-        if (!groupedBy.length || groupedBy[0] !== 'project_id') {  // tùy bạn, có thể bỏ điều kiện nếu luôn muốn cây
-            data.rows = this._buildHierarchicalRows(metaData, data.records);
-        } else {
+        //if (!groupedBy.length || groupedBy[0] !== 'project_id') {
+        //    data.rows = this._buildHierarchicalRows(metaData, data.records);
+        //} else {
             // Vẫn giữ grouping project nếu có
+        //    data.rows = this._generateRows(metaData, {
+        //        groupedBy,
+        //        groups,
+        //        parentGroup: [],
+        //    });
+        //}
+        if (groupedBy.length) {
             data.rows = this._generateRows(metaData, {
                 groupedBy,
                 groups,
                 parentGroup: [],
             });
+        } else {
+            data.rows = this._buildHierarchicalRows(metaData, data.records);
         }
 
         await this.keepLast.add(this._fetchDataPostProcess(metaData, data));
