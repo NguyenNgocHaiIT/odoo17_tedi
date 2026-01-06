@@ -1,0 +1,135 @@
+<odoo>
+    <data>
+        <record id="view_evaluation_kpi_tree" model="ir.ui.view">
+            <field name="name">evaluation.kpi.tree</field>
+            <field name="model">evaluation.kpi</field>
+            <field name="arch" type="xml">
+                <tree string="Phiếu đánh giá KPI">
+                    <field name="name"/>
+                    <field name="employee_id"/>
+                    <field name="job_id"/>
+                    <field name="period"/>
+                    <field name="total_score_percent" widget="progressbar" string="Tiến độ (Điểm)"/>
+                    <field name="total_score" optional="show" string="Điểm tổng"/>
+
+                    <field name="final_result" widget="badge" decoration-success="total_score >= 3.5"/>
+                    <field name="state" widget="badge" decoration-info="state == 'draft'"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_evaluation_kpi_form" model="ir.ui.view">
+            <field name="name">evaluation.kpi.form</field>
+            <field name="model">evaluation.kpi</field>
+            <field name="arch" type="xml">
+                <form string="Phiếu đánh giá KPI">
+                    <header>
+                        <button name="action_send" string="Gửi ĐG" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+
+                        <button name="action_manager_evaluation" string="QLTT hoàn thành" type="object" class="oe_highlight"
+                                invisible="state != 'wait_manager' or not is_direct_manager"/>
+
+                        <button name="action_council_evaluation" string="TĐV hoàn thành" type="object" class="oe_highlight"
+                                invisible="state != 'wait_council' or not is_department_manager"/>
+
+                        <button name="action_director_evaluation" string="TGĐ hoàn thành" type="object" class="oe_highlight"
+                                invisible="state != 'wait_director'"
+                                groups="om_hr_payroll.group_kpi_director_new"/>
+
+                        <button name="action_compute_result_manual" string="Tính kết quả" type="object" class="oe_highlight"/>
+                        <button name="action_reset_draft" string="Làm lại" type="object" invisible="state == 'draft'"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,wait_manager,wait_council,wait_director,done"/>
+                    </header>
+                    <sheet>
+                        <field name="is_direct_manager" invisible="1"/>
+                        <field name="is_department_manager" invisible="1"/>
+
+                        <div class="oe_title">
+                            <h1><field name="name"/></h1>
+                            <label for="employee_id"/>
+                            <h2><field name="employee_id" placeholder="Chọn nhân viên..." options="{'no_create': True}"/></h2>
+                        </div>
+
+                        <group>
+                            <group string="Thông tin chung">
+                                <field name="period"/>
+                                <field name="department_id"/>
+                                <field name="job_id"/>
+                                <field name="wage_level"/>
+                                <field name="is_manager_review_required" invisible="1"/>
+                                <field name="is_council_review_required" invisible="1"/>
+                                <field name="is_director_review_required" invisible="1"/>
+                                <field name="is_result_computed" invisible="1"/>
+                            </group>
+
+                            <group string="Kết quả đánh giá" invisible="not is_result_computed">
+                                <field name="total_score_percent" widget="progressbar" string="Mức độ đạt"/>
+                                <field name="total_score" decoration-bf="1" string="Điểm tổng (Scale 5)"/>
+
+                                <field name="k_coefficient" decoration-bf="1"/>
+                                <field name="final_result"
+                                       decoration-success="total_score >= 3.5"
+                                       decoration-warning="total_score &lt; 3.5"
+                                       decoration-bf="1"/>
+                            </group>
+                        </group>
+
+                        <notebook>
+                            <page string="Chi tiết đánh giá">
+                                <field name="line_ids" widget="section_and_note_one2many" mode="tree">
+                                    <tree editable="bottom" create="0" delete="0"
+                                          decoration-bf="display_type == 'line_section'">
+
+                                        <control>
+                                            <create name="add_section_control" string="Thêm ghi chú" context="{'default_display_type': 'line_note'}"/>
+                                        </control>
+
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="display_type" column_invisible="1"/>
+                                        <field name="stt" string="STT" width="50px"/>
+                                        <field name="name" string="Mục tiêu nhiệm vụ/ công việc"/>
+                                        <field name="weight" sum="Tổng" readonly="1" force_save="1"/>
+
+                                        <field name="self_score"
+                                               readonly="parent.state != 'draft'"/>
+
+                                        <field name="manager_score"
+                                               column_invisible="parent.is_manager_review_required == False"
+                                               readonly="parent.state != 'wait_manager'"/>
+
+                                        <field name="council_score"
+                                               column_invisible="parent.is_council_review_required == False"
+                                               readonly="parent.state != 'wait_council'"/>
+
+                                        <field name="director_score"
+                                               column_invisible="parent.is_director_review_required == False"
+                                               readonly="parent.state != 'wait_director'"/>
+
+                                        <field name="final_score" optional="hide"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+         <record id="action_evaluation_kpi" model="ir.actions.act_window">
+            <field name="name">Phiếu đánh giá KPI</field>
+            <field name="res_model">evaluation.kpi</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <menuitem id="menu_evaluation_kpi_main"
+                  name="Phiếu đánh giá KPI"
+                  parent="om_hr_payroll.menu_hr_payroll_root"
+                  action="action_evaluation_kpi"
+                  sequence="11"/>
+    </data>
+</odoo>
