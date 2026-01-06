@@ -165,7 +165,6 @@ class RecruitmentNeeds(models.Model):
                     'experient_request_id': line.experience_id.id,
                     'professional_qualification': line.professional_qualification,
                     # 'expense_per_head': line.expected_salary,
-                    'expense_per_head': 0,
                     'note': line.note or _("Bổ sung từ nhu cầu thực tế"),
                 }
                 PlanDetailSudo.create(vals)
@@ -192,8 +191,6 @@ class RecruitmentNeedsLine(models.Model):
 
     # 1. MỨC LƯƠNG DỰ KIẾN
     expected_salary = fields.Float(string="Mức lương dự kiến", default=0)
-
-    job_expected_salary = fields.Char(string="Mức lương dự kiến")
 
     # 2. CÁC TRƯỜNG LƯU TRỮ TIẾN TRÌNH (Ẩn trên view, hiện trên popup)
     qty_q1 = fields.Integer(string="Quý 1", default=0)
@@ -235,11 +232,11 @@ class RecruitmentNeedsLine(models.Model):
     recruitment_needs_id = fields.Many2one("recruitment.needs", string="Nhu cầu tuyển dụng")
 
     # --- SQL CONSTRAINT: CHECK LƯƠNG > 0 ---
-    # _sql_constraints = [
-    #     ('check_expected_salary_positive',
-    #      'CHECK(expected_salary > 0)',
-    #      'Mức lương dự kiến phải lớn hơn 0.')
-    # ]
+    _sql_constraints = [
+        ('check_expected_salary_positive',
+         'CHECK(expected_salary > 0)',
+         'Mức lương dự kiến phải lớn hơn 0.')
+    ]
 
     @api.depends('job_id', 'recruitment_needs_id.department_id')
     def _compute_current_employee_count(self):
