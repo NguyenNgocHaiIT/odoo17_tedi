@@ -35,9 +35,8 @@
                 <t t-foreach="extraPills" t-as="pill" t-key="pill.id">
                     <t t-call="{{ constructor.pillTemplate }}" />
                 </t>
-                <t t-if="shouldRenderConnectors()">
+                <!--<t t-if="shouldRenderConnectors()">
                     <t t-foreach="visibleConnectors" t-as="connector" t-key="connector.id">
-                        <!-- QUAN TRỌNG: Thêm điều kiện kiểm tra sourcePoint và targetPoint -->
                         <GanttConnector
                             reactive="connector"
                             onRemoveButtonClick="() => this.onRemoveButtonClick(connector.id)"
@@ -45,7 +44,7 @@
                             onRightButtonClick="() => this.onRescheduleButtonClick('forward', connector.id)"
                         />
                     </t>
-                </t>
+                </t>-->
                 <GanttResizeBadge reactive="resizeBadgeReactive" />
             </div>
             <t t-if="totalRow">
