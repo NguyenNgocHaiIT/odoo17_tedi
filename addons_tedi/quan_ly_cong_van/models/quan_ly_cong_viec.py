@@ -27,7 +27,6 @@ class OfficeTask(models.Model):
 
     @api.model
     def create(self, vals):
-        vals['project_id'] = False
         return super().create(vals)
 
 
