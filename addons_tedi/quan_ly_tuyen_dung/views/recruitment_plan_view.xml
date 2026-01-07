@@ -124,7 +124,7 @@
       <field name="name">recruitment.plan.tree</field>
       <field name="model">recruitment.plan</field>
       <field name="arch" type="xml">
-        <tree string="Kế hoạch tuyển dụng" default_order="plan_execute_date desc">
+        <tree string="Kế hoạch tuyển dụng" default_order="open_date desc">
           <field name="stt" string="STT" width="80"/>
           <field name="plan_code" string="Số kế hoạch"/>
           <field name="type" string="Loại" optional="show"/>
