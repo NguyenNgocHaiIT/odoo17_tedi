@@ -22,6 +22,10 @@ class TrainingPlan(models.Model):
         readonly=True,
     )
 
+    # Thêm field ngày thực hiện để có thể check logic (nếu cần dùng cho KH Quý giống Tuyển dụng)
+    # Nếu logic cũ bạn không dùng field này để tính toán thì để hiển thị thôi
+    plan_execute_date = fields.Date(string="Ngày thực hiện", default=fields.Date.today)
+
     # Đợt khảo sát
     survey_id = fields.Many2one(
         'training.needs.survey',
@@ -35,11 +39,21 @@ class TrainingPlan(models.Model):
         string='Chi tiết kế hoạch'
     )
 
+    # --- SỬA STATE THEO YÊU CẦU ---
     state = fields.Selection([
         ("draft", "Dự thảo"),
-        ("pending", "Chờ duyệt"),
-        ("approved", "Đã duyệt"),
-    ], string="Trạng thái", default='draft')
+        ("notify", "Xác nhận"),  # Mới: Dành cho bước confirm của Quý
+        ("director_approve", "Chờ duyệt"),  # Cũ là pending
+        ("board_approve", "HĐQT duyệt"),  # Mới: Dành cho KH Năm
+        ("approved", "Đã duyệt"),  # Đã duyệt nhưng chưa triển khai
+        ("in_process", "Đang triển khai"),  # Đã bấm triển khai -> Sinh dữ liệu
+        ("complete", "Hoàn thành"),
+    ], string="Trạng thái", default='draft', tracking=True)
+
+    # Cờ đánh dấu đã triển khai (để ẩn nút Triển khai)
+    is_applied = fields.Boolean(string="Đã triển khai", default=False, readonly=True)
+
+
 
     # THỐNG KÊ
     student_count = fields.Integer(
@@ -70,103 +84,60 @@ class TrainingPlan(models.Model):
     # Field liên kết cha-con (để biết kế hoạch Quý thuộc Kế hoạch Năm nào)
     parent_id = fields.Many2one('training.plan', string="Thuộc Kế hoạch Năm", readonly=True)
 
-    # _sql_constraints = [
-    #     ('survey_unique',
-    #      'unique(survey_id)',
-    #      'Mỗi đợt khảo sát chỉ được gắn với một kế hoạch đào tạo.'),
-    # ]
-
     # =========================================
-    #      ====== FUNCTION TỔNG HỢP ======
+    #      ====== FUNCTION LOGIC (GIỮ NGUYÊN) ======
     # =========================================
 
     @api.onchange('survey_id')
     def _onchange_survey_id(self):
-        """
-        Khi thay đổi Đợt khảo sát trên giao diện:
-        1. Xóa hết các dòng chi tiết cũ.
-        2. Quét survey để lấy danh sách khóa học.
-        3. Điền ngay vào detail_ids (hiển thị luôn cho người dùng thấy).
-        """
-        # 1. Xóa dữ liệu detail cũ (nếu có) để tránh trộn lẫn khi đổi survey khác
-        # Mã lệnh (5, 0, 0) là lệnh xóa sạch các dòng trong One2many
+        # ... (Giữ nguyên logic của bạn) ...
         self.detail_ids = [(5, 0, 0)]
-
-        if not self.survey_id:
-            return
+        if not self.survey_id: return
 
         TrainingNeeds = self.env['trainings.needs']
+        needs = TrainingNeeds.search([('name', '=', self.survey_id.id), ('state', '=', 'approved')])
+        if not needs: return
 
-        # Tìm các phiếu nhu cầu đã duyệt thuộc đợt khảo sát này
-        needs = TrainingNeeds.search([
-            ('name', '=', self.survey_id.id),
-            ('state', '=', 'approved'),
-        ])
-
-        if not needs:
-            return
-
-        # 2. Lấy danh sách các Course ID (duy nhất)
         course_ids = set()
         for need in needs:
             for line in need.line_ids:
                 if line.course_id:
                     course_ids.add(line.course_id.id)
 
-        # 3. Tạo dữ liệu cho detail_ids (trong bộ nhớ giao diện)
         new_lines = []
         for c_id in course_ids:
-            # Mã lệnh (0, 0, values) là lệnh tạo dòng mới
-            new_lines.append((0, 0, {
-                'course_id': c_id,
-                # Bạn có thể set mặc định các giá trị khác ở đây nếu muốn
-                # 'training_type': 'direct',
-            }))
-
+            new_lines.append(
+                (0, 0, {'course_id': c_id, 'execution_date': self.plan_execute_date or fields.Date.today()}))
         self.detail_ids = new_lines
 
     def _generate_participants_from_survey(self):
-        """
-        Hàm này giữ nguyên như câu trả lời trước.
-        Chỉ chạy khi bấm nút DUYỆT để tạo danh sách học viên.
-        """
+        # ... (Giữ nguyên logic của bạn) ...
         Participation = self.env['training.plan.participation']
         ParticipationDetail = self.env['training.plan.participation.detail']
         TrainingNeeds = self.env['trainings.needs']
 
         for plan in self:
-            if not plan.survey_id:
-                continue
-
-            needs = TrainingNeeds.search([
-                ('name', '=', plan.survey_id.id),
-                ('state', '=', 'approved'),
-            ])
-
-            if not needs:
-                continue
+            if not plan.survey_id: continue
+            needs = TrainingNeeds.search([('name', '=', plan.survey_id.id), ('state', '=', 'approved')])
+            if not needs: continue
 
             course_map = {}
             for need in needs:
                 student = need.user_id or need.create_uid or self.env.user
                 for line in need.line_ids:
-                    if not line.course_id:
-                        continue
+                    if not line.course_id: continue
                     course_id = line.course_id.id
                     course_map.setdefault(course_id, []).append((student, line))
 
             for course_id, items in course_map.items():
-                # Tìm detail (Lúc này detail đã được tạo bởi onchange và đã lưu)
                 detail = plan.detail_ids.filtered(lambda d: d.course_id.id == course_id)[:1]
-
-                # Fallback: Nếu lỡ người dùng xóa tay detail thì tạo lại
                 if not detail:
                     detail = self.env['training.plan.detail'].create({
                         'plan_id': plan.id,
                         'course_id': course_id,
+                        'execution_date': plan.plan_execute_date or fields.Date.today()
                     })
 
-                # Tạo Participation
                 participation = Participation.search([
                     ('training_plan_id', '=', plan.id),
                     ('training_plan_detail_id', '=', detail.id),
@@ -177,15 +148,12 @@ class TrainingPlan(models.Model):
                         'training_plan_id': plan.id,
                         'training_plan_detail_id': detail.id,
                         'create_date': fields.Date.today(),
+                        'state': 'draft',  # <--- QUAN TRỌNG: Sinh ra ở trạng thái Dự thảo
                     })
 
-                # Tạo danh sách học viên
                 for student, line in items:
-                    existing = ParticipationDetail.search([
-                        ('participation_id', '=', participation.id),
-                        ('user_id', '=', student.id),
-                    ], limit=1)
-
+                    existing = ParticipationDetail.search(
+                        [('participation_id', '=', participation.id), ('user_id', '=', student.id)], limit=1)
                     if not existing:
                         part_detail = ParticipationDetail.create({
                             'participation_id': participation.id,
@@ -194,115 +162,37 @@ class TrainingPlan(models.Model):
                         })
                         line.participation_detail_id = part_detail.id
 
-
-
-    # =========================================
-    #      ====== CREATE - WRITE ======
-    # =========================================
-
-
-    @api.model
-    def create(self, vals):
-        return super().create(vals)
-
-    def write(self, vals):
-        return super().write(vals)
-
-    # =========================================
-    #      ====== COMPUTE ======
-    # =========================================
-
-    @api.depends('detail_ids.participation_detail_ids.training_fee_per_person')
-    def _compute_stats(self):
-        ParticipationDetail = self.env['training.plan.participation.detail']
-        for plan in self:
-            if plan.detail_ids:
-                participants = ParticipationDetail.search([
-                    ('training_plan_detail_id', 'in', plan.detail_ids.ids)
-                ])
-                plan.student_count = len(participants)
-                plan.total_fee = sum(
-                    (line.training_fee_per_person or 0.0)
-                    for line in participants
-                )
-            else:
-                plan.student_count = 0
-                plan.total_fee = 0.0
-
-    # =========================================
-    #      ====== ACTION STATE ======
-    # =========================================
-
-    def action_submit(self):
-        for rec in self:
-            if rec.state != "draft":
-                raise ValidationError(_("Chỉ có thể đăng ký từ trạng thái 'Dự thảo'."))
-            rec.state = "pending"
-
-    def action_approve(self):
-        for rec in self:
-            if rec.state != "pending":
-                raise ValidationError(_("Chỉ có thể duyệt từ trạng thái 'Chờ duyệt'."))
-
-            # --- LOGIC MỚI: PHÂN LOẠI XỬ LÝ ---
-            if rec.type == 'year':
-                # Nếu là Kế hoạch Năm -> Tạo ra 4 Kế hoạch Quý
-                rec._generate_quarterly_plans()
-                rec.message_post(body=_("Đã duyệt Kế hoạch Năm và sinh ra các Kế hoạch Quý tương ứng."))
-
-            elif rec.type == 'quarter':
-                # Nếu là Kế hoạch Quý -> Tạo danh sách học viên (Lớp học)
-                rec._generate_participants_from_survey()
-                rec.message_post(body=_("Đã duyệt Kế hoạch Quý và khởi tạo danh sách học viên."))
-
-                # Trigger đồng bộ lịch sử (chỉ chạy khi thực sự có học viên)
-                for detail in rec.detail_ids:
-                    for part_detail in detail.participation_detail_ids:
-                        part_detail._sync_to_history()
-
-            rec.state = "approved"
-
     def _generate_quarterly_plans(self):
+        # ... (Giữ nguyên logic của bạn: Duyệt 4 quý, check field quarter) ...
         self.ensure_one()
-
-        # Duyệt qua 4 quý
-        for q_num in range(1, 5):  # 1, 2, 3, 4
+        for q_num in range(1, 5):
             q_str = str(q_num)
 
-            # Lọc các dòng thuộc quý này (dựa vào field quarter được compute từ ngày)
-            # --- UPDATE: Thêm điều kiện l.state != 'rejected' ---
+            # GIỮ NGUYÊN LOGIC FILTER THEO QUÝ CỦA BẠN
             lines_in_quarter = self.detail_ids.filtered(
                 lambda l: l.quarter == q_str
-                          and l.state != 'rejected' # <-- Quan trọng: Bỏ qua dòng bị từ chối
+                          and l.state != 'rejected'
                           and l.expected_qty > 0
             )
-
-            if not lines_in_quarter:
-                continue
+            if not lines_in_quarter: continue
 
             plan_name = f"{self.name} - Quý {q_num}"
+            existing = self.env['training.plan'].search([('parent_id', '=', self.id), ('name', '=', plan_name)],
+                                                        limit=1)
+            if existing: continue
 
-            # Kiểm tra trùng tên kế hoạch con
-            existing = self.env['training.plan'].search([
-                ('parent_id', '=', self.id),
-                ('name', '=', plan_name)
-            ], limit=1)
-
-            if existing:
-                continue
-
-            # 1. Tạo Header Kế hoạch Quý
+            # Tạo Header
             plan_vals = {
                 'name': plan_name,
                 'type': 'quarter',
                 'parent_id': self.id,
-                'state': 'draft',
+                'state': 'draft',  # Trạng thái ban đầu của con là Draft
                 'open_date': fields.Date.today(),
                 'survey_id': self.survey_id.id,
                 'currency_id': self.currency_id.id,
             }
 
-            # 2. Tạo Lines
+            # Tạo Lines
             detail_lines = []
             for line in lines_in_quarter:
                 line_vals = {
@@ -313,10 +203,10 @@ class TrainingPlan(models.Model):
                     'training_fee_per_person': line.training_fee_per_person,
                     'training_fee_source': line.training_fee_source,
                     'note': line.note,
-                    # Lưu ý: Ở KH Quý, chưa có học viên ngay nên student_count = 0
                     'student_count': 0,
-                    # Mang theo số lượng dự kiến sang để tham khảo (tùy chọn)
                     'expected_qty': line.expected_qty,
+                    'execution_date': line.execution_date,  # Mang ngày sang để tính lại quý
+                    'training_time':line.training_time,
                 }
                 detail_lines.append((0, 0, line_vals))
 
@@ -324,12 +214,110 @@ class TrainingPlan(models.Model):
                 plan_vals['detail_ids'] = detail_lines
                 self.env['training.plan'].create(plan_vals)
 
+    @api.model
+    def create(self, vals):
+        return super().create(vals)
+
+    def write(self, vals):
+        return super().write(vals)
+
+    @api.depends('detail_ids.participation_detail_ids.training_fee_per_person')
+    def _compute_stats(self):
+        ParticipationDetail = self.env['training.plan.participation.detail']
+        for plan in self:
+            if plan.detail_ids:
+                participants = ParticipationDetail.search([
+                    ('training_plan_detail_id', 'in', plan.detail_ids.ids)
+                ])
+                plan.student_count = len(participants)
+                plan.total_fee = sum((line.training_fee_per_person or 0.0) for line in participants)
+            else:
+                plan.student_count = 0
+                plan.total_fee = 0.0
+
+    # =========================================
+    #      ====== ACTION STATE (CẬP NHẬT) ======
+    # =========================================
+
+    # 1. Draft -> Director Approve (Năm) / Notify (Quý)
+    def action_draft(self):
+        for rec in self:
+            rec.state = 'draft'
+
+    def action_notify_quarter(self):  # Dành cho Quý
+        for rec in self:
+            if rec.type != 'quarter': raise ValidationError(_("Chỉ dành cho Kế hoạch Quý"))
+            rec.state = 'notify'
+
+    def action_submit(self):
+        for rec in self:
+            # Nếu là Quý: Notify -> Director Approve
+            if rec.type == 'quarter':
+                if rec.state != 'notify': raise ValidationError(_("Phải ở trạng thái Xác nhận."))
+            # Nếu là Năm: Draft -> Director Approve
+            else:
+                if rec.state != "draft": raise ValidationError(_("Phải ở trạng thái Dự thảo."))
+
+            rec.state = "director_approve"
+
+    # 2. Director Approve -> Board Approve (Năm) / Approved (Quý)
+    def action_director_approve(self):
+        # Check quyền GENERAL_DIRECTOR ở XML hoặc ở đây
+        for rec in self:
+            if rec.state != "director_approve":
+                raise ValidationError(_("Chỉ duyệt khi đang chờ duyệt."))
+
+            if rec.type == 'year':
+                rec.state = "board_approve"  # Năm cần HĐQT duyệt tiếp
+            else:
+                rec.state = "approved"  # Quý thì Giám đốc duyệt là xong bước duyệt
+
+    # 3. Board Approve -> Approved (Chỉ Năm)
+    def action_board_approve(self):
+        # Check quyền BOARD
+        for rec in self:
+            if rec.state != "board_approve":
+                raise ValidationError(_("Chỉ duyệt khi HĐQT đang xem xét."))
+            rec.state = "approved"
+
+    # 4. Approved -> In Process (Triển khai - Nút này sẽ gọi Logic sinh dữ liệu)
+    def action_deploy(self):
+        # Đây là nút mới tách ra, thay vì để trong action_approve cũ
+        for rec in self:
+            if rec.state != "approved":
+                raise ValidationError(_("Kế hoạch phải được phê duyệt trước khi triển khai."))
+            if rec.is_applied:
+                raise ValidationError(_("Kế hoạch đã được triển khai rồi."))
+
+            # --- GỌI LOGIC CŨ CỦA BẠN TẠI ĐÂY ---
+            if rec.type == 'year':
+                rec._generate_quarterly_plans()  # Logic sinh quý (Giữ nguyên)
+                # rec.message_post(body=_("Đã triển khai & Sinh kế hoạch Quý."))
+
+            elif rec.type == 'quarter':
+                rec._generate_participants_from_survey()  # Logic sinh học viên (Giữ nguyên)
+                # Sync history
+                for detail in rec.detail_ids:
+                    for part_detail in detail.participation_detail_ids:
+                        part_detail._sync_to_history()
+                # rec.message_post(body=_("Đã triển khai & Sinh danh sách học viên."))
+
+            rec.is_applied = True
+            rec.state = "in_process"
+
+    # 5. Complete
+    def action_complete(self):
+        for rec in self:
+            if rec.state != "in_process":
+                raise ValidationError(_("Chỉ hoàn thành khi đang triển khai."))
+            rec.state = "complete"
+
     def action_reject(self):
         for rec in self:
-            if rec.state != "pending":
-                raise ValidationError(_("Chỉ có thể từ chối khi trạng thái là 'Chờ duyệt'."))
+            # Cho phép từ chối ở các bước duyệt
+            if rec.state not in ['director_approve', 'board_approve']:
+                raise ValidationError(_("Không thể từ chối ở trạng thái này."))
             rec.state = "draft"
-
 
 
 class TrainingPlanDetail(models.Model):
@@ -356,6 +344,8 @@ class TrainingPlanDetail(models.Model):
         ],
         string="Cơ sở đào tạo",
     )
+    training_time = fields.Char(string="Thời lượng đào tạo")
+
     state = fields.Selection([
         ("approved", "Đã phê duyệt"),
         ("rejected", "Từ chối")

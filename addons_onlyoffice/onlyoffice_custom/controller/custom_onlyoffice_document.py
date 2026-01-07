@@ -14,42 +14,48 @@ import base64
 from mimetypes import guess_type
 import os
 _logger = logging.getLogger(__name__)
+from odoo.exceptions import ValidationError
 
 _mobile_regex = r"android|avantgo|playbook|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od|ad)|iris|kindle|lge |maemo|midp|mmp|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\\/|plucker|pocket|psp|symbian|treo|up\\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino"  # noqa: E501
 
 
 class OnlyofficeDocuments_custom(Onlyoffice_Connector):
-    @http.route("/onlyoffice/share/<int:attachment_id>", auth="public", type="http", website=True)
-    def render_share_editor(self, attachment_id, access_token=None):
-        _logger.info("GET /onlyoffice/editor/%s", attachment_id)
-        attachment = self.get_attachment(attachment_id)
-        if not attachment:
-            _logger.warning("GET /onlyoffice/editor/%s - attachment not found", attachment_id)
-            return request.not_found()
+    @http.route("/onlyoffice/share/<int:document_id>", auth="public", type="http", website=True)
+    def render_share_editor(self, document_id, access_token=None):
+        _logger.info("GET /onlyoffice/share/%s", document_id)
+        if document_id:
+            document = request.env["documents.document"].browse(int(document_id))
+            attachment_id = document.attachment_id.id
+            attachment = self.get_attachment(attachment_id)
+            if not attachment:
+                _logger.warning("GET /onlyoffice/editor/%s - attachment not found", attachment_id)
+                return request.not_found()
 
-        attachment.validate_access(access_token)
+            attachment.validate_access(access_token)
 
-        data = attachment.sudo().read(["id", "checksum", "public", "name", "access_token"])[0]
-        filename = data["name"]
+            data = attachment.sudo().read(["id", "checksum", "public", "name", "access_token"])[0]
+            filename = data["name"]
 
-        can_read = attachment.sudo().check_access_rights("read", raise_exception=False) and file_utils.can_view(
-            filename)
-        can_write = attachment.sudo().check_access_rights("write", raise_exception=False) and file_utils.can_edit(
-            filename)
+            can_read = attachment.sudo().check_access_rights("read", raise_exception=False) and file_utils.can_view(
+                filename)
+            can_write = attachment.sudo().check_access_rights("write", raise_exception=False) and file_utils.can_edit(
+                filename)
 
-        if not can_read:
-            _logger.warning("GET /onlyoffice/editor/%s - no read access", attachment_id)
-            raise Exception("cant read")
+            if not can_read:
+                _logger.warning("GET /onlyoffice/editor/%s - no read access", attachment_id)
+                raise Exception("cant read")
 
-        _logger.info("GET /onlyoffice/editor/%s - success", attachment_id)
-        return request.render(
-            "onlyoffice_odoo.onlyoffice_editor", self.prepare_share_editor_values(attachment, access_token, can_write)
-        )
+            _logger.info("GET /onlyoffice/editor/%s - success", attachment_id)
+            return request.render(
+                "onlyoffice_odoo.onlyoffice_editor", self.prepare_share_editor_values(document.attachment_id, access_token, can_write, document_id)
+            )
+        return request.not_found()
 
-    def prepare_share_editor_values(self, attachment, access_token, can_write):
+    def prepare_share_editor_values(self, attachment, access_token, can_write, document_id=False):
         _logger.info("prepare_editor_values - attachment: %s", attachment.id)
-        document_share = http.request.env['document.share'].sudo().search([("document_id", "=", attachment.id)],
+        document_share = http.request.env['document.share'].sudo().search([("document_id", "=", document_id)],
                                                                           limit=1)
+        document = request.env["documents.document"].browse(document_id)
         rolls = []
         roll_access = {
             "edit": True,
@@ -62,40 +68,33 @@ class OnlyofficeDocuments_custom(Onlyoffice_Connector):
             "rename": True,
         }
         current_user = request.env.user
-        user_share = ''
         if document_share:
-            public = document_share.public_access
-            for rec in document_share.user_role_permision_ids:
-                if rec.user_id.id == current_user.id:
-                    rolls = [rec.role_access for rec in rec.role_access_ids]
-                    user_share = rec.user_id
+            if document_share.all_user:
+                if document_share.is_edit or document_share.is_view or document_share.is_dow:
                     roll_access = {
-                        "edit": "edit" in rolls,
-                        "comment": "comment" in rolls,
-                        "review": "review" in rolls,
-                        "copy": "copy" in rolls,
-                        "print": "print" in rolls,
-                        "chat": "chat" in rolls,
-                        "download": "download" in rolls,
-                        "rename": "rename" in rolls,
+                        "edit": document_share.is_edit,
+                        "review": document_share.is_view,
+                        "download": document_share.is_dow,
                     }
-                    break
-            if not public:
-                if request.env.user != attachment.sudo().create_uid and not user_share:
+                else:
+                    raise ValidationError("User cannot open this file")
+            else:
+                if document_share.user_role_permision_ids:
+                    if current_user.id not in document_share.user_role_permision_ids.user_id.ids:
+                        raise AccessError(_("User has no read access rights to open this document"))
+                    for rec in document_share.user_role_permision_ids:
+                        if rec.user_id.id == current_user.id:
+                            rolls = [rec.code for rec in rec.role_access_ids]
+                            roll_access = {
+                                "edit": "edit" in rolls,
+                                "review": "review" in rolls,
+                                "download": "download" in rolls,
+                            }
+                            break
+                elif request.env.user != document.sudo().create_uid:
                     raise AccessError(_("User has no read access rights to open this document"))
-            elif public and request.env.user != attachment.sudo().create_uid:
-                rolls_public = [roll_public.role_access for roll_public in document_share.role_access_ids]
-                roll_access = {
-                    "edit": "edit" in rolls_public,
-                    "comment": "comment" in rolls_public,
-                    "review": "review" in rolls_public,
-                    "copy": "copy" in rolls_public,
-                    "print": "print" in rolls_public,
-                    "chat": "chat" in rolls_public,
-                    "download": "download" in rolls_public,
-                    "rename": "rename" in rolls_public,
-                }
-        elif request.env.user != attachment.sudo().create_uid:
+
+        elif request.env.user != document.sudo().create_uid:
             raise AccessError(_("User has no read access rights to open this document"))
 
         data = attachment.sudo().read(["id", "checksum", "public", "name", "access_token"])[0]
