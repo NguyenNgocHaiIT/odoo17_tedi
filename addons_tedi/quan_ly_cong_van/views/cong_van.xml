@@ -113,6 +113,7 @@
                             </group>
                             <group colspan="7">
                                 <field name="attachment_datas"
+                                       required="1"
                                        widget="pdf_viewer"
                                        filename="attachment_filename"
                                        readonly="not (is_van_thu or not_is_van_thu)"
@@ -264,7 +265,7 @@
                                 invisible="tt_vb != 'draft'"/>
                         <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
-                        <button name="approve_cong_van_di" string="Duyệt" type="object"
+                        <button name="approve" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
                         <button name="khong_dat" string="Không đạt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
@@ -355,6 +356,7 @@
                             </group>
                             <group colspan="7">
                                 <field name="attachment_datas"
+                                       required="1"
                                        widget="pdf_viewer"
                                        filename="attachment_filename"
                                        readonly="not (is_van_thu or not_is_van_thu)"
@@ -584,6 +586,7 @@
                             </group>
                             <group colspan="7">
                                 <field name="attachment_datas"
+                                       required="1"
                                        widget="pdf_viewer"
                                        filename="attachment_filename"
                                        readonly="not (is_van_thu or not_is_van_thu)"
@@ -706,7 +709,7 @@
                         <!-- Nhóm cho đơn vị -->
                         <group invisible="loai_phan_phat == 'ca_nhan'" string="Cho đơn vị">
                             <group>
-                                <field name="don_vi_xu_ly_chinh" invisible="loai_phan_phat == 'ca_nhan'"/>
+                                <field name="don_vi_xu_ly_chinh" required="loai_phan_phat != 'ca_nhan'" invisible="loai_phan_phat == 'ca_nhan'"/>
                                 <field name="don_vi_dong_xu_ly" widget="many2many_tags"
                                        invisible="loai_phan_phat == 'ca_nhan'"/>
                             </group>
@@ -723,6 +726,7 @@
                             <group>
                                 <field name="ca_nhan_xu_ly_chinh"
                                        widget="many2many_tags"
+                                       required="loai_phan_phat != 'don_vi'"
                                        context="{'phan_phat_full_label': True}"/>
                                 <field name="ca_nhan_dong_xu_ly"
                                        widget="many2many_tags"
