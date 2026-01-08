@@ -106,7 +106,7 @@
                                         <field name="stt" string="STT" width="50px"
                                                decoration-bf="display_type == 'line_section'"/>
 
-                                        <field name="name" string="Mục tiêu nhiệm vụ/ công việc" readonly="1"
+                                        <field name="name" string="Mục tiêu nhiệm vụ/ công việc"
                                                decoration-bf="display_type == 'line_section'"/>
 
                                         <field name="weight" sum="Tổng" readonly="1" force_save="1"/>
