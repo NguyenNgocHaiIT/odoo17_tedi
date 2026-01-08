@@ -78,12 +78,6 @@ class ThanhToanXeController(http.Controller):
             'valign': 'vcenter'
         })
 
-        number_format = workbook.add_format({
-            'border': 1,
-            'num_format': '#,##0.00',
-            'valign': 'vcenter'
-        })
-
         no_border_cell_format = workbook.add_format({
             'valign': 'vcenter'
         })
@@ -145,7 +139,7 @@ class ThanhToanXeController(http.Controller):
             worksheet.write(row, 4, trip.requester_id.name or '', cell_format)
             worksheet.write(row, 5, trip.destination or '', cell_format)
             worksheet.write(row, 6, trip.work_content or '', cell_format)
-            worksheet.write(row, 7, f"{trip.distance_km:,.0f}", number_format)
+            worksheet.write(row, 7, trip.distance_km, cell_format)
 
             row += 1
             stt += 1
