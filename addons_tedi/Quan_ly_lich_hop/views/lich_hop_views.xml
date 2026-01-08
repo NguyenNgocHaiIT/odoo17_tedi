@@ -70,10 +70,11 @@
                                 class="btn-primary"
                                 invisible="room_sign != 'no_sign' or state != 'approved'"/>
 
+                        <field name="can_add_participants" invisible="1"/>
                         <button name="action_add_participants"
                                 string="Thêm người tham gia"
                                 type="object"
-                                invisible="room_sign != 'no_sign' or state =='canceled'"
+                                invisible="room_sign != 'no_sign' or state =='canceled' or not can_add_participants"
                                 class="btn-primary"/>
                     </header>
 
