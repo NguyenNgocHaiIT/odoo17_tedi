@@ -25,16 +25,31 @@ class VehicleNoCarWizard(models.TransientModel):
         if active_id:
             record = self.env['hr_tedi.vehicle.registration'].browse(active_id)
 
-            # Cập nhật thông tin vào phiếu
+            # 1. Cập nhật thông tin vào phiếu
             record.write({
                 'state': 'no_car',
                 'external_booking_type': self.booking_option,
                 'no_car_note': self.note
             })
 
-            # Ghi log vào chatter
+            # 2. Ghi log vào chatter
             option_label = dict(self._fields['booking_option'].selection).get(self.booking_option)
             record.message_post(body=f"Báo hết xe. Phương án: {option_label}. Ghi chú: {self.note or 'Không'}")
+
+            # ========================================================
+            # 3. GỬI EMAIL THÔNG BÁO (LOGIC MỚI THÊM)
+            # ========================================================
+            # Thay 'ten_module_cua_ban' bằng tên thư mục module của bạn (ví dụ: my_fleet_module)
+            template = self.env.ref('ten_module_cua_ban.email_template_vehicle_registration_no_car',
+                                    raise_if_not_found=False)
+
+            if template:
+                # Gửi email ngay lập tức (force_send=True)
+                template.send_mail(record.id, force_send=True)
+            else:
+                # (Tùy chọn) Báo lỗi nếu quên cài file XML, hoặc chỉ cần log warning
+                pass
+                # ========================================================
 
         return {'type': 'ir.actions.act_window_close'}
 
