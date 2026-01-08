@@ -20,7 +20,7 @@ class AttachmentCreateAPI(http.Controller):
         try:
             file = kwargs.get('file')
             res_id = kwargs.get('res_id')
-            model = 'project.project'
+            model = 'office.document'
 
             if not file or not res_id:
                 return Response(
@@ -76,7 +76,7 @@ class AttachmentCreateAPI(http.Controller):
             })
 
             request.env.cr.commit()
-
+            request.env[model].sudo().browse(res_id).attachment = attachment.id
             return Response(
                 json.dumps({
                     'success': True,
