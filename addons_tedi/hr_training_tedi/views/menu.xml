@@ -6,6 +6,7 @@
             id="training_tedi_root"
             name="Đào tạo"
             sequence="8"
+            web_icon="hr_training_tedi,static/description/icon.png"
         />
 
         <menuitem id="menu_training_plan_lod"
