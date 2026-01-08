@@ -10,9 +10,7 @@ class AttachmentCreateAPI(http.Controller):
 
     @http.route('/api/quick/create/attachment', type='http', auth='public', methods=['POST'], csrf=False)
     def quick_create_attachment(self, **kwargs):
-        print('hello')
         """
-        API nhanh - chỉ cần file và res_id, tự động lấy tên từ file
         POST Parameters:
         - file: File upload (bắt buộc)
         - res_id: ID của công văn (bắt buộc)
@@ -32,13 +30,11 @@ class AttachmentCreateAPI(http.Controller):
                     status=400
                 )
 
-            # Get filename from file object
             if hasattr(file, 'filename'):
                 name = file.filename
             else:
                 name = f"attachment_{res_id}"
 
-            # Validate res_id
             try:
                 res_id = int(res_id)
             except ValueError:
@@ -50,8 +46,6 @@ class AttachmentCreateAPI(http.Controller):
                     content_type='application/json',
                     status=400
                 )
-            print(res_id)
-            # Check record exists
             if not request.env[model].sudo().browse(res_id).exists():
                 return Response(
                     json.dumps({
@@ -62,7 +56,6 @@ class AttachmentCreateAPI(http.Controller):
                     status=404
                 )
 
-            # Create attachment
             file_content = file.read()
             file_data = base64.b64encode(file_content)
 
@@ -76,7 +69,7 @@ class AttachmentCreateAPI(http.Controller):
             })
 
             request.env.cr.commit()
-            request.env[model].sudo().browse(res_id).attachment = attachment.id
+            request.env[model].sudo().browse(res_id).attachment_id = attachment.id
             return Response(
                 json.dumps({
                     'success': True,
