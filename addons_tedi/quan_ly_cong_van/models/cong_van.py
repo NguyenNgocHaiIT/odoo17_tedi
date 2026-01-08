@@ -597,7 +597,61 @@ class OfficeDocument(models.Model):
     nguoi_theo_doi = fields.Many2one('res.users', string='Người theo dõi')
     ngay_bat_dau = fields.Date('Ngày bắt đầu', default=fields.Date.context_today)
     ho_so_cong_viec = fields.Char('Hồ sơ công việc')
-    attachment = fields.Many2one('ir.attachment', string='Tài liệu')
+    attachment_id = fields.Many2one(
+        'ir.attachment',
+        string='Tài liệu',
+        ondelete='cascade'
+    )
+
+    attachment_datas = fields.Binary(
+        string='Tài liệu',
+        compute='_compute_attachment_datas',
+        inverse='_inverse_attachment_datas',
+        store=False
+    )
+
+    attachment_filename = fields.Char(
+        string='Tên file',
+        compute='_compute_attachment_datas',
+        store=False
+    )
+
+    @api.depends('attachment_id', 'attachment_id.datas', 'attachment_id.name')
+    def _compute_attachment_datas(self):
+        """Chiều 1: attachment_id → attachment_datas"""
+        for record in self:
+            if record.attachment_id:
+                record.attachment_datas = record.attachment_id.datas
+                record.attachment_filename = record.attachment_id.name
+            else:
+                record.attachment_datas = False
+                record.attachment_filename = False
+
+    def _inverse_attachment_datas(self):
+        """Chiều 2: attachment_datas → attachment_id"""
+        for record in self:
+            if record.attachment_datas:
+                if record.attachment_id:
+                    # Update attachment hiện có
+                    record.attachment_id.write({
+                        'datas': record.attachment_datas,
+                        'name': record.attachment_filename or record.attachment_id.name,
+                    })
+                else:
+                    # Tạo attachment mới
+                    attachment = self.env['ir.attachment'].create({
+                        'name': record.attachment_filename or f'document_{record.id or "new"}.pdf',
+                        'datas': record.attachment_datas,
+                        'res_model': record._name,
+                        'res_id': record.id,
+                        'mimetype': 'application/pdf',
+                    })
+                    record.attachment_id = attachment.id
+            else:
+                # Nếu xóa attachment_datas thì xóa attachment_id
+                if record.attachment_id:
+                    record.attachment_id.unlink()
+
     note = fields.Text('Ghi chú')
     don_vi_ban_hanh_ngoai = fields.Many2one('res.partner', string='Đơn vị ban hành')
     don_vi_ban_hanh = fields.Many2one('hr.department', string='Đơn vị ban hành')
