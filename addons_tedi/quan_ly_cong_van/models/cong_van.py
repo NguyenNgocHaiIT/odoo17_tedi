@@ -597,7 +597,7 @@ class OfficeDocument(models.Model):
     nguoi_theo_doi = fields.Many2one('res.users', string='Người theo dõi')
     ngay_bat_dau = fields.Date('Ngày bắt đầu', default=fields.Date.context_today)
     ho_so_cong_viec = fields.Char('Hồ sơ công việc')
-    attachment = fields.Binary( string='Tài liệu')
+    attachment = fields.Many2one('ir.attachment', string='Tài liệu')
     note = fields.Text('Ghi chú')
     don_vi_ban_hanh_ngoai = fields.Many2one('res.partner', string='Đơn vị ban hành')
     don_vi_ban_hanh = fields.Many2one('hr.department', string='Đơn vị ban hành')
