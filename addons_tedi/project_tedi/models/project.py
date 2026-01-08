@@ -38,19 +38,60 @@ class Project(models.Model):
 
     @api.onchange('phan_loai_cong_trinh_id')
     def _onchange_template(self):
+        """Xử lý khi thay đổi phân loại công trình"""
         if self.phan_loai_cong_trinh_id:
-            vals_list = [
-                (0, 0, {
+            # Xóa tất cả nhiệm vụ cũ và tạo mới
+            self._regenerate_all_tasks()
+
+    @api.onchange('project_state_ids')
+    def _onchange_project_states(self):
+        """Xử lý khi thay đổi bước thực hiện"""
+        if self.phan_loai_cong_trinh_id:
+            # Chỉ tạo lại nếu đã có template
+            self._regenerate_all_tasks()
+
+    def _regenerate_all_tasks(self):
+        """Tạo lại tất cả nhiệm vụ dựa trên template và bước thực hiện hiện tại"""
+        if not self.phan_loai_cong_trinh_id:
+            return
+
+        # Xóa tất cả nhiệm vụ hiện tại
+        self.giao_nhiem_vu = [(5, 0, 0)]
+
+        project_states = self.project_state_ids
+        has_states = bool(project_states)
+        all_tasks = []
+
+        # Duyệt qua từng nhiệm vụ trong template
+        for line in self.phan_loai_cong_trinh_id.nhiem_vu_ids:
+            if has_states:
+                # Nếu có bước thực hiện, tạo nhiệm vụ cho từng bước
+                for state in project_states:
+                    task_name = f"{line.nhiem_vu} ({state.name})"
+                    all_tasks.append((0, 0, {
+                        'department_id': line.department_id.id,
+                        'name': task_name,
+                        'sequence': line.sequence,
+                        'task_categorize': line.task_categorize.id,
+                        'is_deliverable': line.is_deliverable,
+                        'deliverable_type_id': line.deliverable_type_id.id,
+                        'project_id': self.id,
+                    }))
+            else:
+                # Nếu không có bước thực hiện, tạo nhiệm vụ bình thường
+                all_tasks.append((0, 0, {
                     'department_id': line.department_id.id,
                     'name': line.nhiem_vu,
                     'sequence': line.sequence,
-                    'task_categorize':line.task_categorize,
-                    'is_deliverable':line.is_deliverable,
-                    'deliverable_type_id':line.deliverable_type_id,
-                    'project_id':self.id,
-                }) for line in self.phan_loai_cong_trinh_id.nhiem_vu_ids
-            ]
-            self.giao_nhiem_vu = [(5, 0, 0)] + vals_list
+                    'task_categorize': line.task_categorize.id,
+                    'is_deliverable': line.is_deliverable,
+                    'deliverable_type_id': line.deliverable_type_id.id,
+                    'project_id': self.id,
+                }))
+
+        # Gán tất cả nhiệm vụ mới
+        if all_tasks:
+            self.giao_nhiem_vu = all_tasks
 
 
 class ProjectMember(models.Model):

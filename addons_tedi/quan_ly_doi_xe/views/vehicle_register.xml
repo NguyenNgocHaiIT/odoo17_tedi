@@ -136,6 +136,7 @@
                                                force_save="1"/>
                                 </div>
                                 <field name="destination" readonly="state != 'draft'"/>
+                                <field name="speedometer_km" string="Số Km theo đồng hồ" readonly="state != 'waiting_return'" class="fw-bold text-primary"/>
                                 <field name="distance_km" string="Số Km thực tế" readonly="state != 'waiting_return'" class="fw-bold text-primary"/>
                             </group>
                         </group>

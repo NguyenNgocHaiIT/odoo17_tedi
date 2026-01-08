@@ -48,10 +48,16 @@ class FleetVehicle(models.Model):
     @api.depends('model_id.brand_id.name', 'model_id.name', 'license_plate', 'tedi_driver_employee_id')
     def _compute_display_name(self):
         for record in self:
-            # Lấy thông tin cơ bản: Hãng/Model/Biển số
-            name = record.model_id.brand_id.name + '/' + record.model_id.name + '/' + (record.license_plate or '')
+            # Tạo các phần tử an toàn
+            brand = record.model_id.brand_id.name if record.model_id and record.model_id.brand_id else ''
+            model = record.model_id.name if record.model_id else ''
+            plate = record.license_plate or ''
 
-            # Nếu có tài xế, nối thêm tên tài xế vào
+            # Lọc bỏ các phần rỗng và ghép lại
+            parts = filter(None, [brand, model, plate])
+            name = '/'.join(parts) if any(parts) else 'Xe chưa đặt tên'
+
+            # Thêm tên tài xế nếu có
             if record.tedi_driver_employee_id:
                 name += f" ({record.tedi_driver_employee_id.name})"
 
