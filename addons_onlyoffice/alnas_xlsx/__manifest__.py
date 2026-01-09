@@ -19,7 +19,7 @@
     ],
     'assets': {
         'web.assets_backend': [
-            'alnas_xlsx/static/src/js/report/action_manager_report.esm.js'
+            # 'alnas_xlsx/static/src/js/report/action_manager_report.esm.js'
         ]
     },
     'license': 'LGPL-3',

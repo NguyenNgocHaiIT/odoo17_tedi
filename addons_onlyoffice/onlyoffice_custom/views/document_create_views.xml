@@ -30,16 +30,16 @@
             </field>
         </record>
 
-        <record id="document_directory_inherit_js_class" model="ir.ui.view">
-            <field name="name">document.directory.tree.inherit</field>
-            <field name="model">document.directory</field>
-            <field name="inherit_id" ref="windx_documents_management_preview.document_directory_view_kanban"/>
-            <field name="arch" type="xml">
-                <xpath expr="//kanban" position="attributes">
-                    <attribute name="js_class">button_in_kanban</attribute>
-                </xpath>
-            </field>
-        </record>
+<!--        <record id="document_directory_inherit_js_class" model="ir.ui.view">-->
+<!--            <field name="name">document.directory.tree.inherit</field>-->
+<!--            <field name="model">document.directory</field>-->
+<!--            <field name="inherit_id" ref="windx_documents_management_preview.document_directory_view_kanban"/>-->
+<!--            <field name="arch" type="xml">-->
+<!--                <xpath expr="//kanban" position="attributes">-->
+<!--                    <attribute name="js_class">button_in_kanban</attribute>-->
+<!--                </xpath>-->
+<!--            </field>-->
+<!--        </record>-->
 
 
         <record id="attachment_inherit_js_class" model="ir.ui.view">

@@ -6,10 +6,20 @@
         <field name="inherit_id" ref="windx_documents_management_preview.document_directory_view_kanban"/>
         <field name="arch" type="xml">
             <xpath expr="//a[@t-if='widget.editable']" position="after">
-                <button name="share_onlyoffice_document" role="menuitem" type="object"
+                <button name="share_onlyoffice_document" role="menuitem" type="object" groups="windx_documents_management_preview.group_documents_manager"
                         class="dropdown-item onlyoffice-create-action">Share with OnlyOffice
                 </button>
             </xpath>
         </field>
+    </record>
+     <record id="windx_documents_management_preview.act_my_attachment_from_document_directory" model="ir.actions.act_window">
+        <field name="name">Attachments</field>
+        <field name="res_model">ir.attachment</field>
+            <field name="domain">['|','&amp;',('document_directory_id', '!=', False),  ('user_ids', 'in', uid),'&amp;',('document_directory_id', '!=', False),('create_uid', '=', uid)]</field>
+    </record>
+     <record id="windx_documents_management_preview.act_attachment_from_document_directory" model="ir.actions.act_window">
+        <field name="name">Attachments</field>
+        <field name="res_model">ir.attachment</field>
+            <field name="domain">['|','&amp;',('document_directory_id', '!=', False),  ('user_ids', 'in', uid),'&amp;',('document_directory_id', '!=', False),('create_uid', '=', uid)]</field>
     </record>
 </odoo>

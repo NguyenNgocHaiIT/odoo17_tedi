@@ -23,6 +23,27 @@
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
         </record>
 
+        <!-- Nhóm văn thư đơn vị -->
+        <record id="group_van_thu_don_vi" model="res.groups">
+            <field name="name">Văn thư đơn vị</field>
+            <field name="category_id" ref="base.module_category_administration"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <!-- Văn thư đơn vị: chỉ xem -->
+        <record id="office_document_rule_van_thu_don_vi" model="ir.rule">
+            <field name="name">Office Document - Văn thư đơn vị: xem tất cả</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[(1,'=',1)]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_don_vi'))]"/>
+            <field name="perm_read">1</field>
+            <field name="perm_write">0</field>
+            <field name="perm_create">0</field>
+            <field name="perm_unlink">0</field>
+        </record>
+
+
+
 
         <!-- Văn thư: xem tất cả -->
         <record id="office_document_rule_van_thu" model="ir.rule">
@@ -46,8 +67,11 @@
                     ('create_uid','=',user.id),
                     ('detail2.nguoi_nhap_y_kien.user_id','=',user.id),
                     '&amp;',
-                        ('lanh_dao_xu_ly.user_id','=',user.id),
-                        ('tt_vb','!=','draft')
+                        ('tt_vb', '!=', 'draft'),
+                        '|','|',
+                            ('truong_don_vi_duyet.user_id','=',user.id),
+                            ('lanh_dao_xu_ly.user_id', '=', user.id),
+                            ('lanh_dao_theo_doi.user_id', '=', user.id)
                 ]
             </field>
             <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_lanh_dao'))]"/>
@@ -63,8 +87,11 @@
                     ('create_uid','=',user.id),
                     ('detail2.nguoi_nhap_y_kien.user_id','=',user.id),
                     '&amp;',
-                        ('lanh_dao_xu_ly.user_id','=',user.id),
-                        ('tt_vb','!=','draft')
+                        ('tt_vb', '!=', 'draft'),
+                        '|','|',
+                            ('truong_don_vi_duyet.user_id','=',user.id),
+                            ('lanh_dao_xu_ly.user_id', '=', user.id),
+                            ('lanh_dao_theo_doi.user_id', '=', user.id)
                 ]
             </field>
             <field name="groups" eval="[(4, ref('base.group_user'))]"/>
@@ -78,8 +105,11 @@
                     ('create_uid','=',user.id),
                     ('detail2.nguoi_nhap_y_kien.user_id','=',user.id),
                     '&amp;',
-                        ('lanh_dao_xu_ly.user_id','=',user.id),
-                        ('tt_vb','!=','draft')
+                        ('tt_vb', '!=', 'draft'),
+                        '|','|',
+                            ('truong_don_vi_duyet.user_id','=',user.id),
+                            ('lanh_dao_xu_ly.user_id', '=', user.id),
+                            ('lanh_dao_theo_doi.user_id', '=', user.id)
                 ]
             </field>
             <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_don_vi_xu_ly'))]"/>

@@ -6,3 +6,4 @@ access_document_share,document.share,model_document_share,base.group_user,1,1,1,
 access_document_role_access,role.access.onlyoffice,model_role_onlyoffice,base.group_user,1,1,1,1
 access_documents_create,documents.create,model_documents_create,base.group_user,1,1,1,1
 access_user_role_permision,user.role.permision,model_user_role_permision,base.group_user,1,1,1,1
+access_report_preview,user.report.preview,model_report_preview,base.group_user,1,1,1,1

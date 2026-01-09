@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+<!-- Thêm vào file view res_partner.xml -->
+    <record id="view_partner_form_inherit_document_management" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.document.management</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <!-- Thêm vào tab Thông tin chung -->
+            <xpath expr="//page[@name='internal_notes']" position="before">
+                <page string="Mã khách hàng">
+                    <group>
+                        <group string="Mã khách hàng">
+                            <field name="ma_don_vi" string="Mã khách hàng"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
