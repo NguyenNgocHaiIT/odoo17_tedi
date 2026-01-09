@@ -545,3 +545,102 @@ body.o_web_client {
         }
     }
 }
+
+/* ========================= */
+/* CUSTOM THEME VARIABLES    */
+/* ========================= */
+html{
+    &[data-theme-style="excel_style"]{
+        --border-radius-lg: 0;
+        --border-radius-md: 10px;
+        --border-radius-sm: 6px;
+        --border-radius-xl: 50px;
+        --table-border-spacing: 0em;
+    }
+}
+
+/* ========================= */
+/* EXCEL STYLE LIST VIEW     */
+/* ========================= */
+.excel_style_list_view .o_list_table {
+    border-collapse: collapse !important;
+    width: 100%;
+    border: 1.5px solid #cfcfcf !important;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+/* Header */
+.excel_style_list_view .o_list_table thead th {
+    background-color: #f0f8ff;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 600;
+    height: 50px;
+    border: 1.5px solid #cfcfcf !important;
+    padding: 10px 12px;
+}
+
+/* Body cells */
+.excel_style_list_view .o_list_table tbody td {
+    border-right: 1.5px solid #cfcfcf !important;
+    border-bottom: 1.5px solid #cfcfcf !important;
+    border-top: 1.5px solid #cfcfcf !important;
+    border-left: 1.5px solid #cfcfcf !important;
+    height: 50px;
+    padding: 8px 12px;
+}
+
+/* Checkbox column căn giữa */
+.excel_style_list_view .o_list_table th.o_list_record_selector,
+.excel_style_list_view .o_list_table td.o_list_record_selector {
+    text-align: center;
+}
+
+.excel_style_list_view .o_list_table thead {
+    border: 1.5px solid #cfcfcf !important;
+}
+
+/* Thêm theme cho toàn bộ khi có class này */
+body.excel_style_theme {
+    --border-radius-lg: 0;
+    --border-radius-md: 10px;
+    --border-radius-sm: 6px;
+    --border-radius-xl: 50px;
+}
+
+body.o_web_client
+.excel_style_list_view
+.o_list_renderer.table-responsive
+.o_list_table tbody tr.o_data_row td:last-child,
+body.o_web_client
+.excel_style_list_view
+.o_list_renderer.table-responsive
+.o_list_table tbody tr.o_data_row th:last-child {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border: 1.5px solid #cfcfcf !important;
+}
+
+body.o_web_client
+.excel_style_list_view
+.o_list_renderer.table-responsive
+.o_list_table tbody tr.o_data_row td:first-child,
+body.o_web_client
+.excel_style_list_view
+.o_list_renderer.table-responsive
+.o_list_table tbody tr.o_data_row th:first-child {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+
+
+body.o_web_client .o_form_view .o_form_sheet_bg .o_form_sheet .excel_style_list_view.o_list_view .o_list_table tbody td.o_data_cell {
+    height: auto !important;
+    min-height: 2.5rem !important;
+    padding: 8px 12px !important;
+}
+
+body.o_web_client.list_comfortable .excel_style_list_view .o_list_renderer {
+    --ListRenderer-thead-padding-y: 0.5rem !important; /* Giảm từ 1rem xuống 0.5rem */
+}

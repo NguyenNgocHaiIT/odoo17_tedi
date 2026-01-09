@@ -20,6 +20,7 @@
         'views/vehicle_register.xml',
         'views/vehicle_fix.xml',
         'views/vehicle_odometer.xml',
+        'views/bao_cao_wizard.xml',
         'views/menu.xml',
     ],
 

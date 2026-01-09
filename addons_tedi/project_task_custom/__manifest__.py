@@ -11,7 +11,7 @@ Bridge module for project and enterprise
     'version': '2.0',
     'depends': ['project', 'web_gantt_custom'],
     'data': [
-
+        'security/ir.model.access.csv',
         'views/project_task_gantt.xml',
         'views/project_portal_project_task_templates.xml',
     ],

@@ -157,6 +157,10 @@ export class GanttModel extends Model {
         /** @type {Set<RowId>} */
         this.closedRows = new Set();
 
+        // THÊM: Set để theo dõi các subtask group đã đóng
+        /** @type {Set<RowId>} */
+        this.closedSubtaskGroups = new Set();
+
         // concurrency management
         this.keepLast = new KeepLast();
         this.mutex = new Mutex();
@@ -499,11 +503,18 @@ export class GanttModel extends Model {
      * @param {string} rowId
      */
     toggleRow(rowId) {
+        console.log('=== TOGGLE ROW ===');
+        console.log('Row ID:', rowId);
+
         if (this.isClosed(rowId)) {
             this.closedRows.delete(rowId);
+            console.log('✓ Row EXPANDED:', rowId);
         } else {
             this.closedRows.add(rowId);
+            console.log('✓ Row COLLAPSED:', rowId);
         }
+
+        console.log('Closed rows:', Array.from(this.closedRows));
         this.notify();
     }
 
@@ -661,11 +672,26 @@ export class GanttModel extends Model {
         const data = { count: length };
 
         data.records = this._parseServerData(metaData, records);
-        data.rows = this._generateRows(metaData, {
-            groupedBy,
-            groups,
-            parentGroup: [],
-        });
+        // Nếu không có grouping (hoặc grouping không phải project_id), dùng cấu trúc cây task
+        //if (!groupedBy.length || groupedBy[0] !== 'project_id') {
+        //    data.rows = this._buildHierarchicalRows(metaData, data.records);
+        //} else {
+            // Vẫn giữ grouping project nếu có
+        //    data.rows = this._generateRows(metaData, {
+        //        groupedBy,
+        //        groups,
+        //        parentGroup: [],
+        //    });
+        //}
+        if (groupedBy.length) {
+            data.rows = this._generateRows(metaData, {
+                groupedBy,
+                groups,
+                parentGroup: [],
+            });
+        } else {
+            data.rows = this._buildHierarchicalRows(metaData, data.records);
+        }
 
         await this.keepLast.add(this._fetchDataPostProcess(metaData, data));
 
@@ -1081,4 +1107,92 @@ export class GanttModel extends Model {
             }
         }
     }
+    /**
+     * Xây dựng lại rows thành cấu trúc cây dựa trên parent_id
+     * Gọi sau khi đã có đầy đủ records (bao gồm subtasks đã load)
+     */
+    _buildHierarchicalRows(metaData, records) {
+        const recordMap = {};
+        records.forEach(rec => {
+            recordMap[rec.id] = {
+                ...rec,
+                __children: [],
+            };
+        });
+
+        const rootRows = [];
+
+        records.forEach(rec => {
+            const node = recordMap[rec.id];
+            if (rec.parent_id) {
+                const parentId = Array.isArray(rec.parent_id) ? rec.parent_id[0] : rec.parent_id;
+                const parentNode = recordMap[parentId];
+                if (parentNode) {
+                    parentNode.__children.push(node);
+                } else {
+                    rootRows.push(node);
+                }
+            } else {
+                rootRows.push(node);
+            }
+        });
+
+        // Hàm đệ quy tạo row structure
+        const createRow = (node, groupLevel = 0) => {
+            const hasChildren = node.__children.length > 0;
+
+            const row = {
+                id: JSON.stringify([node.id]),
+                isGroup: false,  // KHÔNG phải Odoo group
+                name: node.display_name,
+                resId: node.id,
+                record: node,
+                recordIds: [node.id],
+                groupLevel: groupLevel,
+                fromServer: true,
+                // QUAN TRỌNG: Đánh dấu task có subtasks
+                rows: hasChildren ? node.__children.map(child => createRow(child, groupLevel + 1)) : undefined
+            };
+
+            return row;
+        };
+
+        return rootRows.map(root => createRow(root, 0));
+    }
+
+    /**
+     * @param {RowId} rowId
+     * @returns {boolean}
+     */
+    isSubtaskGroupClosed(rowId) {
+        return this._closedSubtaskGroups && this._closedSubtaskGroups.has(rowId);
+    }
+
+    /**
+     * @param {RowId} rowId
+     */
+    toggleSubtaskGroup(rowId) {
+        console.log(`Toggling subtask group: ${rowId}`);
+
+        // Toggle trạng thái
+        if (!this._closedSubtaskGroups) {
+            this._closedSubtaskGroups = new Set();
+        }
+
+        if (this._closedSubtaskGroups.has(rowId)) {
+            this._closedSubtaskGroups.delete(rowId);
+            console.log(`Expanded subtasks for ${rowId}`);
+        } else {
+            this._closedSubtaskGroups.add(rowId);
+            console.log(`Collapsed subtasks for ${rowId}`);
+        }
+
+        // QUAN TRỌNG: Gọi notify để trigger re-render
+        this.notify();
+
+        // Debug
+        console.log('Current closed subtask groups:', Array.from(this._closedSubtaskGroups));
+    }
+
+
 }

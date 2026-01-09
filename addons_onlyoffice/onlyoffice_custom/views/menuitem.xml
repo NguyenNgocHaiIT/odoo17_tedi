@@ -17,5 +17,8 @@
                       action="alnas_xlsx.xlsx_report_action"
                       sequence="2"/>
         </menuitem>
+
+        <menuitem name="Configuration" id="documents.Config" parent="documents.menu_root" groups="base.group_user" sequence="1"/>
+        <menuitem name="Workspaces" id="documents.folder_menu" parent="documents.Config" action="documents.folder_action" groups="base.group_user" sequence="1"/>
     </data>
 </odoo>

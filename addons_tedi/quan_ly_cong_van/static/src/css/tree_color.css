@@ -1,9 +1,31 @@
 .soft-green-row {
-    background-color: #d4edda !important;   /* xanh lá pastel */
-    color: black !important;              /* chữ xanh đậm */
+    color: green !important;
 }
 
 .soft-yellow-row {
-    background-color: #fff3cd !important;   /* vàng pastel */
-    color: black !important;              /* chữ vàng đậm */
+    color: #f1c40f !important;
+}
+
+.soft-red-row {
+    color: red !important;
+}
+
+/* GREEN */
+body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-green-row:hover td {
+    color: green !important;
+}
+
+/* YELLOW */
+body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-yellow-row:hover td {
+    color: #f1c40f !important;
+}
+
+/* RED */
+body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-red-row:hover td {
+    color: red !important;
+}
+
+.o_ellipsis {
+    white-space: nowrap !important;
+    overflow: hidden !important;
 }

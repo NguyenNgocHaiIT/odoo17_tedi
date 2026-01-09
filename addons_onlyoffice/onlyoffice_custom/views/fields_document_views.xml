@@ -30,6 +30,7 @@
                 <xpath expr="//field[@name='report_docx_template']" position="after">
                     <field name="onlyoffice_url" invisible="1"/>
                     <field name="attachment_id" invisible="1"/>
+                    <field name="binary_id"/>
                     <field name="attachment_ids" widget="many2many_binary_preview" readonly="state != 'draft'"/>
                 </xpath>
 
@@ -69,6 +70,15 @@
                             <div class="oe_form_container">
                                 <div class="oe_form_sheetbg">
                                     <div class="oe_form_sheet" style="max-width: 100%; padding: 20px;">
+                                        <div class="alert alert-info">
+                                            <strong>URL:</strong>
+                                            <a href="https://apps.odoo.com/apps/modules/17.0/alnas_docx"
+                                               target="_blank"
+                                               rel="noopener noreferrer">
+                                                https://apps.odoo.com/apps/modules/17.0/alnas_docx
+                                            </a>
+                                            <br/>
+                                        </div>
                                         <div class="alert alert-info">
                                             <strong>Field Naming Convention</strong><br/>
                                             To call and write the field name, use the following format: , starting with the word "docs".{{docs.field_name}}
@@ -115,6 +125,54 @@
                                 </div>
                             </div>
                         </page>
+                        <page name="quick_guide" string="Quick Guide">
+                            <div class="oe_form_container">
+                                <div class="oe_form_sheetbg">
+                                    <div class="oe_form_sheet" style="max-width: 100%; padding: 20px;">
+                                        <div class="alert alert-info">
+                                            <h5 style="color: #875A7B; margin-bottom: 20px;">Quick Guide</h5>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>1. Select "Report Name":</strong> Displayed in Print menu
+                                            </div>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>2. Select "Model":</strong> Data source model for the report
+                                            </div>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>3. Select Edit "Field Name":</strong> Downloaded file name (e.g., Display Name)
+                                            </div>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>4. Select "Template File":</strong> Upload .docx/.xlsx template
+                                            </div>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>5. Select Data Fields:</strong>
+                                                <ul style="margin-left: 20px; margin-top: 5px;">
+                                                    <li>Select model → Display field list (Field Document)</li>
+                                                    <li>Click "Copy" to get field code (Code Template Render)</li>
+                                                    <li>Paste code into template</li>
+                                                </ul>
+                                            </div>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>6. Save Edits:</strong> Click "Save" button
+                                            </div>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>7. Activate Report:</strong>
+                                                <ul style="margin-left: 20px; margin-top: 5px;">
+                                                    <li>"Publish" → Show report</li>
+                                                    <li>"Unpublish" → Hide report</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </page>
                     </notebook>
                 </xpath>
             </field>
@@ -140,6 +198,7 @@
                 <xpath expr="//field[@name='report_xlsx_template']" position="after">
                     <field name="onlyoffice_url" invisible="1"/>
                     <field name="attachment_id" invisible="1"/>
+                    <field name="binary_id"/>
                     <field name="attachment_ids" widget="many2many_binary_preview"/>
                 </xpath>
 
@@ -177,6 +236,15 @@
                             <div class="oe_form_container">
                                 <div class="oe_form_sheetbg">
                                     <div class="oe_form_sheet" style="max-width: 100%; padding: 20px;">
+                                        <div class="alert alert-info">
+                                            <strong>URL:</strong>
+                                            <a href="https://apps.odoo.com/apps/modules/17.0/alnas_docx"
+                                               target="_blank"
+                                               rel="noopener noreferrer">
+                                                https://apps.odoo.com/apps/modules/17.0/alnas_xlsx
+                                            </a>
+                                            <br/>
+                                        </div>
                                         <div class="alert alert-info">
                                             <strong>Field Naming Convention</strong><br/>
                                             To call and write the field name, use the following format: <code>{{docs.field_name}}</code>, starting with the word "docs".
@@ -246,6 +314,54 @@
                                             1. For image functions, ensure the image field exists in your model<br/>
                                             2. For replace image functions, dummy images must be present in the template<br/>
                                             3. Date fields should be in valid date format for proper formatting
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </page>
+                        <page name="quick_guide" string="Quick Guide">
+                            <div class="oe_form_container">
+                                <div class="oe_form_sheetbg">
+                                    <div class="oe_form_sheet" style="max-width: 100%; padding: 20px;">
+                                        <div class="alert alert-info">
+                                            <h5 style="color: #875A7B; margin-bottom: 20px;">Quick Guide</h5>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>1. Select "Report Name":</strong> Displayed in Print menu
+                                            </div>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>2. Select "Model":</strong> Data source model for the report
+                                            </div>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>3. Select Edit "Field Name":</strong> Downloaded file name (e.g., Display Name)
+                                            </div>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>4. Select "Template File":</strong> Upload .docx/.xlsx template
+                                            </div>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>5. Select Data Fields:</strong>
+                                                <ul style="margin-left: 20px; margin-top: 5px;">
+                                                    <li>Select model → Display field list (Field Document)</li>
+                                                    <li>Click "Copy" to get field code (Code Template Render)</li>
+                                                    <li>Paste code into template</li>
+                                                </ul>
+                                            </div>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>6. Save Edits:</strong> Click "Save" button
+                                            </div>
+
+                                            <div style="margin-bottom: 15px;">
+                                                <strong>7. Activate Report:</strong>
+                                                <ul style="margin-left: 20px; margin-top: 5px;">
+                                                    <li>"Publish" → Show report</li>
+                                                    <li>"Unpublish" → Hide report</li>
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

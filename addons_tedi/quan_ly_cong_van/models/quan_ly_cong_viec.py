@@ -19,6 +19,7 @@ class OfficeTask(models.Model):
         ('cong_van_di', 'Công việc của công văn đi'),
         ('quyet_dinh', 'công việc của quyết định'),
         ('cong_van_di_noi_bo', 'công việc của công văn đi nội bộ'),
+        ('van_ban_hdqt', 'công việc của văn bản HĐQT'),
     ], string='Loại công việc')
 
     da_giao_viec = fields.Boolean(string="Đã giao việc", default=False)
@@ -26,7 +27,6 @@ class OfficeTask(models.Model):
 
     @api.model
     def create(self, vals):
-        vals['project_id'] = False
         return super().create(vals)
 
 
@@ -76,6 +76,22 @@ class OfficeTask(models.Model):
             'target': 'new',
             'context': {
                 'default_document_type': 'outgoing_internal',
+                'default_task_id': self.id,
+                'default_trich_yeu': self.name,
+            },
+        }
+
+    def action_create_director_document(self):
+        director_form_id = self.env.ref('quan_ly_cong_van.office_document_resolution_form').id
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Tạo công văn',
+            'res_model': 'office.document',
+            'view_mode': 'form',
+            'view_id': director_form_id,
+            'target': 'new',
+            'context': {
+                'default_document_type': 'director',
                 'default_task_id': self.id,
                 'default_trich_yeu': self.name,
             },

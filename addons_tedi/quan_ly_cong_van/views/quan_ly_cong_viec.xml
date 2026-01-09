@@ -31,6 +31,8 @@
                             invisible="da_tao_cong_van or task_type != 'quyet_dinh'"/>
                     <button name="action_create_internal_document" string="Tạo công văn" type="object"
                             invisible="da_tao_cong_van or task_type != 'cong_van_di_noi_bo'"/>
+                    <button name="action_create_director_document" string="Tạo công văn" type="object"
+                            invisible="da_tao_cong_van or task_type != 'van_ban_hdqt'"/>
 
                 </header>
                 <sheet>
@@ -80,6 +82,17 @@
         <field name="view_mode">tree,form</field>
         <field name="domain">[('task_type','=','cong_van_di_noi_bo'), ('project_id','=',False)]</field>
         <field name="context">{'task_type': 'cong_van_di_noi_bo'}</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_office_task_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_office_task_form')})]"/>
+    </record>
+
+    <record id="action_open_office_director_document_task" model="ir.actions.act_window">
+        <field name="name">Giao việc</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('task_type','=','van_ban_hdqt'), ('project_id','=',False)]</field>
+        <field name="context">{'task_type': 'van_ban_hdqt'}</field>
         <field name="view_ids" eval="[(5, 0, 0),
             (0, 0, {'view_mode': 'tree', 'view_id': ref('view_office_task_tree')}),
             (0, 0, {'view_mode': 'form', 'view_id': ref('view_office_task_form')})]"/>

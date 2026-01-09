@@ -1,3 +1,5 @@
+from email.policy import default
+
 from odoo import api, models, fields
 from odoo.exceptions import UserError
 from datetime import timedelta
@@ -27,7 +29,7 @@ class Calendar(models.Model):
         "hr.department",
         'calendar_don_vi_tham_gia_rel',
         'calendar_event_id', 'department_id',
-        string='Đơn vị đồng xử lý'
+        string='Đơn vị tham gia'
     )
 
     # State mới có thêm 'pending'
@@ -70,6 +72,26 @@ class Calendar(models.Model):
     # --- Fields phân quyền ---
     can_approve_meeting = fields.Boolean(compute="_compute_permissions")
     can_approve_room = fields.Boolean(compute="_compute_permissions")
+
+    is_current_user_creator = fields.Boolean(
+        compute='_compute_is_current_user_creator',
+        string='Is Current User Creator',
+        default=True,
+        store=False
+    )
+
+    @api.depends_context('uid')
+    def _compute_is_current_user_creator(self):
+        current_user = self.env.user
+        for rec in self:
+            # Xử lý trường hợp đang tạo mới (chưa có ID)
+            if not rec.id:
+                # Khi đang tạo mới, mặc định cho phép chỉnh sửa
+                rec.is_current_user_creator = True
+            elif rec.create_uid:
+                rec.is_current_user_creator = rec.create_uid.id == current_user.id
+            else:
+                rec.is_current_user_creator = False
 
     # --- 2. LOGIC PHÂN QUYỀN (ĐÃ SỬA) ---
     @api.depends_context('uid')
@@ -149,27 +171,27 @@ class Calendar(models.Model):
     # --- 4. CRUD OVERRIDES ---
     @api.model
     def create(self, vals):
-        if not vals.get('chu_tri') and self.env.user.employee_ids:
-            vals['chu_tri'] = self.env.user.employee_ids[0].id
+
+        self._check_room_conflict(vals)
+
         record = super().create(vals)
         record.color = record.id % 12
         return record
 
     def write(self, vals):
-        old_chu_tri_ids = {rec.id: rec.chu_tri.id for rec in self}
-        res = super().write(vals)
-        if 'chu_tri' in vals:
-            for rec in self:
-                old_chu_tri_id = old_chu_tri_ids.get(rec.id)
-                new_chu_tri_id = rec.chu_tri.id
-                current_ids = rec.employee_ids.ids
-                new_employee_ids = current_ids.copy()
-                if old_chu_tri_id and old_chu_tri_id in new_employee_ids:
-                    new_employee_ids = [eid if eid != old_chu_tri_id else new_chu_tri_id for eid in new_employee_ids]
-                elif new_chu_tri_id not in new_employee_ids:
-                    new_employee_ids.append(new_chu_tri_id)
-                rec.employee_ids = [(6, 0, list(set(new_employee_ids)))]
-        return res
+        for rec in self:
+            check_vals = {
+                'room': vals.get('room', rec.room.id),
+                'start': vals.get('start', rec.start),
+                'stop': vals.get('stop', rec.stop),
+            }
+
+            self._check_room_conflict(
+                check_vals,
+                exclude_ids=[rec.id]
+            )
+
+        return super().write(vals)
 
     # --- 5. BUTTON ACTIONS ---
     def action_complete(self):
@@ -359,16 +381,11 @@ class Calendar(models.Model):
             'context': {'default_event_id': self.id},
         }
 
-    @api.model
-    def on_TV(self, *args, **kwargs):
-        # Code dashboard TV của bạn
+    def on_TV(self): # Mở dashboard TV
         return {
-            'type': 'ir.actions.act_window',
-            'name': 'Dashboard hôm nay',
-            'res_model': 'calendar.dashboard',
-            'view_mode': 'form',
-            'view_id': self.env.ref('Quan_ly_lich_hop.view_dashboard_today_form').id,
-            'target': 'current',
+            'type': 'ir.actions.act_url',
+            'url': '/dashboard/tv',
+            'target': 'new', # hoặc 'self' nếu muốn thay tab hiện tại
         }
 
     def action_add_participants(self):
@@ -382,6 +399,66 @@ class Calendar(models.Model):
             'context': {'default_event_id': self.id},
         }
 
+    def _check_room_conflict(self, vals, exclude_ids=None):
+        """
+        Check trùng phòng họp theo thời gian
+        """
+        room_id = vals.get('room')
+        start = vals.get('start')
+        stop = vals.get('stop')
+
+        if not room_id or not start or not stop:
+            return
+
+        domain = [
+            ('room', '=', room_id),
+            ('start', '<', stop),
+            ('stop', '>', start),
+            ('state', '!=', 'canceled'),
+        ]
+
+        if exclude_ids:
+            domain.append(('id', 'not in', exclude_ids))
+
+        conflict = self.search(domain, limit=1)
+        if conflict:
+            user_tz_start = fields.Datetime.context_timestamp(self, conflict.start)
+            user_tz_stop = fields.Datetime.context_timestamp(self, conflict.stop)
+            raise UserError(
+                f"❌ Phòng họp '{conflict.room.name}' đã được đăng ký "
+                f"từ {user_tz_start.strftime('%H:%M %d/%m/%Y')} "
+                f"đến {user_tz_stop.strftime('%H:%M %d/%m/%Y')}."
+            )
+
+    can_add_participants = fields.Boolean(
+        compute='_compute_can_add_participants',
+        string='Có thể thêm người tham gia',
+        store=False
+    )
+
+    @api.depends_context('uid')
+    @api.depends('create_uid', 'don_vi')
+    def _compute_can_add_participants(self):
+        current_user = self.env.user
+        for rec in self:
+            can_add = False
+
+            # 1. Người tạo phiếu
+            if rec.is_current_user_creator:
+                can_add = True
+            else:
+                # 2. Quản lý của các đơn vị tham gia
+                current_employee = self.env['hr.employee'].search(
+                    [('user_id', '=', current_user.id)], limit=1
+                )
+                if current_employee:
+                    # Kiểm tra nếu người dùng hiện tại là manager của bất kỳ đơn vị nào tham gia cuộc họp
+                    for dept in rec.don_vi:
+                        if dept.manager_id and dept.manager_id.id == current_employee.id:
+                            can_add = True
+                            break
+
+            rec.can_add_participants = can_add
 
 class RoomMaterials(models.Model):
     _name = 'room.materials'
@@ -457,10 +534,13 @@ class RoomBookingWizard(models.TransientModel):
         ], limit=1)
 
         if conflicting_event:
+            start_local = fields.Datetime.context_timestamp(self, conflicting_event.start)
+            stop_local = fields.Datetime.context_timestamp(self, conflicting_event.stop)
+
             raise UserError(
-                f"Phòng họp '{self.room_id.name}' đã được đăng ký trong khoảng:\n"
-                f"{conflicting_event.start.strftime('%H:%M')} → {conflicting_event.stop.strftime('%H:%M')} "
-                f"ngày {conflicting_event.start.strftime('%d/%m/%Y')}.\n"
+                f"Phòng họp '{self.room_id.name}' đã được đăng ký trong khoảng thời gian:\n"
+                f"{start_local.strftime('%H:%M %d/%m/%Y')} "
+                f"→ {stop_local.strftime('%H:%M %d/%m/%Y')}\n\n"
                 "Vui lòng chọn phòng khác hoặc điều chỉnh thời gian."
             )
 

@@ -127,6 +127,7 @@ class HrTediVehicleRegistration(models.Model):
     driver_id = fields.Many2one('res.partner', string="Tài xế (Partner)", tracking=True)
 
     distance_km = fields.Float(string="Số km thực tế đi được", tracking=True)
+    speedometer_km = fields.Float(string="Số km theo đồng hồ", tracking=True)
 
     rating = fields.Selection([
         ('0', 'Chưa đánh giá'),

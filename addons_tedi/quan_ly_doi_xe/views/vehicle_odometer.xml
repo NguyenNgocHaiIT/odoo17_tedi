@@ -91,6 +91,11 @@
                     <field name="unit" optional="hide"/>
 
                     <button name="action_calculate_data" type="object" icon="fa-refresh" title="Tính lại"/>
+                    <button name="action_open_vehicle_report"
+                            string="Xuất báo cáo"
+                            type="object"
+                            class="btn-secondary"
+                            context="{'no_spinner': True, 'close_popup': True}"/>
                 </tree>
             </field>
         </record>

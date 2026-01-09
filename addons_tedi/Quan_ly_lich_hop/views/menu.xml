@@ -4,7 +4,7 @@
         <menuitem
                 id="menu_calendar_root"
                 name="Quản lý lịch họp"
-                sequence="10"
+                sequence="2"
                 groups="base.group_user"
                 web_icon="Quan_ly_lich_hop,static/description/icon.png"
         />
