@@ -78,7 +78,8 @@
                 <tree string="Xếp loại kết quả thực hiện" editable="bottom">
                     <field name="min_score"/>
                     <field name="max_score"/>
-                    <field name="k_coefficient"/>
+                    <field name="k_coefficient_min"/>
+                    <field name="k_coefficient_max"/>
                     <field name="classification"/>
                 </tree>
             </field>
@@ -111,6 +112,28 @@
                   parent="menu_hr_payroll_configuration"
                   action="action_evaluation_criteria"
                   sequence="12"/>
+
+
+        <record id="view_hr_job_form_inherit_kpi_config" model="ir.ui.view">
+            <field name="name">hr.job.form.inherit.kpi.config</field>
+            <field name="model">hr.job</field>
+            <field name="inherit_id" ref="hr.view_hr_job_form"/>
+            <field name="priority">210</field>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="Cấu hình KPI" name="kpi_config_page">
+                        <group>
+                            <group string="Quy trình Phê duyệt">
+                                <field name="kpi_manager_review" widget="boolean_toggle"/>
+                                <field name="kpi_council_review" widget="boolean_toggle"/>
+                                <field name="kpi_director_review" widget="boolean_toggle"/>
+                            </group>
+
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
 
     </data>
 </odoo>

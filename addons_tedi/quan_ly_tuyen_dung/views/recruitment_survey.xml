@@ -65,7 +65,7 @@
                 <!-- KHÓA TOÀN BỘ FORM KHI state = end -->
                     <group readonly="state == 'end'">
                         <group>
-                            <field name="name" required="1" readonly="state != 'draft'"/>
+                            <field name="name" required="1" readonly="state != 'draft'" string="Tên đợt"/>
                             <field name="user_id" required="1" readonly="1"/>
                         </group>
 
@@ -73,8 +73,9 @@
                             <field name="create_date" readonly="1" widget="date" />
                             <label for="start_date" string="Thời gian đăng ký" readonly="state == 'end'"/>
                             <div class="o_row">
+                                <span class="o_form_label" style="margin-right: 5px;">Từ</span>
                                 <field name="start_date" widget="date" readonly="state != 'draft'"/>
-                                <span style="margin: 0 10px;">→</span>
+                                <span class="o_form_label" style="margin: 0 10px;">Đến</span>
                                 <field name="end_date" widget="date" readonly="state != 'draft'"/>
                             </div>
                         </group>

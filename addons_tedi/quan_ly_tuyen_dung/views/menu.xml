@@ -3,7 +3,7 @@
   <data>
 
       <menuitem id="menu_recruitment_plan_new"
-              name="Kế hoạch tuyển dụng"
+              name="Lập kế hoạch"
               parent="hr_recruitment.menu_hr_recruitment_root"
               sequence="3"
        />
@@ -28,7 +28,7 @@
               groups="quan_ly_tuyen_dung.group_recruitment_hr_officer"/>
 
       <menuitem id="menu_recruitment_plan_execute"
-              name="Triển khai tuyển dụng"
+              name="Triển khai"
               parent="hr_recruitment.menu_hr_recruitment_root"
               sequence="5"
       />

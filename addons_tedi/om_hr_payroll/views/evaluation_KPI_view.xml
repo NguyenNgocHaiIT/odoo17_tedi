@@ -53,7 +53,7 @@
 
                         <button name="action_compute_result_manual" string="Tính kết quả" type="object" class="oe_highlight"/>
                         <button name="action_reset_draft" string="Làm lại" type="object" invisible="state == 'draft'"/>
-                        <field name="state" widget="statusbar" statusbar_visible="draft,wait_manager,wait_council,wait_director,done"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,done"/>
                     </header>
                     <sheet>
                         <field name="is_direct_manager" invisible="1"/>
@@ -62,7 +62,12 @@
                         <div class="oe_title">
                             <h1><field name="name"/></h1>
                             <label for="employee_id"/>
-                            <h2><field name="employee_id" placeholder="Chọn nhân viên..." options="{'no_create': True}"/></h2>
+                            <h2>
+                                <field name="employee_id"
+                                       placeholder="Chọn nhân viên..."
+                                       options="{'no_create': True}"
+                                       readonly="state != 'draft'"/>
+                            </h2>
                         </div>
 
                         <group>

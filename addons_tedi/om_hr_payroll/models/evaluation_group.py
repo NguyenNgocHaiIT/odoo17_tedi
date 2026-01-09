@@ -61,7 +61,7 @@ class EvaluationKPI(models.Model):
 
     # --- 6, 9, 10, 11. THÔNG TIN NHÂN VIÊN ---
     employee_id = fields.Many2one('hr.employee', string="Người lao động", required=True,
-                                  states={'draft': [('readonly', False)]})
+                                  )
     job_id = fields.Many2one('hr.job', string="Chức danh", related='employee_id.job_id', store=True, readonly=True)
     department_id = fields.Many2one('hr.department', string="Đơn vị", related='employee_id.department_id', store=True,
                                     readonly=True)
@@ -94,9 +94,26 @@ class EvaluationKPI(models.Model):
 
     # --- CẤU HÌNH QUY TRÌNH (Lấy từ Employee) ---
 
-    is_manager_review_required = fields.Boolean(related='employee_id.kpi_manager_review', store=True, readonly=True)
-    is_council_review_required = fields.Boolean(related='employee_id.kpi_council_review', store=True, readonly=True)
-    is_director_review_required = fields.Boolean(related='employee_id.kpi_director_review', store=True, readonly=True)
+    is_manager_review_required = fields.Boolean(
+        string="Cần QLTT duyệt",
+        related='job_id.kpi_manager_review',  # <--- Đổi từ employee_id sang job_id
+        store=True,
+        readonly=True
+    )
+
+    is_council_review_required = fields.Boolean(
+        string="Cần TĐV duyệt",
+        related='job_id.kpi_council_review',  # <--- Đổi từ employee_id sang job_id
+        store=True,
+        readonly=True
+    )
+
+    is_director_review_required = fields.Boolean(
+        string="Cần TGĐ duyệt",
+        related='job_id.kpi_director_review',  # <--- Đổi từ employee_id sang job_id
+        store=True,
+        readonly=True
+    )
 
     total_score = fields.Float(string="Tổng điểm (1-5)", compute="_compute_results", store=True, digits=(16, 2),
                                tracking=True)
@@ -154,6 +171,7 @@ class EvaluationKPI(models.Model):
             else:
                 rec.is_department_manager = False
 
+
     @api.depends('employee_id')
     def _compute_is_direct_manager(self):
         current_user = self.env.user
@@ -179,33 +197,50 @@ class EvaluationKPI(models.Model):
             for line in rec.line_ids:
                 # Chỉ tính các dòng là tiêu chí (không phải Section hay Note)
                 if not line.display_type:
+                    # x: Tổng (Điểm * Tỷ trọng)
                     weighted_score_sum += (line.final_score * line.weight)
                     total_weight += line.weight
 
-            # Tránh chia cho 0
-            raw_score = (weighted_score_sum / total_weight) if total_weight > 0 else 0.0
+            # Tính x (total_score):
+            # Giả sử x được tính là điểm trung bình có trọng số:
+            x = (weighted_score_sum / total_weight) if total_weight > 0 else 0.0
 
-            # Gán điểm thực
-            rec.total_score = round(raw_score, 2)
+            # Làm tròn điểm tổng (tùy chọn, ở đây làm tròn 2 số lẻ)
+            rec.total_score = round(x, 2)
 
-            # Gán % hiển thị (Ví dụ: 4.0 điểm / 5.0 * 100 = 80%)
+            # Gán % hiển thị
             rec.total_score_percent = (rec.total_score / 5.0) * 100
 
-            # Xếp loại
+            # -----------------------------------------------------------
+            # TÌM XẾP LOẠI VÀ TÍNH HỆ SỐ K (NỘI SUY)
+            # -----------------------------------------------------------
             rule = self.env['evaluation.kpi.classification'].search([
                 ('min_score', '<=', rec.total_score),
                 ('max_score', '>=', rec.total_score)
             ], limit=1, order='min_score desc')
 
             if rule:
-                rec.k_coefficient = rule.k_coefficient
                 rec.final_result = rule.classification
+
+                # Các biến theo công thức của bạn
+                k_min = rule.k_coefficient_min
+                k_max = rule.k_coefficient_max
+                s_min = rule.min_score
+                s_max = rule.max_score
+
+                # Kiểm tra tránh lỗi chia cho 0 (nếu min_score == max_score)
+                if s_max - s_min == 0:
+                    rec.k_coefficient = k_max
+                else:
+                    # y = (k_max - k_min) / (max_score - min_score)
+                    y = (k_max - k_min) / (s_max - s_min)
+
+                    # k = k_min + (x - min_score) * y
+                    rec.k_coefficient = k_min + (rec.total_score - s_min) * y
             else:
                 rec.k_coefficient = 0.0
                 rec.final_result = "Chưa xếp loại"
 
-            # QUAN TRỌNG: Không gán is_result_computed = True ở đây
-            # để đảm bảo Group Kết Quả chỉ hiện khi bấm nút.
     # --- HÀM HELPER LẤY CHU KỲ ---
     def _get_default_period(self):
         today = fields.Date.today()
@@ -219,6 +254,20 @@ class EvaluationKPI(models.Model):
         if vals.get('name', 'New') == 'New':
             vals['name'] = self.env['ir.sequence'].next_by_code('evaluation.kpi') or 'New'
         return super(EvaluationKPI, self).create(vals)
+
+    def _finish_and_display_result(self):
+        """
+        Hàm này được gọi khi người đánh giá cuối cùng xác nhận.
+        Tác dụng: Chuyển sang Done và Bắt buộc hiện kết quả.
+        """
+        # Trigger tính toán lại lần cuối để đảm bảo điểm số chính xác
+        self._compute_results()
+
+        self.write({
+            'state': 'done',
+            'is_result_computed': True  # <--- Tự động hiện kết quả
+        })
+
 
     # --- DATA FETCHING ---
     @api.onchange('employee_id')
@@ -265,7 +314,7 @@ class EvaluationKPI(models.Model):
     # --- WORKFLOW & NÚT BẤM ---
     def action_send(self):
         self.ensure_one()
-        # Logic nhảy bước dựa trên cấu hình Boolean
+        # Logic nhảy bước
         if self.is_manager_review_required:
             self.write({'state': 'wait_manager'})
         elif self.is_council_review_required:
@@ -274,30 +323,38 @@ class EvaluationKPI(models.Model):
             self.write({'state': 'wait_director'})
         else:
             # Trường hợp đặc biệt: Không ai đánh giá ngoài nhân viên -> Done luôn
-            self.action_director_evaluation()  # Hoặc hàm finish tương ứng
+            # Nhân viên là người cuối cùng
+            self._finish_and_display_result()
 
     def action_manager_evaluation(self):
-        """QLTT xong -> Check xem có cần TĐV không"""
+        """QLTT đánh giá xong"""
+        self.ensure_one()
         if self.is_council_review_required:
+            # Vẫn còn bước TĐV -> Chỉ chuyển trạng thái, chưa hiện kết quả tự động
             self.write({'state': 'wait_council'})
         elif self.is_director_review_required:
+            # Vẫn còn bước TGĐ -> Chỉ chuyển trạng thái
             self.write({'state': 'wait_director'})
         else:
-            self.write({'state': 'done'})
+            # Không còn ai sau QLTT -> QLTT là người cuối cùng -> Done & Hiện kết quả
+            self._finish_and_display_result()
 
     def action_council_evaluation(self):
-        """TĐV xong -> Check xem có cần TGĐ không"""
+        """TĐV đánh giá xong"""
+        self.ensure_one()
         if self.is_director_review_required:
+            # Vẫn còn bước TGĐ -> Chỉ chuyển trạng thái
             self.write({'state': 'wait_director'})
         else:
-            self.write({'state': 'done'})
+            # Không còn ai sau TĐV -> TĐV là người cuối cùng -> Done & Hiện kết quả
+            self._finish_and_display_result()
 
     def action_director_evaluation(self):
-        # Khi TGĐ ấn hoàn thành, force hiện kết quả luôn
-        self.write({
-            'state': 'done',
-            'is_result_computed': True
-        })
+        """TGĐ đánh giá xong"""
+        self.ensure_one()
+        # TGĐ luôn là cấp cao nhất trong luồng này -> Done & Hiện kết quả
+        self._finish_and_display_result()
+
 
     def action_compute_result_manual(self):
         """Nút tính toán thủ công để reload view và HIỆN KẾT QUẢ"""
@@ -366,18 +423,27 @@ class EvaluationKPILine(models.Model):
                  'kpi_id.is_director_review_required')
     def _compute_final_score(self):
         for line in self:
-            # Logic: Lấy điểm của người "Cao nhất" được yêu cầu (Checked).
-            # Không quan tâm họ đã nhập hay chưa (nếu chưa nhập thì chấp nhận là 0 để ép nhập).
+            # 1. Mặc định khởi đầu bằng điểm Nhân viên tự đánh giá
+            # (Nếu nhân viên chưa đánh giá thì = 0)
+            current_score = line.self_score
 
-            if line.kpi_id.is_director_review_required:
-                line.final_score = line.director_score
-            elif line.kpi_id.is_council_review_required:
-                line.final_score = line.council_score
-            elif line.kpi_id.is_manager_review_required:
-                line.final_score = line.manager_score
-            else:
-                # Nếu không ai cần đánh giá, lấy điểm tự đánh giá
-                line.final_score = line.self_score
+            # 2. Kiểm tra cấp Quản lý trực tiếp (Manager)
+            # Điều kiện: Phải CÓ cấu hình yêu cầu Manager VÀ Manager ĐÃ nhập điểm (> 0)
+            if line.kpi_id.is_manager_review_required and line.manager_score > 0:
+                current_score = line.manager_score
+
+            # 3. Kiểm tra cấp Trưởng đơn vị/Hội đồng (Council)
+            # Logic: Nếu ông này đã chấm, lấy điểm ông này đè lên điểm ông Manager
+            if line.kpi_id.is_council_review_required and line.council_score > 0:
+                current_score = line.council_score
+
+            # 4. Kiểm tra cấp Giám đốc (Director)
+            # Logic: Đây là cấp cao nhất, nếu đã chấm thì lấy điểm này là chốt
+            if line.kpi_id.is_director_review_required and line.director_score > 0:
+                current_score = line.director_score
+
+            # Gán kết quả cuối cùng
+            line.final_score = current_score
 
     _sql_constraints = [
         ('check_self_score', 'CHECK(self_score >= 0 AND self_score <= 5)', 'Điểm tự đánh giá phải từ 0 đến 5!'),

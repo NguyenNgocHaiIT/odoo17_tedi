@@ -10,5 +10,7 @@ access_fleet_vehicle_user_custom_tedi,fleet_vehicle_access_right_custom_tedi,fle
 access_fleet_vehicle_odometer_custom_tedi,fleet_vehicle_odometer_custom_tedi,fleet.model_fleet_vehicle_odometer,fleet.fleet_group_user,1,1,1,1
 
 access_vehicle_no_car_wizard_user,access_vehicle_no_car_wizard_user,model_vehicle_no_car_wizard,base.group_user,1,1,1,1
+access_fleet_vehicle_model_user_custom_tedi,fleet.vehicle.model.user.custom.tedi,fleet.model_fleet_vehicle_model,base.group_user,1,0,0,0
+access_fleet_vehicle_model_brand_user_custom_tedi,fleet.vehicle.model.brand.user.custom.tedi,fleet.model_fleet_vehicle_model_brand,base.group_user,1,0,0,0
 
 access_thanh_toan_xe_report_wizard_user,access_thanh_toan_xe_report_wizard_user,model_thanh_toan_xe_report_wizard,base.group_user,1,1,1,1

@@ -78,4 +78,31 @@
     </field>
   </record>
 
+
+
+    <record id="view_recruitment_constant_tree" model="ir.ui.view">
+            <field name="name">recruitment.constant.tree</field>
+            <field name="model">recruitment.constant</field>
+            <field name="arch" type="xml">
+                <tree string="Cấu hình mặc định" editable="bottom">
+                    <field name="code"/>
+                    <field name="name"/>
+                    <field name="employee_id" widget="many2one_avatar_user"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="action_recruitment_constant" model="ir.actions.act_window">
+            <field name="name">Cấu hình mặc định</field>
+            <field name="res_model">recruitment.constant</field>
+            <field name="view_mode">tree</field>
+            <field name="view_id" ref="view_recruitment_constant_tree"/>
+        </record>
+
+        <menuitem id="menu_recruitment_constant"
+                  name="Cấu hình mặc định"
+                  parent="hr_recruitment.menu_hr_recruitment_config_applications"
+                  action="action_recruitment_constant"
+                  sequence="100"/>
+
 </odoo>

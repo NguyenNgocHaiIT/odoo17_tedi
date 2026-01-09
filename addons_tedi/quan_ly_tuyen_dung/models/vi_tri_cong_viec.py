@@ -20,5 +20,15 @@ class RecruitmentJob(models.Model):
         string="Đợt tuyển dụng",
         domain="[('recruitment_status', 'in', ['director_approve'])]")
 
+class RecruitmentConstant(models.Model):
+    _name = 'recruitment.constant'
+    _description = 'Recruitment Constant'
+
+    code = fields.Char(string='Code')
+    name = fields.Char(string='Name')
+    employee_id = fields.Many2one('hr.employee',string="Nhân viên phụ trách")
+
+
+
 
 

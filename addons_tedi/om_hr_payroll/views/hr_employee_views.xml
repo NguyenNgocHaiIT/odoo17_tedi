@@ -15,23 +15,9 @@
         </field>
     </record>
 
-    <record id="view_employee_form_inherit_kpi_config" model="ir.ui.view">
-        <field name="name">hr.employee.form.inherit.kpi.config</field>
-            <field name="model">hr.employee</field>
-            <field name="inherit_id" ref="hr_tedi.hr_employee_view_form_inherit_profile_tedi"/>
-            <field name="arch" type="xml">
 
-                <xpath expr="//field[@name='department_id']/.." position="after">
-                    <group string="Cấu hình Đánh giá KPI" name="kpi_config_group" colspan="2">
-                        <field name="kpi_manager_review" widget="boolean_toggle"/>
-                        <field name="kpi_council_review" widget="boolean_toggle"/>
-                        <field name="kpi_director_review" widget="boolean_toggle"/>
 
-                    </group>
-                </xpath>
 
-            </field>
-    </record>
 
     <menuitem id="menu_payroll_employee"
               name="Employees"

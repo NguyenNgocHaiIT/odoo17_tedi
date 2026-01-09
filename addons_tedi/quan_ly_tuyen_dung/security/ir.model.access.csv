@@ -34,6 +34,11 @@ access_experience_board_ro,Experience Board RO,model_hr_employee_work_process_ol
 access_experient_request,access_experient_request_admin,model_experience_request,base.group_user,1,1,1,1
 
 
+access_recruitment_constant,access_recruitment_constant,model_recruitment_constant,,1,1,1,1
+
+access_recruitment_plan_reject_wizard,access_recruitment_plan_reject_wizard,model_recruitment_plan_reject_wizard,,1,1,1,1
+
+
 access_recruitment_plan,access_recruitment_plan_admin,model_recruitment_plan,base.group_user,1,0,0,0
 access_recruitment_plan_hr_ro,Recruitment Plan HR RO,model_recruitment_plan,quan_ly_tuyen_dung.group_recruitment_hr_officer,1,1,1,1
 access_recruitment_plan_committee,Recruitment Plan Committee,model_recruitment_plan,quan_ly_tuyen_dung.group_recruitment_committee,1,1,1,1
