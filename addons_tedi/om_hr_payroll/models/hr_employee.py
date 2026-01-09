@@ -16,6 +16,7 @@ class HrEmployee(models.Model):
             employee.payslip_count = len(employee.slip_ids)
 
 
-    # kpi_manager_review = fields.Boolean(string="Yêu cầu QLTT đánh giá?", default=True)
-    # kpi_council_review = fields.Boolean(string="Yêu cầu TĐV đánh giá?", default=True)
-    # kpi_director_review = fields.Boolean(string="Yêu cầu TGĐ đánh giá?", default=True)
+
+    kpi_manager_review = fields.Boolean(string="Yêu cầu QLTT đánh giá?", default=True)
+    kpi_council_review = fields.Boolean(string="Yêu cầu TĐV đánh giá?", default=True)
+    kpi_director_review = fields.Boolean(string="Yêu cầu TGĐ đánh giá?", default=True)
