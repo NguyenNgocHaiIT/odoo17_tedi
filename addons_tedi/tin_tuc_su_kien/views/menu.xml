@@ -4,7 +4,7 @@
         <menuitem
                 id="menu_event_root"
                 name="Quản lý sự kiện"
-                sequence="10"
+                sequence="3"
                 web_icon="tin_tuc_su_kien,static/description/icon.png"
         />
         <menuitem

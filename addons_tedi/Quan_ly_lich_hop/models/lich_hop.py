@@ -430,6 +430,35 @@ class Calendar(models.Model):
                 f"đến {user_tz_stop.strftime('%H:%M %d/%m/%Y')}."
             )
 
+    can_add_participants = fields.Boolean(
+        compute='_compute_can_add_participants',
+        string='Có thể thêm người tham gia',
+        store=False
+    )
+
+    @api.depends_context('uid')
+    @api.depends('create_uid', 'don_vi')
+    def _compute_can_add_participants(self):
+        current_user = self.env.user
+        for rec in self:
+            can_add = False
+
+            # 1. Người tạo phiếu
+            if rec.is_current_user_creator:
+                can_add = True
+            else:
+                # 2. Quản lý của các đơn vị tham gia
+                current_employee = self.env['hr.employee'].search(
+                    [('user_id', '=', current_user.id)], limit=1
+                )
+                if current_employee:
+                    # Kiểm tra nếu người dùng hiện tại là manager của bất kỳ đơn vị nào tham gia cuộc họp
+                    for dept in rec.don_vi:
+                        if dept.manager_id and dept.manager_id.id == current_employee.id:
+                            can_add = True
+                            break
+
+            rec.can_add_participants = can_add
 
 class RoomMaterials(models.Model):
     _name = 'room.materials'

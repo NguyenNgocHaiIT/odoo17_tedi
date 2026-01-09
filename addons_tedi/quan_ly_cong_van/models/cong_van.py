@@ -246,7 +246,7 @@ class PhanPhat(models.TransientModel):
                                 <p>Xin chào {employee.name},</p>
                                 <p>Bạn vừa được phân công xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
                                 <p>
-                                    <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                                    <a href="{detail_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                                         Xem chi tiết văn bản
                                     </a>
                                 </p>
@@ -597,7 +597,61 @@ class OfficeDocument(models.Model):
     nguoi_theo_doi = fields.Many2one('res.users', string='Người theo dõi')
     ngay_bat_dau = fields.Date('Ngày bắt đầu', default=fields.Date.context_today)
     ho_so_cong_viec = fields.Char('Hồ sơ công việc')
-    attachment = fields.Binary( string='Tài liệu')
+    attachment_id = fields.Many2one(
+        'ir.attachment',
+        string='Tài liệu',
+        ondelete='cascade'
+    )
+
+    attachment_datas = fields.Binary(
+        string='Tài liệu',
+        compute='_compute_attachment_datas',
+        inverse='_inverse_attachment_datas',
+        store=False
+    )
+
+    attachment_filename = fields.Char(
+        string='Tên file',
+        compute='_compute_attachment_datas',
+        store=False
+    )
+
+    @api.depends('attachment_id', 'attachment_id.datas', 'attachment_id.name')
+    def _compute_attachment_datas(self):
+        """Chiều 1: attachment_id → attachment_datas"""
+        for record in self:
+            if record.attachment_id:
+                record.attachment_datas = record.attachment_id.datas
+                record.attachment_filename = record.attachment_id.name
+            else:
+                record.attachment_datas = False
+                record.attachment_filename = False
+
+    def _inverse_attachment_datas(self):
+        """Chiều 2: attachment_datas → attachment_id"""
+        for record in self:
+            if record.attachment_datas:
+                if record.attachment_id:
+                    # Update attachment hiện có
+                    record.attachment_id.write({
+                        'datas': record.attachment_datas,
+                        'name': record.attachment_filename or record.attachment_id.name,
+                    })
+                else:
+                    # Tạo attachment mới
+                    attachment = self.env['ir.attachment'].create({
+                        'name': record.attachment_filename or f'document_{record.id or "new"}.pdf',
+                        'datas': record.attachment_datas,
+                        'res_model': record._name,
+                        'res_id': record.id,
+                        'mimetype': 'application/pdf',
+                    })
+                    record.attachment_id = attachment.id
+            else:
+                # Nếu xóa attachment_datas thì xóa attachment_id
+                if record.attachment_id:
+                    record.attachment_id.unlink()
+
     note = fields.Text('Ghi chú')
     don_vi_ban_hanh_ngoai = fields.Many2one('res.partner', string='Đơn vị ban hành')
     don_vi_ban_hanh = fields.Many2one('hr.department', string='Đơn vị ban hành')
@@ -827,7 +881,7 @@ class OfficeDocument(models.Model):
                         <p>Xin chào {emp.name},</p>
                         <p>Văn bản <b>{self.trich_yeu}</b> cần xử lý.</p>
                         <p>
-                            <a href="{doc_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                            <a href="{doc_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                                 Xem chi tiết văn bản
                             </a>
                         </p>
@@ -881,7 +935,7 @@ class OfficeDocument(models.Model):
                         <p>Văn bản <b>{self.trich_yeu}</b> cần xử lý.</p>
                         <p>
                             <a href="{doc_url}"
-                               style="background:#E57373;color:white;padding:6px 12px;
+                               style="background:#E57373;color:blue;padding:6px 12px;
                                       text-decoration:none;border-radius:4px;font-size:12px;">
                                 Xem chi tiết văn bản
                             </a>
@@ -918,12 +972,97 @@ class OfficeDocument(models.Model):
     def approve(self):
         self.ensure_one()
         self.tt_vb = 'da_duyet'
+
+        self._send_approval_notification_to_van_thu()
         return True
 
-    def approve_cong_van_di(self):
+    def _send_approval_notification_to_van_thu(self, old_status_name):
+        """Gửi email thông báo đơn giản cho văn thư khi văn bản đã được duyệt"""
         self.ensure_one()
-        self.tt_vb = 'cho_but_phe'
-        return True
+
+        try:
+            # Lấy nhóm văn thư
+            group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
+
+            if not group_van_thu:
+                _logger.warning("Không tìm thấy nhóm văn thư.")
+                return
+
+            # Lấy tất cả người dùng trong nhóm văn thư
+            van_thu_users = group_van_thu.users
+
+            # Lấy danh sách email của văn thư
+            van_thu_emails = []
+            for user in van_thu_users:
+                if user.email:
+                    van_thu_emails.append(user.email)
+
+            if not van_thu_emails:
+                _logger.warning("Không có email nào trong nhóm văn thư.")
+                return
+
+            # Chuẩn bị nội dung email đơn giản
+            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            detail_url = f"{web_url}/web#id={self.id}&model=office.document&view_type=form"
+
+            # Lấy thông tin người duyệt
+            current_user = self.env.user.name
+
+            # Xác định hành động tiếp theo
+            next_action = "xử lý tiếp"  # Mặc định
+
+            subject = f"[Văn bản đã duyệt] {self.trich_yeu[:50]}..."
+            body_html = f"""
+            <p>Kính gửi Anh/Chị Văn thư,</p>
+
+            <p>Văn bản <b>"{self.trich_yeu}"</b> đã được duyệt bởi <b>{current_user}</b>.</p>
+
+            <div style="background:#f5f5f5; padding:10px; margin:10px 0; border-left:4px solid #3498db;">
+                <p><b>Lưu ý:</b> Vui lòng kiểm tra lại văn bản trước khi trình để bút phê.</p>
+            </div>
+
+            <p>
+                <a href="{detail_url}" style="background:#3498db;color:blue;padding:8px 16px;text-decoration:none;border-radius:4px;font-size:14px;">
+                    Xem chi tiết văn bản
+                </a>
+            </p>
+
+            <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
+            """
+
+            # Gửi email đến tất cả văn thư
+            for email in van_thu_emails:
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject,
+                    'email_to': email,
+                    'email_from': self.env.user.email or 'no-reply@company.com',
+                    'body_html': body_html,
+                    'auto_delete': True,
+                }).send()
+
+            _logger.info(f"Đã gửi email thông báo duyệt đến {len(van_thu_emails)} văn thư")
+
+            # Gửi thông báo popup đơn giản
+            for user in van_thu_users:
+                if user.partner_id and user != self.env.user:
+                    try:
+                        # Gửi popup thông báo đơn giản
+                        self.env['bus.bus']._sendone(
+                            user.partner_id,
+                            'simple_notification',
+                            {
+                                'title': 'Văn bản đã duyệt',
+                                'message': f"Văn bản đã được duyệt. Vui lòng kiểm tra!",
+                                'sticky': False,
+                                'type': 'info',
+                            }
+                        )
+
+                    except Exception as e:
+                        _logger.error(f"Lỗi gửi thông báo cho văn thư {user.name}: {str(e)}")
+
+        except Exception as e:
+            _logger.error(f"Lỗi khi gửi email thông báo cho văn thư: {str(e)}")
 
     def read(self, field_list=None, load='_classic_read'):
         res = super().read(field_list, load)
@@ -984,9 +1123,9 @@ class OfficeDocument(models.Model):
                 user.has_group('quan_ly_cong_van.group_don_vi_xu_ly')
                 and document_type_val in ('incoming', 'incoming_internal')
         ):
-            vals['tt_vb'] = 'cho_duyet'
+            vals['tt_vb'] = 'draft'
         else:
-            vals['tt_vb'] = 'cho_duyet'
+            vals['tt_vb'] = 'draft'
 
 
         # Xử lý so_den_tong_hop và so_di_tong_hop khi có phan_loai_van_ban
@@ -1305,7 +1444,7 @@ class OfficeDocument(models.Model):
                         <p>Xin chào {emp.name},</p>
                         <p>Văn bản <b>{self.trich_yeu}</b> đã được trình lãnh đạo bạn để duyệt.</p>
                         <p>
-                            <a href="{doc_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                            <a href="{doc_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                                 Xem chi tiết văn bản
                             </a>
                         </p>
@@ -1381,8 +1520,175 @@ class OfficeDocument(models.Model):
 
     def xac_nhan(self):
         self.ensure_one()
-        # Cập nhật trạng thái
-        self.tt_vb = 'cho_duyet'
+
+        # Kiểm tra người dùng hiện tại có phải là văn thư không
+        user = self.env.user
+        is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
+
+        if is_van_thu:
+            # Nếu là văn thư: chuyển trạng thái thành "Đã duyệt"
+            self.tt_vb = 'da_duyet'
+
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Thành công',
+                    'message': 'Văn bản đã được xác nhận và chuyển sang trạng thái Đã duyệt.',
+                    'type': 'success',
+                    'sticky': False,
+                }
+            }
+        else:
+            # Nếu là người khác: chuyển trạng thái thành "Chờ duyệt"
+            self.tt_vb = 'cho_duyet'
+
+            # Gửi email thông báo cho văn thư
+            self._send_email_to_van_thu()
+
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Thành công',
+                    'message': 'Văn bản đã được xác nhận và gửi thông báo cho văn thư.',
+                    'type': 'success',
+                    'sticky': False,
+                }
+            }
+
+    def _send_email_to_van_thu(self):
+        """Gửi email thông báo cho nhóm văn thư khi có văn bản cần duyệt"""
+        self.ensure_one()
+
+        try:
+            # Lấy nhóm văn thư
+            group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
+
+            if not group_van_thu:
+                _logger.warning("Không tìm thấy nhóm văn thư.")
+                return
+
+            # Lấy tất cả người dùng trong nhóm văn thư
+            van_thu_users = group_van_thu.users
+
+            # Lấy danh sách email của văn thư
+            van_thu_emails = []
+            for user in van_thu_users:
+                if user.email:
+                    van_thu_emails.append(user.email)
+
+            if not van_thu_emails:
+                _logger.warning("Không có email nào trong nhóm văn thư.")
+                return
+
+            # Chuẩn bị nội dung email
+            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            detail_url = f"{web_url}/web#id={self.id}&model=office.document&view_type=form"
+
+            current_user = self.env.user.name
+
+            subject = f"[Văn bản cần duyệt] {self.trich_yeu}"
+            body_html = f"""
+            <p>Kính gửi</p>
+            <p>Người dùng <b>{current_user}</b> vừa xác nhận văn bản sau và cần được duyệt:</p>
+
+            <div style="background:#f5f5f5; padding:10px; margin:10px 0; border-left:4px solid #4CAF50;">
+                <p><b>Trích yếu:</b> {self.trich_yeu or 'Không có'}</p>
+                <p><b>Loại văn bản:</b> {dict(self._fields['document_type'].selection).get(self.document_type, 'Không xác định')}</p>
+                <p><b>Số hiệu:</b> {self.so_hieu or 'Chưa có'}</p>
+                <p><b>Ngày đến:</b> {self.ngay_den.strftime('%d/%m/%Y') if self.ngay_den else 'Chưa có'}</p>
+                <p><b>Nơi gửi:</b> {self.noi_gui or 'Không có'}</p>
+            </div>
+
+            <p>
+                <a href="{detail_url}" style="background:#4CAF50;color:blue;padding:8px 16px;text-decoration:none;border-radius:4px;font-size:14px;font-weight:bold;">
+                    Xem chi tiết và duyệt văn bản
+                </a>
+            </p>
+
+            <p>Vui lòng kiểm tra và duyệt văn bản trong thời gian sớm nhất.</p>
+            <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
+            """
+
+            # Gửi email đến tất cả văn thư
+            for email in van_thu_emails:
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject,
+                    'email_to': email,
+                    'email_from': self.env.user.email or 'no-reply@company.com',
+                    'body_html': body_html,
+                    'auto_delete': True,
+                }).send()
+
+            _logger.info(f"Đã gửi email thông báo đến {len(van_thu_emails)} văn thư cho văn bản {self.id}")
+
+            # Gửi thông báo popup cho văn thư (nếu có user online)
+            odoobot = self.env.ref('base.user_root')
+            odoobot_partner = odoobot.partner_id
+
+            for user in van_thu_users:
+                if user.partner_id and user != self.env.user:
+                    try:
+                        # Gửi popup thông báo
+                        self.env['bus.bus']._sendone(
+                            user.partner_id,
+                            'simple_notification',
+                            {
+                                'title': 'Văn bản cần duyệt',
+                                'message': f"Có văn bản mới cần duyệt: {self.trich_yeu[:50]}...",
+                                'sticky': False,
+                                'type': 'warning',
+                            }
+                        )
+
+                        # Gửi tin nhắn chat qua Discuss
+                        domain = [
+                            ('channel_type', '=', 'chat'),
+                            ('channel_member_ids.partner_id', 'in', [user.partner_id.id, odoobot_partner.id])
+                        ]
+                        channels = self.env['discuss.channel'].sudo().search(domain)
+
+                        channel = channels.filtered(
+                            lambda c: set(c.channel_member_ids.mapped('partner_id').ids) == {user.partner_id.id,
+                                                                                             odoobot_partner.id}
+                        )
+
+                        if not channel:
+                            channel = self.env['discuss.channel'].sudo().create({
+                                'name': f"Văn bản cần duyệt: {self.trich_yeu[:30]}...",
+                                'channel_type': 'chat',
+                                'channel_member_ids': [
+                                    (0, 0, {'partner_id': user.partner_id.id}),
+                                    (0, 0, {'partner_id': odoobot_partner.id})
+                                ]
+                            })
+
+                        body_chat = f"""
+                        <p>📋 <b>Văn bản cần duyệt</b></p>
+                        <p><b>Trích yếu:</b> {self.trich_yeu}</p>
+                        <p><b>Người gửi:</b> {current_user}</p>
+                        <p>
+                            <a href="{detail_url}" style="background:#4CAF50;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                                Xem và duyệt
+                            </a>
+                        </p>
+                        """
+
+                        channel.sudo().message_post(
+                            body=body_chat,
+                            message_type='comment',
+                            subtype_xmlid='mail.mt_comment',
+                            author_id=odoobot_partner.id,
+                            body_is_html=True,
+                        )
+
+                    except Exception as e:
+                        _logger.error(f"Lỗi gửi thông báo cho văn thư {user.name}: {str(e)}")
+
+        except Exception as e:
+            _logger.error(f"Lỗi khi gửi email thông báo cho văn thư: {str(e)}")
+
 
     def khong_dat(self):
         self.ensure_one()
@@ -1423,7 +1729,7 @@ class OfficeDocument(models.Model):
             # Văn thư: draft hoặc chờ duyệt thì sửa được
             rec.is_van_thu = (
                     is_van_thu_user and
-                    rec.tt_vb in ('draft', 'cho_duyet')
+                    rec.tt_vb in ('draft', 'cho_duyet', 'da_duyet')
             )
 
             # Không phải văn thư: chỉ draft mới sửa được
@@ -1519,7 +1825,7 @@ class OfficeDocument(models.Model):
         self.ensure_one()
 
         # Đặt lại trạng thái về draft để chỉnh sửa
-        self.tt_vb = 'cho_duyet'
+        self.tt_vb = 'da_duyet'
 
         # Thông báo cho người dùng
         return {
@@ -1780,7 +2086,7 @@ class OfficeDocument(models.Model):
                     <p>Xin chào {truong_don_vi.name},</p>
                     <p>Văn bản <b>{self.trich_yeu}</b> cần được bạn duyệt.</p>
                     <p>
-                        <a href="{doc_url}" style="background:#4CAF50;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                        <a href="{doc_url}" style="background:#4CAF50;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                             Xem chi tiết văn bản
                         </a>
                     </p>
@@ -1896,7 +2202,7 @@ class OfficeDocument(models.Model):
                             <p>Xin chào {emp.name},</p>
                             <p>Bạn vừa được giao xử lý văn bản: <b>{self.office_document_id.trich_yeu}</b>.</p>
                             <p>
-                                <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                                <a href="{detail_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                                     Xem chi tiết văn bản
                                 </a>
                             </p>
@@ -2073,7 +2379,7 @@ class ChuyenLanhDaoWizard(models.TransientModel):
                 <p>Bạn vừa được chuyển xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
                 <p><b>Chuyển từ:</b> {lanh_dao_cu.name}</p>
                 <p>
-                    <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                    <a href="{detail_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                         Xem chi tiết văn bản
                     </a>
                 </p>
