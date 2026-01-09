@@ -1693,11 +1693,38 @@ class OfficeDocument(models.Model):
     def khong_dat(self):
         self.ensure_one()
         self.tt_vb = 'draft'
+        self._send_simple_rejection_notification()
 
         return {
             'type': 'ir.actions.client',
             'tag': 'history_back',
         }
+
+    def _send_simple_rejection_notification(self):
+        """Gửi thông báo đơn giản cho người tạo"""
+        self.ensure_one()
+
+        try:
+            creator = self.create_uid
+            if not creator or not creator.email:
+                return
+
+            subject = f"Văn bản không đạt: {self.trich_yeu[:50]}..."
+
+            body_html = f"""
+            <p>Văn bản của bạn <b>"{self.trich_yeu}"</b> đã bị từ chối.</p>
+            <p>Vui lòng kiểm tra và chỉnh sửa lại.</p>
+            """
+
+            self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'email_to': creator.email,
+                'email_from': self.env.user.email or 'no-reply@company.com',
+                'body_html': body_html,
+            }).send()
+
+        except Exception as e:
+            _logger.warning(f"Không gửi được email từ chối: {str(e)}")
 
     is_van_thu = fields.Boolean(
         compute='_compute_edit_permission',
