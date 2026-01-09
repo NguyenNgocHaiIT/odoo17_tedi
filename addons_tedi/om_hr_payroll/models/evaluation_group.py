@@ -171,6 +171,7 @@ class EvaluationKPI(models.Model):
             else:
                 rec.is_department_manager = False
 
+
     @api.depends('employee_id')
     def _compute_is_direct_manager(self):
         current_user = self.env.user
@@ -254,6 +255,20 @@ class EvaluationKPI(models.Model):
             vals['name'] = self.env['ir.sequence'].next_by_code('evaluation.kpi') or 'New'
         return super(EvaluationKPI, self).create(vals)
 
+    def _finish_and_display_result(self):
+        """
+        Hàm này được gọi khi người đánh giá cuối cùng xác nhận.
+        Tác dụng: Chuyển sang Done và Bắt buộc hiện kết quả.
+        """
+        # Trigger tính toán lại lần cuối để đảm bảo điểm số chính xác
+        self._compute_results()
+
+        self.write({
+            'state': 'done',
+            'is_result_computed': True  # <--- Tự động hiện kết quả
+        })
+
+
     # --- DATA FETCHING ---
     @api.onchange('employee_id')
     def _onchange_employee_id(self):
@@ -299,7 +314,7 @@ class EvaluationKPI(models.Model):
     # --- WORKFLOW & NÚT BẤM ---
     def action_send(self):
         self.ensure_one()
-        # Logic nhảy bước dựa trên cấu hình Boolean
+        # Logic nhảy bước
         if self.is_manager_review_required:
             self.write({'state': 'wait_manager'})
         elif self.is_council_review_required:
@@ -308,30 +323,38 @@ class EvaluationKPI(models.Model):
             self.write({'state': 'wait_director'})
         else:
             # Trường hợp đặc biệt: Không ai đánh giá ngoài nhân viên -> Done luôn
-            self.action_director_evaluation()  # Hoặc hàm finish tương ứng
+            # Nhân viên là người cuối cùng
+            self._finish_and_display_result()
 
     def action_manager_evaluation(self):
-        """QLTT xong -> Check xem có cần TĐV không"""
+        """QLTT đánh giá xong"""
+        self.ensure_one()
         if self.is_council_review_required:
+            # Vẫn còn bước TĐV -> Chỉ chuyển trạng thái, chưa hiện kết quả tự động
             self.write({'state': 'wait_council'})
         elif self.is_director_review_required:
+            # Vẫn còn bước TGĐ -> Chỉ chuyển trạng thái
             self.write({'state': 'wait_director'})
         else:
-            self.write({'state': 'done'})
+            # Không còn ai sau QLTT -> QLTT là người cuối cùng -> Done & Hiện kết quả
+            self._finish_and_display_result()
 
     def action_council_evaluation(self):
-        """TĐV xong -> Check xem có cần TGĐ không"""
+        """TĐV đánh giá xong"""
+        self.ensure_one()
         if self.is_director_review_required:
+            # Vẫn còn bước TGĐ -> Chỉ chuyển trạng thái
             self.write({'state': 'wait_director'})
         else:
-            self.write({'state': 'done'})
+            # Không còn ai sau TĐV -> TĐV là người cuối cùng -> Done & Hiện kết quả
+            self._finish_and_display_result()
 
     def action_director_evaluation(self):
-        # Khi TGĐ ấn hoàn thành, force hiện kết quả luôn
-        self.write({
-            'state': 'done',
-            'is_result_computed': True
-        })
+        """TGĐ đánh giá xong"""
+        self.ensure_one()
+        # TGĐ luôn là cấp cao nhất trong luồng này -> Done & Hiện kết quả
+        self._finish_and_display_result()
+
 
     def action_compute_result_manual(self):
         """Nút tính toán thủ công để reload view và HIỆN KẾT QUẢ"""
