@@ -1,55 +1,69 @@
 # -*- coding: utf-8 -*-
 from dateutil.utils import today
-
+import logging
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, AccessError
 from datetime import date
-
+_logger = logging.getLogger(__name__) # Khai báo logger
 
 class VehicleNoCarWizard(models.TransientModel):
     _name = 'vehicle.no.car.wizard'
     _description = 'Wizard báo hết xe'
-
     booking_option = fields.Selection([
         ('manager', 'Quản lý đặt xe bên ngoài'),
         ('unit', 'Đơn vị tự đặt xe bên ngoài')
     ], string="Phương án xử lý", required=True, default='manager')
-
     note = fields.Text(string="Ghi chú thêm")
 
     def action_confirm(self):
-        """Xử lý khi ấn nút Xác nhận trên Popup"""
         self.ensure_one()
-        # Lấy ID của phiếu đăng ký đang mở
         active_id = self.env.context.get('active_id')
         if active_id:
             record = self.env['hr_tedi.vehicle.registration'].browse(active_id)
 
-            # 1. Cập nhật thông tin vào phiếu
+            # 1. Cập nhật thông tin
             record.write({
                 'state': 'no_car',
                 'external_booking_type': self.booking_option,
                 'no_car_note': self.note
             })
 
-            # 2. Ghi log vào chatter
+            # 2. Ghi log chatter
             option_label = dict(self._fields['booking_option'].selection).get(self.booking_option)
             record.message_post(body=f"Báo hết xe. Phương án: {option_label}. Ghi chú: {self.note or 'Không'}")
 
-            # ========================================================
-            # 3. GỬI EMAIL THÔNG BÁO (LOGIC MỚI THÊM)
-            # ========================================================
-            # Thay 'ten_module_cua_ban' bằng tên thư mục module của bạn (ví dụ: my_fleet_module)
-            template = self.env.ref('ten_module_cua_ban.email_template_vehicle_registration_no_car',
+            # 3. GỬI EMAIL & LOG KIỂM TRA
+            template = self.env.ref('quan_ly_doi_xe.email_template_vehicle_registration_no_car',
                                     raise_if_not_found=False)
 
             if template:
-                # Gửi email ngay lập tức (force_send=True)
-                template.send_mail(record.id, force_send=True)
+                # --- TÍNH TOÁN EMAIL ---
+                # Lấy email người nhận
+                email_to = record.requester_id.work_email or record.requester_id.user_id.email or record.create_uid.email or False
+
+                # Lấy email người gửi (User hiện tại đang bấm nút)
+                email_from = self.env.user.email_formatted or self.env.company.email or 'unknown@example.com'
+
+                # --- IN LOG RA MÀN HÌNH CONSOLE (Server Log) ---
+                _logger.info("=" * 50)
+                _logger.info(f"DEBUG EMAIL - ID Phiếu: {record.id}")
+                _logger.info(f"TEMPLATE ID: {template.id}")
+                _logger.info(f"FROM (Người gửi): {email_from}")
+                _logger.info(f"TO (Người nhận): {email_to}")
+                _logger.info("=" * 50)
+
+                if email_to:
+                    email_values = {'email_to': email_to}
+                    # Thêm try-except để bắt lỗi SMTP nếu có ngay tại đây
+                    try:
+                        template.send_mail(record.id, force_send=True, email_values=email_values)
+                        _logger.info(">>> Gửi lệnh Send Mail thành công!")
+                    except Exception as e:
+                        _logger.error(f">>> LỖI GỬI MAIL: {str(e)}")
+                else:
+                    _logger.warning(">>> KHÔNG TÌM THẤY EMAIL NGƯỜI NHẬN!")
             else:
-                # (Tùy chọn) Báo lỗi nếu quên cài file XML, hoặc chỉ cần log warning
-                pass
-                # ========================================================
+                _logger.warning(">>> KHÔNG TÌM THẤY TEMPLATE XML!")
 
         return {'type': 'ir.actions.act_window_close'}
 
@@ -233,9 +247,9 @@ class HrTediVehicleRegistration(models.Model):
 
     @api.model
     def create(self, vals):
-        current_employee = self.env.user.employee_id
-        if not current_employee: raise ValidationError("Tài khoản chưa liên kết hồ sơ Nhân viên.")
-        vals['requester_id'] = current_employee.id
+        # current_employee = self.env.user.employee_id
+        # if not current_employee: raise ValidationError("Tài khoản chưa liên kết hồ sơ Nhân viên.")
+        # vals['requester_id'] = current_employee.id
         if vals.get('code', 'New') == 'New':
             vals['code'] = self.env['ir.sequence'].next_by_code('hr_tedi.vehicle.registration') or 'New'
         if vals.get('tedi_driver_employee_id') and not vals.get('driver_id'):

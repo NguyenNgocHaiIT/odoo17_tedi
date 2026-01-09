@@ -76,7 +76,7 @@
                    widget="badge"
                    decoration-success="state == 'approved'"
                    decoration-danger="state == 'rejected'"
-                   column_invisible="parent.recruitment_status not in ['approved', 'in_process', 'complete']"/>
+                   column_invisible="parent.recruitment_status not in ['in_process', 'complete']"/>
             <field name="reject_reason"
                    readonly="1"
                    optional="show"
@@ -86,15 +86,13 @@
                     string="Đã phê duyệt"
                     type="object"
                     class="btn btn-sm btn-success rounded-pill px-3"
-                    invisible="state == 'rejected' or parent.recruitment_status  in ['approved', 'in_process','complete']"/>
+                    invisible="state == 'rejected' or parent.recruitment_status  in ['in_process','complete']"/>
 
             <button name="action_toggle_state"
                     string="Từ chối"
                     type="object"
                     class="btn btn-sm btn-danger rounded-pill px-3"
-                    invisible="state == 'approved' or parent.recruitment_status  in ['approved', 'in_process','complete']"/>
-
-
+                    invisible="state == 'approved' or parent.recruitment_status  in ['in_process','complete']"/>
         </tree>
       </field>
     </record>
@@ -136,7 +134,6 @@
           <field name="recruitment_status" widget="badge"
                  class="text-center"
                  decoration-success="recruitment_status == 'complete'"
-                 decoration-info="recruitment_status == 'approved'"
                  decoration-primary="recruitment_status == 'in_process'"
                  decoration-warning="recruitment_status in ('director_approve', 'board_approve')"
                  decoration-muted="recruitment_status == 'draft'"/>
@@ -148,13 +145,13 @@
       <field name="name">recruitment.plan.year.form</field>
       <field name="model">recruitment.plan</field>
       <field name="arch" type="xml">
-        <form string="KẾ HOẠCH NĂM">
+        <form string="KẾ HOẠCH NĂM" options="{'warn_unsaved_header': True}">
           <header>
             <button name="action_submit" type="object" string="Trình duyệt" class="btn-primary"
                     groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_hr_officer"
                     invisible="recruitment_status != 'draft'"/>
 
-            <button name="action_director_approve_new" type="object" string="Giám đốc Duyệt" class="btn-primary"
+            <button name="action_director_approve_new" type="object" string="Duyệt" class="btn-primary"
                     groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_director"
                     invisible="recruitment_status != 'director_approve'"/>
 
@@ -162,39 +159,42 @@
                     groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_board"
                     invisible="recruitment_status != 'board_approve'"/>
 
-            <button name="action_director_start_deploy" type="object" string="Triển khai &amp; Tạo Quý" class="btn-success"
-                    groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_director"
-                    invisible="recruitment_status != 'approved' or is_applied_to_jobs"/>
-
             <button name="action_complete" type="object" string="Kết thúc" class="btn-secondary"
                     groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_hr_officer"
                     invisible="recruitment_status != 'in_process'"/>
 
-             <button name="action_draft" type="object" string="Cần điều chỉnh" class="btn-secondary"
+             <button name="action_open_reject_wizard" type="object" string="Không duyệt" class="btn-danger"
+                    invisible="not is_user_director or recruitment_status != 'director_approve'"/>
+
+             <button name="action_open_reject_wizard" type="object" string="Không duyệt" class="btn-danger"
+                    invisible="not is_user_board or recruitment_status != 'board_approve'"/>
+
+             <button name="action_draft" type="object" string="Sửa" class="btn-secondary"
                     groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_hr_officer"
-                    invisible="recruitment_status in ['complete','draft']"/>
+                    invisible="recruitment_status in ['draft', 'complete'] or (recruitment_status == 'director_approve' and is_user_director) or (recruitment_status == 'board_approve' and is_user_board)"/>
 
             <field name="recruitment_status" widget="statusbar"
-                   statusbar_visible="draft,director_approve,board_approve,approved,in_process,complete"/>
+                   statusbar_visible="draft,director_approve,board_approve,in_process,complete"/>
           </header>
           <sheet>
-<!--            <div class="oe_title">-->
-<!--                <h1><field name="plan_code"/></h1>-->
-<!--                <label for="plan_name" class="oe_edit_only"/>-->
-<!--                <h2><field name="plan_name" placeholder="VD: Kế hoạch Tuyển dụng Năm 2025"/></h2>-->
-<!--            </div>-->
+              <field name="is_user_board" invisible="1"/>
+            <field name="is_user_director" invisible="1"/>
             <group>
                 <group>
                     <field name="plan_name"/>
                     <field name="type" readonly="1"/> <field name="plan_execute_date" readonly="recruitment_status != 'draft'"/>
                     <field name="survey_id" readonly="recruitment_status != 'draft'" string="Đợt đăng ký"/>
-                    <field name="plan_purpose" readonly="recruitment_status != 'draft'"/>
                 </group>
                 <group>
                     <field name="department_responsible" readonly="recruitment_status != 'draft'"/>
                     <field name="people_suggestion" readonly="recruitment_status != 'draft'"/>
                     <field name="plan_fund" widget="monetary" readonly="1"/>
-                    <field name="director_note" readonly="recruitment_status not in ['director_approve','board_approve']" string="Ghi chú"/>
+                    <field name="note" string="Ghi chú" readonly="recruitment_status != 'draft'"/>
+                    <field name="reject_reason"
+                           string="Lý do"
+                           placeholder="Nhập lý do từ chối nếu có..."
+                           readonly="1"
+                           invisible="not reject_reason"/>
                     <field name="is_applied_to_jobs" invisible="1"/>
                 </group>
             </group>
@@ -216,61 +216,55 @@
       <field name="arch" type="xml">
         <form string="KẾ HOẠCH QUÝ">
           <header>
-            <button name="action_notify_quarter"
-                    type="object"
-                    string="Xác nhận"
-                    class="btn-primary"
-                    groups="quan_ly_tuyen_dung.group_recruitment_hr_officer"
+            <button name="action_submit" type="object" string="Trình duyệt" class="btn-primary"
+                    groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_hr_officer"
                     invisible="recruitment_status != 'draft'"/>
 
-            <button name="action_submit_quarter"
-                    type="object"
-                    string="Trình duyệt"
-                    class="btn-primary"
-                    groups="quan_ly_tuyen_dung.group_recruitment_hr_officer"
-                    invisible="recruitment_status != 'notify'"/>
-
-            <button name="action_director_approve_quarter"
-                    type="object"
-                    string="Phê duyệt"
-                    class="btn-primary"
-                    groups="quan_ly_tuyen_dung.group_recruitment_director"
+            <button name="action_director_approve_new" type="object" string="Duyệt" class="btn-primary"
+                    groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_director"
                     invisible="recruitment_status != 'director_approve'"/>
 
-            <button name="action_director_start_deploy"
-                    type="object"
-                    string="Triển khai"
-                    class="btn-success"
-                    groups="quan_ly_tuyen_dung.group_recruitment_director"
-                    invisible="recruitment_status != 'approved' or is_applied_to_jobs"/>
+            <button name="action_board_approve" type="object" string="HĐQT Phê duyệt" class="btn-primary"
+                    groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_board"
+                    invisible="recruitment_status != 'board_approve'"/>
 
-            <button name="action_complete_quarter"
-                    type="object"
-                    string="Hoàn thành"
-                    class="btn-secondary"
-                    groups="quan_ly_tuyen_dung.group_recruitment_director"
+            <button name="action_complete" type="object" string="Kết thúc" class="btn-secondary"
+                    groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_hr_officer"
                     invisible="recruitment_status != 'in_process'"/>
 
-            <button name="action_draft" type="object" string="Cần điều chỉnh" class="btn-secondary"
+             <button name="action_open_reject_wizard" type="object" string="Không duyệt" class="btn-danger"
+                    invisible="not is_user_director or recruitment_status != 'director_approve'"/>
+
+             <button name="action_open_reject_wizard" type="object" string="Không duyệt" class="btn-danger"
+                    invisible="not is_user_board or recruitment_status != 'board_approve'"/>
+
+             <button name="action_draft" type="object" string="Sửa" class="btn-secondary"
                     groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_hr_officer"
-                    invisible="recruitment_status in ['complete','draft']"/>
+                    invisible="recruitment_status in ['draft', 'complete'] or (recruitment_status == 'director_approve' and is_user_director) or (recruitment_status == 'board_approve' and is_user_board)"/>
 
             <field name="recruitment_status" widget="statusbar"
-                   statusbar_visible="draft,notify,director_approve,approved,in_process,complete"/>
+                   statusbar_visible="draft,director_approve,board_approve,in_process,complete"/>
           </header>
           <sheet>
+              <field name="is_user_board" invisible="1"/>
+            <field name="is_user_director" invisible="1"/>
             <group>
                 <group>
                     <field name="plan_name"/>
                     <field name="parent_id" readonly="1" string="Thuộc Kế hoạch Năm"/>
                     <field name="plan_execute_date" readonly="recruitment_status != 'draft'"/>
-                    <field name="plan_purpose" readonly="recruitment_status != 'draft'"/>
                 </group>
                 <group>
                     <field name="department_responsible" readonly="recruitment_status != 'draft'"/>
                     <field name="people_suggestion" readonly="recruitment_status != 'draft'"/>
                     <field name="plan_fund" widget="monetary" readonly="1"/>
                     <field name="is_applied_to_jobs" invisible="1"/>
+                    <field name="note" string="Ghi chú" readonly="recruitment_status != 'draft'"/>
+                    <field name="reject_reason"
+                           string="Lý do"
+                           placeholder="Nhập lý do từ chối nếu có..."
+                           readonly="1"
+                           invisible="not reject_reason and recruitment_status not in ['director_approve', 'board_approve']"/>
                 </group>
             </group>
             <notebook>
@@ -308,21 +302,37 @@
     </record>
 
     <record id="view_recruitment_plan_detail_reject_wizard_form" model="ir.ui.view">
-            <field name="name">recruitment.plan.detail.reject.wizard.form</field>
-            <field name="model">recruitment.plan.detail.reject.wizard</field>
-            <field name="arch" type="xml">
-                <form string="Nhập lý do từ chối">
-                    <group>
-                        <field name="reason" placeholder="Ví dụ: Chưa phù hợp ngân sách, dư biên chế..."/>
-                        <field name="detail_id" invisible="1"/>
-                    </group>
-                    <footer>
-                        <button name="action_confirm_reject" string="Xác nhận Từ chối" type="object" class="btn-danger"/>
-                        <button string="Hủy" class="btn-secondary" special="cancel"/>
-                    </footer>
-                </form>
-            </field>
-        </record>
+        <field name="name">recruitment.plan.detail.reject.wizard.form</field>
+        <field name="model">recruitment.plan.detail.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Nhập lý do từ chối">
+                <group>
+                    <field name="reason" placeholder="Ví dụ: Chưa phù hợp ngân sách, dư biên chế..."/>
+                    <field name="detail_id" invisible="1"/>
+                </group>
+                <footer>
+                    <button name="action_confirm_reject" string="Xác nhận Từ chối" type="object" class="btn-danger"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
 
+    <record id="view_recruitment_plan_reject_wizard_form" model="ir.ui.view">
+        <field name="name">recruitment.plan.reject.wizard.form</field>
+        <field name="model">recruitment.plan.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Lý do từ chối">
+                <group>
+                    <field name="reject_reason" placeholder="Nhập lý do tại sao từ chối..."/>
+                    <field name="plan_id" invisible="1"/>
+                </group>
+                <footer>
+                    <button name="action_confirm_reject" string="Xác nhận" type="object" class="btn-danger"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
 
 </odoo>

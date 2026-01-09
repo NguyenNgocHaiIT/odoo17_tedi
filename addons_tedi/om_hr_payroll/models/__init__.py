@@ -11,3 +11,4 @@ from . import hr_salary_grade
 from . import hr_insurance
 from . import hr_employee_allowance
 from . import evaluation_group
+from . import hr_job

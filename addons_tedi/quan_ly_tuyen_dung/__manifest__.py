@@ -33,6 +33,7 @@
         "web.assets_backend": [
             "quan_ly_tuyen_dung/static/src/scss/recruitment_plan.scss",
             "quan_ly_tuyen_dung/static/src/scss/tree_custom.scss",
+            'quan_ly_tuyen_dung/static/src/js/form_controller_patch.js',
         ],
     },
 

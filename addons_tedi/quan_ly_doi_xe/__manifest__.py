@@ -12,7 +12,7 @@
     'data': [
         'security/security_data.xml',
         'data/ir_sequence_data.xml',
-        'data/mail_template_data.xml'
+        'data/mail_template_data.xml',
         'security/ir.model.access.csv',
 
 

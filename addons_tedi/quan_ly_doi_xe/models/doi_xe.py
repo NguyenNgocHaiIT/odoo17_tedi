@@ -49,7 +49,11 @@ class FleetVehicle(models.Model):
     def _compute_display_name(self):
         for record in self:
             # Lấy thông tin cơ bản: Hãng/Model/Biển số
-            name = record.model_id.brand_id.name + '/' + record.model_id.name + '/' + (record.license_plate or '')
+            # name = record.model_id.brand_id.name + '/' + record.model_id.name + '/' + (record.license_plate or '')
+            brand_name = record.model_id.brand_id.name or ''
+            model_name = record.model_id.name or ''
+            license_plate = record.license_plate or ''
+            name = brand_name + '/' + model_name + '/' + license_plate
 
             # Nếu có tài xế, nối thêm tên tài xế vào
             if record.tedi_driver_employee_id:
