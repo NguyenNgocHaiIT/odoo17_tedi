@@ -644,3 +644,27 @@ body.o_web_client .o_form_view .o_form_sheet_bg .o_form_sheet .excel_style_list_
 body.o_web_client.list_comfortable .excel_style_list_view .o_list_renderer {
     --ListRenderer-thead-padding-y: 0.5rem !important; /* Giảm từ 1rem xuống 0.5rem */
 }
+body.o_web_client.list_compact .excel_style_list_view .o_list_renderer {
+    --ListRenderer-thead-padding-y: 0.5rem !important; /* Giảm từ 1rem xuống 0.5rem */
+}
+
+body.o_web_client .o_content
+.excel_style_list_view
+.o_list_renderer.table-responsive
+.o_list_table tbody td.o_list_record_selector,
+body.o_web_client .o_content
+.o_list_renderer.table-responsive
+.o_list_table tbody td.o_data_cell {
+    height: 30px !important;
+    border: 0;
+}
+
+body.list_comfortable .excel_style_list_view {
+    --list-table-height: 30px;
+    --table-border-spacing: 0em;
+}
+
+body.list_compact .excel_style_list_view {
+    --list-table-height: 30px;
+    --table-border-spacing: 0em;
+}
