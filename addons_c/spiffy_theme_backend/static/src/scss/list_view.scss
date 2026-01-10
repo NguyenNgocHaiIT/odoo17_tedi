@@ -568,27 +568,94 @@ html{
     border: 1.5px solid #cfcfcf !important;
     border-radius: 6px;
     overflow: hidden;
+    margin-bottom: 50px !important;
 }
 
 /* Header */
-.excel_style_list_view .o_list_table thead th {
-    background-color: #f0f8ff;
-    text-align: center;
-    vertical-align: middle;
+body.o_web_client .o_content .excel_style_list_view
+.o_list_renderer.table-responsive .o_list_table thead tr th {
+    background-color: #e9edf2 !important;
+    text-align: center !important;
+    vertical-align: middle !important;
     font-weight: 600;
-    height: 50px;
+    height: auto !important; /* Thay đổi từ 50px thành auto */
+    min-height: 40px !important; /* Giữ chiều cao tối thiểu */
+    max-height: 60px !important; /* Giới hạn chiều cao tối đa */
     border: 1.5px solid #cfcfcf !important;
-    padding: 10px 12px;
+    padding: 8px 12px !important; /* Giảm padding để tiết kiệm không gian */
+    line-height: 1.2 !important;
+    white-space: normal !important; /* Cho phép xuống dòng */
+    overflow: hidden !important;
+}
+
+/* Container text trong header */
+body.o_web_client .o_content .excel_style_list_view
+.o_list_renderer.table-responsive .o_list_table thead tr th .d-flex {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 30px !important;
+    height: 100% !important;
+}
+
+/* Text trong header - giới hạn 2 dòng */
+body.o_web_client .o_content .excel_style_list_view
+.o_list_renderer.table-responsive .o_list_table thead tr th .text-truncate {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important; /* Giới hạn 2 dòng */
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.2 !important;
+    max-height: 2.4em !important; /* 2 dòng x 1.2 line-height */
+    text-align: center !important;
+    width: 100% !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
+/* QUAN TRỌNG: Override căn chỉnh cho các cột số trong header */
+.excel_style_list_view .o_list_table thead th.o_list_number_th {
+    text-align: center !important;
+}
+
+/* Override flex direction cho các header cột số */
+.excel_style_list_view .o_list_table thead th .d-flex.flex-row-reverse {
+    flex-direction: row !important;
+    justify-content: center !important;
+}
+
+/* Text trong header cột số */
+.excel_style_list_view .o_list_table thead th.o_list_number_th .d-flex .text-truncate {
+    text-align: center !important;
+    width: 100%;
 }
 
 /* Body cells */
-.excel_style_list_view .o_list_table tbody td {
+body.o_web_client
+.excel_style_list_view
+.o_list_renderer.table-responsive
+.o_list_table tbody tr.o_data_row td,
+body.o_web_client
+.excel_style_list_view
+.o_list_renderer.table-responsive
+.o_list_table tbody tr.o_data_row th {
     border-right: 1.5px solid #cfcfcf !important;
     border-bottom: 1.5px solid #cfcfcf !important;
     border-top: 1.5px solid #cfcfcf !important;
     border-left: 1.5px solid #cfcfcf !important;
+    font-weight: 500px !important;
+    background-color: white !important;
     height: 50px;
     padding: 8px 12px;
+
+}
+
+.excel_style_list_view .o_list_table tbody tr:not(.o_data_row) {
+    display: none !important; /* Ẩn hoàn toàn dòng trống */
 }
 
 /* Checkbox column căn giữa */
@@ -639,6 +706,12 @@ body.o_web_client .o_form_view .o_form_sheet_bg .o_form_sheet .excel_style_list_
     height: auto !important;
     min-height: 2.5rem !important;
     padding: 8px 12px !important;
+}
+.excel_style_list_view.o_list_view .o_list_table.o_data_row.o_is_line_section,
+.excel_style_list_view.o_list_view .o_list_table .o_data_row.o_is_line_section > .o_data_cell {
+    background-color: white !important;
+        color: var(--biz-theme-primary-color) !important;
+    font-weight: bold !important;
 }
 
 body.o_web_client.list_comfortable .excel_style_list_view .o_list_renderer {
