@@ -1,13 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <record id="thg_folder_form_inherit" model="ir.ui.view">
+        <!--<record id="thg_folder_form_inherit" model="ir.ui.view">
             <field name="name">document.thg_folder.form</field>
             <field name="model">documents.folder</field>
             <field name="inherit_id" ref="documents.folder_view_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='parent_folder_id']" position="after">
                     <field name="user_access_ids" widget="many2many_tags"/>
+                </xpath>
+            </field>
+        </record>-->
+        <record id="folder_view_tree_inherit" model="ir.ui.view">
+            <field name="name">documents.folder.tree.inherit</field>
+            <field name="model">documents.folder</field>
+            <field name="inherit_id" ref="documents.folder_view_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='group_ids']" position="replace">
+                    <field name="user_ids" widget="many2many_tags" string="Write Users"/>
+                </xpath>
+                <xpath expr="//field[@name='read_group_ids']" position="replace">
+                    <field name="read_user_ids" widget="many2many_tags" string="Read Users"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Inheritance cho form view -->
+        <record id="folder_view_form_inherit" model="ir.ui.view">
+            <field name="name">documents.folder.form.inherit</field>
+            <field name="model">documents.folder</field>
+            <field name="inherit_id" ref="documents.folder_view_form"/>
+            <field name="arch" type="xml">
+                <!-- Thay thế group_ids bằng user_ids trong access rights page -->
+                <xpath expr="//page[@name='access_rights']//field[@name='group_ids']" position="replace">
+                    <field name="user_ids"
+                           widget="many2many_tags"
+                           string="Write Users"
+                           help="Users able to see the workspace and read/create/edit its documents."/>
+                </xpath>
+
+                <xpath expr="//page[@name='access_rights']//field[@name='read_group_ids']" position="replace">
+                    <field name="read_user_ids"
+                           widget="many2many_tags"
+                           string="Read Users"
+                           help="Users able to see the workspace and read its documents without create/edit rights."/>
+                </xpath>
+
+                <!-- Cập nhật điều kiện invisible -->
+                <xpath expr="//page[@name='access_rights']//field[@name='user_specific_write'][@invisible]"
+                       position="attributes">
+                    <attribute name="invisible">not user_specific or not user_ids</attribute>
+                </xpath>
+
+                <xpath expr="//page[@name='access_rights']//field[@name='user_specific'][@invisible]"
+                       position="attributes">
+                    <attribute name="invisible">not read_user_ids</attribute>
                 </xpath>
             </field>
         </record>
