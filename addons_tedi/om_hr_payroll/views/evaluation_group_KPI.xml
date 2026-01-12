@@ -25,7 +25,7 @@
             <field name="model">evaluation.criteria</field>
             <field name="arch" type="xml">
                 <tree string="Tiêu chí đánh giá">
-                    <field name="code"/>
+<!--                    <field name="code"/>-->
                     <field name="name"/>
                     <field name="evaluation_group_id"/>
                 </tree>
@@ -44,7 +44,7 @@
                                 <field name="evaluation_group_id"/>
                             </group>
                             <group>
-                                <field name="code"/>
+<!--                                <field name="code"/>-->
 
                             </group>
                         </group>

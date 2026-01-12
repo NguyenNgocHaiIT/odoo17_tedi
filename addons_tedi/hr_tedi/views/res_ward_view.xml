@@ -2,27 +2,63 @@
 <odoo>
     <data>
 
-        <record id="action_res_country_state_vietnam" model="ir.actions.act_window">
-            <field name="name">Tỉnh/Thành phố</field>
-            <field name="res_model">res.country.state</field>
-            <field name="view_mode">tree,form</field>
-            <field name="domain">[('country_id.code', '=', 'VN')]</field>
-            <field name="context">{'default_country_code': 'VN'}</field>
-            <field name="help" type="html">
-              <p class="o_view_nocontent_smiling_face">
-                Thêm mới Tỉnh/Thành phố
-              </p>
+        <record id="view_country_state_tree_vn_custom" model="ir.ui.view">
+            <field name="name">res.country.state.tree.vn.custom</field>
+            <field name="model">res.country.state</field>
+            <field name="priority">50</field>
+            <field name="arch" type="xml">
+                <tree string="Tỉnh/Thành phố">
+                    <field name="name" string="Tên Tỉnh/TP"/>
+                    <field name="code" string="Mã Tỉnh"/>
+                    <field name="ward_ids" string="Số lượng Xã/Phường" optional="show" widget="many2many_tags_avatar"/>
+                </tree>
             </field>
         </record>
 
-        <record id="view_country_state_tree_vn" model="ir.ui.view">
-            <field name="name">res.country.state.tree.vn</field>
+        <record id="view_country_state_form_vn_custom" model="ir.ui.view">
+            <field name="name">res.country.state.form.vn.custom</field>
             <field name="model">res.country.state</field>
-            <field name="priority">20</field> <field name="arch" type="xml">
-                <tree string="Tỉnh/Thành phố" editable="bottom">
-                    <field name="name" string="Tên Tỉnh/TP"/>
-                    <field name="code" string="Mã (VD: HN, SG)"/>
-                    <field name="country_id" invisible="1"/> </tree>
+            <field name="priority">50</field>
+            <field name="arch" type="xml">
+                <form string="Tỉnh/Thành phố">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name" string="Tên Tỉnh/Thành phố"/>
+                                <field name="code" string="Mã (VD: HN, SG)"/>
+                            </group>
+                            <group>
+                                <field name="country_id" readonly="1" options="{'no_open': True}"/>
+                            </group>
+                        </group>
+
+                        <notebook>
+                            <page string="Danh sách Xã/Phường trực thuộc">
+                                <field name="ward_ids">
+                                    <tree editable="bottom" default_order="name">
+                                        <field name="name" string="Tên Xã/Phường"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_res_country_state_vietnam" model="ir.actions.act_window">
+            <field name="name">Tỉnh/Thành phố (Việt Nam)</field>
+            <field name="res_model">res.country.state</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[('country_id.code', '=', 'VN')]</field>
+            <field name="context" eval="{'default_country_id': ref('base.vn')}"/>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_country_state_tree_vn_custom')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_country_state_form_vn_custom')})]"/>
+            <field name="help" type="html">
+              <p class="o_view_nocontent_smiling_face">
+                Chưa có dữ liệu Tỉnh/Thành phố.
+              </p>
             </field>
         </record>
 
@@ -30,71 +66,6 @@
             id="menu_res_country_state"
             name="Tỉnh/Thành phố"
             action="action_res_country_state_vietnam"
-            parent="hr.menu_human_resources_configuration"
-            sequence="2"
-            groups="hr.group_hr_user"/>
-
-
-        <record id="view_res_ward_search" model="ir.ui.view">
-            <field name="name">res.ward.search</field>
-            <field name="model">res.ward</field>
-            <field name="arch" type="xml">
-                <search string="Tìm kiếm Xã/Phường">
-                    <field name="name" string="Tên Xã/Phường"/>
-                    <field name="state_id" string="Tỉnh/Thành phố"/>
-
-                    <group expand="1" string="Nhóm theo">
-                        <filter string="Tỉnh/Thành phố" name="group_by_state" context="{'group_by':'state_id'}"/>
-                    </group>
-                </search>
-            </field>
-        </record>
-
-        <record id="view_res_ward_tree" model="ir.ui.view">
-            <field name="name">res.ward.tree</field>
-            <field name="model">res.ward</field>
-            <field name="arch" type="xml">
-                <tree string="Danh sách Xã/Phường" editable="bottom">
-                    <field name="name"/>
-                    <field name="state_id" options="{'no_create': True}"/>
-                </tree>
-            </field>
-        </record>
-
-        <record id="view_res_ward_form" model="ir.ui.view">
-            <field name="name">res.ward.form</field>
-            <field name="model">res.ward</field>
-            <field name="arch" type="xml">
-                <form string="Chi tiết Xã/Phường">
-                    <sheet>
-                        <group>
-                            <group>
-                                <field name="name"/>
-                                <field name="state_id"/>
-                            </group>
-                        </group>
-                    </sheet>
-                </form>
-            </field>
-        </record>
-
-        <record id="action_res_ward" model="ir.actions.act_window">
-            <field name="name">Danh mục Xã/Phường</field>
-            <field name="res_model">res.ward</field>
-            <field name="view_mode">tree,form</field>
-            <field name="search_view_id" ref="view_res_ward_search"/>
-            <field name="context">{'search_default_group_by_state': 1}</field>
-            <field name="help" type="html">
-              <p class="o_view_nocontent_smiling_face">
-                Tạo mới Xã/Phường
-              </p>
-            </field>
-        </record>
-
-        <menuitem
-            id="menu_res_ward"
-            name="Xã/Phường"
-            action="action_res_ward"
             parent="hr.menu_human_resources_configuration"
             sequence="2"
             groups="hr.group_hr_user"/>

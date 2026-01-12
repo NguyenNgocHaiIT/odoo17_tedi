@@ -1,12 +1,14 @@
 from odoo import models, api, fields, exceptions, _
 from odoo.exceptions import AccessError, ValidationError
 
-HR_OFFICER          = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
+
 PARTICIPANT         = "hr_training_tedi.group_training_participant"
 UNIT_MANAGER        = "hr_training_tedi.group_training_unit_manager"
 GENERAL_DIRECTOR    = "hr_training_tedi.group_training_general_director"
 BASE                = "base.group_user"
 
+MANAGER = "hr_training_tedi.group_training_manager" # Quản lý nghiệp vụ (tương đương HR Officer bên Tuyển dụng)
+BOARD = "hr_training_tedi.group_training_board"
 
 class TrainingPlan(models.Model):
     _name = 'training.plan'
@@ -21,6 +23,9 @@ class TrainingPlan(models.Model):
         default=fields.Date.context_today,
         readonly=True,
     )
+
+    note = fields.Text(string="Ghi chú")
+    reject_reason = fields.Text(string="Lý do từ chối")
 
     # Thêm field ngày thực hiện để có thể check logic (nếu cần dùng cho KH Quý giống Tuyển dụng)
     # Nếu logic cũ bạn không dùng field này để tính toán thì để hiển thị thôi
@@ -43,9 +48,9 @@ class TrainingPlan(models.Model):
     state = fields.Selection([
         ("draft", "Dự thảo"),
         ("notify", "Xác nhận"),  # Mới: Dành cho bước confirm của Quý
-        ("director_approve", "Chờ duyệt"),  # Cũ là pending
+        ("director_approve", "TGĐ duyệt"),  # Cũ là pending
         ("board_approve", "HĐQT duyệt"),  # Mới: Dành cho KH Năm
-        ("approved", "Đã duyệt"),  # Đã duyệt nhưng chưa triển khai
+        # ("approved", "Đã duyệt"),  # Đã duyệt nhưng chưa triển khai
         ("in_process", "Đang triển khai"),  # Đã bấm triển khai -> Sinh dữ liệu
         ("complete", "Hoàn thành"),
     ], string="Trạng thái", default='draft', tracking=True)
@@ -80,6 +85,17 @@ class TrainingPlan(models.Model):
         ('year', 'Kế hoạch Năm'),
         ('quarter', 'Kế hoạch Quý'),
     ], string="Loại kế hoạch", default='year', required=True, tracking=True)
+
+    is_user_director = fields.Boolean(compute='_compute_is_user_director', store=False)
+    is_user_board = fields.Boolean(compute='_compute_is_user_board', store=False)
+
+    def _compute_is_user_director(self):
+        for rec in self:
+            rec.is_user_director = self.env.user.has_group(GENERAL_DIRECTOR)
+
+    def _compute_is_user_board(self):
+        for rec in self:
+            rec.is_user_board = self.env.user.has_group(BOARD)
 
     # Field liên kết cha-con (để biết kế hoạch Quý thuộc Kế hoạch Năm nào)
     parent_id = fields.Many2one('training.plan', string="Thuộc Kế hoạch Năm", readonly=True)
@@ -262,23 +278,43 @@ class TrainingPlan(models.Model):
 
     # 2. Director Approve -> Board Approve (Năm) / Approved (Quý)
     def action_director_approve(self):
-        # Check quyền GENERAL_DIRECTOR ở XML hoặc ở đây
+        # Check quyền GENERAL_DIRECTOR (ở view hoặc check code)
         for rec in self:
             if rec.state != "director_approve":
                 raise ValidationError(_("Chỉ duyệt khi đang chờ duyệt."))
 
-            if rec.type == 'year':
-                rec.state = "board_approve"  # Năm cần HĐQT duyệt tiếp
-            else:
-                rec.state = "approved"  # Quý thì Giám đốc duyệt là xong bước duyệt
+            # Thay đổi: Dù là Năm hay Quý đều phải qua HĐQT
+            rec.state = "board_approve"
 
     # 3. Board Approve -> Approved (Chỉ Năm)
     def action_board_approve(self):
-        # Check quyền BOARD
+        # Check quyền BOARD (ở view hoặc check code)
         for rec in self:
             if rec.state != "board_approve":
                 raise ValidationError(_("Chỉ duyệt khi HĐQT đang xem xét."))
-            rec.state = "approved"
+
+            # Xử lý Logic Triển khai (Idempotency check)
+            if not rec.is_applied:
+
+                # A. LOGIC CHO KẾ HOẠCH NĂM: Sinh 4 KH Quý
+                if rec.type == 'year':
+                    rec._generate_quarterly_plans()
+                    msg = "HĐQT đã phê duyệt Kế hoạch Năm. Hệ thống đã sinh Kế hoạch Quý."
+
+                # B. LOGIC CHO KẾ HOẠCH QUÝ: Sinh Học viên
+                elif rec.type == 'quarter':
+                    rec._generate_participants_from_survey()
+                    # Đồng bộ lịch sử thay đổi (nếu có logic này)
+                    for detail in rec.detail_ids:
+                        for part_detail in detail.participation_detail_ids:
+                            part_detail._sync_to_history()
+                    msg = "HĐQT đã phê duyệt Kế hoạch Quý. Hệ thống đã chốt danh sách học viên."
+
+                rec.is_applied = True
+                rec.message_post(body=_(msg))
+
+            # Chuyển trạng thái sang Đang triển khai
+            rec.state = "in_process"
 
     # 4. Approved -> In Process (Triển khai - Nút này sẽ gọi Logic sinh dữ liệu)
     def action_deploy(self):
@@ -318,6 +354,20 @@ class TrainingPlan(models.Model):
             if rec.state not in ['director_approve', 'board_approve']:
                 raise ValidationError(_("Không thể từ chối ở trạng thái này."))
             rec.state = "draft"
+
+    def action_open_reject_wizard(self):
+        self.ensure_one()
+        return {
+            'name': _('Nhập lý do từ chối'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'training.plan.reject.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_plan_id': self.id,
+                'default_reject_reason': self.reject_reason
+            }
+        }
 
 
 class TrainingPlanDetail(models.Model):
@@ -441,6 +491,7 @@ class TrainingPlanDetail(models.Model):
                 q = (rec.execution_date.month - 1) // 3 + 1
                 rec.quarter = str(q)
 
+
     def action_open_reject_wizard(self):
         self.ensure_one()
         return {
@@ -555,4 +606,23 @@ class TrainingPlanDetailRejectWizard(models.TransientModel):
             'state': 'rejected',
             'reject_reason': self.reason
         })
+        return {'type': 'ir.actions.act_window_close'}
+
+
+class TrainingPlanRejectWizard(models.TransientModel):
+    _name = 'training.plan.reject.wizard'
+    _description = 'Wizard nhập lý do từ chối kế hoạch đào tạo'
+
+    plan_id = fields.Many2one('training.plan', string="Kế hoạch", required=True)
+    reject_reason = fields.Text(string="Lý do từ chối", required=True)
+
+    def action_confirm_reject(self):
+        self.ensure_one()
+        # Ghi đè lý do và trả về nháp
+        self.plan_id.write({
+            'reject_reason': self.reject_reason,
+            'state': 'draft'
+        })
+        # Ghi log vào chatter
+        self.plan_id.message_post(body=f"Đã từ chối. Lý do: {self.reject_reason}")
         return {'type': 'ir.actions.act_window_close'}

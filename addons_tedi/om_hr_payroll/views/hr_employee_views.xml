@@ -20,18 +20,18 @@
 
 
     <menuitem id="menu_payroll_employee"
-              name="Employees"
+              name="Nhân viên"
               parent="om_hr_payroll.menu_hr_payroll_root"
               sequence="15"/>
 
     <menuitem id="menu_hr_employee"
-              name="Employees"
+              name="Danh sách nhân viên"
               action="hr.open_view_employee_list_my"
               parent="menu_payroll_employee"
               sequence="10"/>
 
     <menuitem id="hr_menu_contract"
-              name="Contracts"
+              name="Hợp đồng"
               action="hr_contract.action_hr_contract"
               parent="menu_payroll_employee"
               sequence="20"

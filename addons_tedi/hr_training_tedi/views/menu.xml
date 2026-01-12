@@ -9,7 +9,7 @@
         />
 
         <menuitem id="menu_training_plan_lod"
-                  name="Kế hoạch đào tạo"
+                  name="Lập kế hoạch"
                   parent="hr_training_tedi.training_tedi_root"
                   sequence="0"  />
 
@@ -33,7 +33,7 @@
                   sequence="30"  />
 
         <menuitem id="menu_training_plan_real"
-                  name="Triển khai kế hoạch"
+                  name="Triển khai"
                   parent="hr_training_tedi.training_tedi_root"
                   groups="hr_training_tedi.group_training_manager"
                   action="action_training_plan_quarter"

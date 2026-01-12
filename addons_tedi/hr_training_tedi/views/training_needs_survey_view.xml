@@ -66,11 +66,12 @@
 
                         <group>
                             <field name="create_date" readonly="1" widget="date" class="text-start"/>
-                            <label for="start_date" string="Thời gian đợt đăng ký" readonly="state == 'end'"/>
+                            <label for="start_date" string="Thời gian đăng ký" readonly="state == 'end'"/>
                             <div class="o_row">
-                                <field name="start_date" widget="date" readonly="state != 'draft'" class="text-start"/>
-                                <span style="margin: 0 10px;">→</span>
-                                <field name="end_date" widget="date" readonly="state != 'draft'" class="text-start"/>
+                                <span class="o_form_label" style="margin-right: 5px;">Từ</span>
+                                <field name="start_date" widget="date" readonly="state != 'draft'"/>
+                                <span class="o_form_label" style="margin: 0 10px;">Đến</span>
+                                <field name="end_date" widget="date" readonly="state != 'draft'"/>
                             </div>
                         </group>
                     </group>

@@ -2,8 +2,8 @@
 <odoo>
     <data>
         <menuitem id="menu_hr_work_entry"
-                  action="hr_work_entry.hr_work_entry_action"
                   name="Work Entries"
+                  groups="hr_contract.group_hr_contract_manager"
                   parent="menu_hr_payroll_root"/>
 
         <menuitem id="menu_hr_work_entry"

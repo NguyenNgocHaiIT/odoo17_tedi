@@ -9,7 +9,7 @@
                     <field name="employee_id"/>
                     <field name="job_id"/>
                     <field name="period"/>
-                    <field name="total_score_percent" widget="progressbar" string="Tiến độ (Điểm)"/>
+<!--                    <field name="total_score_percent" widget="progressbar" string="Tiến độ (Điểm)"/>-->
                     <field name="total_score" optional="show" string="Điểm tổng"/>
 
                     <field name="final_result" widget="badge" decoration-success="total_score >= 3.5"/>
@@ -58,6 +58,7 @@
                     <sheet>
                         <field name="is_direct_manager" invisible="1"/>
                         <field name="is_department_manager" invisible="1"/>
+                        <field name="is_director_manager" invisible="1"/>
 
                         <div class="oe_title">
                             <h1><field name="name"/></h1>
@@ -83,8 +84,8 @@
                             </group>
 
                             <group string="Kết quả đánh giá" invisible="not is_result_computed">
-                                <field name="total_score_percent" widget="progressbar" string="Mức độ đạt"/>
-                                <field name="total_score" decoration-bf="1" string="Điểm tổng (Scale 5)"/>
+<!--                                <field name="total_score_percent" widget="progressbar" string="Mức độ đạt"/>-->
+                                <field name="total_score" decoration-bf="1" string="Điểm tổng (Hệ 5)"/>
 
                                 <field name="k_coefficient" decoration-bf="1"/>
                                 <field name="final_result"
@@ -104,22 +105,30 @@
                                         <control>
                                             <create name="add_section_control" string="Thêm ghi chú" context="{'default_display_type': 'line_note'}"/>
                                         </control>
-
                                         <field name="sequence" widget="handle"/>
                                         <field name="display_type" column_invisible="1"/>
-
-                                        <field name="stt" string="STT" width="50px"
-                                               decoration-bf="display_type == 'line_section'"/>
-
+                                        <field name="stt" string="STT" width="50px" decoration-bf="display_type == 'line_section'"/>
                                         <field name="name" string="Mục tiêu nhiệm vụ/ công việc"
-                                               decoration-bf="display_type == 'line_section'"/>
-
+                                               decoration-bf="display_type == 'line_section'"
+                                               readonly="display_type != 'line_note'"
+                                               force_save="1"/>
                                         <field name="weight" sum="Tổng" readonly="1" force_save="1"/>
 
-                                        <field name="self_score" readonly="parent.state != 'draft'"/>
-                                        <field name="manager_score" column_invisible="parent.is_manager_review_required == False" readonly="parent.state != 'wait_manager'"/>
-                                        <field name="council_score" column_invisible="parent.is_council_review_required == False" readonly="parent.state != 'wait_council'"/>
-                                        <field name="director_score" column_invisible="parent.is_director_review_required == False" readonly="parent.state != 'wait_director'"/>
+                                        <field name="self_score"
+                                               readonly="parent.state != 'draft'"/>
+
+                                        <field name="manager_score"
+                                               column_invisible="parent.is_manager_review_required == False"
+                                               readonly="parent.state != 'wait_manager' or not parent.is_direct_manager"/>
+
+                                        <field name="council_score"
+                                               column_invisible="parent.is_council_review_required == False"
+                                               readonly="parent.state != 'wait_council' or not parent.is_department_manager"/>
+
+                                        <field name="director_score"
+                                               column_invisible="parent.is_director_review_required == False"
+                                               readonly="parent.state != 'wait_director' or not parent.is_director_manager"/>
+
                                         <field name="final_score" optional="hide"/>
                                     </tree>
                                 </field>
@@ -141,10 +150,15 @@
             <field name="view_mode">tree,form</field>
         </record>
 
+        <menuitem id="menu_evaluation_kpi_root"
+                  name="Đánh giá KPI"
+                  parent="om_hr_payroll.menu_hr_payroll_root"
+                  sequence="11"/>
+
         <menuitem id="menu_evaluation_kpi_main"
                   name="Phiếu đánh giá KPI"
-                  parent="om_hr_payroll.menu_hr_payroll_root"
+                  parent="om_hr_payroll.menu_evaluation_kpi_root"
                   action="action_evaluation_kpi"
-                  sequence="11"/>
+                  sequence="10"/>
     </data>
 </odoo>
