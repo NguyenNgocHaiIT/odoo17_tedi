@@ -25,3 +25,5 @@ access_evaluation_criteria_line,evaluation.criteria.line,model_evaluation_criter
 access_evaluation_kpi,evaluation.kpi,model_evaluation_kpi,,1,1,1,1
 access_evaluation_kpi_line,evaluation.kpi.line,model_evaluation_kpi_line,,1,1,1,1
 access_evaluation_kpi_classification,access_evaluation_kpi_classification,model_evaluation_kpi_classification,,1,1,1,1
+access_quarterly_payroll_settlement,access_quarterly_payroll_settlement,model_quarterly_payroll_settlement,,1,1,1,1
+access_quarterly_payroll_settlement_line,access_quarterly_payroll_settlement_line,model_quarterly_payroll_settlement_line,,1,1,1,1

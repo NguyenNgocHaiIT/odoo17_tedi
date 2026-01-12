@@ -44,6 +44,7 @@
         'views/evaluation_KPI_view.xml',
         'views/evaluation_group_KPI.xml',
         'views/hr_allowance_type.xml',
+        'views/quarterly_payroll_settlement.xml',
         'data/mail_template.xml',
         'data/cau_truc_luong_lan_1.xml',
         'data/cau_truc_luong_lan_2.xml',

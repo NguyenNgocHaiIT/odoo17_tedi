@@ -12,3 +12,4 @@ from . import hr_insurance
 from . import hr_employee_allowance
 from . import evaluation_group
 from . import hr_job
+from . import quarterly_payroll_settlement
