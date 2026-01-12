@@ -2,7 +2,7 @@
 <odoo>
     <data>
 
-        <record id="rule_document_folder_user_view" model="ir.rule">
+        <!--<record id="rule_document_folder_user_view" model="ir.rule">
            <field name="name">User can view document folder</field>
             <field name="model_id" ref="model_documents_folder"/>
             <field name="domain_force">[('user_access_ids', 'in', user.id)]</field>
@@ -46,7 +46,123 @@
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="False"/>
             <field name="perm_unlink" eval="False"/>
+        </record>-->
+
+        <!-- Vô hiệu hóa folder rules cũ -->
+        <record id="documents.documents_folder_groups_rule" model="ir.rule">
+            <field name="active" eval="False"/>
         </record>
 
+        <record id="documents.documents_folder_manager_rule" model="ir.rule">
+            <field name="active" eval="False"/>
+        </record>
+
+        <!-- Vô hiệu hóa document rules cũ -->
+        <record id="documents.documents_document_readonly_rule" model="ir.rule">
+            <field name="active" eval="False"/>
+        </record>
+
+        <record id="documents.documents_document_write_rule" model="ir.rule">
+            <field name="active" eval="False"/>
+        </record>
+
+        <record id="documents.documents_document_manager_rule" model="ir.rule">
+            <field name="active" eval="False"/>
+        </record>
+
+        <!-- Manager có full access -->
+        <record id="custom_documents_folder_manager_rule" model="ir.rule">
+            <field name="name">Documents.folder: manager full access (custom)</field>
+            <field name="model_id" ref="documents.model_documents_folder"/>
+            <field name="groups" eval="[(4, ref('documents.group_documents_manager'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Write users - có quyền đọc/ghi/tạo -->
+        <record id="custom_documents_folder_write_users_rule" model="ir.rule">
+            <field name="name">Documents.folder: write users access (custom)</field>
+            <field name="model_id" ref="documents.model_documents_folder"/>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="domain_force">[
+                '|',
+                    ('user_ids', 'in', user.id),
+                    '&amp;',
+                        ('user_ids', '=', False),
+                        ('read_user_ids', '=', False)
+            ]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Read-only users - chỉ đọc -->
+        <record id="custom_documents_folder_read_users_rule" model="ir.rule">
+            <field name="name">Documents.folder: read users access (custom)</field>
+            <field name="model_id" ref="documents.model_documents_folder"/>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="domain_force">[
+                '&amp;',
+                    ('read_user_ids', 'in', user.id),
+                    ('user_ids', 'not in', user.id)
+            ]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Company rule - GIỮ NGUYÊN NHƯNG KHÔNG GHI ĐÈ -->
+        <!-- Rule này của module gốc vẫn hoạt động, không cần tạo lại -->
+
+        <!-- Manager có full access -->
+        <record id="custom_documents_document_manager_rule" model="ir.rule">
+            <field name="name">Documents.document: manager full access (custom)</field>
+            <field name="model_id" ref="documents.model_documents_document"/>
+            <field name="groups" eval="[(4, ref('documents.group_documents_manager'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Write users - qua folder.user_ids -->
+        <record id="custom_documents_document_write_users_rule" model="ir.rule">
+            <field name="name">Documents.document: write users access (custom)</field>
+            <field name="model_id" ref="documents.model_documents_document"/>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="domain_force">[
+                '|',
+                    ('folder_id.user_ids', 'in', user.id),
+                    '&amp;',
+                        ('folder_id.user_ids', '=', False),
+                        ('folder_id.read_user_ids', '=', False)
+            ]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Read-only users - qua folder.read_user_ids -->
+        <record id="custom_documents_document_read_users_rule" model="ir.rule">
+            <field name="name">Documents.document: read users access (custom)</field>
+            <field name="model_id" ref="documents.model_documents_document"/>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="domain_force">[
+                '&amp;',
+                    ('folder_id.read_user_ids', 'in', user.id),
+                    ('folder_id.user_ids', 'not in', user.id)
+            ]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
     </data>
 </odoo>
