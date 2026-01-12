@@ -17,6 +17,8 @@
             </field>
         </record>
 
+
+
         <record id="hr_employee_view_form_inherit_profile_tedi" model="ir.ui.view">
             <field name="name">hr.employee.view.form.inherit.profile.tedi</field>
             <field name="model">hr.employee</field>
@@ -25,6 +27,8 @@
 
             <field name="arch" type="xml">
 
+
+
                 <xpath expr="//header" position="inside">
                     <button name="action_open_create_user"
                             string="Tạo tài khoản hệ thống"
@@ -32,6 +36,17 @@
                             class="oe_highlight"
                             invisible="user_id"
                             groups="hr.group_hr_manager"/>
+
+                    <button name="action_terminate_contract"
+                            string="Chấm dứt hợp đồng"
+                            type="object"
+                            class="btn-danger text-white"
+                            groups="hr.group_hr_manager"
+                            confirm="Bạn có chắc chắn muốn thực hiện thủ tục thôi việc cho nhân viên này?"
+                            invisible="not contract_id"/>
+                </xpath>
+                <xpath expr="//form" position="inside">
+                    <field name="contract_id" invisible="1"/>
                 </xpath>
 
                 <xpath expr="//div[hasclass('row', 'justify-content-between', 'position-relative')]" position="replace">

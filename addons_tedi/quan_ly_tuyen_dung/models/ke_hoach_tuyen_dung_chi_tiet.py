@@ -105,6 +105,41 @@ class RecruitmentPlanDetail(models.Model):
         ("rejected", "Từ chối")
     ], string="Trạng thái", default="approved", readonly=True)
 
+    recruited_quantity = fields.Integer(
+        string="SL đã tuyển",
+        compute="_compute_recruited_quantity",
+        store=False  # Không lưu cứng để luôn update real-time khi mở form
+    )
+
+    def _compute_recruited_quantity(self):
+        """
+        Đếm số lượng ứng viên thuộc:
+        1. Kế hoạch này (recruitment_plan_id)
+        2. Vị trí này (job_id)
+        3. Phòng ban này (department_id)
+        4. Trạng thái 'Hợp đồng được ký'
+        """
+        # 1. Tìm ID của trạng thái 'Hợp đồng được ký'
+        target_stage_name = 'Hợp đồng được ký'
+        stage = self.env['hr.recruitment.stage'].search([('name', '=', target_stage_name)], limit=1)
+
+        for line in self:
+            # Kiểm tra dữ liệu đầu vào, thêm check department_request
+            if not stage or not line.plan_id or not line.recruitment_job or not line.department_request:
+                line.recruited_quantity = 0
+                continue
+
+            # 2. Tạo domain tìm kiếm bên model hr.applicant
+            domain = [
+                ('recruitment_plan_id', '=', line.plan_id.id),     # Đúng Kế hoạch
+                ('job_id', '=', line.recruitment_job.id),           # Đúng Vị trí
+                ('stage_id', '=', stage.id),                        # Đúng Trạng thái
+                ('department_id', '=', line.department_request.id)  # <--- MỚI: Đúng Phòng ban
+            ]
+
+            # 3. Đếm số lượng
+            line.recruited_quantity = self.env['hr.applicant'].search_count(domain)
+
     # Nút bấm để mở Wizard Từ chối
     def action_open_reject_wizard(self):
         self.ensure_one()
@@ -158,21 +193,21 @@ class RecruitmentPlanDetail(models.Model):
         for rec in self.filtered(lambda r: not r.plan_id):
             rec.stt = 0
 
-    @api.onchange('recruitment_job')
-    def _onchange_recruitment_job(self):
-        for rec in self:
-            if rec.recruitment_job:
-                rec.department_request = rec.recruitment_job.department_id
+    # @api.onchange('recruitment_job')
+    # def _onchange_recruitment_job(self):
+    #     for rec in self:
+    #         if rec.recruitment_job:
+    #             rec.department_request = rec.recruitment_job.department_id
 
-    @api.onchange('department_request')
-    def _onchange_department_request(self):
-        for rec in self:
-            if rec.recruitment_job and rec.recruitment_job.department_id != rec.department_request:
-                rec.recruitment_job = False
-            domain = [('active', '=', True)]
-            if rec.department_request:
-                domain.append(('department_id', '=', rec.department_request.id))
-            return {'domain': {'recruitment_job': domain}}
+    # @api.onchange('department_request')
+    # def _onchange_department_request(self):
+    #     for rec in self:
+    #         if rec.recruitment_job and rec.recruitment_job.department_id != rec.department_request:
+    #             rec.recruitment_job = False
+    #         domain = [('active', '=', True)]
+    #         if rec.department_request:
+    #             domain.append(('department_id', '=', rec.department_request.id))
+    #         return {'domain': {'recruitment_job': domain}}
 
     def action_open_old_applicant_wizard(self):
         self.ensure_one()

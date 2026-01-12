@@ -446,6 +446,7 @@ class RecruitmentPlanRejectWizard(models.TransientModel):
     # Đặt tên giống hệt field bên model chính
     reject_reason = fields.Text(string="Lý do từ chối", required=True)
 
+
     def action_confirm_reject(self):
         self.ensure_one()
         # Ghi đè giá trị từ Wizard vào Model chính

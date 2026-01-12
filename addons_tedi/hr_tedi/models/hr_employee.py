@@ -327,6 +327,7 @@ class HrEmployeePrivate(models.Model):
 
         _logger.info(f"Opening res.users form view ID: {view.id}")
 
+
         # --- Chuẩn bị image base64 ---
         default_image = False
         if self.image_1920:
@@ -357,23 +358,40 @@ class HrEmployeePrivate(models.Model):
             },
         }
 
+    def action_terminate_contract(self):
+        self.ensure_one()
+        # Gọi Wizard Thôi việc chuẩn của Odoo (hr.departure.wizard)
+        return {
+            'name': _('Thủ tục Thôi việc / Chấm dứt hợp đồng'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'hr.departure.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'active_id': self.id,
+                'default_employee_id': self.id,
+            },
+        }
 
 
 
 
-# --- 2. MODEL XÃ/PHƯỜNG ---
+
 class ResWard(models.Model):
     _name = 'res.ward'
     _description = 'Xã/Phường'
     _order = 'name'
 
     name = fields.Char(string="Tên Xã/Phường", required=True)
-
-    # THAY ĐỔI: Liên kết trực tiếp với Tỉnh/Thành phố (Bỏ qua Quận/Huyện)
     state_id = fields.Many2one('res.country.state', string="Tỉnh/Thành phố", required=True)
 
-    # Constraint: Tên xã phải duy nhất trong 1 Tỉnh
     _sql_constraints = [
         ('name_state_uniq', 'unique(name, state_id)', 'Xã/Phường này đã tồn tại trong Tỉnh/TP này!')
     ]
 
+# 2. KẾ THỪA MODEL TỈNH/THÀNH PHỐ (Thêm mới đoạn này)
+class ResCountryState(models.Model):
+    _inherit = 'res.country.state'
+
+    # Tạo quan hệ ngược: Một Tỉnh có nhiều Xã
+    ward_ids = fields.One2many('res.ward', 'state_id', string="Danh sách Xã/Phường")

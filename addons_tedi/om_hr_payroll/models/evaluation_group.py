@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
+import  logging
+
+_logger = logging.getLogger(__name__)
 
 
 # --- 1. CÁC MODEL CẤU HÌNH (GROUP, CRITERIA) ---
@@ -48,6 +51,105 @@ def to_roman(n):
     return roman_num
 
 
+class EvaluationReport(models.Model):
+    _name = "evaluation.report"
+    _description = "EvaluationReport"
+
+    name = fields.Char(string="Tên báo cáo", required=True)
+    create_date = fields.Date(string="Ngày tạo", default=fields.Date.context_today)
+    department_id = fields.Many2one(
+        'hr.department',
+        string='Phòng ban',
+        required=True,
+        # Lấy phòng ban của nhân viên gắn với user hiện tại
+        default=lambda self: self.env.user.employee_id.department_id
+    )
+    evaluate_kpi = fields.One2many('evaluation.kpi', 'evaluate_kpi_id', string="Danh sách phiếu đánh giá")
+
+    # 1. Trường Tháng đánh giá (Dùng để tính toán)
+    execution_date = fields.Date(string="Tháng đánh giá", required=True, default=fields.Date.context_today)
+
+    # 2. Trường Chu kỳ (Tự động tính nhưng cho phép sửa)
+    period = fields.Char(string="Chu kỳ", required=True)
+
+    # --- LOGIC TỰ ĐỘNG TÍNH QUÝ ---
+    @api.onchange('execution_date')
+    def _onchange_execution_date_calculate_period(self):
+        """
+        Khi chọn ngày đánh giá -> Tự động điền Quý/Năm
+        Công thức: Quý = (Tháng - 1) // 3 + 1
+        """
+        if self.execution_date:
+            month = self.execution_date.month
+            year = self.execution_date.year
+
+            # Tính quý:
+            # Tháng 1,2,3 -> (0,1,2)//3 + 1 = 1
+            # Tháng 4,5,6 -> (3,4,5)//3 + 1 = 2
+            quarter = (month - 1) // 3 + 1
+
+            self.period = f"Quý {quarter}/ {year}"
+
+    def action_generate_kpis(self):
+        """
+        Hàm tạo tự động phiếu KPI cho tất cả nhân viên trong phòng ban được chọn
+        """
+        self.ensure_one()
+        if not self.department_id:
+            raise UserError(_("Vui lòng chọn phòng ban trước khi tạo phiếu!"))
+
+        # 1. Tìm tất cả nhân viên đang hoạt động thuộc phòng ban này
+        employees = self.env['hr.employee'].sudo().search([
+            ('department_id', '=', self.department_id.id),
+            ('active', '=', True)
+        ])
+
+        if not employees:
+            raise UserError(_("Không tìm thấy nhân viên nào trong phòng ban này."))
+
+        KPIModel = self.env['evaluation.kpi']
+        count = 0
+
+        # --- Tối ưu: Dùng danh sách để create 1 lần (nhanh hơn loop create) ---
+        # Tuy nhiên giữ logic loop của bạn để dễ gọi hàm _onchange_employee_id
+        for emp in employees:
+            # 2. Kiểm tra trùng
+            existing_kpi = KPIModel.search([
+                ('evaluate_kpi_id', '=', self.id),
+                ('employee_id', '=', emp.id)
+            ], limit=1)
+
+            if existing_kpi:
+                continue
+
+            # 3. Tạo phiếu KPI
+            new_kpi = KPIModel.sudo().create({
+                'name': 'New',
+                'evaluate_kpi_id': self.id,
+                'employee_id': emp.id,
+                'period': self.period,
+                'state': 'draft',
+            })
+
+            # 4. Kích hoạt hàm lấy tiêu chí đánh giá
+            new_kpi.sudo()._onchange_employee_id()
+
+            count += 1
+
+        # --- SỬA ĐỔI QUAN TRỌNG Ở ĐÂY ---
+        # Thay vì chỉ hiện thông báo, ta dùng 'tag': 'reload' để F5 lại giao diện form
+        # Kết hợp 'effect' để hiện hiệu ứng Rainbow Man (Chúc mừng) thay cho notification
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',  # <--- Lệnh bắt buộc để hiện dữ liệu ngay
+            'effect': {
+                'fadeout': 'slow',
+                'message': _(f'Đã tạo thành công {count} phiếu đánh giá!'),
+                'type': 'rainbow_man',
+            }
+        }
+
+
 # --- 2. MODEL PHIẾU ĐÁNH GIÁ (MAIN) ---
 class EvaluationKPI(models.Model):
     _name = 'evaluation.kpi'
@@ -66,8 +168,22 @@ class EvaluationKPI(models.Model):
     department_id = fields.Many2one('hr.department', string="Đơn vị", related='employee_id.department_id', store=True,
                                     readonly=True)
 
+    evaluate_kpi_id = fields.Many2one('evaluation.report', string="Thuộc báo cáo")
+
     # Giả sử wage_level lấy từ job_title hoặc contract (tùy thực tế database của bạn)
     wage_level = fields.Char(string="Nhóm, bậc lương", compute="_compute_wage_level", store=True)
+
+    # 2. Hàm mở Form view của chính record này
+    def action_open_kpi_detail(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Chi tiết phiếu đánh giá',
+            'res_model': 'evaluation.kpi',
+            'res_id': self.id,  # Mở đúng ID của dòng hiện tại
+            'view_mode': 'form',
+            'target': 'current',  # 'current' để nhảy trang, 'new' để mở popup
+        }
 
     @api.depends('employee_id')
     def _compute_wage_level(self):
@@ -140,37 +256,55 @@ class EvaluationKPI(models.Model):
 
     is_department_manager = fields.Boolean(compute='_compute_is_department_manager')
     is_direct_manager = fields.Boolean(compute='_compute_is_direct_manager')
+    is_director_manager = fields.Boolean(compute='_compute_is_director_manager')
 
     @api.depends('department_id')
     def _compute_is_department_manager(self):
         current_user = self.env.user
 
-        # 1. Kiểm tra có nằm trong nhóm quyền "Trưởng đơn vị" không
-        # Lưu ý: Vì cấu trúc dropdown, TGĐ và Admin cũng sẽ có has_group này = True (Đúng logic)
-        is_in_group = current_user.has_group('om_hr_payroll.group_kpi_dept_manager_new')
+        # --- LOG 1: Kiểm tra User hiện tại ---
+        _logger.info("=" * 30)
+        _logger.info(
+            f"DEBUG KPI: Bắt đầu tính quyền Trưởng Đơn Vị cho User: {current_user.name} (ID: {current_user.id})")
 
-        # Lấy phòng ban của user hiện tại (thông qua employee)
+        # 1. Kiểm tra nhóm quyền
+        is_in_group = current_user.has_group('om_hr_payroll.group_kpi_dept_manager_new')
+        _logger.info(f"DEBUG KPI: User có nhóm 'Trưởng đơn vị' (group_kpi_dept_manager_new)? -> {is_in_group}")
+
+        # 2. Kiểm tra phòng ban của User
         current_user_dept = current_user.employee_id.department_id
+        _logger.info(f"DEBUG KPI: Phòng ban của User: {current_user_dept.name if current_user_dept else 'Không có'}")
 
         is_admin = current_user.has_group('base.group_system')
+        _logger.info(f"DEBUG KPI: User là Admin? -> {is_admin}")
 
         for rec in self:
+            _logger.info(f"--- Đang check Phiếu: {rec.name} (ID: {rec.id}) ---")
+
             # Admin luôn đúng
             if is_admin:
+                _logger.info("DEBUG KPI: -> TRUE (Do là Admin)")
                 rec.is_department_manager = True
                 continue
 
-            # LOGIC MỚI:
-            # 1. User phải có quyền Trưởng đơn vị
-            # 2. User phải cùng phòng ban với phiếu đánh giá (rec.department_id)
-            if is_in_group and current_user_dept and rec.department_id:
-                if current_user_dept.id == rec.department_id.id:
+            # Kiểm tra phòng ban phiếu
+            rec_dept = rec.department_id
+            _logger.info(f"DEBUG KPI: Phòng ban của Phiếu: {rec_dept.name if rec_dept else 'Không có'}")
+
+            # LOGIC SO SÁNH
+            if is_in_group and current_user_dept and rec_dept:
+                if current_user_dept.id == rec_dept.id:
+                    _logger.info("DEBUG KPI: -> TRUE (Cùng phòng ban + Có quyền)")
                     rec.is_department_manager = True
                 else:
+                    _logger.info(
+                        f"DEBUG KPI: -> FALSE (Khác phòng ban: User Dept {current_user_dept.id} != KPI Dept {rec_dept.id})")
                     rec.is_department_manager = False
             else:
+                _logger.info("DEBUG KPI: -> FALSE (Thiếu điều kiện: Không có nhóm, hoặc User/Phiếu không có phòng ban)")
                 rec.is_department_manager = False
 
+            _logger.info("=" * 30)
 
     @api.depends('employee_id')
     def _compute_is_direct_manager(self):
@@ -187,6 +321,20 @@ class EvaluationKPI(models.Model):
                 is_manager = True
 
             rec.is_direct_manager = is_manager
+
+    def _compute_is_director_manager(self):
+        current_user = self.env.user
+        # Lấy ID của nhóm quyền TGĐ (bạn thay ID thực tế nếu khác)
+        # Dựa trên XML bạn gửi thì ID là: om_hr_payroll.group_kpi_director_new
+        is_director = current_user.has_group('om_hr_payroll.group_kpi_director_new')
+        is_admin = current_user.has_group('base.group_system')
+
+        for rec in self:
+            # Nếu là Admin hoặc thuộc nhóm TGĐ -> True
+            if is_admin or is_director:
+                rec.is_director_manager = True
+            else:
+                rec.is_director_manager = False
 
     @api.depends('line_ids.final_score', 'line_ids.weight', 'line_ids.display_type')
     def _compute_results(self):
@@ -454,6 +602,8 @@ class EvaluationKPILine(models.Model):
         ('check_director_score', 'CHECK(director_score >= 0 AND director_score <= 5)',
          'Điểm TGĐ đánh giá phải từ 0 đến 5!'),
     ]
+
+
 
 
 class EvaluationKPIClassification(models.Model):

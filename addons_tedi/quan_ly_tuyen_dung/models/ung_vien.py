@@ -154,6 +154,51 @@ class Applicant(models.Model):
         string="Số năm kinh nghiệm",
         help="Chọn số năm kinh nghiệm từ danh mục yêu cầu"
     )
+    province_id = fields.Many2one(
+        'res.country.state',
+        string="Tỉnh/Thành phố",
+        domain="[('country_id.code', '=', 'VN')]"
+    )
+
+    district_id = fields.Many2one(
+        'res.district',
+        string="Quận/Huyện",
+        domain="[('state_id', '=', province_id)]"  # Lọc theo Tỉnh
+    )
+
+    ward_id = fields.Many2one(
+        'res.ward',
+        string="Xã/Phường",
+        domain="[('state_id', '=', province_id)]"  # Lọc theo Tỉnh (theo logic cũ của bạn)
+    )
+
+    street_detail = fields.Char(string="Số nhà/Đường")
+
+    # Field address cũ: Sẽ được tự động điền bởi các field trên
+    address = fields.Char(string="Địa chỉ thường trú (Full)")
+
+    # ==== 2. LOGIC ONCHANGE ĐỊA CHỈ (Giống Employee) ====
+
+    # Khi đổi Tỉnh -> Reset Huyện & Xã
+    @api.onchange('province_id')
+    def _onchange_province(self):
+        self.district_id = False
+        self.ward_id = False
+
+    # Khi đổi bất kỳ thành phần nào -> Gộp lại thành chuỗi địa chỉ đầy đủ
+    @api.onchange('street_detail', 'ward_id', 'district_id', 'province_id')
+    def _onchange_full_address_applicant(self):
+        # Kiểm tra tồn tại trước khi lấy .name (if self.field else False)
+        parts = [
+            self.street_detail,
+            self.ward_id.name if self.ward_id else False,
+            self.district_id.name if self.district_id else False,
+            self.province_id.name if self.province_id else False
+        ]
+
+        # Lọc bỏ giá trị False/Rỗng và nối lại
+        full_addr = ", ".join([p for p in parts if p])
+        self.address = full_addr
 
     def action_open_applicant_evaluation_page(self):
         self.ensure_one()
@@ -511,7 +556,13 @@ class Applicant(models.Model):
         # (Tên field bên Ứng viên, Tên field bên Nhân viên)
         ("email_from", "work_email"),  # Email công việc
         ("partner_mobile", "mobile_phone"),  # Di động
-        ("address", "household_address"),  # Địa chỉ -> Địa chỉ thường trú
+
+        ("address", "household_address"),  # Chuỗi gộp -> household_address
+        ("street_detail", "street_detail"),  # Số nhà -> Số nhà
+        ("ward_id", "ward_id"),  # Xã -> Xã
+        ("district_id", "district_id"),  # Huyện -> Huyện
+        ("province_id", "province_id"),
+
         ("folk_id", "folk_id"),  # Dân tộc (Many2one) - Quan trọng
         ("current_job", "occupation"),  # Nghề nghiệp hiện tại
         ("dob", "birthday"),  # Ngày sinh

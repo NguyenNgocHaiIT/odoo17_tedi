@@ -47,7 +47,15 @@
                   <field name="country_id" string="Quốc tịch"/>
                   <field name="folk_id" string="Dân tộc"/>
                   <field name="current_job" string="Nghề nghiệp hiện tại"/>
-                  <field name="address" string="Địa chỉ thường trú"/>
+                  <label for="street_detail" string="Địa chỉ thường trú"/>
+                    <div class="o_address_format">
+                        <field name="street_detail" placeholder="Số nhà, đường..." class="o_address_street" invisible="1"/>
+
+                        <field name="province_id" placeholder="Tỉnh / Thành phố" class="o_address_state" options="{'no_create': True, 'no_open': True}"/>
+                        <field name="ward_id" placeholder="Xã / Phường" class="o_address_zip" options="{'no_create': True, 'no_open': True}"/>
+
+                        <field name="address" invisible="1"/>
+                    </div>
                 </group>
                 <group string="THÔNG TIN LIÊN HỆ">
                   <field name="email_from" widget="email" string="Email"/>

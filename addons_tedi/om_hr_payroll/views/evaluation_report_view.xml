@@ -1,0 +1,90 @@
+<odoo>
+    <data>
+
+        <record id="action_evaluation_report" model="ir.actions.act_window">
+            <field name="name">Báo cáo tổng hợp KPI</field>
+            <field name="res_model">evaluation.report</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="view_evaluation_report_tree" model="ir.ui.view">
+            <field name="name">evaluation.report.tree</field>
+            <field name="model">evaluation.report</field>
+            <field name="arch" type="xml">
+                <tree string="Danh sách báo cáo">
+                    <field name="name"/>
+                    <field name="create_date"/>
+                    <field name="period"/>
+                     <field name="create_date"/>
+                    <field name="department_id"/>
+
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_evaluation_report_form" model="ir.ui.view">
+            <field name="name">evaluation.report.form</field>
+            <field name="model">evaluation.report</field>
+            <field name="arch" type="xml">
+                <form string="Báo cáo tổng hợp">
+                    <header>
+                        <button name="action_generate_kpis"
+                                string="Tạo phiếu"
+                                type="object"
+                                class="btn-primary"
+                                confirm="Hệ thống sẽ tạo phiếu cho tất cả nhân viên trong phòng ban này. Bạn có chắc chắn không?"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <label for="name" class="oe_edit_only"/>
+                            <h1><field name="name" placeholder="Ví dụ: Đánh giá KPI Quý 1/2025 - Phòng KD"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="execution_date" widget="month_picker" string="Thời gian thực hiện" width="150px"/>
+                                <field name="period" placeholder="VD: Quý 1/2025"/>
+
+                            </group>
+                            <group>
+                                <field name="create_date"/>
+                                <field name="department_id"/>
+                            </group>
+                        </group>
+
+                        <notebook>
+                            <page string="Danh sách phiếu đánh giá">
+                                <field name="evaluate_kpi">
+                                    <tree string="Chi tiết" editable="bottom">
+                                        <field name="name" string="Mã phiếu" readonly="1"/>
+                                        <field name="employee_id" readonly="1"/>
+                                        <field name="job_id" optional="hide"/>
+                                        <field name="total_score" string="Điểm" readonly="1" />
+                                        <field name="final_result" widget="badge" readonly="1" class="text-start"/>
+                                        <field name="state" widget="badge"
+                                               decoration-info="state == 'draft'"
+                                               decoration-success="state == 'done'"
+                                               readonly="1" class="text-start"/>
+
+                                        <button name="action_open_kpi_detail"
+                                                type="object"
+                                                icon="fa-external-link"
+                                                string="Xem chi tiết"
+                                                class="btn-primary"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <menuitem id="menu_evaluation_report"
+                  name="Tổng hợp KPI"
+                  parent="om_hr_payroll.menu_evaluation_kpi_root"
+                  action="action_evaluation_report"
+                  groups="group_kpi_dept_manager_new"
+                  sequence="5"/>
+
+    </data>
+</odoo>

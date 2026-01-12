@@ -105,7 +105,9 @@
           <field name="stt" string="STT" readonly="1" width="40"/>
           <field name="department_request"/>
           <field name="recruitment_job" required="1"/>
-          <field name="requested_quantity" string="Số lượng" sum="Tổng"/>
+
+          <field name="requested_quantity" string="Số lượng cần tuyển" sum="Tổng"/>
+          <field name="recruited_quantity" string="SL đã tuyển" readonly="1" sum="Tổng đã tuyển"/>
           <field name="experient_request_id"/>
           <field name="professional_qualification" string="Trình độ chuyên môn"/>
           <field name="attachment_ids" widget="many2many_binary"/>
