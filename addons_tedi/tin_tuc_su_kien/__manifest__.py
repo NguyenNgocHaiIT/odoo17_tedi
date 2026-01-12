@@ -9,6 +9,7 @@
 	'depends': [ 'base', 'mail', 'hr', 'project', 'web', 'event'],
 	'data': [
 		'security/ir.model.access.csv',
+        'security/security.xml',
 		'views/su_kien_views.xml',
 		'views/thong_bao_views.xml',
 		'views/website_views.xml',
