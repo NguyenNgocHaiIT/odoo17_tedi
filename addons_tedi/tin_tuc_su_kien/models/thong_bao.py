@@ -13,7 +13,8 @@ class NotifyEvent(models.Model):
     state = fields.Selection([
         ('draft', 'Nháp'),
         ('chua_duyet', 'Chưa duyệt'),
-        ('da_duyet', 'Đã duyệt')
+        ('da_duyet', 'Đã duyệt'),
+        ('da_thong_bao', 'Đã thông báo')
     ], string='Trạng thái', default='draft')
     confirm_user = fields.Many2one('res.users', string='Người duyệt')
     sent = fields.Boolean(string='Đã gửi thông báo')
@@ -302,6 +303,8 @@ class NotifyEvent(models.Model):
         self.ensure_one()
         odoobot = self.env.ref('base.user_root')
         odoobot_partner = odoobot.partner_id
+
+        self.write({'state': 'da_thong_bao'})
 
         # --- 1. LẤY DANH SÁCH NGƯỜI NHẬN ---
         users = self.env['res.users'].sudo()

@@ -38,6 +38,11 @@
                             class="btn btn-success"
                             groups="base.group_system, tin_tuc_su_kien.group_quan_ly_tin_tuc"
                             invisible="state != 'da_duyet'"/>
+
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,chua_duyet,da_duyet,da_thong_bao"
+                           statusbar_colors='{"draft": "lightgrey", "chua_duyet": "orange", "da_duyet": "green", "da_thong_bao": "yellow"}'
+                           options="{'clickable': false}"/>
                 </header>
 
                 <sheet>
