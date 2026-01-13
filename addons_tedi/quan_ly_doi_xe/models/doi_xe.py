@@ -31,6 +31,9 @@ class FleetVehicle(models.Model):
     color_select = fields.Selection([
         ('red', 'Đỏ'), ('black', 'Đen'), ('blue', 'Xanh'),
         ('white', 'Trắng'), ('silver', 'Bạc')], string="Màu sơn")
+
+    color_car = fields.Char(string="Màu sơn")
+
     cylinder_capacity = fields.Char(string="Dung tích xilanh")
     original_cost = fields.Float(string="Nguyên giá TSCĐ")
     purchase_value = fields.Float(string="Giá trị mua")
