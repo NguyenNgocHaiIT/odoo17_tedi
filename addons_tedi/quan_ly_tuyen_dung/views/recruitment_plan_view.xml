@@ -143,6 +143,18 @@
       </field>
     </record>
 
+    <record id="view_recruitment_plan_quarter_tree_no_create" model="ir.ui.view">
+        <field name="name">recruitment.plan.quarter.tree.no.create</field>
+        <field name="model">recruitment.plan</field>
+        <field name="inherit_id" ref="view_recruitment_plan_tree"/>
+        <field name="mode">primary</field>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="attributes">
+                <attribute name="create">0</attribute>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_recruitment_plan_year_form" model="ir.ui.view">
       <field name="name">recruitment.plan.year.form</field>
       <field name="model">recruitment.plan</field>
@@ -216,7 +228,7 @@
       <field name="name">recruitment.plan.quarter.form</field>
       <field name="model">recruitment.plan</field>
       <field name="arch" type="xml">
-        <form string="KẾ HOẠCH QUÝ">
+        <form string="KẾ HOẠCH QUÝ" create="0">
           <header>
             <button name="action_submit" type="object" string="Trình duyệt" class="btn-primary"
                     groups="base.group_system,quan_ly_tuyen_dung.group_recruitment_hr_officer"
@@ -299,7 +311,7 @@
         <field name="domain">[('type', '=', 'quarter')]</field>
         <field name="context">{'default_type': 'quarter'}</field>
         <field name="view_ids" eval="[(5, 0, 0),
-            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_recruitment_plan_tree')}),
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_recruitment_plan_quarter_tree_no_create')}),
             (0, 0, {'view_mode': 'form', 'view_id': ref('view_recruitment_plan_quarter_form')})]"/>
     </record>
 

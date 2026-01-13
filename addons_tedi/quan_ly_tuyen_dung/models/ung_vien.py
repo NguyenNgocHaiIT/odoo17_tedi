@@ -32,39 +32,33 @@ E164_RE = re.compile(r"^\+[1-9]\d{7,14}$")  # ITU E.164: 8–15 digits, không b
 
 # ============= ACL THEO STAGE =============
 STAGE_ACL = {
-    "New": [
+    "Mới": [
         "quan_ly_tuyen_dung.group_recruitment_hr_officer",
         "quan_ly_tuyen_dung.group_recruitment_committee",
         "base.group_user",
     ],
-    "Initial Qualification": [
+    "Đánh giá sơ bộ": [
         "quan_ly_tuyen_dung.group_recruitment_hr_officer",
         "quan_ly_tuyen_dung.group_recruitment_committee",
         "base.group_user",
     ],
-    "First Interview": [
-        "quan_ly_tuyen_dung.group_recruitment_hr_officer",
-        "quan_ly_tuyen_dung.group_recruitment_committee",
-        "base.group_user",
-    ],
-    "Second Interview": [
+    "Phỏng vấn": [  # Trên ảnh chỉ có 1 bước Phỏng vấn
         "quan_ly_tuyen_dung.group_recruitment_hr_officer",
         "quan_ly_tuyen_dung.group_recruitment_committee",
         "quan_ly_tuyen_dung.group_recruitment_director",
         "base.group_user",
     ],
-    "Contract Proposal": [
+    "Đề xuất Hợp đồng": [
         "quan_ly_tuyen_dung.group_recruitment_director",
         "quan_ly_tuyen_dung.group_recruitment_board",
         "base.group_user",
     ],
-    "Contract Signed": [
+    "Hợp đồng được ký": [
         "quan_ly_tuyen_dung.group_recruitment_director",
         "quan_ly_tuyen_dung.group_recruitment_board",
         "base.group_user",
     ],
 }
-
 
 
 class Applicant(models.Model):
@@ -85,7 +79,7 @@ class Applicant(models.Model):
         help="Chọn dân tộc từ danh mục"
     )
     current_job = fields.Char(string="Nghề nghiệp")
-    address = fields.Char(string="Địa chỉ")
+    # address = fields.Char(string="Địa chỉ")
     suitability = fields.Selection(
         [('yes', 'Có phù hợp'), ('no', 'Không phù hợp')],
         string='Khảo sát phù hợp'
@@ -176,6 +170,38 @@ class Applicant(models.Model):
 
     # Field address cũ: Sẽ được tự động điền bởi các field trên
     address = fields.Char(string="Địa chỉ thường trú (Full)")
+
+    stage_name = fields.Char(related='stage_id.name', string="Tên giai đoạn", store=True)
+
+    def _move_to_stage_by_name(self, target_name):
+        """Hàm tìm và chuyển giai đoạn theo tên chính xác"""
+        target_stage = self.env['hr.recruitment.stage'].search([
+            ('name', '=', target_name)
+        ], limit=1)
+
+        if not target_stage:
+            raise ValidationError(
+                _("Không tìm thấy giai đoạn: '%s'. Vui lòng kiểm tra cấu hình Giai đoạn (Recruitment Stages).") % target_name)
+
+        self.write({'stage_id': target_stage.id})
+
+    # ============= 2. CÁC HÀM FIX CỨNG LOGIC CHUYỂN =============
+
+    def action_pass_initial_qualification(self):
+        # Đang ở 'Mới' -> Chuyển sang 'Đánh giá sơ bộ'
+        self._move_to_stage_by_name("Đánh giá sơ bộ")
+
+    def action_pass_interview(self):
+        # Đang ở 'Đánh giá sơ bộ' -> Chuyển sang 'Phỏng vấn'
+        self._move_to_stage_by_name("Phỏng vấn")
+
+    def action_pass_contract_proposal(self):
+        # Đang ở 'Phỏng vấn' -> Chuyển sang 'Đề xuất Hợp đồng'
+        self._move_to_stage_by_name("Đề xuất Hợp đồng")
+
+    def action_pass_contract_signed(self):
+        # Đang ở 'Đề xuất Hợp đồng' -> Chuyển sang 'Hợp đồng được ký'
+        self._move_to_stage_by_name("Hợp đồng được ký")
 
     # ==== 2. LOGIC ONCHANGE ĐỊA CHỈ (Giống Employee) ====
 

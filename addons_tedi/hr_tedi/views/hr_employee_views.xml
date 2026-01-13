@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data>
-
         <record id="view_employee_tree_tedi" model="ir.ui.view">
             <field name="name">hr.employee.tree.tedi</field>
             <field name="model">hr.employee</field>
@@ -17,8 +16,6 @@
             </field>
         </record>
 
-
-
         <record id="hr_employee_view_form_inherit_profile_tedi" model="ir.ui.view">
             <field name="name">hr.employee.view.form.inherit.profile.tedi</field>
             <field name="model">hr.employee</field>
@@ -27,14 +24,28 @@
 
             <field name="arch" type="xml">
 
+                <xpath expr="//sheet" position="before">
+                    <field name="active" invisible="1"/>
+                </xpath>
 
+                <xpath expr="//div[@name='button_box']" position="before">
+                    <widget name="web_ribbon" title="ĐÃ THÔI VIỆC" bg_color="text-bg-danger" invisible="active"/>
+                </xpath>
+
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <field name="contract_id" invisible="1"/>
+                </xpath>
+
+                <xpath expr="//sheet" position="attributes">
+                    <attribute name="readonly">not active</attribute>
+                </xpath>
 
                 <xpath expr="//header" position="inside">
                     <button name="action_open_create_user"
                             string="Tạo tài khoản hệ thống"
                             type="object"
                             class="oe_highlight"
-                            invisible="user_id"
+                            invisible="user_id or not active"
                             groups="hr.group_hr_manager"/>
 
                     <button name="action_terminate_contract"
@@ -43,15 +54,11 @@
                             class="btn-danger text-white"
                             groups="hr.group_hr_manager"
                             confirm="Bạn có chắc chắn muốn thực hiện thủ tục thôi việc cho nhân viên này?"
-                            invisible="not contract_id"/>
-                </xpath>
-                <xpath expr="//form" position="inside">
-                    <field name="contract_id" invisible="1"/>
+                            invisible="not contract_id or not active"/>
                 </xpath>
 
                 <xpath expr="//div[hasclass('row', 'justify-content-between', 'position-relative')]" position="replace">
                     <div class="d-flex w-100 mb-3">
-
                         <div class="me-4">
                             <style>
                                 .my_custom_avatar img {
@@ -68,61 +75,43 @@
                                 }
                             </style>
                             <field name="image_1920" widget="image" class="oe_avatar my_custom_avatar m-0"
-                                   options="{'zoom': true, 'preview_image':'image_512'}"/>
+                                   options="{'zoom': true, 'preview_image':'image_512'}"
+                                   readonly="not active"/>
                         </div>
 
                         <div class="flex-grow-1 d-flex flex-column justify-content-center ps-2">
-
                             <div class="oe_title">
                                 <h1 class="d-flex flex-row align-items-center mb-1">
                                     <field name="name" placeholder="Họ và tên" required="True"
-                                           style="font-size: 2.5rem; font-weight: 500;"/>
+                                           style="font-size: 2.5rem; font-weight: 500;"
+                                           readonly="not active"/>
                                 </h1>
                             </div>
-
                             <h3 class="d-flex align-items-center text-muted mb-3" style="font-weight: normal;">
                                 <span class="fa fa-id-card-o me-3" style="width: 20px; text-align: center;" title="Mã nhân viên"></span>
                                 <field name="employee_code" placeholder="Mã nhân viên" nolabel="1" readonly="1"/>
                             </h3>
-
                             <div class="d-flex flex-column gap-2 mb-3" style="font-size: 1.1rem; color: #444;">
                                 <div class="d-flex align-items-center">
                                     <span class="fa fa-envelope me-3 text-muted" style="width: 20px; text-align: center;" title="Email"></span>
-                                    <field name="work_email" placeholder="Email công việc" nolabel="1" class="mb-0"/>
+                                    <field name="work_email" placeholder="Email công việc" nolabel="1" class="mb-0" readonly="not active"/>
                                 </div>
                                 <div class="d-flex align-items-center">
                                     <span class="fa fa-mobile me-3 text-muted" style="width: 20px; text-align: center; font-size: 1.4rem;" title="Di động"></span>
-                                    <field name="mobile_phone" placeholder="Số di động" nolabel="1" class="mb-0"/>
+                                    <field name="mobile_phone" placeholder="Số di động" nolabel="1" class="mb-0" readonly="not active"/>
                                 </div>
                             </div>
-
-
                         </div>
                     </div>
                 </xpath>
 
-                <xpath expr="//group//field[@name='mobile_phone']" position="attributes">
-                    <attribute name="invisible">1</attribute>
-                </xpath>
-                <xpath expr="//group//field[@name='work_phone']" position="attributes">
-                    <attribute name="invisible">1</attribute>
-                </xpath>
-                <xpath expr="//group//field[@name='work_email']" position="attributes">
-                    <attribute name="invisible">1</attribute>
-                </xpath>
-
-                <xpath expr="//field[@name='job_id']" position="attributes">
-                    <attribute name="invisible">1</attribute>
-                </xpath>
-                <xpath expr="//field[@name='department_id']" position="attributes">
-                    <attribute name="invisible">1</attribute>
-                </xpath>
-                <xpath expr="//field[@name='coach_id']" position="attributes">
-                    <attribute name="invisible">1</attribute>
-                </xpath>
-                <xpath expr="//field[@name='parent_id']" position="attributes">
-                    <attribute name="invisible">1</attribute>
-                </xpath>
+                <xpath expr="//group//field[@name='mobile_phone']" position="attributes"><attribute name="invisible">1</attribute></xpath>
+                <xpath expr="//group//field[@name='work_phone']" position="attributes"><attribute name="invisible">1</attribute></xpath>
+                <xpath expr="//group//field[@name='work_email']" position="attributes"><attribute name="invisible">1</attribute></xpath>
+                <xpath expr="//field[@name='job_id']" position="attributes"><attribute name="invisible">1</attribute></xpath>
+                <xpath expr="//field[@name='department_id']" position="attributes"><attribute name="invisible">1</attribute></xpath>
+                <xpath expr="//field[@name='coach_id']" position="attributes"><attribute name="invisible">1</attribute></xpath>
+                <xpath expr="//field[@name='parent_id']" position="attributes"><attribute name="invisible">1</attribute></xpath>
 
                 <xpath expr="//form" position="inside">
                     <field name="child_ids" invisible="1"/>
@@ -136,20 +125,18 @@
                         <page string="Sơ yếu lý lịch" name="profile_vn">
                             <group col="2">
                                 <group string="Thông tin cá nhân">
-                                    <field name="citizen_id" string="Số CMND/CCCD"/>
-                                    <field name="citizen_issue_date"/>
-                                    <field name="citizen_issuer"/>
-                                    <field name="birthday" string="Sinh ngày"/>
-                                    <field name="country_id" string="Quốc tịch"/>
-                                    <field name="folk_id"/>
+                                    <field name="citizen_id" string="Số CMND/CCCD" readonly="not active"/>
+                                    <field name="citizen_issue_date" readonly="not active"/>
+                                    <field name="citizen_issuer" readonly="not active"/>
+                                    <field name="birthday" string="Sinh ngày" readonly="not active"/>
+                                    <field name="country_id" string="Quốc tịch" readonly="not active"/>
+                                    <field name="folk_id" readonly="not active"/>
                                     <field name="household_address" invisible="1"/>
                                     <label for="street_detail" string="Địa chỉ thường trú"/>
                                     <div class="o_address_format">
-                                        <field name="street_detail" placeholder="Số nhà, đường..." class="o_address_street" invisible="1"/>
-
-                                        <field name="province_id" placeholder="Tỉnh / Thành phố" class="o_address_state" options="{'no_create': True, 'no_open': True}"/>
-                                        <field name="ward_id" placeholder="Xã / Phường" class="o_address_zip" options="{'no_create': True, 'no_open': True}"/>
-
+                                        <field name="street_detail" placeholder="Số nhà, đường..." class="o_address_street" invisible="1" readonly="not active"/>
+                                        <field name="province_id" placeholder="Tỉnh / Thành phố" class="o_address_state" options="{'no_create': True, 'no_open': True}" readonly="not active"/>
+                                        <field name="ward_id" placeholder="Xã / Phường" class="o_address_zip" options="{'no_create': True, 'no_open': True}" readonly="not active"/>
                                         <field name="household_address" invisible="1"/>
                                     </div>
                                     <field name="bank_account_id"
@@ -157,54 +144,38 @@
                                                'default_partner_id': work_contact_id,
                                                'default_currency_id': 23,
                                                'default_bank_id': 2
-                                           }"/>
-                                    <field name="personal_tax_code" string="Mã số thuế"/>
+                                           }" readonly="not active"/>
+                                    <field name="personal_tax_code" string="Mã số thuế" readonly="not active"/>
                                  </group>
 
                                 <group string="Hồ sơ nhân sự">
-                                    <field name="user_id" string="Tài khoản liên kết" widget="many2one_avatar_user"/>
-                                    <field name="company_id" groups="base.group_multi_company"/>
-                                    <field name="department_id" string="Phòng ban"/>
-                                    <field name="job_id" string="Vị trí công việc"/>
-                                    <field name="position_id" string="Chức vụ"/>
-                                    <field name="parent_id" string="Quản lý trực tiếp"/>
-                                    <field name="supervisor_ids"  widget="many2many_tags_avatar"/>
-                                    <field name="work_location_id" string="Địa điểm làm việc"/>
-
-<!--                                    <field name="tz" string="Múi giờ"/>-->
+                                    <field name="user_id" string="Tài khoản liên kết" widget="many2one_avatar_user" readonly="not active"/>
+                                    <field name="company_id" groups="base.group_multi_company" readonly="not active"/>
+                                    <field name="department_id" string="Phòng ban" readonly="not active"/>
+                                    <field name="job_id" string="Vị trí công việc" readonly="not active"/>
+                                    <field name="position_id" string="Chức vụ" readonly="not active"/>
+                                    <field name="parent_id" string="Quản lý trực tiếp" readonly="not active"/>
+                                    <field name="supervisor_ids" widget="many2many_tags_avatar" readonly="not active"/>
+                                    <field name="work_location_id" string="Địa điểm làm việc" readonly="not active"/>
                                 </group>
                             </group>
 
                             <group string="THÔNG TIN QUÂN NGŨ" colspan="2" col="2">
-                                <field name="is_military"/>
-                                <field name="military_start_date" invisible="not is_military"/>
-                                <field name="military_end_date" invisible="not is_military"/>
-                                <field name="military_rank_id" invisible="not is_military"/>
+                                <field name="is_military" readonly="not active"/>
+                                <field name="military_start_date" invisible="not is_military" readonly="not active"/>
+                                <field name="military_end_date" invisible="not is_military" readonly="not active"/>
+                                <field name="military_rank_id" invisible="not is_military" readonly="not active"/>
                             </group>
 
                             <group string="THÔNG TIN CHÍNH SÁCH (THƯƠNG BINH - LIỆT SĨ)" colspan="2" col="2">
-                                <field name="is_policy_beneficiary"/>
-
-                                <field name="policy_type"
-                                       invisible="not is_policy_beneficiary"
-                                       required="is_policy_beneficiary"/>
-
-                                <field name="policy_rank"
-                                       invisible="not is_policy_beneficiary or policy_type == 'martyr_family'"/>
-
-                                <field name="policy_martyr_relation"
-                                       invisible="not is_policy_beneficiary or policy_type != 'martyr_family'"/>
-
-<!--                                <field name="policy_card_no" invisible="not is_policy_beneficiary"/>-->
-<!--                                <field name="policy_issue_date" invisible="not is_policy_beneficiary"/>-->
-<!--                                <field name="policy_issue_place" invisible="not is_policy_beneficiary"/>-->
+                                <field name="is_policy_beneficiary" readonly="not active"/>
+                                <field name="policy_type" invisible="not is_policy_beneficiary" required="is_policy_beneficiary" readonly="not active"/>
+                                <field name="policy_rank" invisible="not is_policy_beneficiary or policy_type == 'martyr_family'" readonly="not active"/>
+                                <field name="policy_martyr_relation" invisible="not is_policy_beneficiary or policy_type != 'martyr_family'" readonly="not active"/>
                             </group>
 
-
-
-
                             <separator string="XUẤT - NHẬP CẢNH"/>
-                            <field name="trip_ids" nolabel="1" colspan="2" context="{'default_employee_id': active_id}">
+                            <field name="trip_ids" nolabel="1" colspan="2" context="{'default_employee_id': active_id}" readonly="not active">
                                 <tree editable="bottom">
                                     <field name="stt" readonly="1"/>
                                     <field name="date_from"/>
@@ -218,12 +189,11 @@
                         </page>
                         <page string="Trình độ học vấn">
                              <separator string="TRÌNH ĐỘ HỌC VẤN"/>
-                             <field name="education_ids" nolabel="1" colspan="2" context="{'default_employee_id': active_id}">
+                             <field name="education_ids" nolabel="1" colspan="2" context="{'default_employee_id': active_id}" readonly="not active">
                                 <tree editable="bottom">
                                     <field name="stt" readonly="1"/>
                                     <field name="school"/>
                                     <field name="major_id"/>
-<!--                                    <field name="years"/>-->
                                     <field name="degree"/>
                                     <field name="issue_date"/>
                                     <field name="attachment_ids" widget="many2many_binary"/>
@@ -231,7 +201,7 @@
                             </field>
 
                             <separator string="CHỨNG CHỈ HÀNH NGHỀ"/>
-                            <field name="certificate_ids" nolabel="1" colspan="2" context="{'default_employee_id': active_id}">
+                            <field name="certificate_ids" nolabel="1" colspan="2" context="{'default_employee_id': active_id}" readonly="not active">
                                 <tree editable="bottom">
                                     <field name="stt" readonly="1"/>
                                     <field name="cert_type"/>
@@ -244,12 +214,11 @@
                                     <field name="attachment_ids" widget="many2many_binary"/>
                                 </tree>
                             </field>
-
                         </page>
 
                         <page string="Quá trình công tác" name="work_process">
                             <separator string="QUÁ TRÌNH CÔNG TÁC TẠI TEDI"/>
-                            <field name="work_process_tedi_ids" nolabel="1" colspan="2">
+                            <field name="work_process_tedi_ids" nolabel="1" colspan="2" readonly="not active">
                                 <tree editable="bottom">
                                     <field name="decision_no"/>
                                     <field name="decision_date"/>
@@ -261,7 +230,7 @@
                                 </tree>
                             </field>
                             <separator string="QUÁ TRÌNH CÔNG TÁC TẠI ĐƠN VỊ KHÁC"/>
-                            <field name="work_process_old_ids" nolabel="1" colspan="2">
+                            <field name="work_process_old_ids" nolabel="1" colspan="2" readonly="not active">
                                 <tree editable="bottom">
                                     <field name="stt" readonly="1"/>
                                     <field name="company_name"/>
@@ -271,13 +240,11 @@
                                     <field name="position_id"/>
                                 </tree>
                             </field>
-
-
                         </page>
 
                         <page string="Kinh nghiệm công việc" name="exp_vn">
                             <separator string="KINH NGHIỆM CÔNG VIỆC TẠI TEDI"/>
-                            <field name="experience_ids" nolabel="1" colspan="2">
+                            <field name="experience_ids" nolabel="1" colspan="2" readonly="not active">
                                 <tree editable="bottom">
                                     <field name="project_name"/>
                                     <field name="project_type"/>
@@ -292,7 +259,7 @@
                             </field>
 
                             <separator string="KINH NGHIỆM CÔNG VIỆC KHÁC"/>
-                            <field name="external_experience_ids">
+                            <field name="external_experience_ids" readonly="not active">
                                 <tree editable="bottom">
                                     <field name="company_name" style="font-weight: bold;"/>
                                     <field name="project_name"/>
@@ -304,20 +271,17 @@
                                            decoration-success="status == 'completed'"/>
                                 </tree>
                             </field>
-
                         </page>
 
                         <page string="Khen thưởng - Kỷ luật" name="reward_vn">
                             <separator string="KHEN THƯỞNG - KỶ LUẬT"/>
-                            <field name="reward_discipline_ids" nolabel="1" colspan="2">
+                            <field name="reward_discipline_ids" nolabel="1" colspan="2" readonly="not active">
                                 <tree editable="bottom">
                                     <field name="decision_id"/>
                                     <field name="decision_no"/>
                                     <field name="decision_date"/>
                                     <field name="decision_level"/>
-
                                     <field name="benefit_ids" widget="many2many_tags" string="Quyền lợi / Hình thức"/>
-
                                     <field name="content"/>
                                 </tree>
                             </field>
@@ -326,30 +290,24 @@
                         <page string="Đảng - Đoàn thể" name="union_vn">
                             <group>
                                 <group string="THÔNG TIN ĐẢNG VIÊN">
-                                    <field name="party_member"/>
-                                    <field name="party_join_date" invisible="not party_member"/>
-                                    <field name="party_official_date" invisible="not party_member"/>
-                                    <field name="party_title_id" invisible="not party_member"/>
-                                    <field name="party_cell_id" invisible="not party_member"/>
-<!--                                    <field name="party_profile_no" invisible="not party_member"/>-->
-<!--                                    <field name="party_card_no" invisible="not party_member"/>-->
-<!--                                    <field name="party_medal_no" invisible="not party_member"/>-->
+                                    <field name="party_member" readonly="not active"/>
+                                    <field name="party_join_date" invisible="not party_member" readonly="not active"/>
+                                    <field name="party_official_date" invisible="not party_member" readonly="not active"/>
+                                    <field name="party_title_id" invisible="not party_member" readonly="not active"/>
+                                    <field name="party_cell_id" invisible="not party_member" readonly="not active"/>
                                 </group>
 
                                  <group>
                                     <group string="THÔNG TIN CÔNG ĐOÀN" colspan="2" col="2">
-                                        <field name="union_member"/>
-                                        <field name="union_join_date" invisible="not union_member"/>
-                                        <field name="union_title_id" invisible="not union_member"/>
-<!--                                        <field name="union_profile_no" invisible="not union_member"/>-->
-<!--                                        <field name="union_card_no" invisible="not union_member"/>-->
+                                        <field name="union_member" readonly="not active"/>
+                                        <field name="union_join_date" invisible="not union_member" readonly="not active"/>
+                                        <field name="union_title_id" invisible="not union_member" readonly="not active"/>
                                     </group>
 
                                     <group string="THÔNG TIN ĐOÀN THANH NIÊN" colspan="2" col="2">
-                                        <field name="youth_member"/>
-                                        <field name="youth_join_date" invisible="not youth_member"/>
-                                        <field name="youth_title_id" invisible="not youth_member"/>
-<!--                                        <field name="youth_card_no" invisible="not youth_member"/>-->
+                                        <field name="youth_member" readonly="not active"/>
+                                        <field name="youth_join_date" invisible="not youth_member" readonly="not active"/>
+                                        <field name="youth_title_id" invisible="not youth_member" readonly="not active"/>
                                     </group>
                                  </group>
                             </group>
@@ -357,7 +315,7 @@
 
                         <page string="Quá trình đào tạo" name="training_vn">
                             <separator string="QUÁ TRÌNH ĐÀO TẠO NGOÀI TEDI"/>
-                            <field name="training_ids" nolabel="1" colspan="2">
+                            <field name="training_ids" nolabel="1" colspan="2" readonly="not active">
                                 <tree editable="bottom">
                                     <field name="stt" readonly="1"/>
                                     <field name="name"/>
@@ -390,28 +348,38 @@
                                 </tree>
                             </field>
                         </page>
-
-
                     </notebook>
                 </xpath>
-
             </field>
         </record>
 
         <record id="hr.open_view_employee_list_my" model="ir.actions.act_window">
-            <field name="name">Employees</field>
+            <field name="name">Danh sách nhân viên</field>
             <field name="res_model">hr.employee</field>
             <field name="view_mode">tree,form</field>
-            <field name="domain">[]</field>
+            <field name="domain">[('active', '=', True)]</field>
             <field name="context">{}</field>
-            <field name="view_ids" eval="[(5, 0, 0),
-                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_employee_tree_tedi')}),
-                (0, 0, {'view_mode': 'form', 'view_id': ref('hr_employee_view_form_inherit_profile_tedi')})
-            ]"/>
         </record>
 
+        <record id="action_hr_employee_terminated" model="ir.actions.act_window">
+            <field name="name">Nhân viên đã thôi việc</field>
+            <field name="res_model">hr.employee</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{'active_test': False}</field>
+            <field name="domain">[('active', '=', False)]</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                    (0, 0, {'view_mode': 'tree', 'view_id': ref('view_employee_tree_tedi')}),
+                    (0, 0, {'view_mode': 'form', 'view_id': ref('hr_employee_view_form_inherit_profile_tedi')})
+                ]"/>
+        </record>
 
-<!--        <delete model="ir.ui.menu" id="hr.menu_view_hr_contract_type"/>-->
+        <menuitem
+            id="menu_hr_employee_terminated"
+            name="Đã thôi việc"
+            parent="hr.menu_hr_employee_payroll"
+            action="action_hr_employee_terminated"
+            sequence="99"
+            groups="hr.group_hr_manager"/>
 
         <menuitem
             id="menu_view_hr_contract_type_tedi"
@@ -444,11 +412,6 @@
             parent="hr.menu_human_resources_configuration"
             sequence="4"
             groups="hr.group_hr_user"/>
-
-
-
-
-
 
     </data>
 </odoo>

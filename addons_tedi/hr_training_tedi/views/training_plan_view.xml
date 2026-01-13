@@ -42,7 +42,7 @@
                         <button name="action_complete" type="object" string="Kết thúc" class="btn-secondary" invisible="state != 'in_process'"/>
                         <button name="action_open_reject_wizard" type="object" string="Từ chối" class="btn-danger" invisible="not is_user_director or state != 'director_approve'"/>
                         <button name="action_open_reject_wizard" type="object" string="Từ chối" class="btn-danger" invisible="not is_user_board or state != 'board_approve'"/>
-                        <button name="action_draft" type="object" string="Cần điều chỉnh" class="btn-secondary" groups="hr_training_tedi.group_training_manager" invisible="state in ('draft', 'complete') or (state == 'director_approve' and is_user_director) or (state == 'board_approve' and is_user_board)"/>
+                        <button name="action_draft" type="object" string="Sửa" class="btn-secondary" groups="hr_training_tedi.group_training_manager" invisible="state in ('draft', 'complete') or (state == 'director_approve' and is_user_director) or (state == 'board_approve' and is_user_board)"/>
 
                         <field name="state" widget="statusbar" statusbar_visible="draft,director_approve,board_approve,in_process,complete"/>
                     </header>
@@ -102,7 +102,7 @@
                         <button name="action_open_reject_wizard" type="object" string="Từ chối" class="btn-danger"
                                 invisible="not is_user_board or state != 'board_approve'"/>
 
-                        <button name="action_draft" type="object" string="Cần điều chỉnh" class="btn-secondary"
+                        <button name="action_draft" type="object" string="Sửa" class="btn-secondary"
                                 groups="hr_training_tedi.group_training_manager"
                                 invisible="state in ('draft', 'complete') or (state == 'director_approve' and is_user_director) or (state == 'board_approve' and is_user_board)"/>
 

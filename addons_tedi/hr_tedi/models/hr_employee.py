@@ -373,7 +373,37 @@ class HrEmployeePrivate(models.Model):
             },
         }
 
+    def write(self, vals):
+        if 'active' in vals:
+            _logger.info(f"DEBUG: Đang ghi field 'active' của nhân viên {self.ids} thành: {vals['active']}")
+        return super(HrEmployeePrivate, self).write(vals)
 
+
+
+
+class HrDepartureWizard(models.TransientModel):
+    _inherit = 'hr.departure.wizard'
+
+    archive_private_address = fields.Boolean(default=True)
+
+    def action_register_departure(self):
+        # 1. Gọi hàm gốc để xử lý các logic khác (Contract, Activities...)
+        res = super(HrDepartureWizard, self).action_register_departure()
+
+        # 2. [QUAN TRỌNG] Ép buộc Archive thủ công
+        # Vì log cho thấy hàm gốc không làm việc này, ta tự làm.
+        if self.employee_id.active:
+            _logger.info(f"DEBUG: Đang ép buộc Archive nhân viên {self.employee_id.name}...")
+            self.employee_id.write({'active': False})
+
+        # 3. Log kiểm tra lại lần cuối
+        _logger.info(f"--> KẾT QUẢ CUỐI CÙNG: Active = {self.employee_id.active}")
+
+        # 4. Reload lại giao diện để XML nhận diện active=False (ẩn nút, hiện ribbon)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }
 
 
 
