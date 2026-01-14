@@ -19,14 +19,43 @@
             <field name="date_closed" invisible="1"/>
 
             <header>
-              <button string="Tạo nhân viên" name="create_employee_from_applicant" type="object"
-                      class="btn-primary" groups="quan_ly_tuyen_dung.group_recruitment_hr_officer,base.group_user"
-                      invisible="emp_id or not active or not date_closed"/>
-              <button string="Từ chối" name="archive_applicant" type="object" invisible="not active"/>
-              <button string="Khôi phục" name="toggle_active" type="object" invisible="active"/>
-              <field name="stage_id" widget="statusbar"
-                     options="{'clickable': 1, 'fold_field': 'fold'}"
-                     groups="quan_ly_tuyen_dung.group_recruitment_stage_editors,base.group_user"/>
+                <field name="stage_name" invisible="1"/>
+
+                <button name="action_pass_initial_qualification"
+                        string="Duyệt sơ loại"
+                        type="object"
+                        class="btn-primary"
+                        invisible="stage_name != 'Mới'"/>
+
+                <button name="action_pass_interview"
+                        string="Mời phỏng vấn"
+                        type="object"
+                        class="btn-primary"
+                        invisible="stage_name != 'Đánh giá sơ bộ'"/>
+
+                <button name="action_pass_contract_proposal"
+                        string="Đề xuất Hợp đồng"
+                        type="object"
+                        class="btn-primary"
+                        invisible="stage_name != 'Phỏng vấn'"/>
+
+                <button name="action_pass_contract_signed"
+                        string="Ký HĐ / Hoàn tất"
+                        type="object"
+                        class="btn-primary"
+                        invisible="stage_name != 'Đề xuất Hợp đồng'"/>
+
+                <button string="Tạo nhân viên" name="create_employee_from_applicant" type="object"
+                        class="btn-primary" groups="quan_ly_tuyen_dung.group_recruitment_hr_officer,base.group_user"
+                        invisible="emp_id or not active or not date_closed"/>
+                <button string="Từ chối" name="archive_applicant" type="object" invisible="not active"/>
+                <button string="Khôi phục" name="toggle_active" type="object" invisible="active"/>
+
+                <field name="stage_id" widget="statusbar"
+                       readonly="1"
+                       force_save="1"
+                       options="{'fold_field': 'fold'}"
+                       groups="quan_ly_tuyen_dung.group_recruitment_stage_editors,base.group_user"/>
             </header>
 
             <sheet class="o_form_sheet_full">
@@ -47,7 +76,15 @@
                   <field name="country_id" string="Quốc tịch"/>
                   <field name="folk_id" string="Dân tộc"/>
                   <field name="current_job" string="Nghề nghiệp hiện tại"/>
-                  <field name="address" string="Địa chỉ thường trú"/>
+                  <label for="street_detail" string="Địa chỉ thường trú"/>
+                    <div class="o_address_format">
+                        <field name="street_detail" placeholder="Số nhà, đường..." class="o_address_street" invisible="1"/>
+
+                        <field name="province_id" placeholder="Tỉnh / Thành phố" class="o_address_state" options="{'no_create': True, 'no_open': True}"/>
+                        <field name="ward_id" placeholder="Xã / Phường" class="o_address_zip" options="{'no_create': True, 'no_open': True}"/>
+
+                        <field name="address" invisible="1"/>
+                    </div>
                 </group>
                 <group string="THÔNG TIN LIÊN HỆ">
                   <field name="email_from" widget="email" string="Email"/>
@@ -213,6 +250,35 @@
         </xpath>
       </field>
     </record>
+
+
+   <record id="view_hr_recruitment_stage_tree_lock" model="ir.ui.view">
+            <field name="name">hr.recruitment.stage.tree.lock</field>
+            <field name="model">hr.recruitment.stage</field>
+            <field name="inherit_id" ref="hr_recruitment.hr_recruitment_stage_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//tree" position="attributes">
+                    <attribute name="create">0</attribute>
+                    <attribute name="delete">0</attribute>
+                    <attribute name="import">0</attribute> </xpath>
+            </field>
+        </record>
+
+        <record id="view_hr_recruitment_stage_form_lock" model="ir.ui.view">
+            <field name="name">hr.recruitment.stage.form.lock</field>
+            <field name="model">hr.recruitment.stage</field>
+            <field name="inherit_id" ref="hr_recruitment.hr_recruitment_stage_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//form" position="attributes">
+                    <attribute name="create">0</attribute>
+                    <attribute name="delete">0</attribute>
+                    <attribute name="duplicate">0</attribute> </xpath>
+
+                <xpath expr="//field[@name='name']" position="attributes">
+                    <attribute name="readonly">1</attribute>
+                </xpath>
+            </field>
+        </record>
 
   </data>
 </odoo>

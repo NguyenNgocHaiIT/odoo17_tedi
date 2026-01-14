@@ -23,32 +23,43 @@
             <form delete="false" duplicate="false">
                 <header>
                     <button name="approve" string="Duyệt" type="object"
-                            groups="base.group_system"/>
+                            groups="base.group_system, tin_tuc_su_kien.group_quan_ly_tin_tuc"
+                            invisible="state != 'chua_duyet'"/>
                     <button name="action_submit_leader" string="Trình lãnh đạo" type="object"
                             class="btn btn-primary"
-                            groups="base.group_system"/>
+                            invisible="state != 'draft'"/>
+                    <button name="action_cancel" string="Từ chối" type="object"
+                            groups="base.group_system, tin_tuc_su_kien.group_quan_ly_tin_tuc"
+                            invisible="state != 'chua_duyet'"/>
                     <button name="action_save_draft" string="Lưu nháp" type="object"
                             class="btn btn-secondary"
-                            groups="base.group_system"/>
+                            invisible="state != 'draft'"/>
                     <button name="action_send_notification" string="Gửi thông báo" type="object"
                             class="btn btn-success"
-                            groups="base.group_system"/>
+                            groups="base.group_system, tin_tuc_su_kien.group_quan_ly_tin_tuc"
+                            invisible="state != 'da_duyet'"/>
+
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,chua_duyet,da_duyet,da_thong_bao"
+                           statusbar_colors='{"draft": "lightgrey", "chua_duyet": "orange", "da_duyet": "green", "da_thong_bao": "yellow"}'
+                           options="{'clickable': false}"/>
                 </header>
 
                 <sheet>
+                    <field name="state" invisible="1"/>
                     <group>
                         <group>
-                            <field name="name" string="Tiêu đề"/>
-                            <field name="type" string="Loại thông báo"/>
-                            <field name="create_date" string="Ngày ban hành"/>
-                            <field name="content" string="Nội dung"/>
+                            <field name="name" string="Tiêu đề" readonly="state != 'draft'"/>
+                            <field name="type" string="Loại thông báo" readonly="state != 'draft'"/>
+                            <field name="create_date" string="Ngày ban hành" readonly="state != 'draft'"/>
+                            <field name="content" string="Nội dung" readonly="state != 'draft'"/>
                         </group>
 
                         <!-- Cột bên phải -->
                         <group>
-                            <field name="send_all" string="Gửi toàn bộ nhân viên"/>
-                            <field name="send_individual" widget="many2many_tags" string="Gửi cho cá nhân" />
-                            <field name="send_department" widget="many2many_tags" string="Gửi cho phòng ban"/>
+                            <field name="send_all" string="Gửi toàn bộ nhân viên" readonly="state != 'draft'"/>
+                            <field name="send_individual" widget="many2many_tags" string="Gửi cho cá nhân" readonly="state != 'draft'"/>
+                            <field name="send_department" widget="many2many_tags" string="Gửi cho phòng ban" readonly="state != 'draft'"/>
                         </group>
                     </group>
                 </sheet>

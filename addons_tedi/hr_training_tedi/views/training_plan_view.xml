@@ -29,34 +29,26 @@
         <field name="arch" type="xml">
             <form string="Kế hoạch Đào tạo Năm">
                 <header>
-                    <button name="action_submit" type="object" string="Trình duyệt" class="btn-primary"
-                            invisible="state != 'draft'"/>
+                        <button name="action_submit" type="object" string="Trình duyệt" class="btn-primary" invisible="state != 'draft'"/>
 
-                    <button name="action_director_approve" type="object" string="Giám đốc Duyệt" class="btn-primary"
-                            groups="hr_training_tedi.group_training_general_director"
-                            invisible="state != 'director_approve'"/>
+                        <button name="action_director_approve" type="object" string="Giám đốc Duyệt" class="btn-primary"
+                                groups="hr_training_tedi.group_training_general_director"
+                                invisible="state != 'director_approve'"/>
 
-                    <button name="action_board_approve" type="object" string="HĐQT Phê duyệt" class="btn-primary"
-                            groups="hr_training_tedi.group_training_board"
-                            invisible="state != 'board_approve'"/>
+                        <button name="action_board_approve" type="object" string="HĐQT Phê duyệt" class="btn-primary"
+                                groups="hr_training_tedi.group_training_board"
+                                invisible="state != 'board_approve'"/>
 
-                    <button name="action_deploy" type="object" string="Triển khai &amp; Tạo Quý" class="btn-success"
-                            groups="hr_training_tedi.group_training_general_director"
-                            invisible="state != 'approved' or is_applied"/>
+                        <button name="action_complete" type="object" string="Kết thúc" class="btn-secondary" invisible="state != 'in_process'"/>
+                        <button name="action_open_reject_wizard" type="object" string="Từ chối" class="btn-danger" invisible="not is_user_director or state != 'director_approve'"/>
+                        <button name="action_open_reject_wizard" type="object" string="Từ chối" class="btn-danger" invisible="not is_user_board or state != 'board_approve'"/>
+                        <button name="action_draft" type="object" string="Sửa" class="btn-secondary" groups="hr_training_tedi.group_training_manager" invisible="state in ('draft', 'complete') or (state == 'director_approve' and is_user_director) or (state == 'board_approve' and is_user_board)"/>
 
-                    <button name="action_complete" type="object" string="Kết thúc" class="btn-secondary"
-                            invisible="state != 'in_process'"/>
-
-                    <button name="action_reject" type="object" string="Từ chối" class="btn-danger"
-                            groups="hr_training_tedi.group_training_general_director"
-                            invisible="state not in ('director_approve', 'board_approve')"/>
-
-                    <button name="action_draft" type="object" string="Cần điều chỉnh" class="btn-secondary"
-                            invisible="state in ('draft', 'complete')"/>
-
-                    <field name="state" widget="statusbar" statusbar_visible="draft,director_approve,board_approve,approved,in_process,complete"/>
-                </header>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,director_approve,board_approve,in_process,complete"/>
+                    </header>
                 <sheet>
+                    <field name="is_user_director" invisible="1"/>
+                    <field name="is_user_board" invisible="1"/>
                     <group>
                         <group>
                             <field name="name" placeholder="VD: Kế hoạch Đào tạo Năm 2025"/>
@@ -68,6 +60,11 @@
                             <field name="plan_execute_date" readonly="state != 'draft'"/>
                             <field name="total_fee" string="Dự toán kinh phí"/>
                             <field name="is_applied" invisible="1"/>
+                            <field name="reject_reason"
+                                   string="Lý do"
+                                   placeholder="Lý do từ chối sẽ hiện ở đây..."
+                                   readonly="1"
+                                   invisible="not reject_reason"/>
                         </group>
                     </group>
                     <notebook>
@@ -86,33 +83,34 @@
         <field name="arch" type="xml">
             <form string="Kế hoạch Đào tạo Quý">
                 <header>
-                    <button name="action_notify_quarter" type="object" string="Xác nhận" class="btn-primary"
-                            invisible="state != 'draft'"/>
+                        <button name="action_notify_quarter" type="object" string="Xác nhận" class="btn-primary" invisible="state != 'draft'"/>
+                        <button name="action_submit" type="object" string="Trình duyệt" class="btn-primary" invisible="state != 'notify'"/>
 
-                    <button name="action_submit" type="object" string="Trình duyệt" class="btn-primary"
-                            invisible="state != 'notify'"/>
+                        <button name="action_director_approve" type="object" string="Giám đốc Duyệt" class="btn-primary"
+                                groups="hr_training_tedi.group_training_general_director"
+                                invisible="state != 'director_approve'"/>
 
-                    <button name="action_director_approve" type="object" string="Phê duyệt" class="btn-primary"
-                            groups="hr_training_tedi.group_training_general_director"
-                            invisible="state != 'director_approve'"/>
+                        <button name="action_board_approve" type="object" string="HĐQT Phê duyệt" class="btn-primary"
+                                groups="hr_training_tedi.group_training_board"
+                                invisible="state != 'board_approve'"/>
 
-                    <button name="action_deploy" type="object" string="Triển khai &amp; Tạo Lớp" class="btn-success"
-                            groups="hr_training_tedi.group_training_general_director"
-                            invisible="state != 'approved' or is_applied"/>
+                        <button name="action_complete" type="object" string="Hoàn thành" class="btn-secondary" invisible="state != 'in_process'"/>
 
-                    <button name="action_complete" type="object" string="Hoàn thành" class="btn-secondary"
-                            invisible="state != 'in_process'"/>
+                        <button name="action_open_reject_wizard" type="object" string="Từ chối" class="btn-danger"
+                                invisible="not is_user_director or state != 'director_approve'"/>
 
-                    <button name="action_reject" type="object" string="Từ chối" class="btn-danger"
-                            groups="hr_training_tedi.group_training_general_director"
-                            invisible="state != 'director_approve'"/>
+                        <button name="action_open_reject_wizard" type="object" string="Từ chối" class="btn-danger"
+                                invisible="not is_user_board or state != 'board_approve'"/>
 
-                    <button name="action_draft" type="object" string="Cần điều chỉnh" class="btn-secondary"
-                            invisible="state in ('draft', 'complete')"/>
+                        <button name="action_draft" type="object" string="Sửa" class="btn-secondary"
+                                groups="hr_training_tedi.group_training_manager"
+                                invisible="state in ('draft', 'complete') or (state == 'director_approve' and is_user_director) or (state == 'board_approve' and is_user_board)"/>
 
-                    <field name="state" widget="statusbar" statusbar_visible="draft,notify,director_approve,approved,in_process,complete"/>
-                </header>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,notify,director_approve,board_approve,in_process,complete"/>
+                    </header>
                 <sheet>
+                    <field name="is_user_director" invisible="1"/>
+                    <field name="is_user_board" invisible="1"/>
                     <group>
                         <group>
                             <field name="name"/>
@@ -126,6 +124,11 @@
                             <field name="student_count"/>
                             <field name="total_fee"/>
                             <field name="is_applied" invisible="1"/>
+                            <field name="reject_reason"
+                                   string="Lý do"
+                                   placeholder="Lý do từ chối sẽ hiện ở đây..."
+                                   readonly="1"
+                                   invisible="not reject_reason"/>
                         </group>
                     </group>
                     <notebook>
@@ -206,6 +209,23 @@
         <field name="view_ids" eval="[(5, 0, 0),
             (0, 0, {'view_mode': 'tree', 'view_id': ref('view_training_plan_tree')}),
             (0, 0, {'view_mode': 'form', 'view_id': ref('view_training_plan_quarter_form')})]"/>
+    </record>
+
+    <record id="view_training_plan_reject_wizard_form" model="ir.ui.view">
+        <field name="name">training.plan.reject.wizard.form</field>
+        <field name="model">training.plan.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Lý do từ chối">
+                <group>
+                    <field name="reject_reason" placeholder="Nhập lý do tại sao từ chối..."/>
+                    <field name="plan_id" invisible="1"/>
+                </group>
+                <footer>
+                    <button name="action_confirm_reject" string="Xác nhận" type="object" class="btn-danger"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
     </record>
 
   </data>

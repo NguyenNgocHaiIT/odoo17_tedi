@@ -588,6 +588,12 @@ body.o_web_client .o_content .excel_style_list_view
     overflow: hidden !important;
 }
 
+/* Tooltip cho header */
+body.o_web_client .excel_style_list_view
+.o_list_renderer.table-responsive .o_list_table thead tr th {
+    position: relative;
+}
+
 /* Container text trong header */
 body.o_web_client .o_content .excel_style_list_view
 .o_list_renderer.table-responsive .o_list_table thead tr th .d-flex {
@@ -652,6 +658,12 @@ body.o_web_client
     height: 50px;
     padding: 8px 12px;
 
+}
+
+/* Tooltip cho body cells */
+body.o_web_client .excel_style_list_view
+.o_list_renderer.table-responsive .o_list_table tbody tr.o_data_row td:hover {
+    position: relative;
 }
 
 .excel_style_list_view .o_list_table tbody tr:not(.o_data_row) {

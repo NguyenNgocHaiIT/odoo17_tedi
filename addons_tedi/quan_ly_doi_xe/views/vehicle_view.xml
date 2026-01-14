@@ -80,7 +80,7 @@
                                 <field name="year_in_use"/>
                                 <field name="vin_sn" string="Số khung (VIN)"/>
                                 <field name="engine_no"/>
-                                <field name="color_select" widget="color"/>
+                                <field name="color_car" widget="color"/>
                             </group>
                             <group>
                                 <field name="cylinder_capacity"/>
