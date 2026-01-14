@@ -1006,7 +1006,7 @@ class OfficeDocument(models.Model):
         self._send_approval_notification_to_van_thu()
         return True
 
-    def _send_approval_notification_to_van_thu(self, old_status_name):
+    def _send_approval_notification_to_van_thu(self):
         """Gửi email thông báo đơn giản cho văn thư khi văn bản đã được duyệt"""
         self.ensure_one()
 
