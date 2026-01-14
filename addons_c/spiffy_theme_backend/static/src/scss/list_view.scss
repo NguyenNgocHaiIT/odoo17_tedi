@@ -583,11 +583,11 @@ body.o_web_client {
     body.o_web_client .excel_style_list_view .o_list_renderer {
         border: 1.5px solid #cfcfcf !important;
         border-radius: 6px !important;
-        overflow: hidden !important;
-        display: inline-flex !important;
+        overflow: auto !important;
         width: fit-content !important;
         max-width: 100% !important;
         margin-right: 5px !important;
+        margin-bottom: 30px !important;
     }
 
     /* BẢNG CHÍNH - KHÔNG CÓ BORDER riêng */
@@ -597,7 +597,7 @@ body.o_web_client {
         border-collapse: collapse !important;
         border: none !important; /* Bỏ border của table vì đã có border ở .o_list_renderer */
         border-radius: 0 !important;
-        overflow: hidden !important;
+        overflow: visible !important;
         margin-bottom: 0 !important; /* Bỏ margin để fit với wrapper */
     }
 
