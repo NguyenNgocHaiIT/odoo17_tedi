@@ -96,6 +96,7 @@ class QuarterlyPayrollSettlementLine(models.Model):
                     record.che_do_quy = sum(che_do_quy.mapped('total'))
                     tns_quy = payslip_ids.line_ids.filtered(lambda l: l.code == 'TNS')
                     record.tns_quy = sum(tns_quy.mapped('total'))
+                    kpi = self.env['evaluation.kpi'].sudo().search([('employee_id', '=', record.employee_id.id), ('evaluate_kpi_id')])
 
 class QuarterlyPayrollSettlement(models.Model):
     _name = "quarterly.payroll.settlement"
