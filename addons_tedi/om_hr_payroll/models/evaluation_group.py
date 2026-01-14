@@ -67,28 +67,35 @@ class EvaluationReport(models.Model):
     evaluate_kpi = fields.One2many('evaluation.kpi', 'evaluate_kpi_id', string="Danh sách phiếu đánh giá")
 
     # 1. Trường Tháng đánh giá (Dùng để tính toán)
-    execution_date = fields.Date(string="Tháng đánh giá", required=True, default=fields.Date.context_today)
+    quarter = fields.Selection([
+        ('1', 'Quý 1'),
+        ('2', 'Quý 2'),
+        ('3', 'Quý 3'),
+        ('4', 'Quý 4')
+    ], string='Chọn Quý', required=True, default='1')
+
+    execution_date = fields.Date(string="Tháng đánh giá")
+
+    year = fields.Integer(
+        string='Năm',
+        required=True,
+        default=lambda self: fields.Date.today().year
+    )
+
+    period = fields.Char(string="Chu kỳ", compute="_compute_period", store=True)
+
+    @api.depends('quarter', 'year')
+    def _compute_period(self):
+        for rec in self:
+            if rec.quarter and rec.year:
+                rec.period = f"Quý {rec.quarter}/ {rec.year}"
+            else:
+                rec.period = ""
 
     # 2. Trường Chu kỳ (Tự động tính nhưng cho phép sửa)
-    period = fields.Char(string="Chu kỳ", required=True)
+    # period = fields.Char(string="Chu kỳ", required=True)
 
-    # --- LOGIC TỰ ĐỘNG TÍNH QUÝ ---
-    @api.onchange('execution_date')
-    def _onchange_execution_date_calculate_period(self):
-        """
-        Khi chọn ngày đánh giá -> Tự động điền Quý/Năm
-        Công thức: Quý = (Tháng - 1) // 3 + 1
-        """
-        if self.execution_date:
-            month = self.execution_date.month
-            year = self.execution_date.year
 
-            # Tính quý:
-            # Tháng 1,2,3 -> (0,1,2)//3 + 1 = 1
-            # Tháng 4,5,6 -> (3,4,5)//3 + 1 = 2
-            quarter = (month - 1) // 3 + 1
-
-            self.period = f"Quý {quarter}/ {year}"
 
     def action_generate_kpis(self):
         """
@@ -98,7 +105,6 @@ class EvaluationReport(models.Model):
         if not self.department_id:
             raise UserError(_("Vui lòng chọn phòng ban trước khi tạo phiếu!"))
 
-        # 1. Tìm tất cả nhân viên đang hoạt động thuộc phòng ban này
         employees = self.env['hr.employee'].sudo().search([
             ('department_id', '=', self.department_id.id),
             ('active', '=', True)
@@ -110,45 +116,40 @@ class EvaluationReport(models.Model):
         KPIModel = self.env['evaluation.kpi']
         count = 0
 
-        # --- Tối ưu: Dùng danh sách để create 1 lần (nhanh hơn loop create) ---
-        # Tuy nhiên giữ logic loop của bạn để dễ gọi hàm _onchange_employee_id
         for emp in employees:
-            # 2. Kiểm tra trùng
+            # 2. Kiểm tra trùng dựa trên QUÝ và NĂM
             existing_kpi = KPIModel.search([
                 ('evaluate_kpi_id', '=', self.id),
-                ('employee_id', '=', emp.id)
+                ('employee_id', '=', emp.id),
+                ('quarter', '=', self.quarter), # Check trùng quý
+                ('year', '=', self.year)        # Check trùng năm
             ], limit=1)
 
             if existing_kpi:
                 continue
 
-            # 3. Tạo phiếu KPI
+            # 3. Tạo phiếu KPI (Truyền Quarter và Year xuống)
             new_kpi = KPIModel.sudo().create({
                 'name': 'New',
                 'evaluate_kpi_id': self.id,
                 'employee_id': emp.id,
-                'period': self.period,
+                'quarter': self.quarter,  # <--- Mới
+                'year': self.year,        # <--- Mới
                 'state': 'draft',
             })
 
-            # 4. Kích hoạt hàm lấy tiêu chí đánh giá
             new_kpi.sudo()._onchange_employee_id()
-
             count += 1
 
-        # --- SỬA ĐỔI QUAN TRỌNG Ở ĐÂY ---
-        # Thay vì chỉ hiện thông báo, ta dùng 'tag': 'reload' để F5 lại giao diện form
-        # Kết hợp 'effect' để hiện hiệu ứng Rainbow Man (Chúc mừng) thay cho notification
         return {
             'type': 'ir.actions.client',
-            'tag': 'reload',  # <--- Lệnh bắt buộc để hiện dữ liệu ngay
+            'tag': 'reload',
             'effect': {
                 'fadeout': 'slow',
-                'message': _(f'Đã tạo thành công {count} phiếu đánh giá!'),
+                'message': _(f'Đã tạo thành công {count} phiếu đánh giá cho {self.period}!'),
                 'type': 'rainbow_man',
             }
         }
-
 
 # --- 2. MODEL PHIẾU ĐÁNH GIÁ (MAIN) ---
 class EvaluationKPI(models.Model):
@@ -205,8 +206,35 @@ class EvaluationKPI(models.Model):
             else:
                 rec.wage_level = "Chưa có bậc lương/HĐ"
 
-    # --- 7. CHU KỲ ---
-    period = fields.Char(string="Chu kỳ", default=lambda self: self._get_default_period(), required=True)
+    quarter = fields.Selection([
+        ('1', 'Quý 1'),
+        ('2', 'Quý 2'),
+        ('3', 'Quý 3'),
+        ('4', 'Quý 4')
+    ], string='Quý', required=True, default=lambda self: self._get_default_quarter())
+
+    year = fields.Integer(
+        string='Năm',
+        required=True,
+        default=lambda self: fields.Date.today().year
+    )
+
+    # Trường period (Computed) để hiển thị trên view tree/form cũ mà không bị lỗi
+    period = fields.Char(string="Chu kỳ", compute="_compute_period_display", store=True)
+
+    @api.model
+    def _get_default_quarter(self):
+        """Lấy quý hiện tại mặc định"""
+        month = fields.Date.today().month
+        return str((month - 1) // 3 + 1)
+
+    @api.depends('quarter', 'year')
+    def _compute_period_display(self):
+        for rec in self:
+            if rec.quarter and rec.year:
+                rec.period = f"Quý {rec.quarter}/ {rec.year}"
+            else:
+                rec.period = "N/A"
 
     # --- CẤU HÌNH QUY TRÌNH (Lấy từ Employee) ---
 

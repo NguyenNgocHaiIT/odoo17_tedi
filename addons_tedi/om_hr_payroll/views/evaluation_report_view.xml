@@ -14,7 +14,8 @@
                 <tree string="Danh sách báo cáo">
                     <field name="name"/>
                     <field name="create_date"/>
-                    <field name="period"/>
+                     <field name="year" string="Năm" width="150px"/>
+                    <field name="quarter" string="Quý"/>
                      <field name="create_date"/>
                     <field name="department_id"/>
 
@@ -41,8 +42,8 @@
                         </div>
                         <group>
                             <group>
-                                <field name="execution_date" widget="month_picker" string="Thời gian thực hiện" width="150px"/>
-                                <field name="period" placeholder="VD: Quý 1/2025"/>
+                                <field name="year" string="Năm" width="150px"/>
+                                <field name="quarter" string="Quý"/>
 
                             </group>
                             <group>
