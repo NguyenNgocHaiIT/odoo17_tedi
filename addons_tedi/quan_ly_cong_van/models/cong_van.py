@@ -756,9 +756,39 @@ class OfficeDocument(models.Model):
 
     # Thêm kiểm tra quyền cho trưởng đơn vị
     is_truong_don_vi = fields.Boolean(
-        compute='_compute_edit_permission',
+        compute='_compute_is_truong_don_vi',
         store=False
     )
+
+    def _compute_is_truong_don_vi(self):
+        """Tính toán xem người dùng hiện tại có phải là trưởng đơn vị duyệt không"""
+        user = self.env.user
+
+        for rec in self:
+            rec.is_truong_don_vi = False
+
+            if not rec.truong_don_vi_duyet:
+                continue
+
+            # Tìm employee của người dùng hiện tại
+            current_employee = self.env['hr.employee'].search(
+                [('user_id', '=', user.id)],
+                limit=1
+            )
+
+            if current_employee:
+                # So sánh với trưởng đơn vị duyệt
+                rec.is_truong_don_vi = (current_employee.id == rec.truong_don_vi_duyet.id)
+
+                # DEBUG: In thông tin
+                _logger.debug(
+                    f"Document {rec.id}: "
+                    f"Creator: {rec.create_uid.name if rec.create_uid else 'None'}, "
+                    f"Current user: {user.name}, "
+                    f"Current employee: {current_employee.name if current_employee else 'None'}, "
+                    f"Trưởng đơn vị: {rec.truong_don_vi_duyet.name if rec.truong_don_vi_duyet else 'None'}, "
+                    f"Is trưởng đơn vị: {rec.is_truong_don_vi}"
+                )
 
     def name_get(self):
         result = []
@@ -1693,11 +1723,38 @@ class OfficeDocument(models.Model):
     def khong_dat(self):
         self.ensure_one()
         self.tt_vb = 'draft'
+        self._send_simple_rejection_notification()
 
         return {
             'type': 'ir.actions.client',
             'tag': 'history_back',
         }
+
+    def _send_simple_rejection_notification(self):
+        """Gửi thông báo đơn giản cho người tạo"""
+        self.ensure_one()
+
+        try:
+            creator = self.create_uid
+            if not creator or not creator.email:
+                return
+
+            subject = f"Văn bản không đạt: {self.trich_yeu[:50]}..."
+
+            body_html = f"""
+            <p>Văn bản của bạn <b>"{self.trich_yeu}"</b> đã bị từ chối.</p>
+            <p>Vui lòng kiểm tra và chỉnh sửa lại.</p>
+            """
+
+            self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'email_to': creator.email,
+                'email_from': self.env.user.email or 'no-reply@company.com',
+                'body_html': body_html,
+            }).send()
+
+        except Exception as e:
+            _logger.warning(f"Không gửi được email từ chối: {str(e)}")
 
     is_van_thu = fields.Boolean(
         compute='_compute_edit_permission',
@@ -1713,18 +1770,6 @@ class OfficeDocument(models.Model):
         """Tính toán quyền chỉnh sửa - cập nhật để thêm trưởng đơn vị"""
         user = self.env.user
         is_van_thu_user = user.has_group('quan_ly_cong_van.group_van_thu')
-        is_truong_don_vi_user = False
-
-        # Kiểm tra xem user có phải là trưởng đơn vị không
-        current_employee = self.env['hr.employee'].search(
-            [('user_id', '=', user.id)], limit=1
-        )
-        if current_employee:
-            # Kiểm tra xem nhân viên có là manager của phòng ban nào không
-            is_truong_don_vi_user = self.env['hr.department'].search_count([
-                ('manager_id', '=', current_employee.id)
-            ]) > 0
-
         for rec in self:
             # Văn thư: draft hoặc chờ duyệt thì sửa được
             rec.is_van_thu = (
@@ -1736,11 +1781,6 @@ class OfficeDocument(models.Model):
             rec.not_is_van_thu = (
                     not is_van_thu_user and
                     rec.tt_vb == 'draft'
-            )
-
-            # Trưởng đơn vị: có thể duyệt khi ở trạng thái chờ trưởng đơn vị duyệt
-            rec.is_truong_don_vi = (
-                    is_truong_don_vi_user
             )
 
     show_skip_button = fields.Boolean(

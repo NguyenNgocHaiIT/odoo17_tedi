@@ -54,12 +54,13 @@ result = (contract.salary_grade_id.luong_chuc_danh/ worked_days.WORK100.number_o
             <field name="category_id" ref="om_hr_payroll.BASIC"/>
             <field name="amount_select">code</field>
             <field name="quantity">1</field>
-            <field name="amount_python_compute">if contract.salary_grade_id.code == 'C':
+            <field name="amount_python_compute">if 'C' in (contract.salary_grade_id.code or ''):
     result = contract.salary_grade_id.advance_amount - contract.salary_grade_id.luong_chuc_danh
-elif contract.salary_grade_id.code == 'B':
-    result = contract.salary_grade_id.luong_chuc_danh * contract.salary_grade_id.bonus_rate/100
+elif 'B' in (contract.salary_grade_id.code or ''):
+    result = contract.salary_grade_id.luong_chuc_danh * contract.salary_grade_id.bonus_rate / 100
 else:
-    result = 0</field>
+    result = 0
+</field>
         </record>
 
         <record id="tt_01_rule" model="hr.salary.rule">

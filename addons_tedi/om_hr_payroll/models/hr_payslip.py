@@ -387,9 +387,11 @@ class HrPayslip(models.Model):
             # compute leave days
             leaves = {}
             calendar = contract.resource_calendar_id
+            print(calendar)
             tz = timezone(calendar.tz)
             day_leave_intervals = contract.employee_id.list_leaves(day_from, day_to,
                                                                    calendar=contract.resource_calendar_id)
+            print(day_leave_intervals)
             for day, hours, leave in day_leave_intervals:
                 holiday = leave.holiday_id
                 code = 'GLOBAL'

@@ -88,6 +88,7 @@
                                 <field name="department_id"/>
                                 <field name="job_id"/>
                                 <field name="wage_level"/>
+                                <field name="evaluate_kpi_id" invisible="1"/>
                                 <field name="is_manager_review_required" invisible="1"/>
                                 <field name="is_council_review_required" invisible="1"/>
                                 <field name="is_director_review_required" invisible="1"/>

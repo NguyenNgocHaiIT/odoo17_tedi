@@ -129,6 +129,7 @@
             "/spiffy_theme_backend/static/src/js/action_service.js",
             "/spiffy_theme_backend/static/src/js/menu_service.js",
             "/spiffy_theme_backend/static/src/js/dialog.js",
+            "/spiffy_theme_backend/static/src/js/excel_tooltip_custom.js",
         ],
         'web.assets_frontend': [
             '/spiffy_theme_backend/static/src/scss/loginpage.scss',
