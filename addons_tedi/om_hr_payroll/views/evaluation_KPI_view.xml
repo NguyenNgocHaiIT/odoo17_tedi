@@ -6,12 +6,13 @@
             <field name="arch" type="xml">
                 <tree string="Phiếu đánh giá KPI">
                     <field name="name"/>
+                    <field name="year" string="Năm" width="150px"/>
+                    <field name="quarter" string="Quý"/>
                     <field name="employee_id"/>
                     <field name="job_id"/>
-                     <field name="year" string="Năm" width="150px"/>
-                    <field name="quarter" string="Quý"/>
 <!--                    <field name="total_score_percent" widget="progressbar" string="Tiến độ (Điểm)"/>-->
                     <field name="total_score" optional="show" string="Điểm tổng"/>
+                    <field name="k_coefficient" string="Hệ số k"/>
 
                     <field name="final_result" widget="badge" decoration-success="total_score >= 3.5"/>
                     <field name="state" widget="badge" decoration-info="state == 'draft'"/>
@@ -24,43 +25,50 @@
             <field name="model">evaluation.kpi</field>
             <field name="arch" type="xml">
                 <form string="Phiếu đánh giá KPI">
-                   <style>
-                        /* Target cả dòng (tr) VÀ các ô (td) bên trong dòng đó */
+                    <style>
                         .o_list_view .o_data_row.o_is_line_section,
                         .o_list_view .o_data_row.o_is_line_section > .o_data_cell {
-                            background-color: #cce5ff !important; /* Màu nền xanh */
-                            color: #004085 !important;            /* Màu chữ xanh đậm */
+                            background-color: #cce5ff !important;
+                            color: #004085 !important;
                             font-weight: bold;
                         }
-
-                        /* Xử lý viền để trông liền mạch hơn (Optional) */
                         .o_list_view .o_data_row.o_is_line_section > .o_data_cell {
                             border-top: 1px solid #99c2ff !important;
                             border-bottom: 1px solid #99c2ff !important;
                         }
                     </style>
+
                     <header>
-                        <button name="action_send" string="Gửi ĐG" type="object" class="oe_highlight" invisible="state != 'draft'"/>
-
-                        <button name="action_manager_evaluation" string="QLTT hoàn thành" type="object" class="oe_highlight"
-                                invisible="state != 'wait_manager' or not is_direct_manager"/>
-
-                        <button name="action_council_evaluation" string="TĐV hoàn thành" type="object" class="oe_highlight"
-                                invisible="state != 'wait_council' or not is_department_manager"/>
-
-                        <button name="action_director_evaluation" string="TGĐ hoàn thành" type="object" class="oe_highlight"
-                                invisible="state != 'wait_director'"
-                                groups="om_hr_payroll.group_kpi_director_new"/>
-
-                        <button name="action_compute_result_manual" string="Tính kết quả" type="object" class="oe_highlight"/>
-                        <button name="action_reset_draft" string="Làm lại" type="object" invisible="state == 'draft'"/>
-                        <field name="state" widget="statusbar" statusbar_visible="draft,done"/>
-                    </header>
-                    <sheet>
+                        <field name="evaluate_kpi_id" invisible="1"/>
+                        <field name="report_state" invisible="1"/>
                         <field name="is_direct_manager" invisible="1"/>
                         <field name="is_department_manager" invisible="1"/>
                         <field name="is_director_manager" invisible="1"/>
+                        <field name="is_result_computed" invisible="1"/>
 
+                        <button name="action_send" string="Gửi ĐG" type="object" class="oe_highlight"
+                                invisible="state != 'draft' or report_state not in [False, 'in_progress']"/>
+
+                        <button name="action_manager_evaluation" string="QLTT hoàn thành" type="object" class="oe_highlight"
+                                invisible="state != 'wait_manager' or not is_direct_manager or report_state not in [False, 'in_progress']"/>
+
+                        <button name="action_council_evaluation" string="TĐV hoàn thành" type="object" class="oe_highlight"
+                                invisible="state != 'wait_council' or not is_department_manager or report_state not in [False, 'in_progress']"/>
+
+                        <button name="action_director_evaluation" string="TGĐ hoàn thành" type="object" class="oe_highlight"
+                                invisible="state != 'wait_director' or report_state not in [False, 'in_progress']"
+                                groups="om_hr_payroll.group_kpi_director_new"/>
+
+                        <button name="action_compute_result_manual" string="Tính kết quả" type="object" class="oe_highlight"
+                                invisible="state != 'draft' or report_state not in [False, 'in_progress']"/>
+
+                        <button name="action_reset_draft" string="Làm lại" type="object"
+                                invisible="state == 'draft' or report_state not in [False, 'in_progress']"/>
+
+                        <field name="state" widget="statusbar" statusbar_visible="draft,done"/>
+                    </header>
+
+                    <sheet>
                         <div class="oe_title">
                             <h1><field name="name"/></h1>
                             <label for="employee_id"/>
@@ -68,14 +76,15 @@
                                 <field name="employee_id"
                                        placeholder="Chọn nhân viên..."
                                        options="{'no_create': True}"
-                                       readonly="state != 'draft'"/>
+                                       readonly="state != 'draft' or (evaluate_kpi_id and report_state != 'in_progress')"/>
                             </h2>
                         </div>
 
                         <group>
                             <group>
-                                <field name="year" string="Năm" width="150px"/>
-                                <field name="quarter" string="Quý"/>
+                                <field name="year" string="Năm" width="150px" readonly="evaluate_kpi_id != False"/>
+                                <field name="quarter" string="Quý" readonly="evaluate_kpi_id != False"/>
+
                                 <field name="department_id"/>
                                 <field name="job_id"/>
                                 <field name="wage_level"/>
@@ -87,9 +96,7 @@
                             </group>
 
                             <group string="Kết quả đánh giá" invisible="not is_result_computed">
-<!--                                <field name="total_score_percent" widget="progressbar" string="Mức độ đạt"/>-->
                                 <field name="total_score" decoration-bf="1" string="Điểm tổng (Hệ 5)"/>
-
                                 <field name="k_coefficient" decoration-bf="1"/>
                                 <field name="final_result"
                                        decoration-success="total_score >= 3.5"
@@ -100,7 +107,11 @@
 
                         <notebook>
                             <page string="Chi tiết đánh giá">
-                                <field name="line_ids" widget="section_and_note_one2many" mode="tree">
+                                <field name="line_ids"
+                                       widget="section_and_note_one2many"
+                                       mode="tree"
+                                       readonly="evaluate_kpi_id and report_state != 'in_progress'">
+
                                     <tree editable="bottom" create="0" delete="0"
                                           decoration-bf="display_type == 'line_section'"
                                           decoration-primary="display_type == 'line_section'">
@@ -110,6 +121,7 @@
                                         </control>
                                         <field name="sequence" widget="handle"/>
                                         <field name="display_type" column_invisible="1"/>
+
                                         <field name="stt" string="STT" width="50px" decoration-bf="display_type == 'line_section'"/>
                                         <field name="name" string="Mục tiêu nhiệm vụ/ công việc"
                                                decoration-bf="display_type == 'line_section'"
@@ -118,19 +130,19 @@
                                         <field name="weight" sum="Tổng" readonly="1" force_save="1"/>
 
                                         <field name="self_score"
-                                               readonly="parent.state != 'draft'"/>
+                                               readonly="parent.state != 'draft' or (parent.evaluate_kpi_id and parent.report_state != 'in_progress')"/>
 
                                         <field name="manager_score"
                                                column_invisible="parent.is_manager_review_required == False"
-                                               readonly="parent.state != 'wait_manager' or not parent.is_direct_manager"/>
+                                               readonly="parent.state != 'wait_manager' or not parent.is_direct_manager or (parent.evaluate_kpi_id and parent.report_state != 'in_progress')"/>
 
                                         <field name="council_score"
                                                column_invisible="parent.is_council_review_required == False"
-                                               readonly="parent.state != 'wait_council' or not parent.is_department_manager"/>
+                                               readonly="parent.state != 'wait_council' or not parent.is_department_manager or (parent.evaluate_kpi_id and parent.report_state != 'in_progress')"/>
 
                                         <field name="director_score"
                                                column_invisible="parent.is_director_review_required == False"
-                                               readonly="parent.state != 'wait_director' or not parent.is_director_manager"/>
+                                               readonly="parent.state != 'wait_director' or not parent.is_director_manager or (parent.evaluate_kpi_id and parent.report_state != 'in_progress')"/>
 
                                         <field name="final_score" optional="hide"/>
                                     </tree>

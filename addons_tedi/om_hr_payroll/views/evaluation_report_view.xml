@@ -19,6 +19,12 @@
                      <field name="create_date"/>
                     <field name="department_id"/>
 
+                   <field name="state" widget="badge"
+                           decoration-info="state == 'draft'"
+                           decoration-warning="state == 'in_progress'"
+                           decoration-success="state == 'done'"
+                           decoration-muted="state == 'cancel'"/>
+
                 </tree>
             </field>
         </record>
@@ -29,48 +35,66 @@
             <field name="arch" type="xml">
                 <form string="Báo cáo tổng hợp">
                     <header>
-                        <button name="action_generate_kpis"
-                                string="Tạo phiếu"
+                        <button name="action_open_generate_wizard"
+                                string="Thêm nhân viên"
+                                type="object"
+                                class="btn-secondary"
+                                invisible="state != 'draft'"/>
+
+                        <button name="action_start_evaluation"
+                                string="Bắt đầu đánh giá"
                                 type="object"
                                 class="btn-primary"
-                                confirm="Hệ thống sẽ tạo phiếu cho tất cả nhân viên trong phòng ban này. Bạn có chắc chắn không?"/>
+                                invisible="state != 'draft'"/>
+
+                        <button name="action_done_evaluation"
+                                string="Hoàn thành đợt"
+                                type="object"
+                                class="btn-success"
+                                invisible="state != 'in_progress'"/>
+
+                        <button name="action_cancel" string="Hủy" type="object" invisible="state == 'cancel'"/>
+
+<!--                        <button name="action_reset_draft" string="Sửa" type="object" invisible="state in ['done','draft']"/>-->
+
+                        <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
                     </header>
                     <sheet>
                         <div class="oe_title">
                             <label for="name" class="oe_edit_only"/>
-                            <h1><field name="name" placeholder="Ví dụ: Đánh giá KPI Quý 1/2025 - Phòng KD"/></h1>
+                            <h1><field name="name" placeholder="Ví dụ: Đánh giá KPI Quý 1/2025" readonly="state != 'draft'"/></h1>
                         </div>
                         <group>
                             <group>
-                                <field name="year" string="Năm" width="150px"/>
-                                <field name="quarter" string="Quý"/>
-
+                                <field name="year" readonly="state != 'draft'"/>
+                                <field name="quarter" readonly="state != 'draft'"/>
                             </group>
                             <group>
-                                <field name="create_date"/>
-                                <field name="department_id"/>
+                                <field name="create_date" readonly="1"/>
+                                <field name="department_id" readonly="state != 'draft'"/>
                             </group>
                         </group>
 
                         <notebook>
-                            <page string="Danh sách phiếu đánh giá">
-                                <field name="evaluate_kpi">
-                                    <tree string="Chi tiết" editable="bottom">
-                                        <field name="name" string="Mã phiếu" readonly="1"/>
-                                        <field name="employee_id" readonly="1"/>
-                                        <field name="job_id" optional="hide"/>
-                                        <field name="total_score" string="Điểm" readonly="1" />
-                                        <field name="final_result" widget="badge" readonly="1" class="text-start"/>
-                                        <field name="state" widget="badge"
-                                               decoration-info="state == 'draft'"
-                                               decoration-success="state == 'done'"
-                                               readonly="1" class="text-start"/>
+                            <page string="Danh sách nhân viên (Dự kiến)" invisible="state != 'draft'">
+                                <field name="report_line_ids">
+                                    <tree editable="bottom">
+                                        <field name="employee_id"/>
+                                        <field name="job_id"/>
+                                        <field name="department_id"/>
+                                    </tree>
+                                </field>
+                            </page>
 
-                                        <button name="action_open_kpi_detail"
-                                                type="object"
-                                                icon="fa-external-link"
-                                                string="Xem chi tiết"
-                                                class="btn-primary"/>
+                            <page string="Kết quả đánh giá" invisible="state == 'draft'">
+                                <field name="evaluate_kpi" readonly="1">
+                                    <tree string="Chi tiết" decoration-success="state == 'done'" decoration-info="state == 'draft'">
+                                        <field name="name"/>
+                                        <field name="employee_id"/>
+                                        <field name="total_score"/>
+                                        <field name="final_result" widget="badge"/>
+                                        <field name="state" widget="badge"/>
+                                        <button name="action_open_kpi_detail" type="object" icon="fa-external-link" string="Xem"/>
                                     </tree>
                                 </field>
                             </page>

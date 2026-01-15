@@ -108,6 +108,13 @@ class HrLeave(models.Model):
     report_title = fields.Char(string='Tiêu đề')
     employee_code = fields.Char(related='employee_id.employee_code', string='Mã NV', store=True)
 
+    is_imported = fields.Boolean(
+        string="Tạo tự động (Import)",
+        default=False,
+        readonly=True,
+        help="Đánh dấu đơn này được tạo tự động từ file Excel chấm công"
+    )
+
     manager_id = fields.Many2one(
         'hr.employee',
         string='Người phê duyệt',
@@ -135,40 +142,34 @@ class HrLeave(models.Model):
     def _compute_can_approve_by_unit_manager(self):
         current_user = self.env.user
         current_employee = current_user.employee_id
+
+        # Kiểm tra nhóm quyền
         is_unit_manager = current_user.has_group('hr_attendance_tedi.group_time_off_unit_manager')
+        # Kiểm tra quyền Admin/HR Manager (để Admin luôn duyệt được)
+        is_hr_manager = current_user.has_group('hr_holidays.group_hr_holidays_manager') or current_user._is_superuser()
 
         for rec in self:
             rec.can_approve_by_unit_manager = False
 
-            # --- DEBUG LOG START ---
-            print("\n========== DEBUG UNIT MANAGER CHECK ==========")
-            print(f"1. Current User: {current_user.name} (ID: {current_user.id})")
-            print(f"2. Has Group Unit Manager?: {is_unit_manager}")
-            print(f"3. Linked Employee: {current_employee.name if current_employee else 'NONE (Lỗi tại đây)'}")
-
-            manager_dept = current_employee.department_id
-            employee_dept = rec.employee_id.department_id
-
-            print(
-                f"4. Manager Dept: {manager_dept.name if manager_dept else 'NONE'} (ID: {manager_dept.id if manager_dept else 0})")
-            print(
-                f"5. Staff Dept: {employee_dept.name if employee_dept else 'NONE'} (ID: {employee_dept.id if employee_dept else 0})")
-
-            if not is_unit_manager:
-                print("=> KẾT QUẢ: FALSE (Do thiếu quyền Group)")
-                continue
-
-            if not current_employee:
-                print("=> KẾT QUẢ: FALSE (Do User chưa link Employee)")
-                continue
-
-            # Logic so sánh
-            if manager_dept == employee_dept:
-                print("=> KẾT QUẢ: TRUE (Cùng phòng ban)")
+            # 1. Nếu là HR Manager hoặc SuperUser -> Luôn có quyền (Bypass check phòng ban)
+            if is_hr_manager:
                 rec.can_approve_by_unit_manager = True
-            else:
-                print("=> KẾT QUẢ: FALSE (Khác phòng ban)")
-            print("==============================================\n")
+                continue
+
+            # 2. Nếu không phải Manager -> Bỏ qua
+            if not is_unit_manager:
+                continue
+
+            # 3. Kiểm tra phòng ban
+            if current_employee and rec.employee_id:
+                manager_dept = current_employee.department_id
+                employee_dept = rec.employee_id.department_id
+
+                # Logic so sánh:
+                # - Cùng phòng ban
+                # - HOẶC: Manager ở phòng ban Cha của nhân viên (Duyệt cho cấp dưới)
+                if manager_dept == employee_dept or (employee_dept and employee_dept.parent_id == manager_dept):
+                    rec.can_approve_by_unit_manager = True
     # =========================================================================
     # 5. LOGIC XỬ LÝ & FIX LỖI CREATE/WRITE
     # =========================================================================

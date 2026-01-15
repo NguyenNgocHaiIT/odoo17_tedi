@@ -31,6 +31,7 @@
         'views/hr_employee_views.xml',
         'views/hr_payroll_report.xml',
         'wizard/hr_payroll_contribution_register_report_views.xml',
+        'wizard/evaluation_generate_kpi_wizard_view.xml',
         'views/res_config_settings_views.xml',
         'views/report_contribution_register_templates.xml',
         'views/report_payslip_templates.xml',
