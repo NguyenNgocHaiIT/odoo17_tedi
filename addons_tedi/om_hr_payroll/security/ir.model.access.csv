@@ -26,3 +26,6 @@ access_evaluation_kpi,evaluation.kpi,model_evaluation_kpi,,1,1,1,1
 access_evaluation_kpi_line,evaluation.kpi.line,model_evaluation_kpi_line,,1,1,1,1
 access_evaluation_kpi_classification,access_evaluation_kpi_classification,model_evaluation_kpi_classification,,1,1,1,1
 access_evaluation_report,access_evaluation_report,model_evaluation_report,,1,1,1,1
+access_evaluation_report_line,access_evaluation_report_line,model_evaluation_report_line,,1,1,1,1
+access_evaluation_kpi_generate_wizard,access_evaluation_kpi_generate_wizard,model_evaluation_kpi_generate_wizard,,1,1,1,1
+access_evaluation_kpi_generate_line,access_evaluation_kpi_generate_line,model_evaluation_kpi_generate_line,,1,1,1,1
