@@ -881,4 +881,14 @@ body.o_web_client {
         overflow: visible !important;
     }
 
+
+    .excel_style_list_view .o_list_table th[style*="%"],
+    .excel_style_list_view .o_list_table td[style*="%"],
+    .excel_style_list_view .o_list_table col[style*="%"],
+    body.o_web_client .excel_style_list_view .o_list_table th[style*="%"],
+    body.o_web_client .excel_style_list_view .o_list_table td[style*="%"],
+    body.o_web_client .excel_style_list_view .o_list_table col[style*="%"] {
+        width: 150px !important;
+        min-width: 80px !important;
+    }
 }
