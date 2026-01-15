@@ -759,6 +759,7 @@ class OfficeDocument(models.Model):
         compute='_compute_is_truong_don_vi',
         store=False
     )
+    don_vi_ban_hanh_tedi = fields.Char(string="Đơn vị ban hành")
 
     def _compute_is_truong_don_vi(self):
         """Tính toán xem người dùng hiện tại có phải là trưởng đơn vị duyệt không"""
