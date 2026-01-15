@@ -2,4 +2,5 @@
 
 from . import hr_payroll_payslips_by_employees
 from . import hr_payroll_contribution_register_report
+from . import evaluation_generate_kpi_wizard
 from . import hr_payroll_quarter_settlement_by_employees

@@ -158,5 +158,20 @@
         <field name="perm_unlink" eval="1"/>
     </record>
 
+
+    <record id="rule_evaluation_report_dept_manager" model="ir.rule">
+        <field name="name">Evaluation Report: Department Manager (Own Dept)</field>
+        <field name="model_id" ref="model_evaluation_report"/>
+        <field name="domain_force">[('department_id', '=', user.employee_id.department_id.id)]</field>
+        <field name="groups" eval="[(4, ref('om_hr_payroll.group_kpi_dept_manager_new'))]"/>
+    </record>
+
+        <record id="rule_evaluation_report_all" model="ir.rule">
+            <field name="name">Evaluation Report: Director/Manager (All)</field>
+            <field name="model_id" ref="model_evaluation_report"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('om_hr_payroll.group_hr_payroll_manager')), (4, ref('base.group_system'))]"/>
+        </record>
+
     </data>
 </odoo>

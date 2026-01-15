@@ -64,7 +64,8 @@ class EvaluationReport(models.Model):
         # Lấy phòng ban của nhân viên gắn với user hiện tại
         default=lambda self: self.env.user.employee_id.department_id
     )
-    evaluate_kpi = fields.One2many('evaluation.kpi', 'evaluate_kpi_id', string="Danh sách phiếu đánh giá")
+    evaluate_kpi = fields.One2many('evaluation.kpi', 'evaluate_kpi_id', string="Danh sách phiếu đánh giá",
+                                   readonly=True)
 
     # 1. Trường Tháng đánh giá (Dùng để tính toán)
     quarter = fields.Selection([
@@ -84,6 +85,21 @@ class EvaluationReport(models.Model):
 
     period = fields.Char(string="Chu kỳ", compute="_compute_period", store=True)
 
+    state = fields.Selection([
+        ('draft', 'Nháp'),
+        ('in_progress', 'Đang đánh giá'),
+        ('done', 'Hoàn thành'),
+        ('cancel', 'Đã hủy')
+    ], string="Trạng thái", default='draft', required=True, tracking=True)
+
+    # --- 2. QUẢN LÝ DANH SÁCH ---
+    # Danh sách dự kiến (Hiện khi Nháp)
+    report_line_ids = fields.One2many('evaluation.report.line', 'report_id', string="Danh sách nhân viên dự kiến")
+
+    # Danh sách chính thức (Hiện khi Đang đánh giá / Hoàn thành)
+    # Lưu ý: readonly=True để không add trực tiếp ở đây mà phải qua quy trình
+
+
     @api.depends('quarter', 'year')
     def _compute_period(self):
         for rec in self:
@@ -95,7 +111,72 @@ class EvaluationReport(models.Model):
     # 2. Trường Chu kỳ (Tự động tính nhưng cho phép sửa)
     # period = fields.Char(string="Chu kỳ", required=True)
 
+    def action_open_generate_wizard(self):
+        self.ensure_one()
+        if not self.department_id:
+            raise UserError(_("Vui lòng chọn phòng ban trước khi tạo phiếu!"))
 
+        return {
+            'name': 'Tạo phiếu đánh giá KPI',
+            'type': 'ir.actions.act_window',
+            'res_model': 'evaluation.kpi.generate.wizard',
+            'view_mode': 'form',
+            'target': 'new',  # Mở dạng popup (modal)
+            'context': {
+                'default_report_id': self.id,
+                'default_department_id': self.department_id.id
+            }
+        }
+
+    def action_start_evaluation(self):
+        """Chuyển sang trạng thái Đang đánh giá và sinh phiếu KPI"""
+        self.ensure_one()
+        if not self.report_line_ids:
+            raise UserError(_("Vui lòng chọn danh sách nhân viên trước khi bắt đầu!"))
+
+        KPIModel = self.env['evaluation.kpi']
+
+        for line in self.report_line_ids:
+            # Kiểm tra xem phiếu đã tồn tại chưa để tránh trùng lặp
+            existing = KPIModel.search([
+                ('evaluate_kpi_id', '=', self.id),
+                ('employee_id', '=', line.employee_id.id)
+            ], limit=1)
+
+            if not existing:
+                # Tạo phiếu KPI thật
+                new_kpi = KPIModel.create({
+                    'name': 'New',
+                    'evaluate_kpi_id': self.id,
+                    'employee_id': line.employee_id.id,
+                    'quarter': self.quarter,
+                    'year': self.year,
+                    'state': 'draft',  # Phiếu KPI con bắt đầu ở nháp
+                })
+                # Trigger lấy tiêu chí
+                new_kpi._onchange_employee_id()
+
+        self.write({'state': 'in_progress'})
+
+    def action_done_evaluation(self):
+        """Kết thúc đợt đánh giá"""
+        self.ensure_one()
+        # Có thể thêm logic kiểm tra xem tất cả KPI con đã xong chưa
+        # un-comment nếu muốn bắt buộc xong hết mới được close
+        # if any(kpi.state != 'done' for kpi in self.evaluate_kpi):
+        #     raise UserError(_("Tất cả phiếu đánh giá phải hoàn thành trước khi đóng báo cáo!"))
+
+        self.write({'state': 'done'})
+
+    def action_cancel(self):
+        self.write({'state': 'cancel'})
+
+    def action_reset_draft(self):
+        """Quay về nháp - Cẩn thận: Có thể cần xóa KPI cũ hoặc giữ lại tùy nghiệp vụ"""
+        self.ensure_one()
+        if self.evaluate_kpi:
+            raise UserError(_("Đã có phiếu đánh giá được tạo. Không thể quay về nháp. Hãy Hủy thay thế."))
+        self.write({'state': 'draft'})
 
     def action_generate_kpis(self):
         """
@@ -151,6 +232,17 @@ class EvaluationReport(models.Model):
             }
         }
 
+class EvaluationReportLine(models.Model):
+    _name = 'evaluation.report.line'
+    _description = 'Chi tiết dòng báo cáo (Dự kiến)'
+    _rec_name = 'employee_id'
+
+    report_id = fields.Many2one('evaluation.report', string="Báo cáo", ondelete='cascade')
+    employee_id = fields.Many2one('hr.employee', string="Nhân viên", required=True)
+    job_id = fields.Many2one('hr.job', related='employee_id.job_id', string="Chức danh", readonly=True)
+    department_id = fields.Many2one('hr.department', related='employee_id.department_id', string="Phòng ban", readonly=True)
+
+
 # --- 2. MODEL PHIẾU ĐÁNH GIÁ (MAIN) ---
 class EvaluationKPI(models.Model):
     _name = 'evaluation.kpi'
@@ -170,6 +262,21 @@ class EvaluationKPI(models.Model):
                                     readonly=True)
 
     evaluate_kpi_id = fields.Many2one('evaluation.report', string="Thuộc báo cáo")
+
+    report_state = fields.Selection(related='evaluate_kpi_id.state', string="Trạng thái báo cáo", store=False)
+
+    @api.constrains('self_score', 'manager_score', 'line_ids')
+    def _check_report_state_on_write(self):
+        for rec in self:
+            # Nếu có báo cáo cha, và báo cáo cha KHÔNG PHẢI là in_progress
+            # Thì không cho sửa đổi dữ liệu quan trọng
+            if rec.evaluate_kpi_id and rec.evaluate_kpi_id.state != 'in_progress':
+                # Bỏ qua nếu là admin hoặc logic hệ thống (tùy nhu cầu)
+                # Ở đây chặn chung:
+                pass
+                # Lưu ý: Khi code hàm action_start_evaluation gọi create(), state report vẫn đang là draft
+                # nên cần cẩn thận. Tốt nhất dùng readonly ở XML View là đủ cho UX.
+                # Nếu muốn chặn chặt chẽ (Server side), cần logic phức tạp hơn chút để bypass lúc tạo.
 
     # Giả sử wage_level lấy từ job_title hoặc contract (tùy thực tế database của bạn)
     wage_level = fields.Char(string="Nhóm, bậc lương", compute="_compute_wage_level", store=True)
@@ -291,48 +398,48 @@ class EvaluationKPI(models.Model):
         current_user = self.env.user
 
         # --- LOG 1: Kiểm tra User hiện tại ---
-        _logger.info("=" * 30)
-        _logger.info(
-            f"DEBUG KPI: Bắt đầu tính quyền Trưởng Đơn Vị cho User: {current_user.name} (ID: {current_user.id})")
+        # _logger.info("=" * 30)
+        # _logger.info(
+        #     f"DEBUG KPI: Bắt đầu tính quyền Trưởng Đơn Vị cho User: {current_user.name} (ID: {current_user.id})")
 
         # 1. Kiểm tra nhóm quyền
         is_in_group = current_user.has_group('om_hr_payroll.group_kpi_dept_manager_new')
-        _logger.info(f"DEBUG KPI: User có nhóm 'Trưởng đơn vị' (group_kpi_dept_manager_new)? -> {is_in_group}")
+        # _logger.info(f"DEBUG KPI: User có nhóm 'Trưởng đơn vị' (group_kpi_dept_manager_new)? -> {is_in_group}")
 
         # 2. Kiểm tra phòng ban của User
         current_user_dept = current_user.employee_id.department_id
-        _logger.info(f"DEBUG KPI: Phòng ban của User: {current_user_dept.name if current_user_dept else 'Không có'}")
+        # _logger.info(f"DEBUG KPI: Phòng ban của User: {current_user_dept.name if current_user_dept else 'Không có'}")
 
         is_admin = current_user.has_group('base.group_system')
-        _logger.info(f"DEBUG KPI: User là Admin? -> {is_admin}")
+        # _logger.info(f"DEBUG KPI: User là Admin? -> {is_admin}")
 
         for rec in self:
-            _logger.info(f"--- Đang check Phiếu: {rec.name} (ID: {rec.id}) ---")
+            # _logger.info(f"--- Đang check Phiếu: {rec.name} (ID: {rec.id}) ---")
 
             # Admin luôn đúng
             if is_admin:
-                _logger.info("DEBUG KPI: -> TRUE (Do là Admin)")
+                # _logger.info("DEBUG KPI: -> TRUE (Do là Admin)")
                 rec.is_department_manager = True
                 continue
 
             # Kiểm tra phòng ban phiếu
             rec_dept = rec.department_id
-            _logger.info(f"DEBUG KPI: Phòng ban của Phiếu: {rec_dept.name if rec_dept else 'Không có'}")
+            # _logger.info(f"DEBUG KPI: Phòng ban của Phiếu: {rec_dept.name if rec_dept else 'Không có'}")
 
             # LOGIC SO SÁNH
             if is_in_group and current_user_dept and rec_dept:
                 if current_user_dept.id == rec_dept.id:
-                    _logger.info("DEBUG KPI: -> TRUE (Cùng phòng ban + Có quyền)")
+                    # _logger.info("DEBUG KPI: -> TRUE (Cùng phòng ban + Có quyền)")
                     rec.is_department_manager = True
                 else:
-                    _logger.info(
-                        f"DEBUG KPI: -> FALSE (Khác phòng ban: User Dept {current_user_dept.id} != KPI Dept {rec_dept.id})")
+                    # _logger.info(
+                    #     f"DEBUG KPI: -> FALSE (Khác phòng ban: User Dept {current_user_dept.id} != KPI Dept {rec_dept.id})")
                     rec.is_department_manager = False
             else:
-                _logger.info("DEBUG KPI: -> FALSE (Thiếu điều kiện: Không có nhóm, hoặc User/Phiếu không có phòng ban)")
+                # _logger.info("DEBUG KPI: -> FALSE (Thiếu điều kiện: Không có nhóm, hoặc User/Phiếu không có phòng ban)")
                 rec.is_department_manager = False
 
-            _logger.info("=" * 30)
+            # _logger.info("=" * 30)
 
     @api.depends('employee_id')
     def _compute_is_direct_manager(self):
@@ -428,8 +535,37 @@ class EvaluationKPI(models.Model):
     @api.model
     def create(self, vals):
         if vals.get('name', 'New') == 'New':
-            vals['name'] = self.env['ir.sequence'].next_by_code('evaluation.kpi') or 'New'
-        return super(EvaluationKPI, self).create(vals)
+            # 1. Lấy thông tin sequence (chỉ lấy số, ví dụ: 00001)
+            seq_number = self.env['ir.sequence'].next_by_code('evaluation.kpi') or '00000'
+
+            # 2. Xử lý Tên nhân viên (Viết hoa, bỏ khoảng trắng)
+            # Ví dụ: "Nguyễn Văn A" -> "NGUYENVANA"
+            emp_code = "UNK"
+            if vals.get('employee_id'):
+                employee = self.env['hr.employee'].browse(vals.get('employee_id'))
+                if employee.name:
+                    # Bỏ khoảng trắng thừa và nối lại
+                    clean_name = "".join(employee.name.split())
+                    emp_code = clean_name.upper()
+
+            # 3. Lấy Năm và Quý
+            # Nếu trong vals không có (do default), ta lấy thời gian hiện tại làm fallback
+            current_year = vals.get('year') or fields.Date.today().year
+            current_quarter = vals.get('quarter') or self._get_default_quarter()
+
+            # 4. Ghép chuỗi: TEN/NAM/QUY/SO
+            # Kết quả: NGUYENVANA/2024/Q1/00001
+            vals['name'] = f"{emp_code}/{current_year}/Q{current_quarter}/{seq_number}"
+
+        res = super(EvaluationKPI, self).create(vals)
+
+        # Trigger tạo các dòng chi tiết KPI nếu chưa có (logic cũ của bạn)
+        # Lưu ý: Logic _onchange_employee_id thường không tự chạy khi gọi create từ code
+        # nên ta cần gọi thủ công hoặc đảm bảo vals['line_ids'] đã có dữ liệu.
+        if not res.line_ids:
+            res._onchange_employee_id()
+
+        return res
 
     def _finish_and_display_result(self):
         """
@@ -576,6 +712,8 @@ class EvaluationKPILine(models.Model):
     _description = 'Chi tiết phiếu KPI'
 
     kpi_id = fields.Many2one('evaluation.kpi', string="Phiếu KPI", ondelete='cascade')
+
+    report_state = fields.Selection(related='kpi_id.evaluate_kpi_id.state', string="Trạng thái báo cáo", store=False)
 
     display_type = fields.Selection([('line_section', "Section"), ('line_note', "Note")], default=False)
     sequence = fields.Integer(string="Sequence", default=10)
