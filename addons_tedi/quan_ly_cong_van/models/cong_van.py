@@ -759,6 +759,7 @@ class OfficeDocument(models.Model):
         compute='_compute_is_truong_don_vi',
         store=False
     )
+    don_vi_ban_hanh_tedi = fields.Char(string="Đơn vị ban hành")
 
     def _compute_is_truong_don_vi(self):
         """Tính toán xem người dùng hiện tại có phải là trưởng đơn vị duyệt không"""
@@ -1006,7 +1007,7 @@ class OfficeDocument(models.Model):
         self._send_approval_notification_to_van_thu()
         return True
 
-    def _send_approval_notification_to_van_thu(self, old_status_name):
+    def _send_approval_notification_to_van_thu(self):
         """Gửi email thông báo đơn giản cho văn thư khi văn bản đã được duyệt"""
         self.ensure_one()
 

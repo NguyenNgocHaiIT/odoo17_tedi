@@ -736,17 +736,17 @@ body.o_web_client {
 
 
     /* ẨN DÒNG TRỐNG - PHIÊN BẢN MẠNH NHẤT */
-    .excel_style_list_view .o_list_table tbody tr:not(.o_data_row),
-    body.o_web_client .excel_style_list_view .o_list_table tbody tr:not(.o_data_row),
-    .excel_style_list_view .o_list_table tbody tr.o_group_header,
-    .excel_style_list_view .o_list_table tbody tr:not([class*="o_data_row"]),
-    .excel_style_list_view .o_list_table tbody tr[style*="height"],
-    .excel_style_list_view .o_list_table tbody tr:empty,
-    .excel_style_list_view .o_list_table tbody .o_data_row:last-child ~ tr,
-    body.o_web_client .excel_style_list_view .o_list_table tbody tr.o_data_row + tr:not(.o_data_row),
-    .excel_style_list_view .o_list_table tbody > *:not(.o_data_row) {
+    .excel_style_list_view .o_list_table tbody tr:not(.o_data_row):not(:has(td.o_field_x2many_list_row_add)):not(:has(.o_field_x2many_list_row_add)):not(.o_grid_add_row):not([data-id="0"]):not(.o_list_record_add),
+    body.o_web_client .excel_style_list_view .o_list_table tbody tr:not(.o_data_row):not(:has(td.o_field_x2many_list_row_add)):not(:has(.o_field_x2many_list_row_add)):not(.o_grid_add_row):not([data-id="0"]):not(.o_list_record_add),
+    .excel_style_list_view .o_list_table tbody tr.o_group_header:not(:has(td.o_field_x2many_list_row_add)):not(:has(.o_field_x2many_list_row_add)):not(.o_grid_add_row):not([data-id="0"]),
+    .excel_style_list_view .o_list_table tbody tr:not([class*="o_data_row"]):not(:has(td.o_field_x2many_list_row_add)):not(:has(.o_field_x2many_list_row_add)):not(.o_grid_add_row):not([data-id="0"]),
+    .excel_style_list_view .o_list_table tbody tr[style*="height"]:not(:has(td.o_field_x2many_list_row_add)):not(:has(.o_field_x2many_list_row_add)):not(.o_grid_add_row):not([data-id="0"]),
+    .excel_style_list_view .o_list_table tbody tr:empty:not(:has(td.o_field_x2many_list_row_add)):not(:has(.o_field_x2many_list_row_add)):not(.o_grid_add_row):not([data-id="0"]),
+    .excel_style_list_view .o_list_table tbody .o_data_row:last-child ~ tr:not(:has(td.o_field_x2many_list_row_add)):not(:has(.o_field_x2many_list_row_add)):not(.o_grid_add_row):not([data-id="0"]),
+    body.o_web_client .excel_style_list_view .o_list_table tbody tr.o_data_row + tr:not(.o_data_row):not(:has(td.o_field_x2many_list_row_add)):not(:has(.o_field_x2many_list_row_add)):not(.o_grid_add_row):not([data-id="0"]),
+    .excel_style_list_view .o_list_table tbody > *:not(.o_data_row):not(:has(td.o_field_x2many_list_row_add)):not(:has(.o_field_x2many_list_row_add)):not(.o_grid_add_row):not([data-id="0"]):not(.o_list_record_add) {
         display: none !important;
-        visibility: collapse !important; /* collapse thay vì hidden để không chiếm space */
+        visibility: collapse !important;
         height: 0 !important;
         min-height: 0 !important;
         max-height: 0 !important;
@@ -755,8 +755,8 @@ body.o_web_client {
         padding: 0 !important;
         margin: 0 !important;
         border: none !important;
-        position: absolute !important; /* Đưa ra khỏi document flow */
-        clip: rect(0, 0, 0, 0) !important; /* Ẩn hoàn toàn */
+        position: absolute !important;
+        clip: rect(0, 0, 0, 0) !important;
     }
 
     /* Bỏ border bottom của dòng data cuối */
@@ -881,4 +881,14 @@ body.o_web_client {
         overflow: visible !important;
     }
 
+
+    .excel_style_list_view .o_list_table th[style*="%"],
+    .excel_style_list_view .o_list_table td[style*="%"],
+    .excel_style_list_view .o_list_table col[style*="%"],
+    body.o_web_client .excel_style_list_view .o_list_table th[style*="%"],
+    body.o_web_client .excel_style_list_view .o_list_table td[style*="%"],
+    body.o_web_client .excel_style_list_view .o_list_table col[style*="%"] {
+        width: 150px !important;
+        min-width: 80px !important;
+    }
 }
