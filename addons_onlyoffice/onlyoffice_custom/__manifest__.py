@@ -33,6 +33,7 @@
             'onlyoffice_custom/static/src/js/xlsx_action_manager_report.esm.js',
             'onlyoffice_custom/static/src/js/document_inspection_onlyoffice.js',
             'onlyoffice_custom/static/src/js/document_search_panel.js',
+            'onlyoffice_custom/static/src/js/document_kanban_onlyoffice.js',
 
             'onlyoffice_custom/static/src/xml/document_kanban_button.xml',
             'onlyoffice_custom/static/src/xml/document_inspector_onlyoffice.xml',
