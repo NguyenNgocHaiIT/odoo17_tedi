@@ -35,7 +35,7 @@
         <menuitem action="fleet.fleet_vehicle_action"
                   name="Đội xe"
                   parent="fleet.menu_root"
-                  id="tedi_fleet_vehicle_menu"
+                  id="tedi_fleet_vehicle_menu2"
                   groups="fleet.fleet_group_user"
                   sequence="1"/>
 

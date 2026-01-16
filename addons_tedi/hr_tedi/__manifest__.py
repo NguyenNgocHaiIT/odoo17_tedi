@@ -19,6 +19,7 @@
         "views/hr_department_view.xml",
         "views/employee_position_view.xml",
         "views/res_ward_view.xml",
+        "wizard/hr_departure_wizard_view.xml",
 
         "views/hr_contract_view.xml",
 
