@@ -78,6 +78,9 @@
                                        invisible="not (document_type in ('incoming_internal','outgoing_internal','resolution','outgoing'))"
                                        readonly="not (is_van_thu or not_is_van_thu)" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
+                                <field name="don_vi_ban_hanh_tedi"
+                                       invisible="not (document_type == 'incoming' and id and not don_vi_ban_hanh_ngoai)"
+                                       readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="don_vi_ban_hanh_ngoai"
                                        invisible="not (document_type in ('incoming'))"
                                        readonly="not (is_van_thu or not_is_van_thu)" required="1"
@@ -319,9 +322,6 @@
                                        invisible="not (document_type in ('incoming_internal','outgoing_internal','resolution','outgoing'))"
                                        readonly="not (is_van_thu or not_is_van_thu)" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
-                                <field name="don_vi_ban_hanh_tedi"
-                                       invisible="not id or not (document_type in ('incoming')) or don_vi_ban_hanh_ngoai"
-                                       readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="don_vi_ban_hanh_ngoai"
                                        invisible="not (document_type in ('incoming'))"
                                        readonly="not (is_van_thu or not_is_van_thu)" required="1"
