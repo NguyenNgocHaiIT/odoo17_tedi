@@ -82,7 +82,7 @@
                                        invisible="not (document_type == 'incoming' and id and not don_vi_ban_hanh_ngoai)"
                                        readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="don_vi_ban_hanh_ngoai"
-                                       invisible="not (document_type in ('incoming'))"
+                                       invisible="not (document_type in ('incoming')) or don_vi_ban_hanh_tedi"
                                        readonly="not (is_van_thu or not_is_van_thu)" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
                                 <field name="lanh_dao_xu_ly" string="Lãnh đạo phụ trách" widget="many2many_tags"
