@@ -123,5 +123,24 @@
                 </xpath>
             </field>
         </record>
+
+        <record id="view_fleet_vehicle_kanban_inherit_tedi" model="ir.ui.view">
+            <field name="name">fleet.vehicle.kanban.inherit.tedi</field>
+            <field name="model">fleet.vehicle</field>
+            <field name="inherit_id" ref="fleet.fleet_vehicle_view_kanban"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//field[@name='driver_id']" position="after">
+                    <field name="tedi_driver_employee_id"/>
+                </xpath>
+
+                <xpath expr="//t[@t-if='record.driver_id.raw_value']" position="replace">
+                    <t t-if="record.tedi_driver_employee_id.raw_value">
+                        <field name="tedi_driver_employee_id" widget="many2one_avatar" options="{'display_avatar_name': True}"/>
+                    </t>
+                </xpath>
+
+            </field>
+        </record>
     </data>
 </odoo>

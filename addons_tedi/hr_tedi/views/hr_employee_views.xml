@@ -353,6 +353,21 @@
             </field>
         </record>
 
+        <record id="view_employee_tree_tedi_terminated" model="ir.ui.view">
+            <field name="name">hr.employee.tree.tedi.terminated</field>
+            <field name="model">hr.employee</field>
+            <field name="arch" type="xml">
+                <tree string="Danh sách nhân viên" create="0" delete="0">
+                    <field name="employee_code"/>
+                    <field name="name"/>
+                    <field name="department_id"/>
+                    <field name="job_id"/>
+                    <field name="mobile_phone"/>
+                    <field name="work_email"/>
+                </tree>
+            </field>
+        </record>
+
         <record id="hr.open_view_employee_list_my" model="ir.actions.act_window">
             <field name="name">Danh sách nhân viên</field>
             <field name="res_model">hr.employee</field>
@@ -368,7 +383,7 @@
             <field name="context">{'active_test': False}</field>
             <field name="domain">[('active', '=', False)]</field>
             <field name="view_ids" eval="[(5, 0, 0),
-                    (0, 0, {'view_mode': 'tree', 'view_id': ref('view_employee_tree_tedi')}),
+                    (0, 0, {'view_mode': 'tree', 'view_id': ref('view_employee_tree_tedi_terminated')}),
                     (0, 0, {'view_mode': 'form', 'view_id': ref('hr_employee_view_form_inherit_profile_tedi')})
                 ]"/>
         </record>
@@ -412,6 +427,8 @@
             parent="hr.menu_human_resources_configuration"
             sequence="4"
             groups="hr.group_hr_user"/>
+
+
 
     </data>
 </odoo>

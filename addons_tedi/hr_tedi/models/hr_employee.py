@@ -381,29 +381,29 @@ class HrEmployeePrivate(models.Model):
 
 
 
-class HrDepartureWizard(models.TransientModel):
-    _inherit = 'hr.departure.wizard'
-
-    archive_private_address = fields.Boolean(default=True)
-
-    def action_register_departure(self):
-        # 1. Gọi hàm gốc để xử lý các logic khác (Contract, Activities...)
-        res = super(HrDepartureWizard, self).action_register_departure()
-
-        # 2. [QUAN TRỌNG] Ép buộc Archive thủ công
-        # Vì log cho thấy hàm gốc không làm việc này, ta tự làm.
-        if self.employee_id.active:
-            _logger.info(f"DEBUG: Đang ép buộc Archive nhân viên {self.employee_id.name}...")
-            self.employee_id.write({'active': False})
-
-        # 3. Log kiểm tra lại lần cuối
-        _logger.info(f"--> KẾT QUẢ CUỐI CÙNG: Active = {self.employee_id.active}")
-
-        # 4. Reload lại giao diện để XML nhận diện active=False (ẩn nút, hiện ribbon)
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'reload',
-        }
+# class HrDepartureWizard(models.TransientModel):
+#     _inherit = 'hr.departure.wizard'
+#
+#     archive_private_address = fields.Boolean(default=True)
+#
+#     def action_register_departure(self):
+#         # 1. Gọi hàm gốc để xử lý các logic khác (Contract, Activities...)
+#         res = super(HrDepartureWizard, self).action_register_departure()
+#
+#         # 2. [QUAN TRỌNG] Ép buộc Archive thủ công
+#         # Vì log cho thấy hàm gốc không làm việc này, ta tự làm.
+#         if self.employee_id.active:
+#             _logger.info(f"DEBUG: Đang ép buộc Archive nhân viên {self.employee_id.name}...")
+#             self.employee_id.write({'active': False})
+#
+#         # 3. Log kiểm tra lại lần cuối
+#         _logger.info(f"--> KẾT QUẢ CUỐI CÙNG: Active = {self.employee_id.active}")
+#
+#         # 4. Reload lại giao diện để XML nhận diện active=False (ẩn nút, hiện ribbon)
+#         return {
+#             'type': 'ir.actions.client',
+#             'tag': 'reload',
+#         }
 
 
 
@@ -425,3 +425,43 @@ class ResCountryState(models.Model):
 
     # Tạo quan hệ ngược: Một Tỉnh có nhiều Xã
     ward_ids = fields.One2many('res.ward', 'state_id', string="Danh sách Xã/Phường")
+
+
+
+
+class ResPartner(models.Model):
+    _inherit = 'res.partner'
+
+    def init(self):
+        super(ResPartner, self).init()
+        try:
+            # Lấy sequence name chuẩn của bảng res_partner
+            self.env.cr.execute("SELECT setval('res_partner_id_seq', (SELECT MAX(id) FROM res_partner));")
+            _logger.info("Đã reset sequence res_partner_id_seq thành công.")
+        except Exception as e:
+            _logger.warning(f"Không thể reset sequence: {e}")
+
+
+class ResourceResource(models.Model):
+    _inherit = 'resource.resource'
+
+    def init(self):
+        super(ResourceResource, self).init()
+        # Thêm dòng log này để biết chắc chắn hàm đã chạy
+        _logger.info(">>>>>>>> TEDI FIX: Đang reset sequence cho resource_resource...")
+
+        sql = """
+            SELECT setval('resource_resource_id_seq', COALESCE((SELECT MAX(id) FROM resource_resource), 0) + 1);
+        """
+        self.env.cr.execute(sql)
+
+class HrEmployee(models.Model):
+    _inherit = 'hr.employee'
+
+    def init(self):
+        super(HrEmployee, self).init()
+        # Fix lỗi sequence cho bảng Nhân viên
+        sql = """
+            SELECT setval('hr_employee_id_seq', COALESCE((SELECT MAX(id) FROM hr_employee), 0) + 1);
+        """
+        self.env.cr.execute(sql)

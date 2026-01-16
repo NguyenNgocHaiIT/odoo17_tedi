@@ -1,22 +1,91 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data>
+        <record id="view_tedi_import_config_form" model="ir.ui.view">
+            <field name="name">tedi.import.config.form</field>
+            <field name="model">tedi.import.config</field>
+            <field name="arch" type="xml">
+                <form string="Cấu hình File Mẫu">
+                    <sheet>
+                        <group>
+                            <field name="name" readonly="1"/>
+                            <field name="sample_file" widget="binary" filename="sample_filename"/>
+                            <field name="sample_filename" invisible="1"/>
+                        </group>
+                        <div class="alert alert-info" role="status">
+                            Upload file Excel mẫu chuẩn tại đây. Người dùng sẽ thấy file này khi mở chức năng Import.
+                        </div>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_tedi_import_config_tree" model="ir.ui.view">
+            <field name="name">tedi.import.config.tree</field>
+            <field name="model">tedi.import.config</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name"/>
+                    <field name="sample_filename"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="action_tedi_import_config" model="ir.actions.act_window">
+            <field name="name">Cấu hình Mẫu Import</field>
+            <field name="res_model">tedi.import.config</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+              <p class="o_view_nocontent_smiling_face">
+                Tạo cấu hình file mẫu đầu tiên
+              </p>
+            </field>
+        </record>
+
+        <menuitem id="menu_tedi_import_configg"
+                  name="Cấu hình Mẫu Excel"
+                  parent="hr_attendance.menu_hr_attendance_root"
+                  action="action_tedi_import_config"
+                  sequence="100"/>
+
+
         <record id="view_tedi_attendance_import_wizard" model="ir.ui.view">
             <field name="name">tedi.attendance.import.wizard.form</field>
             <field name="model">tedi.attendance.import.wizard</field>
             <field name="arch" type="xml">
                 <form string="Import Chấm công &amp; Nghỉ phép">
-                    <div class="alert alert-info" role="alert">
-                        <strong>Hướng dẫn cấu trúc file Excel:</strong><br/>
-                        - Dòng tiêu đề ngày (1, 2, 3...) nằm ở dòng <strong>6</strong> (mặc định).<br/>
-                        - Cột <strong>B</strong> (Cột 2): Mã nhân viên.<br/>
-                        - Cột <strong>D</strong> (Cột 4): Bắt đầu dữ liệu Ngày 1.<br/>
-                        <br/>
-                        <strong>Quy tắc xử lý dữ liệu:</strong><br/>
-                        - Ký hiệu <code>X, CT, +</code> hoặc <code>Giờ (08:00)</code>: Tạo dữ liệu Chấm công.<br/>
-                        - Ký hiệu <code>P, Ô, TS...</code>: Tạo và Duyệt Đơn nghỉ phép (Tự trừ phép).<br/>
-                        <br/>
-                        <i>Lưu ý: Giờ vào/ra sẽ tự động lấy theo Hợp đồng và Lịch làm việc của nhân viên.</i>
+                   <div class="alert alert-info" role="alert" style="margin-bottom: 20px; font-size: 13px;">
+                        <strong><i class="fa fa-table"/> Cấu trúc File Excel (Bắt buộc):</strong>
+                        <ul style="padding-left: 20px; margin-bottom: 10px;">
+                            <li><strong>Dòng tiêu đề ngày:</strong> Nằm tại dòng <strong>6</strong> (chứa các số 1, 2, 3... đại diện cho ngày).</li>
+                            <li><strong>Cột Mã nhân viên:</strong> Cột <strong>B</strong> (Phải chính xác mã nhân viên trên hệ thống).</li>
+                            <li><strong>Dữ liệu chấm công:</strong> Bắt đầu từ Cột <strong>D</strong> (tương ứng Ngày 1) và tiếp tục sang phải.</li>
+                        </ul>
+
+                        <div style="border-top: 1px solid #bce8f1; margin: 10px 0; padding-top: 10px;">
+                            <strong><i class="fa fa-pencil"/> Quy cách nhập liệu:</strong>
+                            <ul style="padding-left: 20px; margin-bottom: 0;">
+                                <li>
+                                    <span class="badge badge-success" style="color: #155724; background-color: #d4edda;">Đi làm</span>
+                                    Nhập ký hiệu <code>+</code>, <code>-</code> hoặc giờ cụ thể (VD: <code>08:00</code>, <code>08:00 17:00</code>).
+                                </li>
+                                <li>
+                                    <span class="badge badge-warning" style="color: #856404; background-color: #fff3cd;">Nghỉ phép</span>
+                                    Nhập mã nghỉ (VD: <code>P</code>, <code>OM</code>, <code>RO</code>...). Hệ thống sẽ tự tạo đơn nghỉ.
+                                </li>
+                                <li>
+                                    <span class="badge badge-info" style="color: #0c5460; background-color: #d1ecf1;">Nửa ngày</span>
+                                    Thêm đuôi <code>/2</code> vào sau ký hiệu (VD: <code>P/2</code>, <code>+/2</code>).
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                                        <div class="alert alert-warning" role="status">
+                        <i class="fa fa-download"/> Chưa có file?
+                        <button name="action_download_sample"
+                                string="Nhấn vào đây để tải file mẫu"
+                                type="object"
+                                class="btn-link"
+                                style="padding: 0; vertical-align: baseline;"/>
                     </div>
 
                     <group>
@@ -24,11 +93,21 @@
                             <field name="month"/>
                             <field name="year"/>
                         </group>
-                        <group string="Cấu hình File">
-                            <field name="file" filename="filename"/>
+                        <group string="File dữ liệu">
+                            <field name="file" filename="filename" widget="binary"/>
                             <field name="filename" invisible="1"/>
-                            <field name="sheet_name" placeholder="Ví dụ: Tháng"/>
-                            <field name="header_row"/>
+
+                            <field name="sheet_ids" invisible="1" force_save="1"/>
+
+                            <field name="selected_sheet_id"
+                                   string="Chọn Sheet"
+                                   invisible="not file"
+                                   required="file"
+                                   domain="[('id', 'in', sheet_ids)]"
+                                   options="{'no_create': True, 'no_open': True, 'no_create_edit': True}"
+                                   widget="selection"/>
+
+                            <field name="header_row" invisible="1"/>
                         </group>
                     </group>
 
