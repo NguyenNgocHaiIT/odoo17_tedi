@@ -95,12 +95,12 @@
                                     <field name="stop" class="oe_inline" style="flex:1;" readonly="not is_current_user_creator or state == 'completed'" required="1"/>
                                 </div>
 
-                                <field name="name" string="Nội dung" readonly="not is_current_user_creator or state == 'completed'"/>
+                                <field name="name" string="Nội dung" readonly="not is_current_user_creator or state == 'completed'" required="1"/>
                                 <field name="room_materials" widget="many2many_tags" string="Thông tin khác" readonly="not is_current_user_creator or state == 'completed'"/>
                             </group>
 
                             <group>
-                                <field name="chu_tri" string="Người chủ trì" readonly="not is_current_user_creator or state == 'completed'"/>
+                                <field name="chu_tri" string="Người chủ trì" readonly="not is_current_user_creator or state == 'completed'" required="1"/>
                                 <field name="lanh_dao" string="Lãnh đạo" readonly="not is_current_user_creator or state == 'completed'" widget="many2many_tags"/>
                                 <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia" readonly="not is_current_user_creator or state == 'completed'"/>
                                 <field name="employee_ids" widget="many2many_tags" string="Người tham gia" readonly="not is_current_user_creator or state == 'completed'"/>

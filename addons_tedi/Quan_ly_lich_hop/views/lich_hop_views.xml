@@ -98,11 +98,11 @@
                                     <field name="stop" class="oe_inline" style="flex:1;" readonly="not is_current_user_creator or (state not in ('draft','pending'))" required="1"/>
                                 </div>
 
-                                <field name="name" string="Nội dung" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
+                                <field name="name" string="Nội dung" readonly="not is_current_user_creator or (state not in ('draft','pending'))" required="1"/>
                             </group>
 
                             <group>
-                                <field name="chu_tri" string="Người chủ trì" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
+                                <field name="chu_tri" string="Người chủ trì" readonly="not is_current_user_creator or (state not in ('draft','pending'))" required="1"/>
                                 <field name="lanh_dao" string="Lãnh đạo" widget="many2many_tags" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
                                 <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
                                 <field name="employee_ids" widget="many2many_tags"
