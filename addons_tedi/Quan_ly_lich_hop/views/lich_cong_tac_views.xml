@@ -50,15 +50,15 @@
                         <div class="oe_title">
                             <label for="name" string="Chủ đề cuộc họp"/>
                             <h1>
-                                <field name="name" readonly=" not is_current_user_creator or (state not in ('draft'))"/>
+                                <field name="name" readonly=" not is_current_user_creator or (state not in ('draft'))" required="1"/>
                             </h1>
                         </div>
                         <group>
                             <label for="start" string="Thời gian" />
                             <div style="display: flex;" >
-                                <field name="start" class="oe_inline" readonly=" not is_current_user_creator or (state not in ('draft'))"/>
+                                <field name="start" class="oe_inline" readonly=" not is_current_user_creator or (state not in ('draft'))" required="1"/>
                                 <span class="o_form_label" style="padding: 0 4px;">→</span>
-                                <field name="stop" class="oe_inline" readonly=" not is_current_user_creator or (state not in ('draft'))"/>
+                                <field name="stop" class="oe_inline" readonly=" not is_current_user_creator or (state not in ('draft'))" required="1"/>
                             </div>
 
                             <field name="lanh_dao" string="Lãnh đạo" readonly=" not is_current_user_creator or (state not in ('draft'))"/>
