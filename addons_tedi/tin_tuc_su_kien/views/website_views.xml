@@ -41,10 +41,10 @@
                         <!-- Cột bên trái -->
                         <group>
                             <!-- Tiêu đề tin tức -->
-                            <field name="name" string="Tiêu đề" readonly="state != 'draft'"/>
-                            <field name="post_type" string="Loại tin tức" readonly="state != 'draft'"/>
-                            <field name="create_date" string="Ngày ban hành" readonly="state != 'draft'"/>
-                            <field name="content" string="Nội dung" readonly="state != 'draft'"/>
+                            <field name="name" string="Tiêu đề" readonly="state != 'draft'" required="1"/>
+                            <field name="post_type" string="Loại tin tức" readonly="state != 'draft'" required="1"/>
+                            <field name="create_date" string="Ngày ban hành" readonly="state != 'draft'" required="1"/>
+                            <field name="content" string="Nội dung" readonly="state != 'draft'" required="1"/>
 
                         </group>
 
