@@ -6,6 +6,7 @@
 
         <menuitem id="menu_custom_report_root"
                   name="Template Report"
+                  parent="base.menu_administration"
                   sequence="10">
             <menuitem id="menu_custom_docx_report"
                       name="Docx Report"
