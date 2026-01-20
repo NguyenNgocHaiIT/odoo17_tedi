@@ -41,12 +41,6 @@
             </field>
         </record>
 
-        <menuitem id="menu_tedi_import_configg"
-                  name="Cấu hình Mẫu Excel"
-                  parent="hr_attendance.menu_hr_attendance_root"
-                  action="action_tedi_import_config"
-                  sequence="100"/>
-
 
         <record id="view_tedi_attendance_import_wizard" model="ir.ui.view">
             <field name="name">tedi.attendance.import.wizard.form</field>
@@ -56,7 +50,7 @@
                    <div class="alert alert-info" role="alert" style="margin-bottom: 20px; font-size: 13px;">
                         <strong><i class="fa fa-table"/> Cấu trúc File Excel (Bắt buộc):</strong>
                         <ul style="padding-left: 20px; margin-bottom: 10px;">
-                            <li><strong>Dòng tiêu đề ngày:</strong> Nằm tại dòng <strong>6</strong> (chứa các số 1, 2, 3... đại diện cho ngày).</li>
+                            <li><strong>Dòng dữ liệu nhân viên đầu tiên:</strong> Mặc định là dòng <strong>10</strong>.</li>
                             <li><strong>Cột Mã nhân viên:</strong> Cột <strong>B</strong> (Phải chính xác mã nhân viên trên hệ thống).</li>
                             <li><strong>Dữ liệu chấm công:</strong> Bắt đầu từ Cột <strong>D</strong> (tương ứng Ngày 1) và tiếp tục sang phải.</li>
                         </ul>
@@ -79,7 +73,7 @@
                             </ul>
                         </div>
                     </div>
-                                        <div class="alert alert-warning" role="status">
+                    <div class="alert alert-warning" role="status">
                         <i class="fa fa-download"/> Chưa có file?
                         <button name="action_download_sample"
                                 string="Nhấn vào đây để tải file mẫu"
@@ -107,7 +101,7 @@
                                    options="{'no_create': True, 'no_open': True, 'no_create_edit': True}"
                                    widget="selection"/>
 
-                            <field name="header_row" invisible="1"/>
+                            <field name="first_data_row"/>
                         </group>
                     </group>
 

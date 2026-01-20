@@ -9,6 +9,7 @@
     'data': [
         'security/ir_rule.xml',
         "security/ir.model.access.csv",
+        # "data/data_hr_leave_type.xml",
 
         "wizard/attendance_import_views.xml",
         "wizard/generate_work_entry_wizard_views.xml",
@@ -17,6 +18,7 @@
         'views/attendance_report_views.xml',
         'views/hr_leave_type_views.xml',
         'views/work_entry_views.xml',
+        'views/work_entry_type_views.xml',
         # 'data/data_work_entry_type.xml',
 
         "views/menu.xml",

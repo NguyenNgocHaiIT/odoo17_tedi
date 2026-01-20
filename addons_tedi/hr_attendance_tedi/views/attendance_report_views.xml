@@ -209,11 +209,6 @@
              </field>
          </record>
 
-         <menuitem id="menu_time_off_my_department"
-                   name="Đơn thuộc bộ phận"
-                   parent="menu_tedi_request_root"
-                   action="action_time_off_my_department"
-                   groups="hr_attendance_tedi.group_time_off_unit_manager"
-                   sequence="15"/>
+
     </data>
 </odoo>

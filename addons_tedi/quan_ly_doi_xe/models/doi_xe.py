@@ -222,4 +222,19 @@ class FleetVehicle(models.Model):
         action['context'] = context
         action['domain'] = [('vehicle_id', '=', self.id)]
 
-        return action
+        return
+
+    @api.onchange('model_id')
+    def _onchange_model_id(self):
+        """
+        Khi thay đổi loại xe (Model), tự động cập nhật lại hình ảnh
+        theo thứ tự ưu tiên: Ảnh của Model -> Ảnh của Hãng (Brand).
+        """
+        if self.model_id:
+            # Lấy ảnh từ Model, nếu không có thì lấy từ Brand
+            new_image = self.model_id.image_128 or self.model_id.brand_id.image_128
+            self.image_128 = new_image
+        else:
+            # Nếu xóa model, có thể chọn giữ nguyên ảnh cũ hoặc xóa ảnh
+            # Ở đây ta giữ nguyên hoặc xóa tùy nhu cầu, thường là không làm gì
+            pass

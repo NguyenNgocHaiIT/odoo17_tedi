@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="hr_work_entry.work_entry_type_attendance" model="hr.work.entry.type">
+            <field name="name">Chấm công</field>
+        </record>
+
+        <record id="work_entry_type_leave100" model="hr.work.entry.type">
+            <field name="name">Ngày nghỉ chung</field>
+            <field name="color">3</field>
+            <field name="code">LEAVE100</field>
+            <field name="is_leave">True</field>
+            <field name="sequence">2</field>
+        </record>
+
+        <record id="work_entry_type_leave90" model="hr.work.entry.type">
+            <field name="name">Nghỉ không lương</field>
+            <field name="code">LEAVE90</field>
+            <field name="color">5</field>
+            <field name="is_leave">True</field>
+            <field name="sequence">4</field>
+        </record>
+
+        <record id="work_entry_type_leave110" model="hr.work.entry.type">
+            <field name="name">Nghỉ BHXH</field>
+            <field name="code">LEAVE110</field>
+            <field name="color">5</field>
+            <field name="is_leave">True</field>
+            <field name="sequence">5</field>
+        </record>
+
+        <record id="work_entry_type_leave120" model="hr.work.entry.type">
+            <field name="name">Nghỉ chế độ</field>
+            <field name="code">LEAVE120</field>
+            <field name="color">5</field>
+            <field name="is_leave">True</field>
+            <field name="sequence">6</field>
+        </record>
+
+
+        <record id="leave_type_p" model="hr.leave.type">
+            <field name="name">Nghỉ phép</field>
+            <field name="code">P</field>
+            <field name="sequence">1</field>
+            <field name="work_entry_type_id" ref="work_entry_type_leave120"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">yes</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_o" model="hr.leave.type">
+            <field name="name">Nghỉ ốm</field>
+            <field name="code">O</field>
+            <field name="sequence">2</field>
+            <field name="work_entry_type_id" ref="work_entry_type_leave110"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_vro" model="hr.leave.type">
+            <field name="name">Nghỉ không lương</field>
+            <field name="code">Vro</field>
+            <field name="sequence">3</field>
+            <field name="work_entry_type_id" ref="work_entry_type_leave90"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_co" model="hr.leave.type">
+            <field name="name">Nghỉ Con ốm</field>
+            <field name="code">CO</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="work_entry_type_leave110"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_nts" model="hr.leave.type">
+            <field name="name">Nghỉ thai sản</field>
+            <field name="code">TS</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="work_entry_type_leave110"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_m" model="hr.leave.type">
+            <field name="name">Nghỉ mát</field>
+            <field name="code">M</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="work_entry_type_leave120"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_vs" model="hr.leave.type">
+            <field name="name">Nghỉ vợ sinh</field>
+            <field name="code">VS</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="work_entry_type_leave110"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_bd1" model="hr.leave.type">
+            <field name="name">Bồi dưỡng đào tạo D1</field>
+            <field name="code">BD1</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="hr_work_entry.work_entry_type_attendance"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_bd2" model="hr.leave.type">
+            <field name="name">Bồi dưỡng đào tạo D2</field>
+            <field name="code">BD2</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="work_entry_type_leave120"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_bd3" model="hr.leave.type">
+            <field name="name">Bồi dưỡng đào tạo D3</field>
+            <field name="code">BD3</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="work_entry_type_leave90"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_tq" model="hr.leave.type">
+            <field name="name">Tham quan, học tập</field>
+            <field name="code">TQ</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="hr_work_entry.work_entry_type_attendance"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_ds" model="hr.leave.type">
+            <field name="name">Nghỉ dưỡng sức</field>
+            <field name="code">DS</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="work_entry_type_leave110"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_p2" model="hr.leave.type">
+            <field name="name">Nghỉ phép 0.5 ngày</field>
+            <field name="code">P/2</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="work_entry_type_leave120"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">yes</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_ct" model="hr.leave.type">
+            <field name="name">Công tác</field>
+            <field name="code">CT</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="hr_work_entry.work_entry_type_attendance"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_cvn" model="hr.leave.type">
+            <field name="name">Làm việc tại nhà</field>
+            <field name="code">CvN</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="hr_work_entry.work_entry_type_attendance"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_h" model="hr.leave.type">
+            <field name="name">Hội họp</field>
+            <field name="code">H</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="hr_work_entry.work_entry_type_attendance"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_dt" model="hr.leave.type">
+            <field name="name">Đoàn thể, văn hoá, thể thao</field>
+            <field name="code">DT</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="hr_work_entry.work_entry_type_attendance"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_cvn2" model="hr.leave.type">
+            <field name="name">Làm việc tại nhà 0.5 ngày</field>
+            <field name="code">CvN/2</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="hr_work_entry.work_entry_type_attendance"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+        <record id="leave_type_hh" model="hr.leave.type">
+            <field name="name">Nghỉ Hiếu, hỉ</field>
+            <field name="code">HH</field>
+            <field name="sequence">100</field>
+            <field name="work_entry_type_id" ref="work_entry_type_leave120"/>
+            <field name="request_unit">hour</field>
+            <field name="requires_allocation">no</field>
+            <field name="leave_validation_type">manager</field>
+        </record>
+
+    </data>
+</odoo>
