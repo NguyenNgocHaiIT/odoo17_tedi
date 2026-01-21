@@ -60,4 +60,10 @@
     <record id="contacts.menu_contacts" model="ir.ui.menu">
         <field name="web_icon">van_phong,static/description/lien-he.png</field>
     </record>
+    <record id="ks_dashboard_ninja.board_menu_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/mau-bao-cao.png</field>
+    </record>
+    <record id="documents.menu_root" model="ir.ui.menu">
+        <field name="web_icon">van_phong,static/description/tai-lieu.png</field>
+    </record>
 </odoo>
