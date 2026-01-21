@@ -11,10 +11,11 @@
             <field name="name">Quản lý tin tức</field>
             <field name="model_id" ref="model_notify_event"/>
             <field name="domain_force">
-                ['|','|',
+                ['|','|','|',
                     ('create_uid','=',user.id),
                     ('state','=','da_duyet'),
-                    ('state','=','chua_duyet')
+                    ('state','=','chua_duyet'),
+                    ('state','=','da_thong_bao'),
                 ]
             </field>
             <field name="groups" eval="[(4, ref('base.group_user'))]"/>
@@ -27,7 +28,7 @@
                 ['|','|',
                     ('create_uid','=',user.id),
                     ('state','=','da_duyet'),
-                    ('state','=','chua_duyet')
+                    ('state','=','chua_duyet'),
                 ]
             </field>
             <field name="groups" eval="[(4, ref('base.group_user'))]"/>
@@ -37,9 +38,12 @@
             <field name="name">Office Document - Nhân viên/Người dùng cơ bản</field>
             <field name="model_id" ref="model_notify_event"/>
             <field name="domain_force">
-                ['|',
+                ['|','|',
                     ('create_uid','=',user.id),
-                    ('state','=','da_duyet')
+                    ('send_all','=',True),
+                    '|',
+                        ('send_individual','in',[user.id]),
+                        ('send_department','in',[dep.id for dep in user.employee_ids.department_id])
                 ]
             </field>
             <field name="groups" eval="[(4, ref('base.group_user'))]"/>
@@ -51,7 +55,7 @@
             <field name="domain_force">
                 ['|',
                     ('create_uid','=',user.id),
-                    ('state','=','da_duyet')
+                    ('state','=','da_duyet'),
                 ]
             </field>
             <field name="groups" eval="[(4, ref('base.group_user'))]"/>
