@@ -8,6 +8,7 @@ from datetime import datetime
 import pytz
 import calendar
 
+
 class TediImportConfig(models.Model):
     """Model lưu trữ file mẫu (Singleton)"""
     _name = 'tedi.import.config'
@@ -18,7 +19,6 @@ class TediImportConfig(models.Model):
     sample_file = fields.Binary(string='File Excel Mẫu', required=True)
     sample_filename = fields.Char(string='Tên File')
 
-    # Ràng buộc chỉ cho phép tạo 1 bản ghi cấu hình duy nhất
     @api.model
     def create(self, vals):
         if self.search_count([]) >= 1:
@@ -30,7 +30,7 @@ class TediSheetSelection(models.TransientModel):
     """Model tạm để chứa danh sách sheet cho Dropdown"""
     _name = 'tedi.sheet.selection'
     _description = 'Lựa chọn Sheet Excel'
-    _rec_name = 'name'  # Quan trọng: Để dropdown hiển thị tên sheet
+    _rec_name = 'name'
 
     wizard_id = fields.Many2one('tedi.attendance.import.wizard', string='Wizard')
     name = fields.Char(string='Tên Sheet', required=True)
@@ -43,10 +43,10 @@ class TediAttendanceImportWizard(models.TransientModel):
     file = fields.Binary(string='File Excel')
     filename = fields.Char(string='Tên file')
 
-    # 1. Field chứa danh sách sheet (Sẽ ẩn trên view)
+    # 1. Field chứa danh sách sheet (Ẩn)
     sheet_ids = fields.One2many('tedi.sheet.selection', 'wizard_id', string='Danh sách Sheet')
 
-    # 2. Field Dropdown để người dùng chọn
+    # 2. Field Dropdown chọn Sheet
     selected_sheet_id = fields.Many2one('tedi.sheet.selection', string="Chọn Sheet dữ liệu",
                                         domain="[('id', 'in', sheet_ids)]")
 
@@ -57,24 +57,24 @@ class TediAttendanceImportWizard(models.TransientModel):
     ], string='Tháng', required=True, default=lambda self: str(fields.Date.today().month))
 
     year = fields.Integer(string='Năm', required=True, default=lambda self: fields.Date.today().year)
-    header_row = fields.Integer(string='Dòng tiêu đề ngày', default=6)
 
+    # --- SỬA ĐỔI: Thay header_row bằng first_data_row ---
+    first_data_row = fields.Integer(string='Dòng nhân viên đầu tiên', default=10,
+                                    help="Nhập số dòng chứa dữ liệu của nhân viên đầu tiên trong file Excel")
+
+    # --- Sample File Logic ---
     def _get_default_sample_file(self):
-        # Tìm cấu hình, lấy file binary
         config = self.env['tedi.import.config'].search([], limit=1)
         return config.sample_file if config else False
 
     def _get_default_sample_filename(self):
-        # Tìm cấu hình, lấy tên file
         config = self.env['tedi.import.config'].search([], limit=1)
         return config.sample_filename if config else "Mau_Cham_Cong.xlsx"
 
-    # --- CẬP NHẬT FIELD ---
     sample_file = fields.Binary(string='Tải File Mẫu', default=_get_default_sample_file, readonly=True)
     sample_filename = fields.Char(string='Tên File Mẫu', default=_get_default_sample_filename)
 
     def action_download_sample(self):
-        """Hàm trả về URL để trình duyệt tải file từ model Cấu hình"""
         self.ensure_one()
         config = self.env['tedi.import.config'].search([], limit=1)
 
@@ -94,28 +94,22 @@ class TediAttendanceImportWizard(models.TransientModel):
             'target': 'new',
         }
 
-    # ========================================================
-    # XỬ LÝ ĐỌC SHEET NGAY KHI UPLOAD FILE
-    # ========================================================
+    # --- Onchange đọc Sheet ---
     @api.onchange('file')
     def _onchange_file(self):
-        """Khi upload file: Tạo bản ghi thật để Dropdown nhận diện được"""
-        # 1. Reset dữ liệu cũ
         self.selected_sheet_id = False
-        self.sheet_ids = [(5, 0, 0)]  # Xóa liên kết cũ
+        self.sheet_ids = [(5, 0, 0)]
 
         if not self.file:
             return
 
         try:
-            # Decode file
             file_data = base64.b64decode(self.file)
             data_file = io.BytesIO(file_data)
             wb = openpyxl.load_workbook(data_file, read_only=True, keep_links=False, data_only=True)
             sheet_names = wb.sheetnames
             wb.close()
 
-            # 2. TẠO BẢN GHI THẬT
             new_sheet_ids = []
             SheetModel = self.env['tedi.sheet.selection']
 
@@ -123,10 +117,8 @@ class TediAttendanceImportWizard(models.TransientModel):
                 new_rec = SheetModel.create({'name': name})
                 new_sheet_ids.append(new_rec.id)
 
-            # 3. Gán danh sách ID thật vào One2many
             self.sheet_ids = [(6, 0, new_sheet_ids)]
 
-            # 4. Tự động chọn sheet đầu tiên (UX)
             if new_sheet_ids:
                 self.selected_sheet_id = new_sheet_ids[0]
 
@@ -134,7 +126,7 @@ class TediAttendanceImportWizard(models.TransientModel):
             self.sheet_ids = [(5, 0, 0)]
             self.selected_sheet_id = False
 
-    # --- HELPERS CONFIG ---
+    # --- Helpers ---
     def _get_attendance_symbols(self):
         return ['+', '-']
 
@@ -175,7 +167,6 @@ class TediAttendanceImportWizard(models.TransientModel):
                 return h_start, h_end, h_noon
         return False
 
-    # --- HELPERS TIME ---
     def _make_utc_from_float(self, date_obj, float_time, l_tz, u_tz):
         try:
             hours = int(float_time)
@@ -195,14 +186,12 @@ class TediAttendanceImportWizard(models.TransientModel):
             return False
 
     # ========================================================
-    # 3. LOGIC IMPORT CHÍNH
+    # MAIN IMPORT ACTION
     # ========================================================
     def action_import(self):
         self.ensure_one()
 
         if not self.file: raise UserError(_("Vui lòng chọn file Excel."))
-
-        # Lấy tên sheet từ Dropdown
         if not self.selected_sheet_id:
             raise UserError(_("Vui lòng chọn Sheet cần import."))
 
@@ -231,7 +220,9 @@ class TediAttendanceImportWizard(models.TransientModel):
 
         COL_EMP = 1  # Cột B
         COL_START_DAY = 3  # Cột D
-        START_ROW = self.header_row + 1
+
+        # --- SỬA ĐỔI: Dùng trực tiếp giá trị người dùng nhập ---
+        START_ROW = self.first_data_row
 
         last_day = calendar.monthrange(self.year, int(self.month))[1]
         cnt_att = 0
@@ -239,6 +230,7 @@ class TediAttendanceImportWizard(models.TransientModel):
         cnt_skipped = 0
         errors = []
 
+        # iter_rows bắt đầu từ dòng START_ROW
         for row_idx, row in enumerate(sheet.iter_rows(min_row=START_ROW, values_only=True), start=START_ROW):
             emp_code = row[COL_EMP]
 
@@ -274,10 +266,9 @@ class TediAttendanceImportWizard(models.TransientModel):
                 is_half = True if ('/2' in val or val == '-') else False
                 base_symbol = val.replace('/2', '') if '/2' in val else ('-' if val == '-' else val)
 
-                # --- TRƯỜNG HỢP 1: CHẤM CÔNG ---
+                # 1. Chấm công
                 if base_symbol in ATT_SYMBOLS or ':' in val:
                     check_in_dt = False
-
                     if ':' in val:
                         times = val.replace('\n', ' ').split()
                         valid_times = [t for t in times if ':' in t]
@@ -315,12 +306,12 @@ class TediAttendanceImportWizard(models.TransientModel):
                             })
                             cnt_att += 1
 
-                # --- TRƯỜNG HỢP 2: LỄ TẾT ---
+                # 2. Lễ Tết (Bỏ qua)
                 elif base_symbol in PUB_SYMBOLS:
                     cnt_skipped += 1
                     continue
 
-                # --- TRƯỜNG HỢP 3: NGHỈ PHÉP ---
+                # 3. Nghỉ phép
                 else:
                     leave_type_id = self._find_leave_type_by_code(val)
                     if not leave_type_id:
