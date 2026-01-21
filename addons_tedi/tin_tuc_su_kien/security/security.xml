@@ -4,7 +4,6 @@
         <record id="group_quan_ly_tin_tuc" model="res.groups">
             <field name="name">Quản lý tin tức</field>
             <field name="category_id" ref="base.module_category_administration"/>
-            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
         </record>
 
         <record id="tin_tuc_rule_quan_ly_tin_tuc" model="ir.rule">
@@ -18,7 +17,7 @@
                     ('state','=','da_thong_bao'),
                 ]
             </field>
-            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="groups" eval="[(4, ref('tin_tuc_su_kien.group_quan_ly_tin_tuc'))]"/>
         </record>
 
         <record id="bai_dang_rule_quan_ly_tin_tuc" model="ir.rule">
@@ -31,19 +30,22 @@
                     ('state','=','chua_duyet'),
                 ]
             </field>
-            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="groups" eval="[(4, ref('tin_tuc_su_kien.group_quan_ly_tin_tuc'))]"/>
         </record>
 
         <record id="tin_tuc_rule_nhan_vien" model="ir.rule">
             <field name="name">Office Document - Nhân viên/Người dùng cơ bản</field>
             <field name="model_id" ref="model_notify_event"/>
             <field name="domain_force">
-                ['|','|',
-                    ('create_uid','=',user.id),
-                    ('send_all','=',True),
-                    '|',
-                        ('send_individual','in',[user.id]),
-                        ('send_department','in',[dep.id for dep in user.employee_ids.department_id])
+                ['|',
+                    ('create_uid','=',user.id),  # Người tạo luôn thấy
+                    '&amp;',
+                        ('state','in',['da_duyet','da_thong_bao']),
+                        '|',
+                            ('send_all','=',True),  # Gửi cho tất cả
+                            '|',
+                                ('send_individual','in',[user.id]),
+                                ('send_department','in',[dep.id for dep in user.employee_ids.department_id])
                 ]
             </field>
             <field name="groups" eval="[(4, ref('base.group_user'))]"/>

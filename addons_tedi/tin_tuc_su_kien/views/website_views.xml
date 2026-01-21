@@ -23,7 +23,7 @@
             <form delete="false" duplicate="false">
                 <header>
                     <button name="approve" string="Duyệt" type="object"
-                            groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                            groups="base.group_system, tin_tuc_su_kien.group_quan_ly_tin_tuc"
                             invisible="state != 'chua_duyet'"/>
                     <button name="action_submit_leader" string="Trình lãnh đạo" type="object"
                             class="btn btn-primary"
