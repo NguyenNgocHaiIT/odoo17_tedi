@@ -32,6 +32,7 @@
                         <field name="future_driver_id" invisible="1"/>
                         <field name="currency_id" invisible="1"/>
 
+                        <field name="image_128" widget="image" class="oe_avatar"/>
                         <div class="oe_button_box" name="button_box">
 
                             <button name="action_open_custom_odometer"
@@ -75,7 +76,7 @@
                                 <!-- Hiển thị Odometer để nhập ban đầu -->
                                 <field name="odometer" string="Số Km hiện tại" help="Nhập số km ban đầu nếu tạo mới"/>
                                 <field name="odometer_unit" class="oe_inline" readonly="1"/>
-
+f
                                 <field name="year_manufacture"/>
                                 <field name="year_in_use"/>
                                 <field name="vin_sn" string="Số khung (VIN)"/>
@@ -121,6 +122,31 @@
                         </notebook>
                     </sheet>
                 </xpath>
+            </field>
+        </record>
+
+        <record id="view_fleet_vehicle_kanban_inherit_tedi" model="ir.ui.view">
+            <field name="name">fleet.vehicle.kanban.inherit.tedi</field>
+            <field name="model">fleet.vehicle</field>
+            <field name="inherit_id" ref="fleet.fleet_vehicle_view_kanban"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//div[hasclass('o_kanban_image')]" position="replace">
+                    <div class="o_kanban_image">
+                        <img t-att-src="kanban_image('fleet.vehicle.model', 'image_128', record.model_id.raw_value)" alt="Vehicle Image"/>
+                    </div>
+                </xpath>
+
+                <xpath expr="//field[@name='driver_id']" position="after">
+                    <field name="tedi_driver_employee_id"/>
+                </xpath>
+
+                <xpath expr="//t[@t-if='record.driver_id.raw_value']" position="replace">
+                    <t t-if="record.tedi_driver_employee_id.raw_value">
+                        <field name="tedi_driver_employee_id" widget="many2one_avatar" options="{'display_avatar_name': True}"/>
+                    </t>
+                </xpath>
+
             </field>
         </record>
     </data>

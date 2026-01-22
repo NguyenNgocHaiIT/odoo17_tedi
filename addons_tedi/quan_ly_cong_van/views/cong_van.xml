@@ -110,7 +110,7 @@
                                 <!--                                <field name="do_quan_trong"/>-->
                                 <!--                                <field name="nguoi_xu_ly_chinh"/>-->
                                 <field name="so_den_tong_hop_so_den_theo_so" invisible="1"/>
-                                <field name="but_phe" invisible="1"/>
+                                <field name="but_phe" readonly="1"/>
                                 <field name="dv_xu_ly_chinh" readonly="1"/>
                                 <field name="dv_dong_xu_ly" widget="many2many_tags" readonly="1"/>
                             </group>

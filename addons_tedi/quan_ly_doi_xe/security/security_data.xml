@@ -4,5 +4,14 @@
             <value eval="[ref('fleet.fleet_group_user')]"/>
             <value eval="{'name': 'Tài xế'}"/>
         </function>
+
+        <record id="fleet_vehicle_rule_read_all_internal" model="ir.rule">
+            <field name="name">All Internal Users can Read Vehicles</field>
+            <field name="model_id" ref="fleet.model_fleet_vehicle"/>
+            <field name="domain_force">[(1, '=', 1)]</field> <field name="groups" eval="[(4, ref('base.group_user'))]"/> <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
     </data>
 </odoo>

@@ -818,7 +818,7 @@ class OfficeDocument(models.Model):
 
         if name:
             # Tìm kiếm theo số công văn (so_den_tong_hop, so_di_tong_hop, so_hieu)
-            domain = ['|', '|', '|',
+            domain = ['|', '|',
                       ('so_den_tong_hop', operator, name),
                       ('so_di_tong_hop', operator, name),
                       ('trich_yeu', operator, name)]
@@ -1919,62 +1919,90 @@ class OfficeDocument(models.Model):
         if self.env.context.get('skip_link_sync'):
             return
 
+        ctx = dict(self.env.context, skip_link_sync=True)
+
         for rec in self:
-            ctx = dict(self.env.context, skip_link_sync=True)
+            try:
+                # Công văn đến → công văn đi
+                if 'outgoing_id' in vals:
+                    if rec.outgoing_id:
+                        # Kiểm tra xem công văn đi đã có incoming_id chưa
+                        if rec.outgoing_id.incoming_id and rec.outgoing_id.incoming_id.id != rec.id:
+                            raise ValidationError(
+                                f"Công văn '{rec.outgoing_id.trich_yeu}' "
+                                f"đã được kết nối với công văn đến khác: '{rec.outgoing_id.incoming_id.trich_yeu}'. "
+                                f"Vui lòng chọn công văn đi khác."
+                            )
+                        rec.outgoing_id.with_context(ctx).write({
+                            'incoming_id': rec.id
+                        })
+                    elif vals['outgoing_id'] is False:
+                        # Xóa kết nối ngược
+                        old_outgoing = self.browse(rec.id).outgoing_id
+                        if old_outgoing and old_outgoing.incoming_id.id == rec.id:
+                            old_outgoing.with_context(ctx).write({
+                                'incoming_id': False
+                            })
 
-            # Chỉ sync nếu không có kết nối nào khác (đảm bảo single connection)
-            # Kiểm tra xem công văn đích đã có kết nối chưa
+                # Công văn đi → công văn đến
+                if 'incoming_id' in vals:
+                    if rec.incoming_id:
+                        if rec.incoming_id.outgoing_id and rec.incoming_id.outgoing_id.id != rec.id:
+                            raise ValidationError(
+                                f"Công văn '{rec.incoming_id.trich_yeu}' "
+                                f"đã được kết nối với công văn đi khác: '{rec.incoming_id.outgoing_id.trich_yeu}'. "
+                                f"Vui lòng chọn công văn đến khác."
+                            )
+                        rec.incoming_id.with_context(ctx).write({
+                            'outgoing_id': rec.id
+                        })
+                    elif vals['incoming_id'] is False:
+                        old_incoming = self.browse(rec.id).incoming_id
+                        if old_incoming and old_incoming.outgoing_id.id == rec.id:
+                            old_incoming.with_context(ctx).write({
+                                'outgoing_id': False
+                            })
 
-            # Công văn đến → công văn đi
-            if 'outgoing_id' in vals and rec.outgoing_id:
-                # Kiểm tra xem công văn đi đã có incoming_id chưa
-                if rec.outgoing_id.incoming_id and rec.outgoing_id.incoming_id.id != rec.id:
-                    # Công văn đi đã được kết nối với công văn đến khác
-                    raise ValidationError(
-                        f"Công văn '{rec.outgoing_id.trich_yeu}' "
-                        f"đã được kết nối với công văn đến khác. "
-                        f"Vui lòng chọn công văn đi khác."
-                    )
-                rec.outgoing_id.with_context(ctx).write({
-                    'incoming_id': rec.id
-                })
+                # Tương tự cho internal documents...
+                if 'outgoing_internal_id' in vals:
+                    if rec.outgoing_internal_id:
+                        if rec.outgoing_internal_id.incoming_internal_id and rec.outgoing_internal_id.incoming_internal_id.id != rec.id:
+                            raise ValidationError(
+                                f"Công văn '{rec.outgoing_internal_id.trich_yeu}' "
+                                f"đã được kết nối với công văn nội bộ đến khác. "
+                                f"Vui lòng chọn công văn nội bộ đi khác."
+                            )
+                        rec.outgoing_internal_id.with_context(ctx).write({
+                            'incoming_internal_id': rec.id
+                        })
+                    elif vals['outgoing_internal_id'] is False:
+                        old_outgoing_internal = self.browse(rec.id).outgoing_internal_id
+                        if old_outgoing_internal and old_outgoing_internal.incoming_internal_id.id == rec.id:
+                            old_outgoing_internal.with_context(ctx).write({
+                                'incoming_internal_id': False
+                            })
 
-            # Công văn đi → công văn đến
-            if 'incoming_id' in vals and rec.incoming_id:
-                # Kiểm tra xem công văn đến đã có outgoing_id chưa
-                if rec.incoming_id.outgoing_id and rec.incoming_id.outgoing_id.id != rec.id:
-                    raise ValidationError(
-                        f"Công văn '{rec.incoming_id.trich_yeu}' "
-                        f"đã được kết nối với công văn đi khác. "
-                        f"Vui lòng chọn công văn đến khác."
-                    )
-                rec.incoming_id.with_context(ctx).write({
-                    'outgoing_id': rec.id
-                })
+                if 'incoming_internal_id' in vals:
+                    if rec.incoming_internal_id:
+                        if rec.incoming_internal_id.outgoing_internal_id and rec.incoming_internal_id.outgoing_internal_id.id != rec.id:
+                            raise ValidationError(
+                                f"Công văn '{rec.incoming_internal_id.trich_yeu}' "
+                                f"đã được kết nối với công văn nội bộ đi khác. "
+                                f"Vui lòng chọn công văn nội bộ đến khác."
+                            )
+                        rec.incoming_internal_id.with_context(ctx).write({
+                            'outgoing_internal_id': rec.id
+                        })
+                    elif vals['incoming_internal_id'] is False:
+                        old_incoming_internal = self.browse(rec.id).incoming_internal_id
+                        if old_incoming_internal and old_incoming_internal.outgoing_internal_id.id == rec.id:
+                            old_incoming_internal.with_context(ctx).write({
+                                'outgoing_internal_id': False
+                            })
 
-            # Nội bộ đến → nội bộ đi
-            if 'outgoing_internal_id' in vals and rec.outgoing_internal_id:
-                if rec.outgoing_internal_id.incoming_internal_id and rec.outgoing_internal_id.incoming_internal_id.id != rec.id:
-                    raise ValidationError(
-                        f"Công văn '{rec.outgoing_internal_id.trich_yeu}' "
-                        f"đã được kết nối với công văn nội bộ đến khác. "
-                        f"Vui lòng chọn công văn nội bộ đi khác."
-                    )
-                rec.outgoing_internal_id.with_context(ctx).write({
-                    'incoming_internal_id': rec.id
-                })
-
-            # Nội bộ đi → nội bộ đến
-            if 'incoming_internal_id' in vals and rec.incoming_internal_id:
-                if rec.incoming_internal_id.outgoing_internal_id and rec.incoming_internal_id.outgoing_internal_id.id != rec.id:
-                    raise ValidationError(
-                        f"Công văn '{rec.incoming_internal_id.trich_yeu}' "
-                        f"đã được kết nối với công văn nội bộ đi khác. "
-                        f"Vui lòng chọn công văn nội bộ đến khác."
-                    )
-                rec.incoming_internal_id.with_context(ctx).write({
-                    'outgoing_internal_id': rec.id
-                })
+            except Exception as e:
+                _logger.error(f"Error in _sync_related_documents: {str(e)}")
+                raise
 
     # Thêm các trường để kiểm tra
     is_linked_as_incoming = fields.Boolean(
@@ -2013,6 +2041,9 @@ class OfficeDocument(models.Model):
     )
     def _check_single_connection(self):
         """Kiểm tra mỗi công văn chỉ được kết nối với một công văn khác"""
+        if self.env.context.get('skip_link_sync'):
+            return
+
         for rec in self:
             # Đếm số lượng kết nối
             connections = []
@@ -2035,6 +2066,8 @@ class OfficeDocument(models.Model):
 
     @api.constrains('outgoing_internal_id')
     def _check_outgoing_internal_unique(self):
+        if self.env.context.get('skip_link_sync'):
+            return
         """Kiểm tra outgoing_internal_id không được trùng"""
         for rec in self:
             if rec.outgoing_internal_id:
@@ -2052,6 +2085,8 @@ class OfficeDocument(models.Model):
 
     @api.constrains('incoming_internal_id')
     def _check_incoming_internal_unique(self):
+        if self.env.context.get('skip_link_sync'):
+            return
         """Kiểm tra incoming_internal_id không được trùng"""
         for rec in self:
             if rec.incoming_internal_id:
@@ -2068,6 +2103,8 @@ class OfficeDocument(models.Model):
 
     @api.constrains('outgoing_id')
     def _check_outgoing_unique(self):
+        if self.env.context.get('skip_link_sync'):
+            return
         """Kiểm tra outgoing_id không được trùng"""
         for rec in self:
             if rec.outgoing_id:
@@ -2084,6 +2121,8 @@ class OfficeDocument(models.Model):
 
     @api.constrains('incoming_id')
     def _check_incoming_unique(self):
+        if self.env.context.get('skip_link_sync'):
+            return
         """Kiểm tra incoming_id không được trùng"""
         for rec in self:
             if rec.incoming_id:

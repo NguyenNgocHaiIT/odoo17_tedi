@@ -93,9 +93,15 @@ class HrLeave(models.Model):
                  'request_unit_half', 'request_unit_hours', 'employee_id')
     def _compute_date_from_to(self):
         for holiday in self:
-            if holiday.date_from and holiday.date_to:
+            # Nếu bản ghi đã tồn tại trong DB (có ID) và đã có dữ liệu ngày
+            # Thì giữ nguyên giá trị đó, không cho Odoo tính lại (trả về chính nó)
+            if holiday.id and isinstance(holiday.id, int) and holiday.date_from and holiday.date_to:
+                holiday.date_from = holiday.date_from
+                holiday.date_to = holiday.date_to
                 continue
-            pass
+
+            # Các trường hợp còn lại (đang tạo mới), gọi hàm gốc để Odoo tự tính
+            super(HrLeave, holiday)._compute_date_from_to()
 
     # =========================================================================
     # 3. FIELD CUSTOM
