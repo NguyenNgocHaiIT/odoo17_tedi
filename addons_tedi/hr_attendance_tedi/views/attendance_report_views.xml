@@ -17,18 +17,18 @@
                 </xpath>
 
                 <xpath expr="//button[@name='action_approve']" position="attributes">
-                    <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
-                    <attribute name="invisible">not (can_approve_by_unit_manager or is_officer) or state != 'confirm'</attribute>
-                </xpath>
+                    <attribute name="groups">base.group_user</attribute>
+                    <attribute name="invisible">not can_approve_by_unit_manager or state != 'confirm'</attribute>
+                    </xpath>
 
                 <xpath expr="//button[@name='action_refuse']" position="attributes">
-                    <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
-                    <attribute name="invisible">not (can_approve_by_unit_manager or is_officer) or state not in ['confirm', 'validate', 'validate1']</attribute>
+                    <attribute name="groups">base.group_user</attribute>
+                    <attribute name="invisible">not can_approve_by_unit_manager or state not in ['confirm', 'validate', 'validate1']</attribute>
                 </xpath>
 
                 <xpath expr="//button[@name='action_validate']" position="attributes">
-                    <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
-                    <attribute name="invisible">not (can_approve_by_unit_manager or is_officer) or state != 'validate1'</attribute>
+                    <attribute name="groups">base.group_user</attribute>
+                    <attribute name="invisible">not can_approve_by_unit_manager or state != 'validate1'</attribute>
                 </xpath>
 
                 <xpath expr="//group[@name='col_left']/field[1]" position="before">
@@ -177,13 +177,13 @@
             <field name="arch" type="xml">
 
                 <xpath expr="//button[@name='action_approve']" position="attributes">
-                     <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
-                </xpath>
+                    <attribute name="groups">base.group_user</attribute>
+                    </xpath>
                 <xpath expr="//button[@name='action_validate']" position="attributes">
-                     <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
+                     <attribute name="groups">base.group_user</attribute>
                 </xpath>
                  <xpath expr="//button[@name='action_refuse']" position="attributes">
-                     <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
+                     <attribute name="groups">base.group_user</attribute>
                 </xpath>
                  <xpath expr="//field[@name='employee_id']" position="after">
                     <field name="employee_code" optional="show"/>
@@ -198,9 +198,7 @@
              <field name="name">Đơn nghỉ phép (Bộ phận của tôi)</field>
              <field name="res_model">hr.leave</field>
              <field name="view_mode">tree,form,calendar,kanban</field>
-
              <field name="domain">[('employee_id.department_id.member_ids.user_id', '=', uid)]</field>
-
              <field name="context">{'group_by': 'employee_id', 'create': False}</field>
              <field name="help" type="html">
                  <p class="o_view_nocontent_smiling_face">
@@ -209,6 +207,23 @@
              </field>
          </record>
 
+     <record id="action_tedi_manager_approve" model="ir.actions.act_window">
+        <field name="name">Quản lý Đơn nghỉ</field>
+        <field name="res_model">hr.leave</field>
+        <field name="view_mode">tree,kanban,form,calendar,activity</field>
+        <field name="search_view_id" ref="hr_holidays.hr_leave_view_search_manager"/>
+
+        <field name="domain">[('state','!=','draft'), ('employee_id.user_id', '!=', uid)]</field>
+
+        <field name="context">{
+            'search_default_approve': 1,
+            'create': False  }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Không tìm thấy đơn nghỉ nào cần duyệt.
+            </p>
+        </field>
+    </record>
 
     </data>
 </odoo>

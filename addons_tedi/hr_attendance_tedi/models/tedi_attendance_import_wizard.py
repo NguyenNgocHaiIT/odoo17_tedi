@@ -58,7 +58,6 @@ class TediAttendanceImportWizard(models.TransientModel):
 
     year = fields.Integer(string='Năm', required=True, default=lambda self: fields.Date.today().year)
 
-    # --- SỬA ĐỔI: Thay header_row bằng first_data_row ---
     first_data_row = fields.Integer(string='Dòng nhân viên đầu tiên', default=10,
                                     help="Nhập số dòng chứa dữ liệu của nhân viên đầu tiên trong file Excel")
 
@@ -143,6 +142,7 @@ class TediAttendanceImportWizard(models.TransientModel):
             leave_type = self.env['hr.leave.type'].search([('work_entry_type_id.code', '=', search_code)], limit=1)
         return leave_type.id if leave_type else False
 
+    # --- [CẬP NHẬT] Hàm lấy giờ làm việc (Có Fallback về Thứ 2) ---
     def _get_work_hours_from_contract(self, employee, current_date):
         contract = self.env['hr.contract'].search([
             ('employee_id', '=', employee.id),
@@ -150,22 +150,40 @@ class TediAttendanceImportWizard(models.TransientModel):
             ('date_start', '<=', current_date),
             '|', ('date_end', '=', False), ('date_end', '>=', current_date)
         ], limit=1)
-        if not contract: return False
-        if contract and contract.resource_calendar_id:
-            day_of_week = current_date.weekday()
-            attendances = contract.resource_calendar_id.attendance_ids.filtered(
-                lambda a: a.dayofweek == str(day_of_week) and a.display_type != 'line_section'
-            )
-            if attendances:
-                h_start = min(attendances.mapped('hour_from'))
-                h_end = max(attendances.mapped('hour_to'))
-                morning_shift = attendances.filtered(lambda a: a.day_period == 'morning')
-                if morning_shift:
-                    h_noon = max(morning_shift.mapped('hour_to'))
-                else:
-                    h_noon = h_start + (h_end - h_start) / 2
-                return h_start, h_end, h_noon
-        return False
+
+        if not contract or not contract.resource_calendar_id:
+            return False
+
+        calendar = contract.resource_calendar_id
+
+        # Hàm con để tính giờ từ list attendances
+        def compute_hours_from_lines(lines):
+            if not lines: return False
+            h_start = min(lines.mapped('hour_from'))
+            h_end = max(lines.mapped('hour_to'))
+
+            morning_shift = lines.filtered(lambda a: a.day_period == 'morning')
+            if morning_shift:
+                h_noon = max(morning_shift.mapped('hour_to'))
+            else:
+                h_noon = h_start + (h_end - h_start) / 2
+            return h_start, h_end, h_noon
+
+        # 1. Thử lấy lịch của đúng ngày hiện tại
+        day_of_week = str(current_date.weekday())  # 0=Thứ 2, ..., 6=CN
+        current_day_lines = calendar.attendance_ids.filtered(
+            lambda a: a.dayofweek == day_of_week and a.display_type != 'line_section'
+        )
+
+        res = compute_hours_from_lines(current_day_lines)
+        if res: return res  # Nếu ngày đó có lịch thì trả về luôn
+
+        # 2. [MỚI] Nếu ngày đó (VD: T7, CN) KHÔNG có lịch -> Lấy lịch Thứ 2 (day '0') làm chuẩn
+        monday_lines = calendar.attendance_ids.filtered(
+            lambda a: a.dayofweek == '0' and a.display_type != 'line_section'
+        )
+        # Trả về giờ của thứ 2, hoặc False nếu thứ 2 cũng không có lịch
+        return compute_hours_from_lines(monday_lines)
 
     def _make_utc_from_float(self, date_obj, float_time, l_tz, u_tz):
         try:
@@ -221,7 +239,6 @@ class TediAttendanceImportWizard(models.TransientModel):
         COL_EMP = 1  # Cột B
         COL_START_DAY = 3  # Cột D
 
-        # --- SỬA ĐỔI: Dùng trực tiếp giá trị người dùng nhập ---
         START_ROW = self.first_data_row
 
         last_day = calendar.monthrange(self.year, int(self.month))[1]
@@ -230,7 +247,8 @@ class TediAttendanceImportWizard(models.TransientModel):
         cnt_skipped = 0
         errors = []
 
-        # iter_rows bắt đầu từ dòng START_ROW
+        imported_employees = set()
+
         for row_idx, row in enumerate(sheet.iter_rows(min_row=START_ROW, values_only=True), start=START_ROW):
             emp_code = row[COL_EMP]
 
@@ -258,11 +276,16 @@ class TediAttendanceImportWizard(models.TransientModel):
                 except Exception:
                     continue
 
+                # --- Đã sửa: Gọi hàm để lấy giờ (ưu tiên ngày thực tế -> fallback thứ 2) ---
                 work_hours = self._get_work_hours_from_contract(employee, curr_date.date())
+
                 if not work_hours:
+                    # Nếu cả Thứ 2 cũng không có lịch thì chịu thua, bỏ qua dòng này
                     continue
 
                 h_start_float, h_end_float, h_noon_float = work_hours
+                # ---------------------------------------------------------------------------
+
                 is_half = True if ('/2' in val or val == '-') else False
                 base_symbol = val.replace('/2', '') if '/2' in val else ('-' if val == '-' else val)
 
@@ -305,6 +328,7 @@ class TediAttendanceImportWizard(models.TransientModel):
                                 'attendance_type': 'attendance'
                             })
                             cnt_att += 1
+                            imported_employees.add(employee.name)
 
                 # 2. Lễ Tết (Bỏ qua)
                 elif base_symbol in PUB_SYMBOLS:
@@ -342,13 +366,33 @@ class TediAttendanceImportWizard(models.TransientModel):
                                 leave_sudo._validate_leave_request()
 
                             cnt_leave += 1
-                        except Exception as ex:
-                            errors.append(f"Lỗi tạo nghỉ {val} NV {emp_code}: {ex}")
+                            imported_employees.add(employee.name)
 
-        msg = f"Hoàn tất!\n- Chấm công: {cnt_att}\n- Nghỉ Phép: {cnt_leave}\n- Bỏ qua: {cnt_skipped}"
+                        except Exception as ex:
+                            err_str = str(ex)
+                            vn_error = err_str
+
+                            if "You do not have any allocation" in err_str:
+                                vn_error = "Hết quỹ nghỉ phép (cần cấp phát thêm)."
+                            elif "must be in the future" in err_str:
+                                vn_error = "Ngày nghỉ phải ở tương lai."
+                            elif "overlap" in err_str.lower():
+                                vn_error = "Trùng thời gian với đơn khác."
+
+                            errors.append(f"Dòng {row_idx} ({emp_code}): Lỗi tạo nghỉ '{val}' -> {vn_error}")
+
+        msg = (f"Hoàn tất xử lý!\n"
+               f"- Số nhân viên có dữ liệu: {len(imported_employees)}\n"
+               f"- Tổng bản ghi Chấm công: {cnt_att}\n"
+               f"- Tổng bản ghi Nghỉ Phép: {cnt_leave}\n"
+               f"- Bỏ qua (Lễ/Tết): {cnt_skipped}")
+
         if errors:
             unique_err = list(set(errors))
             msg += f"\n\n--- CÓ LỖI ({len(unique_err)}) ---\n" + "\n".join(unique_err[:15])
-        type_msg = 'warning' if errors else 'success'
+            type_msg = 'warning'
+        else:
+            type_msg = 'success'
+
         return {'type': 'ir.actions.client', 'tag': 'display_notification',
-                'params': {'title': 'Import Kết quả', 'message': msg, 'type': type_msg, 'sticky': True}}
+                'params': {'title': 'Kết quả Import', 'message': msg, 'type': type_msg, 'sticky': True}}
