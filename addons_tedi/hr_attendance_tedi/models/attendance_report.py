@@ -133,6 +133,7 @@ class HrLeave(models.Model):
     # =========================================================================
     can_approve_by_unit_manager = fields.Boolean(
         string='Có quyền duyệt (Unit Manager)',
+
         compute='_compute_can_approve_by_unit_manager'
     )
 
@@ -149,33 +150,61 @@ class HrLeave(models.Model):
         current_user = self.env.user
         current_employee = current_user.employee_id
 
-        # Kiểm tra nhóm quyền
+        # 1. NHÓM ADMIN / HR MANAGER / SUPERUSER (QUYỀN TỐI THƯỢNG)
+        is_superuser = current_user.has_group('hr_holidays.group_hr_holidays_manager') or current_user._is_superuser()
+
+        # Kiểm tra user có trong nhóm Unit Manager (Trưởng đơn vị) không
         is_unit_manager = current_user.has_group('hr_attendance_tedi.group_time_off_unit_manager')
-        # Kiểm tra quyền Admin/HR Manager (để Admin luôn duyệt được)
-        is_hr_manager = current_user.has_group('hr_holidays.group_hr_holidays_manager') or current_user._is_superuser()
 
         for rec in self:
             rec.can_approve_by_unit_manager = False
 
-            # 1. Nếu là HR Manager hoặc SuperUser -> Luôn có quyền (Bypass check phòng ban)
-            if is_hr_manager:
+            # =========================================================
+            # A. CÁC TRƯỜNG HỢP ĐẶC BIỆT
+            # =========================================================
+            # 1. Admin luôn True
+            if is_superuser:
                 rec.can_approve_by_unit_manager = True
                 continue
 
-            # 2. Nếu không phải Manager -> Bỏ qua
+            # 2. CHẶN TỰ DUYỆT (Áp dụng cho tất cả cấp quản lý thường)
+            # Nếu là người làm đơn -> FALSE ngay lập tức
+            if current_employee and rec.employee_id and current_employee.id == rec.employee_id.id:
+                rec.can_approve_by_unit_manager = False
+                continue
+
+            # =========================================================
+            # B. LOGIC DUYỆT (SẮP XẾP THEO ƯU TIÊN)
+            # =========================================================
+
+            # 3. QUYỀN DUYỆT 1: QUẢN LÝ TRỰC TIẾP (Direct Manager)
+            # Logic: Nếu user là "Quản lý" được set trong hồ sơ nhân viên -> DUYỆT ĐƯỢC
+            # (Đưa lên trước check group để Quản lý trực tiếp không cần group Unit Manager vẫn duyệt được)
+            if rec.employee_id.parent_id and rec.employee_id.parent_id.id == current_employee.id:
+                rec.can_approve_by_unit_manager = True
+                continue
+
+            # 4. KIỂM TRA NHÓM QUYỀN "UNIT MANAGER"
+            # Nếu không phải Direct Manager (đã check ở trên),
+            # thì bắt buộc phải có nhóm Unit Manager mới được xét tiếp các quyền phòng ban.
             if not is_unit_manager:
                 continue
 
-            # 3. Kiểm tra phòng ban
-            if current_employee and rec.employee_id:
+            # 5. QUYỀN DUYỆT 2: THEO CẤU TRÚC PHÒNG BAN (Department Hierarchy)
+            # Dành cho Trưởng đơn vị duyệt cho nhân viên phòng con
+            if current_employee.department_id and rec.employee_id.department_id:
                 manager_dept = current_employee.department_id
                 employee_dept = rec.employee_id.department_id
 
-                # Logic so sánh:
-                # - Cùng phòng ban
-                # - HOẶC: Manager ở phòng ban Cha của nhân viên (Duyệt cho cấp dưới)
-                if manager_dept == employee_dept or (employee_dept and employee_dept.parent_id == manager_dept):
+                # Kiểm tra: Phòng của NV có phải là con cháu của Phòng Manager không?
+                is_sub_department = self.env['hr.department'].search_count([
+                    ('id', '=', employee_dept.id),
+                    ('id', 'child_of', manager_dept.id)
+                ])
+
+                if is_sub_department > 0:
                     rec.can_approve_by_unit_manager = True
+                    continue
     # =========================================================================
     # 5. LOGIC XỬ LÝ & FIX LỖI CREATE/WRITE
     # =========================================================================
@@ -325,26 +354,70 @@ class HrLeave(models.Model):
     # =========================================================================
 
     def _validate_leave_request(self):
+        """
+        Override:
+        1. Xóa entry cũ.
+        2. Tái tạo entry mới.
+        3. Gán Leave ID và Loại công vào entry mới.
+        4. Ép trạng thái sang 'validated'.
+        """
+        # 1. Gọi super để Odoo tạo resource.calendar.leaves trước
         res = super(HrLeave, self)._validate_leave_request()
 
-        # TỰ ĐỘNG REGENERATE WORK ENTRY ĐỂ TRÁNH LỖI TRÙNG
         sudo_we = self.env['hr.work.entry'].sudo()
 
         for leave in self:
             if leave.employee_id and leave.date_from and leave.date_to:
-                d_from = leave.date_from.date()
-                d_to = leave.date_to.date()
+                d_from_date = leave.date_from.date()
+                d_to_date = leave.date_to.date()
 
+                # ---------------------------------------------------------
+                # BƯỚC A: DỌN DẸP
+                # ---------------------------------------------------------
+                # Xóa các Work Entry nằm trong khoảng thời gian nghỉ này
                 to_remove = sudo_we.search([
                     ('employee_id', '=', leave.employee_id.id),
-                    ('date_stop', '>=', d_from),
-                    ('date_start', '<=', d_to),
-                    ('state', '!=', 'validated')
+                    ('date_stop', '>', leave.date_from),
+                    ('date_start', '<', leave.date_to),
+                    ('state', '!=', 'validated')  # Tránh xóa nhầm cái đã chốt lương
                 ])
                 if to_remove:
                     to_remove.unlink()
 
-                leave.employee_id.sudo().generate_work_entries(d_from, d_to, True)
+                # ---------------------------------------------------------
+                # BƯỚC B: TÁI TẠO (REGENERATE)
+                # ---------------------------------------------------------
+                # Hàm này sẽ nhìn vào resource.calendar.leaves (do super tạo ra)
+                # để chia cắt giờ làm việc và giờ nghỉ.
+                leave.employee_id.sudo().generate_work_entries(d_from_date, d_to_date, True)
+
+                # ---------------------------------------------------------
+                # BƯỚC C: TÌM KIẾM - GÁN DỮ LIỆU - VALIDATE (QUAN TRỌNG)
+                # ---------------------------------------------------------
+                # Tìm các entry vừa sinh ra mà có thời gian GIAO NHAU với đơn nghỉ
+                generated_entries = sudo_we.search([
+                    ('employee_id', '=', leave.employee_id.id),
+                    ('date_stop', '>', leave.date_from),  # Logic Overlap
+                    ('date_start', '<', leave.date_to),  # Logic Overlap
+                    ('state', '!=', 'validated')
+                ])
+
+                if generated_entries:
+                    # Chuẩn bị dữ liệu để update
+                    vals = {
+                        'state': 'validated',  # Ép trạng thái
+                    }
+
+                    # Nếu Work Entry Type của đơn nghỉ khác False, ép kiểu luôn
+                    # Để đảm bảo nó hiện màu đúng (Ví dụ: Màu cam nghỉ phép thay vì màu xám attendance)
+                    if leave.holiday_status_id.work_entry_type_id:
+                        vals['work_entry_type_id'] = leave.holiday_status_id.work_entry_type_id.id
+
+                    # GẮN LINK: Rất quan trọng, để Odoo biết Entry này thuộc về đơn nghỉ nào
+                    vals['leave_id'] = leave.id
+
+                    # Thực hiện update 1 lần cho tất cả các entry tìm được
+                    generated_entries.write(vals)
 
         return res
 

@@ -87,50 +87,58 @@ class HrWorkEntry(models.Model):
 
     def action_sync_attendance(self):
         """
-        Đồng bộ Attendance -> Work Entry.
-        Sửa lỗi hiển thị thời gian bằng cách convert Timezone.
+        Đồng bộ:
+        1. Entry là Nghỉ phép + Không có chấm công -> Validate.
+        2. Entry là Nghỉ phép + Có chấm công -> Conflict.
+        3. Entry là Công thường + Có chấm công -> Cập nhật giờ & Validate.
         """
+        # 1. Dùng sudo để bypass quyền (Quan trọng)
+        sudo_self = self.sudo()
+        Attendance = self.env['hr.attendance'].sudo()
+        WorkEntry = self.env['hr.work.entry'].sudo()
 
-        # Lấy loại công Attendance
+        # Lấy loại công Attendance để dùng khi tạo Conflict
         attendance_type = self.env.ref('hr_work_entry.work_entry_type_attendance', raise_if_not_found=False)
         if not attendance_type:
             attendance_type = self.env['hr.work.entry.type'].search([('is_leave', '=', False)], limit=1)
 
-        # --- PHẦN 1: XỬ LÝ CONFLICT GIỮA NGHỈ PHÉP & CHẤM CÔNG ---
-        leaves_to_check = self.filtered(
-            lambda w: w.state != 'validated' and w.work_entry_type_id.is_leave
+        # ==================================================================
+        # PHẦN 1: XỬ LÝ WORK ENTRY LÀ NGHỈ PHÉP (LEAVES)
+        # ==================================================================
+        # Logic lọc mở rộng: Lấy entry nếu loại là 'is_leave' HOẶC đã gắn 'leave_id'
+        leave_entries = sudo_self.filtered(
+            lambda w: w.state in ['draft', 'conflict'] and (w.work_entry_type_id.is_leave or w.leave_id)
         )
 
-        for leave_entry in leaves_to_check:
-            attendances = self.env['hr.attendance'].search([
+        for leave_entry in leave_entries:
+            # Tìm xem có chấm công nào chen vào giờ nghỉ không
+            # Logic Overlap: (CheckIn < EndLeave) và (CheckOut > StartLeave)
+            attendances = Attendance.search([
                 ('employee_id', '=', leave_entry.employee_id.id),
                 ('check_in', '<', leave_entry.date_stop),
                 ('check_out', '>', leave_entry.date_start),
             ])
 
             if attendances:
-                # Có xung đột -> Đánh dấu Leave là Conflict
-                leave_entry.write({'state': 'conflict'})
+                # [CASE 1.A] CÓ XUNG ĐỘT (Vừa nghỉ vừa đi làm)
+                if leave_entry.state != 'conflict':
+                    leave_entry.write({'state': 'conflict'})
 
                 for att in attendances:
-                    # 1. Tính toán giao điểm (Intersection) để lưu vào DB (Dùng cho payroll)
-                    # Mục đích: Work Entry không được phép dài hơn khoảng thời gian gốc quá nhiều gây chồng chéo dây chuyền
+                    # Tính toán giao điểm
                     real_start_utc = max(leave_entry.date_start, att.check_in)
                     real_end_utc = min(leave_entry.date_stop, att.check_out)
 
                     if real_start_utc >= real_end_utc:
                         continue
 
-                    # 2. Xử lý hiển thị Tên (Name): Convert sang giờ địa phương cho dễ đọc
-                    # Đây là bước sửa lỗi "hiển thị không đúng"
+                    # Tạo tên hiển thị
                     att_start_local = self._get_user_tz_datetime(att.check_in)
                     att_end_local = self._get_user_tz_datetime(att.check_out)
-
-                    # Format đẹp: "Đi làm thực tế (07:55 - 17:05)"
                     entry_name = f"Thực tế: {att_start_local.strftime('%H:%M')} - {att_end_local.strftime('%H:%M')}"
 
-                    # Kiểm tra trùng lặp trước khi tạo
-                    existing_conflict = self.env['hr.work.entry'].search_count([
+                    # Tạo Conflict Entry (nếu chưa có)
+                    existing_conflict = WorkEntry.search_count([
                         ('employee_id', '=', leave_entry.employee_id.id),
                         ('date_start', '=', real_start_utc),
                         ('work_entry_type_id', '=', attendance_type.id),
@@ -138,10 +146,10 @@ class HrWorkEntry(models.Model):
                     ])
 
                     if existing_conflict == 0:
-                        self.env['hr.work.entry'].create({
-                            'name': entry_name,  # Tên hiển thị giờ thực tế (VD: 07:55)
+                        WorkEntry.create({
+                            'name': entry_name,
                             'employee_id': leave_entry.employee_id.id,
-                            'date_start': real_start_utc,  # Giờ lưu DB là giờ cắt (VD: 08:00 UTC)
+                            'date_start': real_start_utc,
                             'date_stop': real_end_utc,
                             'work_entry_type_id': attendance_type.id,
                             'state': 'conflict',
@@ -150,15 +158,21 @@ class HrWorkEntry(models.Model):
                             'company_id': leave_entry.company_id.id,
                         })
             else:
+                # [CASE 1.B] KHÔNG CÓ XUNG ĐỘT (Nghỉ êm đẹp)
+                # -> VALIDATE NGAY LẬP TỨC
                 leave_entry.write({'state': 'validated'})
 
-        # --- PHẦN 2: XỬ LÝ WORK ENTRY THƯỜNG (DRAFT) ---
-        attendance_entries = self.filtered(
-            lambda w: w.state in ['draft', 'conflict'] and not w.work_entry_type_id.is_leave
-        )
+        # ==================================================================
+        # PHẦN 2: XỬ LÝ WORK ENTRY LÀ CÔNG THƯỜNG (ATTENDANCE/GENERIC)
+        # ==================================================================
+        # Lấy tất cả các entry còn lại (không phải leave)
+        attendance_entries = sudo_self - leave_entries
+
+        # Chỉ xử lý những cái đang Draft hoặc Conflict
+        attendance_entries = attendance_entries.filtered(lambda w: w.state in ['draft', 'conflict'])
 
         for entry in attendance_entries:
-            attendances = self.env['hr.attendance'].search([
+            attendances = Attendance.search([
                 ('employee_id', '=', entry.employee_id.id),
                 ('check_in', '<', entry.date_stop),
                 ('check_out', '>', entry.date_start),
@@ -166,12 +180,12 @@ class HrWorkEntry(models.Model):
             ])
 
             if not attendances:
+                # Nếu là công thường mà không có chấm công -> Bỏ qua (Vẫn để Draft hoặc chuyển Cancel tùy logic công ty)
                 continue
 
+            # ... (Giữ nguyên logic tính toán giờ thực tế của bạn) ...
             valid_starts = []
             valid_ends = []
-
-            # Logic này để gom nhiều lần checkin trong 1 ca (VD: Sáng checkin, trưa checkout đi ăn, chiều checkin lại)
             for att in attendances:
                 real_start = max(entry.date_start, att.check_in)
                 real_end = min(entry.date_stop, att.check_out)
@@ -187,7 +201,6 @@ class HrWorkEntry(models.Model):
             duration = (final_end - final_start).total_seconds() / 3600
 
             if duration > 0:
-                # Cập nhật tên theo giờ thực tế luôn cho đẹp
                 att_start_local = self._get_user_tz_datetime(final_start)
                 att_end_local = self._get_user_tz_datetime(final_end)
                 new_name = f"{entry.work_entry_type_id.name} ({att_start_local.strftime('%H:%M')} - {att_end_local.strftime('%H:%M')})"
@@ -197,7 +210,7 @@ class HrWorkEntry(models.Model):
                     'date_start': final_start,
                     'date_stop': final_end,
                     'duration': duration,
-                    'state': 'validated'
+                    'state': 'validated'  # Chốt công
                 })
 
         return True
