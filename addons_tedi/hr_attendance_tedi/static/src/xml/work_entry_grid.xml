@@ -9,9 +9,8 @@
                     border: 0 !important; border-top: none !important; border-bottom: none !important; background-color: #f8f9fa;
                 }
 
-                /* --- Style cho ô XUNG ĐỘT (Conflict) --- */
                 .o_tedi_conflict_entry {
-                    border: 2px solid #dc3545 !important; /* Viền đỏ đậm */
+                    border: 2px solid #dc3545 !important;
                     position: relative;
                     animation: pulse-red 2s infinite;
                 }
@@ -33,9 +32,8 @@
                     z-index: 10;
                 }
 
-                /* --- [NEW] Style cho ô ĐÃ HOÀN THÀNH (Validated) --- */
                 .o_tedi_validated_entry {
-                    border: 2px solid #198754 !important; /* Viền xanh lá đậm */
+                    border: 2px solid #198754 !important;
                     position: relative;
                 }
 
@@ -45,12 +43,11 @@
                     right: -6px;
                     background: white;
                     border-radius: 50%;
-                    color: #198754; /* Màu xanh lá */
+                    color: #198754;
                     font-size: 14px;
                     z-index: 10;
                 }
 
-                /* Các class màu sắc mặc định */
                 .o_color_0 { background-color: #ffffff; color: #495057; border: 1px solid #adb5bd !important; }
                 .o_color_1 { background-color: #dc3545; color: white; border-color: #dc3545; }
                 .o_color_2 { background-color: #fd7e14; color: white; border-color: #fd7e14; }
@@ -190,14 +187,10 @@
                             <tr style="height: 60px;">
                                 <td class="text-start align-middle bg-white" style="position: sticky; left: 0; z-index: 30;">
                                     <div class="d-flex align-items-center gap-2 px-2 py-1 cursor-pointer h-100" t-on-click="() => openEmployee(emp.id)">
-                                        <t t-if="emp.hasAvatar">
-                                            <img t-attf-src="/web/image/hr.employee/{{emp.id}}/avatar_128" class="rounded-circle border flex-shrink-0" style="width: 36px; height: 36px; object-fit: cover;"/>
-                                        </t>
-                                        <t t-else="">
-                                            <div class="rounded-circle border bg-light d-flex align-items-center justify-content-center flex-shrink-0 text-secondary" style="width: 36px; height: 36px;">
-                                                <i class="fa fa-user" style="font-size: 18px;"/>
-                                            </div>
-                                        </t>
+                                        <div class="rounded-circle border bg-light d-flex align-items-center justify-content-center flex-shrink-0 text-secondary" style="width: 36px; height: 36px;">
+                                            <i class="fa fa-user" style="font-size: 18px;"/>
+                                        </div>
+
                                         <div class="d-flex flex-column overflow-hidden justify-content-center">
                                             <span class="fw-bold text-dark small text-wrap" style="line-height: 1.2;"><t t-esc="emp.name"/></span>
                                             <span class="fw-bold text-primary mt-1" style="font-size: 0.7rem;"><t t-esc="formatHours(emp.totalDuration)"/></span>
