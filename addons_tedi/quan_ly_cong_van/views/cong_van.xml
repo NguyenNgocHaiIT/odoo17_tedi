@@ -359,7 +359,6 @@
                             </group>
                             <group colspan="7">
                                 <field name="attachment_datas"
-                                       required="1"
                                        widget="pdf_viewer"
                                        filename="attachment_filename"
                                        readonly="not (is_van_thu or not_is_van_thu)"
@@ -589,7 +588,6 @@
                             </group>
                             <group colspan="7">
                                 <field name="attachment_datas"
-                                       required="1"
                                        widget="pdf_viewer"
                                        filename="attachment_filename"
                                        readonly="not (is_van_thu or not_is_van_thu)"
