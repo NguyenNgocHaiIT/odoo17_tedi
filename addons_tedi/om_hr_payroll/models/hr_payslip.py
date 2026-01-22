@@ -542,19 +542,26 @@ class HrPayslip(models.Model):
             # 3) Phụ cấp: tìm phụ cấp theo employee và kỳ (mình giả sử model có start_date/end_date hoặc month/year)
             # Nếu bạn dùng field month/year trong hr.employee.allowance thì dùng domain tương ứng,
             # nếu không hãy đổi domain sang kiểm tra start_date/end_date.
-            allowance_domain = [
-                ('employee_id', '=', emp_id),
-                ('year', '=', year),
-                ('month', '=', month)
-            ]
-            allowance_records = self.env['hr.employee.allowance'].sudo().search(allowance_domain)
-            for a in allowance_records:
-                amount = getattr(a, 'amount', getattr(a, 'salary_allowance', 0.0))
+            # allowance_domain = [
+            #     ('employee_id', '=', emp_id),
+            #     ('year', '=', year),
+            #     ('month', '=', month)
+            # ]
+            # allowance_records = self.env['hr.employee.allowance'].sudo().search(allowance_domain)
+            # for a in allowance_records:
+            #     amount = getattr(a, 'amount', getattr(a, 'salary_allowance', 0.0))
+            #     res.append({
+            #         'name': f'Phụ cấp {a.display_name or a.name or a.code}',
+            #         'code': a.code,
+            #         'contract_id': contract.id,
+            #         'amount': amount,
+            #     })
+            for allowance in contract.allowance_ids:
                 res.append({
-                    'name': f'Phụ cấp {a.display_name or a.name or a.code}',
-                    'code': a.code,
+                    'name': f'Phụ cấp: {allowance.allowance_type_id.name}',
+                    'code': 'PC',
                     'contract_id': contract.id,
-                    'amount': amount,
+                    'amount': allowance.amount
                 })
 
         # debug
