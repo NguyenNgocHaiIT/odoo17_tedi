@@ -72,8 +72,7 @@ class QuarterlyPayrollSettlement(models.Model):
             ('draft', 'NHÁP'),
             ('approve', 'ĐÃ DUYỆT')
         ],
-        string='Trạng thái', default='draft'
-    )
+        string='Trạng thái', default='draft')
 
     # def _compute_line_for_employee(self, line):
     #     self.ensure_one()
@@ -291,4 +290,12 @@ class QuarterlyPayrollSettlement(models.Model):
                 'default_quarter_settlement_id': self.id
             },
         }
+
+    def action_approve(self):
+        if self.state == 'draft':
+            self.state = 'approve'
+
+    def action_draft(self):
+        if self.state == 'approve':
+            self.state = 'draft'
 

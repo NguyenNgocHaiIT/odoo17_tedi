@@ -25,11 +25,19 @@
                         <button name="action_add_employee"
                                 string="Thêm nhân sự"
                                 type="object"
-                                 icon="fa-plus"/>
+                                 icon="fa-plus" invisible="state == 'approve'"/>
                         <button name="action_compute_lines"
                                 string="Xử lý dữ liệu"
                                 type="object"
-                                 icon="fa-asterisk"/>
+                                 icon="fa-asterisk" invisible="state == 'approve'"/>
+                        <button name="action_approve"
+                                string="Duyệt phiếu"
+                                type="object"
+                                icon="fa-check text-success" invisible="state == 'approve'"/>
+                        <button name="action_draft"
+                                string="Mở lại phiếu"
+                                type="object"
+                                icon="fa-exclamation text-warning" invisible="state == 'draft'"/>
                         <field name="state" widget="statusbar"/>
                     </header>
                     <sheet>
@@ -52,15 +60,15 @@
                             <group>
                             <field name="quarter" readonly="state != 'draft'"/>
                             <field name="year" readonly="state != 'draft'"/>
-                            <field name="quarterly_payroll_fund"/>
+                            <field name="quarterly_payroll_fund" readonly="state != 'draft'"/>
                             <field name="currency_id" invisible="1"/>
                         </group>
 
                         <group/>
                         </group>
-                        <field name="line_ids">
-                            <tree editable="bottom">
-                                <field name="employee_id"/>
+                        <field name="line_ids" readonly="state != 'draft'">
+                            <tree editable="bottom" class="excel_style_list_view">
+                                <field name="employee_id" readonly="1"/>
                                 <field name="lv_tt"/>
                                 <field name="le_tet"/>
                                 <field name="phep"/>
