@@ -1068,7 +1068,6 @@ class OfficeDocument(models.Model):
                     'email_to': email,
                     'email_from': self.env.user.email or 'no-reply@company.com',
                     'body_html': body_html,
-                    'auto_delete': True,
                 }).send()
 
             _logger.info(f"Đã gửi email thông báo duyệt đến {len(van_thu_emails)} văn thư")
@@ -1486,7 +1485,6 @@ class OfficeDocument(models.Model):
                         'email_to': email,
                         'email_from': self.env.user.email or 'no-reply@company.com',
                         'body_html': body_html,
-                        'auto_delete': True,
                     }).send()
             except Exception as e:
                 _logger.warning(f"Gửi mail thất bại cho {emp.name}: {str(e)}")
@@ -1649,7 +1647,6 @@ class OfficeDocument(models.Model):
                     'email_to': email,
                     'email_from': self.env.user.email or 'no-reply@company.com',
                     'body_html': body_html,
-                    'auto_delete': True,
                 }).send()
 
             _logger.info(f"Đã gửi email thông báo đến {len(van_thu_emails)} văn thư cho văn bản {self.id}")

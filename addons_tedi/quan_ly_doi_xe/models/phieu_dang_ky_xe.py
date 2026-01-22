@@ -329,7 +329,6 @@ class HrTediVehicleRegistration(models.Model):
                         'subject': subject,
                         'email_to': user.email,
                         'body_html': body_html,
-                        'auto_delete': True,
             }).send()
 
         except Exception as e:
@@ -487,7 +486,6 @@ class HrTediVehicleRegistration(models.Model):
                 'email_to': creator_email,
                 'email_from': self.env.user.email or 'no-reply@company.com',
                 'body_html': body_html,
-                'auto_delete': True,
             }).send()
 
             _logger.info(f"Đã gửi email {action_type} cho người tạo: {creator_email}")
