@@ -112,8 +112,9 @@
 
                                 <field name="trip_type" readonly="state != 'draft'"/>
 
+                                <field name="available_vehicle_ids" invisible="1"/>
                                 <field name="assigned_vehicle_id"
-                                       domain="[('state_id.name', '=', 'Đã đăng kiểm')]"
+                                       domain="[('id', 'in', available_vehicle_ids)]"
                                        context="{'show_driver': True}"
                                        readonly="state !='approved'"
                                        invisible="state == 'no_car'"/>

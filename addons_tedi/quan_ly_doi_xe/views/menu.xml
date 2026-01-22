@@ -11,7 +11,7 @@
         </record>
 
         <menuitem id="menu_hr_tedi_vehicle_registration"
-                  name="Đăng ký xe"
+                  name="Lịch xe"
                   parent="fleet.menu_root"
                   action="action_hr_tedi_vehicle_registration2"
                   sequence="10"
@@ -31,21 +31,36 @@
                   sequence="15"
                   groups="base.group_user"/>
 
+        <menuitem name="Cấu hình xe"
+                  parent="fleet.fleet_configuration"
+                  id="fleet_models_configuration_custom"
+                  sequence="10"
+                  groups="fleet.fleet_group_user"/>
 
         <menuitem action="fleet.fleet_vehicle_action"
-                  name="Đội xe"
-                  parent="fleet.menu_root"
+                  name="Danh mục xe"
+                  parent="fleet_models_configuration_custom"
                   id="tedi_fleet_vehicle_menu2"
                   groups="fleet.fleet_group_user"
                   sequence="1"/>
 
         <menuitem action="fleet.fleet_vehicle_model_brand_action"
                   name="Hãng xe"
-                  parent="fleet.fleet_models_configuration"
+                  parent="fleet_models_configuration_custom"
                   id="tedi_fleet_vehicle_model_brand_menu"
                   sequence="1"/>
 
+        <menuitem action="fleet.fleet_vehicle_model_action"
+                  parent="fleet_models_configuration_custom"
+                  name="Mẫu xe"
+                  id="fleet_vehicle_model_menu_custom"
+                  sequence="5"/>
 
+        <menuitem action="fleet.fleet_vehicle_model_category_action"
+                  name="Nhóm"
+                  parent="fleet_models_configuration_custom"
+                  id="fleet_vehicle_model_category_menu_custom"
+                  sequence="10"/>
 <!--        <menuitem action="fleet_vehicle_action" parent="fleet_vehicles" name="Fleet"-->
 <!--                  id="fleet_vehicle_menu" groups="fleet_group_user" sequence="0"/>-->
 
@@ -80,5 +95,20 @@
             <field name="active" eval="False"/>
         </record>
 
+        <record id="fleet.fleet_models_configuration" model="ir.ui.menu">
+            <field name="active" eval="False"/>
+        </record>
+
+        <record id="fleet.fleet_vehicle_model_brand_menu" model="ir.ui.menu">
+            <field name="active" eval="False"/>
+        </record>
+
+        <record id="fleet.fleet_vehicle_model_menu" model="ir.ui.menu">
+            <field name="active" eval="False"/>
+        </record>
+
+        <record id="fleet.fleet_vehicle_model_category_menu" model="ir.ui.menu">
+            <field name="active" eval="False"/>
+        </record>
     </data>
 </odoo>

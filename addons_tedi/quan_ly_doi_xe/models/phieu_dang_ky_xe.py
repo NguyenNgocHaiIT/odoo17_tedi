@@ -119,9 +119,13 @@ class HrTediVehicleRegistration(models.Model):
 
     assigned_vehicle_id = fields.Many2one(
         'fleet.vehicle', string="Phân công xe", tracking=True,
-        domain="[('state_id.name', '=', 'Đã đăng kiểm')]"
+        domain="[('id', 'in', available_vehicle_ids)]"
     )
-
+    available_vehicle_ids = fields.Many2many(
+        'fleet.vehicle',
+        compute='_compute_available_vehicles',
+        store=False
+    )
 
     tedi_driver_employee_id = fields.Many2one('hr.employee', string="Tài xế (Nhân viên)", tracking=True)
     driver_id = fields.Many2one('res.partner', string="Tài xế (Partner)", tracking=True)
@@ -268,17 +272,228 @@ class HrTediVehicleRegistration(models.Model):
         if not self.start_date or not self.end_date: raise ValidationError("Nhập đủ thời gian.")
         if self.start_date >= self.end_date: raise ValidationError("Thời gian kết thúc phải lớn hơn bắt đầu.")
         self.state = 'submitted'
-        self.message_post(body="Đã gửi yêu cầu.")
+        self._send_notification_to_vehicle_managers('submit')
+
+    def _send_notification_to_vehicle_managers(self, action_type):
+        """Gửi thông báo ngắn cho quản lý xe"""
+        self.ensure_one()
+
+        try:
+            # Lấy nhóm quản lý xe
+            group = self.env.ref('fleet.fleet_group_manager', raise_if_not_found=False)
+            if not group:
+                return
+
+            # Gửi email
+            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            detail_url = f"{web_url}/web#id={self.id}&model=hr_tedi.vehicle.registration"
+
+            approver = self.env.user.name
+
+            if action_type == 'submit':
+                subject = f'[Cần duyệt] Phiếu xe {self.code}'
+                message = "Có phiếu đăng ký xe mới cần duyệt"
+                button_text = "Xem phiếu cần duyệt"
+            else:  # feedback
+                subject = f"[Xác nhận] Phiếu xe {self.code}"
+                message = "Có lịch xe đã hoàn thành và đang chờ xác nhận."
+                button_text = "Xem phiếu cần xác nhận"
+
+            body_html = f"""
+                        <div style="font-family: Arial, sans-serif; padding: 20px;">
+                            <p>Xin chào</p>
+
+                            <div style="background:15; border-left: 4px solid; padding: 15px; margin: 15px 0;">
+                                <p><b>Mã phiếu:</b> {self.code}</p>
+                                <p><b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                                <p><b>Nội dung:</b> {message}</p>
+                            </div>
+
+                            <p style="text-align: center; margin: 20px 0;">
+                                <a href="{detail_url}" style="color:blue; padding: 10px 20px; text-decoration:none; border-radius:5px;">
+                                    {button_text}
+                                </a>
+                            </p>
+
+                            <p style="color:#666; font-size:14px;">
+                                Trân trọng,<br>
+                                <b>Đội ngũ quản lý xe</b>
+                            </p>
+                        </div>
+                        """
+
+            # Gửi email
+            for user in group.users:
+                if user.email:
+                    self.env['mail.mail'].sudo().create({
+                        'subject': subject,
+                        'email_to': user.email,
+                        'body_html': body_html,
+                        'auto_delete': True,
+            }).send()
+
+        except Exception as e:
+            _logger.error(f"Lỗi gửi thông báo: {str(e)}")
 
     def action_fleet_approve(self):
         self.ensure_one()
         self.state = 'approved'
-        self.message_post(body=f"Đã tiếp nhận bởi {self.env.user.name}.")
+        self._send_email_to_creator('approve')
 
     def action_fleet_refuse(self):
         self.ensure_one()
         self.state = 'refused'
-        self.message_post(body=f"Từ chối bởi {self.env.user.name}.")
+        self._send_email_to_creator('refuse')
+
+    def _send_email_to_creator(self, action_type):
+        """Gửi email cho người tạo phiếu khi duyệt/từ chối/phân xe"""
+        self.ensure_one()
+
+        try:
+            # Lấy người tạo phiếu (create_uid)
+            creator = self.create_uid
+            if not creator or not creator.email:
+                # Fallback: lấy từ requester_id nếu có
+                creator_email = self.requester_id.work_email or self.requester_id.user_id.email
+                creator_name = self.requester_id.name
+            else:
+                creator_email = creator.email
+                creator_name = creator.name
+
+            if not creator_email:
+                _logger.warning(f"Không có email cho người tạo phiếu: {self.code}")
+                return
+
+            # Chuẩn bị nội dung
+            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            detail_url = f"{web_url}/web#id={self.id}&model=hr_tedi.vehicle.registration"
+
+            approver = self.env.user.name
+            time_str = self.start_date.strftime('%d/%m/%Y %H:%M') if self.start_date else ''
+
+            if action_type == 'approve':
+                subject = f"[ĐÃ DUYỆT] Phiếu xe {self.code}"
+                status_text = "ĐÃ ĐƯỢC DUYỆT"
+                status_color = "#28a745"
+                message = "Yêu cầu của bạn đã được duyệt và đang chờ xếp xe."
+                button_text = "Xem phiếu đã duyệt"
+
+                body_html = f"""
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <p>Xin chào <b>{creator_name}</b>,</p>
+
+                    <div style="background:{status_color}15; border-left: 4px solid {status_color}; padding: 15px; margin: 15px 0;">
+                        <h3 style="color:{status_color}; margin-top:0;">Phiếu đăng ký xe của bạn {status_text}</h3>
+                        <p><b>Mã phiếu:</b> {self.code}</p>
+                        <p><b>Người xử lý:</b> {approver}</p>
+                        <p><b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                        <p><b>Nội dung:</b> {message}</p>
+                    </div>
+
+                    <p style="text-align: center; margin: 20px 0;">
+                        <a href="{detail_url}" style="background:{status_color}; color:white; padding: 10px 20px; text-decoration:none; border-radius:5px;">
+                            {button_text}
+                        </a>
+                    </p>
+
+                    <p style="color:#666; font-size:14px;">
+                        Trân trọng,<br>
+                        <b>Đội ngũ quản lý xe</b>
+                    </p>
+                </div>
+                """
+
+            elif action_type == 'refuse':
+                subject = f"[TỪ CHỐI] Phiếu xe {self.code}"
+                status_text = "ĐÃ BỊ TỪ CHỐI"
+                status_color = "#dc3545"
+                message = "Yêu cầu của bạn không được chấp thuận."
+                button_text = "Xem phiếu bị từ chối"
+
+                body_html = f"""
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <p>Xin chào <b>{creator_name}</b>,</p>
+
+                    <div style="background:{status_color}15; border-left: 4px solid {status_color}; padding: 15px; margin: 15px 0;">
+                        <h3 style="color:{status_color}; margin-top:0;">Phiếu đăng ký xe của bạn {status_text}</h3>
+                        <p><b>Mã phiếu:</b> {self.code}</p>
+                        <p><b>Người xử lý:</b> {approver}</p>
+                        <p><b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                        <p><b>Nội dung:</b> {message}</p>
+                    </div>
+
+                    <p style="text-align: center; margin: 20px 0;">
+                        <a href="{detail_url}" style="background:{status_color}; color:white; padding: 10px 20px; text-decoration:none; border-radius:5px;">
+                            {button_text}
+                        </a>
+                    </p>
+
+                    <p style="color:#666; font-size:14px;">
+                        Trân trọng,<br>
+                        <b>Đội ngũ quản lý xe</b>
+                    </p>
+                </div>
+                """
+
+            elif action_type == 'assigned':
+                subject = f"[ĐÃ PHÂN XE] Phiếu xe {self.code}"
+                status_text = "ĐÃ ĐƯỢC PHÂN XE"
+                status_color = "#007bff"
+                vehicle_info = f"{self.assigned_vehicle_id.license_plate} - {self.assigned_vehicle_id.model_id.name if self.assigned_vehicle_id.model_id else ''}"
+                driver_info = f"{self.tedi_driver_employee_id.name if self.tedi_driver_employee_id else self.driver_id.name or 'Đang cập nhật'}"
+                button_text = "Xem thông tin chi tiết"
+
+                body_html = f"""
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <p>Xin chào <b>{creator_name}</b>,</p>
+
+                    <div style="background:{status_color}15; border-left: 4px solid {status_color}; padding: 15px; margin: 15px 0;">
+                        <h3 style="color:{status_color}; margin-top:0;">Phiếu đăng ký xe của bạn {status_text}</h3>
+                        <p><b>Mã phiếu:</b> {self.code}</p>
+                        <p><b>Thời gian sử dụng:</b> {time_str}</p>
+                        <p><b>Thông tin xe:</b> {vehicle_info}</p>
+                        <p><b>Tài xế:</b> {driver_info}</p>
+                        <p><b>Liên hệ tài xế:</b> {self.driver_id.phone or self.tedi_driver_employee_id.work_phone or 'Đang cập nhật'}</p>
+                        <p><b>Địa điểm:</b> {self.destination}</p>
+                    </div>
+
+                    <div style="background:#f8f9fa; padding: 15px; margin: 15px 0; border-radius: 5px;">
+                        <h4 style="margin-top:0;">📋 Hướng dẫn sử dụng:</h4>
+                        <ul>
+                            <li>Vui lòng có mặt đúng giờ tại địa điểm đón xe</li>
+                            <li>Giữ liên lạc với tài xế để phối hợp lịch trình</li>
+                            <li>Sau khi hoàn thành chuyến đi, vui lòng đánh giá chất lượng dịch vụ</li>
+                        </ul>
+                    </div>
+
+                    <p style="text-align: center; margin: 20px 0;">
+                        <a href="{detail_url}" style="background:{status_color}; color:white; padding: 10px 20px; text-decoration:none; border-radius:5px;">
+                            {button_text}
+                        </a>
+                    </p>
+
+                    <p style="color:#666; font-size:14px;">
+                        Trân trọng,<br>
+                        <b>Đội ngũ quản lý xe</b>
+                    </p>
+                </div>
+                """
+            else:
+                return
+
+            # Gửi email
+            self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'email_to': creator_email,
+                'email_from': self.env.user.email or 'no-reply@company.com',
+                'body_html': body_html,
+                'auto_delete': True,
+            }).send()
+
+            _logger.info(f"Đã gửi email {action_type} cho người tạo: {creator_email}")
+
+        except Exception as e:
+            _logger.error(f"Lỗi gửi email cho người tạo: {str(e)}")
 
     def action_office_assign(self):
         self.ensure_one()
@@ -304,7 +519,7 @@ class HrTediVehicleRegistration(models.Model):
             self.assigned_vehicle_id.write(vals_update)
 
         self.state = 'assigned'
-        self.message_post(body=f"Đã phân xe: {self.assigned_vehicle_id.license_plate}.")
+        self._send_email_to_creator('assigned')
 
     def action_send_feedback(self):
         """Bước 1: Người dùng đánh giá xong -> Chuyển sang chờ trả xe"""
@@ -314,7 +529,7 @@ class HrTediVehicleRegistration(models.Model):
 
         self.state = 'waiting_return'
         rating_label = dict(self._fields['rating'].selection).get(self.rating)
-        self.message_post(body=f"Người dùng đã đánh giá: {rating_label}. Đang chờ Văn phòng xác nhận xe về.")
+        self._send_notification_to_vehicle_managers('feedback')
 
     def action_confirm_return(self):
         self.ensure_one()
@@ -415,3 +630,36 @@ class HrTediVehicleRegistration(models.Model):
 
     def action_draft(self):
         self.state = 'draft'
+
+    @api.depends('start_date', 'end_date')
+    def _compute_available_vehicles(self):
+        for rec in self:
+            if not rec.start_date or not rec.end_date:
+                rec.available_vehicle_ids = self.env['fleet.vehicle']
+                continue
+
+            # 👉 ID thật (chỉ có khi record đã save)
+            real_id = rec._origin.id
+
+            domain = [
+                ('assigned_vehicle_id', '!=', False),
+                ('state', 'in', ['assigned', 'waiting_return', 'done']),
+                ('start_date', '<', rec.end_date),
+                ('end_date', '>', rec.start_date),
+            ]
+
+            # CHỈ thêm điều kiện loại trừ khi đã có id thật
+            if real_id:
+                domain.append(('id', '!=', real_id))
+
+            conflict_regs = self.env['hr_tedi.vehicle.registration'].search(domain)
+
+            conflict_vehicle_ids = conflict_regs.mapped('assigned_vehicle_id').ids
+
+            vehicles = self.env['fleet.vehicle'].search([
+                ('state_id.name', '=', 'Đã đăng kiểm'),
+                ('id', 'not in', conflict_vehicle_ids)
+            ])
+
+            rec.available_vehicle_ids = vehicles
+
