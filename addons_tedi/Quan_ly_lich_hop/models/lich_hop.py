@@ -79,6 +79,13 @@ class Calendar(models.Model):
         default=True,
         store=False
     )
+    loai_cuoc_hop = fields.Selection([
+        ('online', 'Họp online'),
+        ('offline', 'Họp offline'),
+    ], string='Loại cuộc họp', default='offline')
+
+    link_cuoc_hop = fields.Char(string="link cuộc họp")
+    so_nguoi_tham_gia = fields.Integer(string="Số người tham gia")
 
     @api.depends_context('uid')
     def _compute_is_current_user_creator(self):
