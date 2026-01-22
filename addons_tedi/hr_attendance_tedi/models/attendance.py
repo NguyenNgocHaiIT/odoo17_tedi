@@ -4,7 +4,7 @@ from odoo.exceptions import ValidationError
 import logging
 from datetime import datetime, time
 import pytz  # Cần import thư viện này để xử lý múi giờ
-
+from datetime import datetime, time, timedelta
 _logger = logging.getLogger(__name__)
 
 
@@ -47,32 +47,24 @@ class HrAttendance(models.Model):
     @api.depends('check_in', 'check_out', 'employee_id')
     def _compute_working_hours(self):
         for rec in self:
-            # 1. Nếu chưa checkout thì bằng 0
+            # 1. Nếu thiếu dữ liệu -> Về 0
             if not rec.check_in or not rec.check_out:
                 rec.worked_hours = 0.0
                 rec.overtime_hours = 0.0
                 continue
 
-            # 2. Lấy lịch làm việc của nhân viên
+            # Tính tổng thời gian thô (Raw) phòng khi không có lịch
+            delta = rec.check_out - rec.check_in
+            raw_duration = delta.total_seconds() / 3600.0
+
             calendar = rec.employee_id.resource_calendar_id
+
             if not calendar:
-                # Nếu không có lịch, toàn bộ thời gian là làm thêm
-                delta = rec.check_out - rec.check_in
-                rec.worked_hours = delta.total_seconds() / 3600.0
-                rec.overtime_hours = rec.worked_hours
+                rec.worked_hours = 0.0
+                rec.overtime_hours = raw_duration
                 continue
 
-            # 3. Tính "Giờ làm việc thực tế" (đã trừ giờ nghỉ trưa dựa theo lịch)
-            # Hàm get_work_hours_count của Odoo sẽ tự động trừ giờ nghỉ trưa nếu cấu hình đúng
-            rec.worked_hours = calendar.get_work_hours_count(rec.check_in, rec.check_out)
-
-            # 4. Tính "Giờ tiêu chuẩn" của ngày hôm đó (Ví dụ: 8 tiếng)
-            # Ta lấy tổng giờ làm việc dự kiến trong khoảng thời gian checkin-checkout
-            # Lưu ý: Logic này giả định nhân viên làm đúng ca.
-            # Nếu muốn chặt chẽ hơn (so với 8h cứng), bạn có thể fix cứng số 8 hoặc query attendance của lịch.
-
-            # Cách 1: Lấy giờ chuẩn theo lịch (Recommended)
-            # Tìm xem ngày hôm nay theo lịch được quy định làm bao nhiêu tiếng
+            # 2. Tính "Giờ tiêu chuẩn" để xem hôm nay có phải ngày làm việc không
             check_in_date = rec.check_in.date()
             expected_hours = calendar.get_work_hours_count(
                 datetime.combine(check_in_date, time.min),
@@ -80,13 +72,53 @@ class HrAttendance(models.Model):
                 compute_leaves=False
             )
 
-            # Cách 2 (Đơn giản hóa): Nếu công ty luôn làm 8 tiếng/ngày
-            # expected_hours = 8.0
+            # =================================================================
+            # LOGIC MỚI: TRỪ GIỜ NGHỈ TRƯA CHO CẢ NGÀY NGHỈ (MỐC THỨ 2)
+            # =================================================================
 
-            # 5. Tính Giờ làm thêm
-            # Làm thêm = Thực tế - Tiêu chuẩn (Nếu dương)
-            overtime = rec.worked_hours - expected_hours
-            rec.overtime_hours = overtime if overtime > 0 else 0.0
+            # TRƯỜNG HỢP A: Ngày nghỉ (CN, Lễ...) -> expected_hours = 0
+            if expected_hours == 0:
+                rec.worked_hours = 0.0
+
+                # --- KỸ THUẬT GIẢ LẬP THỨ 2 ---
+                # Mục đích: Áp dụng quy tắc nghỉ trưa của Thứ 2 cho ngày hiện tại
+
+                # 1. Tính độ lệch ngày để quay về Thứ 2 (Monday = 0)
+                # Ví dụ: Hôm nay là CN (6) -> Cần lùi 6 ngày để về T2 (0)
+                days_diff = 0 - rec.check_in.weekday()
+
+                # 2. Tạo thời gian giả lập trùng với giờ check-in/out hiện tại nhưng vào ngày Thứ 2
+                fake_monday_in = rec.check_in + timedelta(days=days_diff)
+                fake_monday_out = rec.check_out + timedelta(days=days_diff)
+
+                # 3. Nhờ Odoo tính giờ dựa trên lịch Thứ 2
+                # compute_leaves=False để tránh trường hợp Thứ 2 tuần này vô tình dính ngày Lễ
+                monday_rules_hours = calendar.get_work_hours_count(
+                    fake_monday_in,
+                    fake_monday_out,
+                    compute_leaves=False
+                )
+
+                # Nếu Thứ 2 cũng không có lịch (Lịch trắng tinh) thì dùng Raw, ngược lại dùng giờ đã trừ nghỉ trưa
+                if monday_rules_hours > 0:
+                    rec.overtime_hours = monday_rules_hours
+                else:
+                    # Trường hợp hy hữu: Hợp đồng Thứ 2 cũng nghỉ -> Tính full
+                    rec.overtime_hours = raw_duration
+
+            # TRƯỜNG HỢP B: Ngày làm việc bình thường
+            else:
+                # Tính giờ thực tế (Đã tự động trừ nghỉ trưa theo lịch ngày hôm đó)
+                odoo_calculated_hours = calendar.get_work_hours_count(rec.check_in, rec.check_out)
+
+                # Nếu làm ngoài giờ hành chính hoàn toàn -> Odoo trả về 0 -> Dùng Raw
+                actual_worked = odoo_calculated_hours if odoo_calculated_hours > 0 else raw_duration
+
+                rec.worked_hours = actual_worked
+
+                # Tính OT
+                overtime = actual_worked - expected_hours
+                rec.overtime_hours = max(overtime, 0.0)
 
     attendance_date = fields.Date(string='Ngày', compute='_compute_attendance_date', store=True)
 
