@@ -557,6 +557,7 @@
                         <field name="tt_vb" invisible="1"/>
                         <field name="document_type" invisible="1"/>
                         <field name="show_phan_phat_button" invisible="1"/>
+                        <field name="is_truong_don_vi" invisible="1"/>
 
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
