@@ -69,14 +69,14 @@
             <field name="arch" type="xml">
                 <form string="Phiếu đăng ký xe">
                     <header>
-                        <button name="action_submit" string="Gửi duyệt" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                        <button name="action_submit" string="Gửi duyệt" type="object" class="oe_highlight" invisible="state != 'draft' or (create_uid != uid and user_id != uid)"/>
                         <button name="action_fleet_approve" string="Duyệt yêu cầu" type="object" class="oe_highlight" groups="fleet.fleet_group_manager" invisible="state != 'submitted'"/>
                         <button name="action_fleet_refuse" string="Từ chối" type="object" groups="fleet.fleet_group_manager" invisible="state != 'submitted'"/>
                         <button name="action_office_assign" string="Phân phối xe" type="object" class="oe_highlight" groups="fleet.fleet_group_manager" invisible="state != 'approved'"/>
 
                         <button name="action_office_no_car" string="Báo hết xe" type="object" class="btn-warning" groups="fleet.fleet_group_manager" invisible="state != 'approved'"/>
 
-                        <button name="action_send_feedback" string="Hoàn thành công tác" type="object" class="oe_highlight" invisible="state != 'assigned'"/>
+                        <button name="action_send_feedback" string="Hoàn thành công tác" type="object" class="oe_highlight" invisible="state != 'assigned' or (create_uid != uid and user_id != uid)"/>
                         <button name="action_confirm_return" string="Xác nhận" type="object" class="oe_highlight" groups="fleet.fleet_group_manager" invisible="state != 'waiting_return'"/>
                         <button name="action_draft" string="Về nháp" type="object" invisible="state != 'submitted'" groups="fleet.fleet_group_manager"/>
 
