@@ -1,3 +1,39 @@
 .o_form_label_fixed .o_form_label {
     width: 100px; /* cố định label width */
 }
+/* Container chính */
+.o_control_panel_main {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    width: 100% !important;
+    flex-wrap: nowrap !important; /* QUAN TRỌNG: không wrap */
+    gap: 12px !important;
+    overflow: hidden !important;
+}
+
+/* Breadcrumb area - chiếm không gian còn lại */
+.o_control_panel_breadcrumbs {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+}
+
+/* Tiêu đề - cắt bớt nếu dài */
+.o_last_breadcrumb_item .text-truncate {
+    white-space: wrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    display: inline-block !important;
+}
+
+/* Actions - cố định */
+.o_control_panel_actions {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+}

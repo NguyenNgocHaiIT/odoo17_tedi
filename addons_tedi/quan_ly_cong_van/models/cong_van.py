@@ -180,7 +180,7 @@ class PhanPhat(models.TransientModel):
         body_chat = f"""
         <p>📄 Bạn vừa được giao xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
         <p>
-            <a href="{detail_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+            <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                 Xem chi tiết
             </a>
         </p>
@@ -246,7 +246,7 @@ class PhanPhat(models.TransientModel):
                                 <p>Xin chào {employee.name},</p>
                                 <p>Bạn vừa được phân công xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
                                 <p>
-                                    <a href="{detail_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                                    <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                                         Xem chi tiết văn bản
                                     </a>
                                 </p>
@@ -341,22 +341,6 @@ class ButPhe(models.TransientModel):
             'thoi_diem_chi_dao': fields.Datetime.now(),
         })
 
-        # ===== 4. Thông báo cho lãnh đạo (dựa theo employee) =====
-        partner_ids = []
-        if doc.lanh_dao_xu_ly:
-            # lanh_dao_xu_ly bây giờ là hr.employee
-            leaders = doc.lanh_dao_xu_ly
-            partner_ids = leaders.mapped('user_id.partner_id').ids
-
-        if partner_ids:
-            doc.message_post(
-                body=f"""
-                <b>Bút phê:</b> {self.y_kien_xu_ly or 'Không có ý kiến'}<br/>
-                <b>Quan trọng:</b> {'Có' if self.quan_trong else 'Không'}
-                """,
-                partner_ids=partner_ids
-            )
-
         # ===== 5. Thông báo văn thư (group) =====
         if self.thong_bao_cho_van_thu:
             group = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
@@ -364,8 +348,16 @@ class ButPhe(models.TransientModel):
                 partners = group.users.mapped('partner_id').ids
                 if partners:
                     doc.message_post(
-                        body="Văn bản đã có bút phê.",
-                        partner_ids=partners
+                        body=f"""
+                                    <p><b>Văn bản đã được bút phê:</b> {doc.trich_yeu or 'Không có trích yếu'}</p>
+                                    <p><b>Người bút phê:</b> {employee.name if employee else self.env.user.name}</p>
+                                    <p><b>Ý kiến bút phê:</b> {self.y_kien_xu_ly or 'Không có ý kiến'}</p>
+                                    <p><b>Quan trọng:</b> {'Có' if self.quan_trong else 'Không'}</p>
+                                    <p><b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                                    """,
+                        subject=f"Văn bản đã được bút phê: {doc.trich_yeu[:50]}..." if doc.trich_yeu else "Văn bản đã được bút phê",
+                        partner_ids=partners,
+                        body_is_html=True,
                     )
 
         # ===== 6. Lưu tài liệu kèm =====
@@ -571,7 +563,8 @@ class OfficeDocument(models.Model):
     tt_vb = fields.Selection([
         ('draft', 'Nhập thông tin'),#thường
         ('cho_truong_don_vi_duyet', 'Trình TĐV'),
-        ('cho_duyet', 'Chờ duyệt'),#vàng
+        ('truong_don_vi_duyet','TĐV duyệt'),
+        ('cho_duyet', 'Chờ duyệt'),
         ('da_duyet', 'Đã duyệt'),#vàng
         ('cho_but_phe', 'Chờ bút phê'),#vàng
         ('cho_phan_phat', 'Chờ phân phát'),#vàng
@@ -912,7 +905,7 @@ class OfficeDocument(models.Model):
                         <p>Xin chào {emp.name},</p>
                         <p>Văn bản <b>{self.trich_yeu}</b> cần xử lý.</p>
                         <p>
-                            <a href="{doc_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                            <a href="{doc_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                                 Xem chi tiết văn bản
                             </a>
                         </p>
@@ -966,7 +959,7 @@ class OfficeDocument(models.Model):
                         <p>Văn bản <b>{self.trich_yeu}</b> cần xử lý.</p>
                         <p>
                             <a href="{doc_url}"
-                               style="background:#E57373;color:blue;padding:6px 12px;
+                               style="background:#E57373;color:white;padding:6px 12px;
                                       text-decoration:none;border-radius:4px;font-size:12px;">
                                 Xem chi tiết văn bản
                             </a>
@@ -1004,8 +997,96 @@ class OfficeDocument(models.Model):
         self.ensure_one()
         self.tt_vb = 'da_duyet'
 
-        self._send_approval_notification_to_van_thu()
+        if self.document_type in ['outgoing', 'outgoing_internal', 'resolution']:
+            # Công văn đi, quyết định: gửi thông báo cho văn thư
+            self._send_approval_notification_to_van_thu()
+        elif self.document_type in ['incoming', 'incoming_internal']:
+            # Công văn đến: gửi thông báo cho người tạo
+            self._send_approval_notification_to_creator()
         return True
+
+    def approve_don_vi(self):
+        self.ensure_one()
+        self.tt_vb = 'truong_don_vi_duyet'
+
+        self._send_approval_notification_to_creator()
+        return True
+
+    def _send_approval_notification_to_creator(self):
+        """Gửi thông báo cho người tạo khi công văn đến/incoming được duyệt"""
+        self.ensure_one()
+
+        try:
+            # Lấy thông tin người tạo văn bản
+            creator = self.create_uid
+            if not creator or not creator.email:
+                _logger.warning("Không có thông tin người tạo văn bản.")
+                return
+
+            # Lấy thông tin người duyệt
+            approver = self.env.user
+
+            # Chuẩn bị nội dung email
+            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            detail_url = f"{web_url}/web#id={self.id}&model=office.document&view_type=form"
+
+            # Xác định loại văn bản
+            doc_type_display = dict(self._fields['document_type'].selection).get(self.document_type, 'Văn bản')
+
+            subject = f"[{doc_type_display} đã duyệt] {self.trich_yeu[:50]}..."
+            body_html = f"""
+            <p>Xin chào {creator.name},</p>
+
+            <p><b>{doc_type_display}</b> <b>"{self.trich_yeu}"</b> đã được duyệt bởi <b>{approver.name}</b>.</p>
+
+            <div style="background:#f5f5f5; padding:10px; margin:10px 0; border-left:4px solid #4CAF50;">
+                <p><b>Thông tin văn bản đã duyệt:</b></p>
+                <ul>
+                    <li>Số đến: {self.so_den_tong_hop or self.so_di_tong_hop or 'Chưa có'}</li>
+                    <li>Số hiệu: {self.so_hieu or 'Chưa có'}</li>
+                    <li>Ngày đến: {self.ngay_den.strftime('%d/%m/%Y') if self.ngay_den else 'Chưa có'}</li>
+                    <li>Loại văn bản: {doc_type_display}</li>
+                </ul>
+                <p><b>Trạng thái hiện tại:</b> Đã duyệt</p>
+            </div>
+
+            <p>
+                <a href="{detail_url}" style="background:#4CAF50;color:white;padding:8px 16px;text-decoration:none;border-radius:4px;font-size:14px;">
+                    Xem chi tiết văn bản
+                </a>
+            </p>
+
+            <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
+            """
+
+            # Gửi email đến người tạo
+            self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'email_to': creator.email,
+                'email_from': approver.email or 'no-reply@company.com',
+                'body_html': body_html,
+            }).send()
+
+            _logger.info(f"Đã gửi email thông báo duyệt đến người tạo: {creator.name}")
+
+            # Gửi thông báo popup cho người tạo (nếu online)
+            if creator.partner_id:
+                try:
+                    self.env['bus.bus']._sendone(
+                        creator.partner_id,
+                        'simple_notification',
+                        {
+                            'title': f'{doc_type_display} đã duyệt',
+                            'message': f'{doc_type_display} "{self.trich_yeu[:50]}..." đã được duyệt.',
+                            'sticky': False,
+                            'type': 'success',
+                        }
+                    )
+                except Exception as e:
+                    _logger.error(f"Lỗi gửi thông báo cho người tạo {creator.name}: {str(e)}")
+
+        except Exception as e:
+            _logger.error(f"Lỗi khi gửi thông báo duyệt cho người tạo: {str(e)}")
 
     def _send_approval_notification_to_van_thu(self):
         """Gửi email thông báo đơn giản cho văn thư khi văn bản đã được duyệt"""
@@ -1053,7 +1134,7 @@ class OfficeDocument(models.Model):
             </div>
 
             <p>
-                <a href="{detail_url}" style="background:#3498db;color:blue;padding:8px 16px;text-decoration:none;border-radius:4px;font-size:14px;">
+                <a href="{detail_url}" style="background:#3498db;color:white;padding:8px 16px;text-decoration:none;border-radius:4px;font-size:14px;">
                     Xem chi tiết văn bản
                 </a>
             </p>
@@ -1068,7 +1149,6 @@ class OfficeDocument(models.Model):
                     'email_to': email,
                     'email_from': self.env.user.email or 'no-reply@company.com',
                     'body_html': body_html,
-                    'auto_delete': True,
                 }).send()
 
             _logger.info(f"Đã gửi email thông báo duyệt đến {len(van_thu_emails)} văn thư")
@@ -1475,7 +1555,7 @@ class OfficeDocument(models.Model):
                         <p>Xin chào {emp.name},</p>
                         <p>Văn bản <b>{self.trich_yeu}</b> đã được trình lãnh đạo bạn để duyệt.</p>
                         <p>
-                            <a href="{doc_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                            <a href="{doc_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                                 Xem chi tiết văn bản
                             </a>
                         </p>
@@ -1486,7 +1566,6 @@ class OfficeDocument(models.Model):
                         'email_to': email,
                         'email_from': self.env.user.email or 'no-reply@company.com',
                         'body_html': body_html,
-                        'auto_delete': True,
                     }).send()
             except Exception as e:
                 _logger.warning(f"Gửi mail thất bại cho {emp.name}: {str(e)}")
@@ -1555,7 +1634,6 @@ class OfficeDocument(models.Model):
         # Kiểm tra người dùng hiện tại có phải là văn thư không
         user = self.env.user
         is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
-
         if is_van_thu:
             # Nếu là văn thư: chuyển trạng thái thành "Đã duyệt"
             self.tt_vb = 'da_duyet'
@@ -1568,6 +1646,10 @@ class OfficeDocument(models.Model):
                     'message': 'Văn bản đã được xác nhận và chuyển sang trạng thái Đã duyệt.',
                     'type': 'success',
                     'sticky': False,
+                    'next': {
+                        'type': 'ir.actions.client',
+                        'tag': 'reload',  # Thêm dòng này để reload trang
+                    },
                 }
             }
         else:
@@ -1585,6 +1667,10 @@ class OfficeDocument(models.Model):
                     'message': 'Văn bản đã được xác nhận và gửi thông báo cho văn thư.',
                     'type': 'success',
                     'sticky': False,
+                    'next': {
+                        'type': 'ir.actions.client',
+                        'tag': 'reload',  # Thêm dòng này để reload trang
+                    },
                 }
             }
 
@@ -1633,7 +1719,7 @@ class OfficeDocument(models.Model):
             </div>
 
             <p>
-                <a href="{detail_url}" style="background:#4CAF50;color:blue;padding:8px 16px;text-decoration:none;border-radius:4px;font-size:14px;font-weight:bold;">
+                <a href="{detail_url}" style="background:#4CAF50;color:white;padding:8px 16px;text-decoration:none;border-radius:4px;font-size:14px;font-weight:bold;">
                     Xem chi tiết và duyệt văn bản
                 </a>
             </p>
@@ -1649,7 +1735,6 @@ class OfficeDocument(models.Model):
                     'email_to': email,
                     'email_from': self.env.user.email or 'no-reply@company.com',
                     'body_html': body_html,
-                    'auto_delete': True,
                 }).send()
 
             _logger.info(f"Đã gửi email thông báo đến {len(van_thu_emails)} văn thư cho văn bản {self.id}")
@@ -1700,7 +1785,7 @@ class OfficeDocument(models.Model):
                         <p><b>Trích yếu:</b> {self.trich_yeu}</p>
                         <p><b>Người gửi:</b> {current_user}</p>
                         <p>
-                            <a href="{detail_url}" style="background:#4CAF50;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                            <a href="{detail_url}" style="background:#4CAF50;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                                 Xem và duyệt
                             </a>
                         </p>
@@ -1720,15 +1805,44 @@ class OfficeDocument(models.Model):
         except Exception as e:
             _logger.error(f"Lỗi khi gửi email thông báo cho văn thư: {str(e)}")
 
+    # Thêm field rejection_ids
+    rejection_ids = fields.One2many(
+        'office.document.rejection',
+        'office_document_id',
+        string='Lịch sử từ chối'
+    )
 
-    def khong_dat(self):
+    def action_open_rejection_history(self):
+        """Mở popup hiển thị lịch sử từ chối"""
         self.ensure_one()
-        self.tt_vb = 'draft'
-        self._send_simple_rejection_notification()
 
         return {
-            'type': 'ir.actions.client',
-            'tag': 'history_back',
+            'name': 'Lịch sử từ chối',
+            'type': 'ir.actions.act_window',
+            'res_model': 'office.document.rejection',
+            'view_mode': 'tree,form',
+            'domain': [('office_document_id', '=', self.id)],
+            'context': {
+                'default_office_document_id': self.id,
+                'create': False,
+            },
+            'target': 'new',
+        }
+
+    def khong_dat(self):
+        """Mở wizard từ chối"""
+        self.ensure_one()
+
+        return {
+            'name': 'Từ chối văn bản',
+            'type': 'ir.actions.act_window',
+            'res_model': 'office.document.reject.wizard',
+            'view_mode': 'form',
+            'view_id': self.env.ref('quan_ly_cong_van.view_reject_document_wizard_form').id,
+            'target': 'new',
+            'context': {
+                'default_office_document_id': self.id,
+            }
         }
 
     def _send_simple_rejection_notification(self):
@@ -2166,7 +2280,7 @@ class OfficeDocument(models.Model):
                     <p>Xin chào {truong_don_vi.name},</p>
                     <p>Văn bản <b>{self.trich_yeu}</b> cần được bạn duyệt.</p>
                     <p>
-                        <a href="{doc_url}" style="background:#4CAF50;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                        <a href="{doc_url}" style="background:#4CAF50;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                             Xem chi tiết văn bản
                         </a>
                     </p>
@@ -2231,6 +2345,7 @@ class OfficeDocument(models.Model):
                 detail.allow_phan_phat for detail in user_detail
             )
 
+
 '''class AssignTaskWizard(models.TransientModel):
     _name = 'assign.task.wizard'
     _description = 'Giao việc - Danh sách từng người'
@@ -2282,7 +2397,7 @@ class OfficeDocument(models.Model):
                             <p>Xin chào {emp.name},</p>
                             <p>Bạn vừa được giao xử lý văn bản: <b>{self.office_document_id.trich_yeu}</b>.</p>
                             <p>
-                                <a href="{detail_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                                <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                                     Xem chi tiết văn bản
                                 </a>
                             </p>
@@ -2305,7 +2420,7 @@ class OfficeDocument(models.Model):
             body_chat = f"""
             <p>📄 Bạn vừa được giao xử lý văn bản: <b>{self.office_document_id.trich_yeu}</b>.</p>
             <p>
-                <a href="{detail_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                     Xem chi tiết
                 </a>
             </p>
@@ -2459,7 +2574,7 @@ class ChuyenLanhDaoWizard(models.TransientModel):
                 <p>Bạn vừa được chuyển xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
                 <p><b>Chuyển từ:</b> {lanh_dao_cu.name}</p>
                 <p>
-                    <a href="{detail_url}" style="background:#875A7B;color:blue;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                    <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
                         Xem chi tiết văn bản
                     </a>
                 </p>
@@ -2506,3 +2621,145 @@ class HrEmployee(models.Model):
 
         # Mặc định: giữ nguyên hành vi gốc
         return super().name_search(name, args, operator, limit)
+
+
+class OfficeDocumentRejection(models.Model):
+    """Lịch sử từ chối văn bản"""
+    _name = 'office.document.rejection'
+    _description = 'Lịch sử từ chối văn bản'
+    _order = 'rejection_date desc'
+
+    office_document_id = fields.Many2one(
+        'office.document',
+        string='Văn bản',
+        required=True,
+        ondelete='cascade'
+    )
+
+    rejection_reason = fields.Text(
+        string='Lý do từ chối',
+        required=True
+    )
+
+    rejected_by = fields.Many2one(
+        'res.users',
+        string='Người từ chối',
+        required=True,
+        default=lambda self: self.env.user
+    )
+
+    rejection_date = fields.Datetime(
+        string='Thời gian từ chối',
+        required=True,
+        default=fields.Datetime.now
+    )
+
+
+
+# ========== 2. THÊM WIZARD TỪ CHỐI ==========
+
+class RejectDocumentWizard(models.TransientModel):
+    """Wizard nhập lý do từ chối"""
+    _name = 'office.document.reject.wizard'
+    _description = 'Nhập lý do từ chối văn bản'
+
+    office_document_id = fields.Many2one(
+        'office.document',
+        string='Văn bản',
+        required=True,
+        readonly=True
+    )
+
+    rejection_reason = fields.Text(
+        string='Lý do từ chối',
+        required=True,
+        placeholder='Vui lòng nhập lý do từ chối văn bản...'
+    )
+
+
+    def action_confirm_reject(self):
+        """Xác nhận từ chối"""
+        self.ensure_one()
+
+        # 1. Tạo bản ghi lịch sử từ chối
+        self.env['office.document.rejection'].create({
+            'office_document_id': self.office_document_id.id,
+            'rejection_reason': self.rejection_reason,
+            'rejected_by': self.env.user.id,
+            'rejection_date': fields.Datetime.now(),
+        })
+
+        # 2. Cập nhật trạng thái văn bản
+        self.office_document_id.tt_vb = 'draft'
+
+        # 3. Gửi thông báo cho người tạo
+        self._send_rejection_notification()
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'history_back',  # Tag phải khớp với tên đăng ký trong JS
+        }
+
+    def _send_rejection_notification(self):
+        """Gửi thông báo từ chối cho người tạo"""
+        self.ensure_one()
+        doc = self.office_document_id
+        creator = doc.create_uid
+
+        if not creator or not creator.email:
+            return
+
+        try:
+            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            detail_url = f"{web_url}/web#id={doc.id}&model=office.document&view_type=form"
+
+            subject = f"[Văn bản bị từ chối] {doc.trich_yeu[:50]}..."
+            body_html = f"""
+            <p>Xin chào {creator.name},</p>
+
+            <p>Văn bản <b>"{doc.trich_yeu}"</b> của bạn đã bị từ chối.</p>
+
+            <div style="background:#ffebee; padding:10px; margin:10px 0; border-left:4px solid #f44336;">
+                <p><b>Người từ chối:</b> {self.env.user.name}</p>
+                <p><b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                <p><b>Lý do từ chối:</b></p>
+                <p style="white-space: pre-wrap;">{self.rejection_reason}</p>
+            </div>
+
+            <p>Vui lòng kiểm tra và chỉnh sửa lại văn bản.</p>
+
+            <p>
+                <a href="{detail_url}" style="background:#f44336;color:white;padding:8px 16px;text-decoration:none;border-radius:4px;font-size:14px;">
+                    Xem chi tiết văn bản
+                </a>
+            </p>
+
+            <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
+            """
+
+            self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'email_to': creator.email,
+                'email_from': self.env.user.email or 'no-reply@company.com',
+                'body_html': body_html,
+            }).send()
+
+            # Gửi popup notification
+            if creator.partner_id:
+                self.env['bus.bus']._sendone(
+                    creator.partner_id,
+                    'simple_notification',
+                    {
+                        'title': 'Văn bản bị từ chối',
+                        'message': f'Văn bản "{doc.trich_yeu[:50]}..." đã bị từ chối.',
+                        'sticky': False,
+                        'type': 'warning',
+                    }
+                )
+
+        except Exception as e:
+            _logger.error(f"Lỗi gửi thông báo từ chối: {str(e)}")
+
+    def action_cancel(self):
+        """Hủy từ chối"""
+        return {'type': 'ir.actions.act_window_close'}

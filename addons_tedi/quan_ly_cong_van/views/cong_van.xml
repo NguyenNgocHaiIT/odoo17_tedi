@@ -36,6 +36,9 @@
                         <button name="approve" string="Duyệt" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb != 'cho_duyet'"/>
+                        <button name="khong_dat" string="Từ chối" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                                invisible="tt_vb != 'cho_duyet'"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
                                 invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_den"/>
                         <button name="phan_phat" string="Phân phát" type="object"
@@ -52,6 +55,10 @@
                                 type="object"
                                 string="Chuyển lãnh đạo"
                                 invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_den"/>
+                        <button name="action_open_rejection_history"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-history"/>
                     </header>
                     <sheet>
                         <field name="can_create_don_vi" invisible="1"/>
@@ -267,10 +274,14 @@
                         <button name="trinh_truong_don_vi" string="Trình trưởng đơn vị" type="object"
                                 invisible="tt_vb != 'draft'"/>
                         <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
+                                invisible="tt_vb != 'truong_don_vi_duyet' or not is_truong_don_vi"/>
+                        <button name="approve_don_vi" string="Duyệt" type="object"
+                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
+                        <button name="khong_dat" string="Từ chối" type="object"
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
                         <button name="approve" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
-                        <button name="khong_dat" string="Không đạt" type="object"
+                        <button name="khong_dat" string="Từ chối" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
                         <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
                                 type="object"
@@ -290,6 +301,11 @@
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb in ('draft, cho_duyet','huy')"
                                 confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
+
+                        <button name="action_open_rejection_history"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-history"/>
                     </header>
                     <sheet>
                         <field name="is_van_thu" invisible="1"/>
@@ -359,7 +375,6 @@
                             </group>
                             <group colspan="7">
                                 <field name="attachment_datas"
-                                       required="1"
                                        widget="pdf_viewer"
                                        filename="attachment_filename"
                                        readonly="not (is_van_thu or not_is_van_thu)"
@@ -496,20 +511,22 @@
             <field name="arch" type="xml">
                 <form delete="false" duplicate="false">
                     <header>
-                        <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
-                                groups="base.group_system, base.group_user"
+                        <button name="trinh_truong_don_vi" string="Trình trưởng đơn vị" type="object"
                                 invisible="tt_vb != 'draft'"/>
+                        <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
+                                invisible="tt_vb != 'truong_don_vi_duyet' or not is_truong_don_vi"/>
+                        <button name="approve_don_vi" string="Duyệt" type="object"
+                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
+                        <button name="khong_dat" string="Từ chối" type="object"
+                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
                         <button name="approve" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
-                        <button name="khong_dat" string="Không đạt" type="object"
+                        <button name="khong_dat" string="Từ chối" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
                         <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
                                 type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb != 'da_duyet'"/>
-                        <button name="phat_hanh" string="Phát hành" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly'))"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
                                 invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_di"/>
                         <button name="skip" string="Bỏ qua" type="object"
@@ -524,6 +541,11 @@
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb in ('draft, cho_duyet','huy')"
                                 confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
+
+                        <button name="action_open_rejection_history"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-history"/>
 
                     </header>
                     <sheet>
@@ -589,7 +611,6 @@
                             </group>
                             <group colspan="7">
                                 <field name="attachment_datas"
-                                       required="1"
                                        widget="pdf_viewer"
                                        filename="attachment_filename"
                                        readonly="not (is_van_thu or not_is_van_thu)"
@@ -855,6 +876,71 @@
                         <button name="cancel" string="Hủy" class="btn-secondary" special="cancel"/>
                         <button name="action_chuyen" string="Chuyển" class="btn-primary" type="object"/>
                     </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_reject_document_wizard_form" model="ir.ui.view">
+            <field name="name">office.document.reject.wizard.form</field>
+            <field name="model">office.document.reject.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Từ chối văn bản">
+                    <sheet>
+                        <field name="office_document_id" invisible="1"/>
+
+                        <field name="rejection_reason"
+                               placeholder="Nhập lý do từ chối văn bản..."
+                               required="1"/>
+                    </sheet>
+
+                    <footer>
+                        <button string="Xác nhận"
+                                type="object"
+                                name="action_confirm_reject"
+                                class="btn-danger"/>
+                        <button string="Hủy"
+                                special="cancel"
+                                class="btn-secondary"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- ========== 2. TREE VIEW LỊCH SỬ TỪ CHỐI ========== -->
+        <record id="view_office_document_rejection_tree" model="ir.ui.view">
+            <field name="name">office.document.rejection.tree</field>
+            <field name="model">office.document.rejection</field>
+            <field name="arch" type="xml">
+                <tree string="Lịch sử từ chối" create="0" edit="0" delete="0">
+                    <field name="rejection_date" string="Thời gian"/>
+                    <field name="rejected_by" string="Người từ chối"/>
+                    <field name="rejection_reason" string="Lý do từ chối"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- ========== 3. FORM VIEW LỊCH SỬ TỪ CHỐI ========== -->
+        <record id="view_office_document_rejection_form" model="ir.ui.view">
+            <field name="name">office.document.rejection.form</field>
+            <field name="model">office.document.rejection</field>
+            <field name="arch" type="xml">
+                <form string="Chi tiết từ chối" create="0" edit="0" delete="0">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="rejected_by" readonly="1"/>
+                                <field name="rejection_date" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="office_document_id" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <group string="Lý do từ chối">
+                            <field name="rejection_reason"
+                                   readonly="1"/>
+                        </group>
+                    </sheet>
                 </form>
             </field>
         </record>
