@@ -24,7 +24,7 @@ export class WorkEntryMonthlyGrid extends Component {
             isLoading: false,
             collapsedGroupIds: new Set(),
             filterState: 'all',
-            hasConflict: false, // [NEW] Biến cờ để kiểm tra có xung đột trong tháng không
+            hasConflict: false,
         });
 
         onWillStart(async () => {
@@ -181,7 +181,7 @@ export class WorkEntryMonthlyGrid extends Component {
 
     async reloadData() {
         this.state.isLoading = true;
-        this.state.hasConflict = false; // [RESET] Reset cờ báo lỗi mỗi lần load lại
+        this.state.hasConflict = false;
 
         const year = this.state.currentDate.getFullYear();
         const month = this.state.currentDate.getMonth();
@@ -216,20 +216,20 @@ export class WorkEntryMonthlyGrid extends Component {
             domain.push(['state', '=', this.state.filterState]);
         }
 
-        // [UPDATE] Thêm 'state' vào danh sách field cần lấy
         const workEntries = await this.orm.searchRead("hr.work.entry", domain,
             ['id', 'employee_id', 'date_start', 'duration', 'work_entry_type_id', 'color', 'state'],
             { order: "date_start asc" }
         );
 
-        const employees = await this.orm.searchRead("hr.employee", [], ['name', 'avatar_128']);
+        // [EDIT] Đã bỏ 'avatar_128' khỏi danh sách fields
+        const employees = await this.orm.searchRead("hr.employee", [], ['name']);
 
         const rowMap = {};
         employees.forEach(emp => {
             rowMap[emp.id] = {
                 id: emp.id,
                 name: emp.name,
-                hasAvatar: !!emp.avatar_128,
+                // [EDIT] Đã bỏ hasAvatar
                 cells: {},
                 totalDuration: 0
             };
@@ -248,10 +248,9 @@ export class WorkEntryMonthlyGrid extends Component {
             daysWithData.add(day);
             rowMap[empId].totalDuration += (we.duration || 0);
 
-            // [LOGIC MỚI] Kiểm tra xung đột
             const isConflict = we.state === 'conflict';
             if (isConflict) {
-                this.state.hasConflict = true; // Bật cờ báo động trên Header
+                this.state.hasConflict = true;
             }
 
             const isValidated = we.state === 'validated';
@@ -272,7 +271,7 @@ export class WorkEntryMonthlyGrid extends Component {
                 id: we.id,
                 label: this.formatCellDuration(we.duration),
                 colorClass: `o_color_${colorInt}`,
-                isConflict: isConflict, // [UPDATE] Truyền trạng thái conflict xuống cell
+                isConflict: isConflict,
                 isValidated: isValidated,
                 state: we.state
             });
@@ -305,19 +304,15 @@ export class WorkEntryMonthlyGrid extends Component {
     async openEntry(entryId, state) {
         if (!entryId) return;
 
-        // [LOGIC MỚI] Nếu là xung đột -> Mở Modal so sánh
         if (state === 'conflict') {
             this.state.isLoading = true;
             try {
-                // 1. Lấy dữ liệu các mục bị trùng từ backend
                 const conflictData = await this.orm.call("hr.work.entry", "get_conflict_data", [[entryId]]);
 
-                // 2. Mở Dialog (Dùng this.dialogService đã khai báo ở setup)
-                // KHÔNG ĐƯỢC GỌI useService Ở ĐÂY NỮA
                 this.dialogService.add(ConflictResolverDialog, {
                     entries: conflictData,
                     onResolved: () => {
-                        this.reloadData(); // Load lại bảng sau khi user chọn xong
+                        this.reloadData();
                     }
                 });
 
@@ -330,7 +325,6 @@ export class WorkEntryMonthlyGrid extends Component {
             return;
         }
 
-        // [LOGIC CŨ] Mở form view bình thường
         this.actionService.doAction({
             type: 'ir.actions.act_window',
             res_model: 'hr.work.entry',
