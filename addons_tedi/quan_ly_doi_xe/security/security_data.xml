@@ -23,6 +23,18 @@
             <field name="perm_unlink" eval="0"/>
         </record>
 
+        <!--Quản lý có full quyền-->
+        <record id="vehicle_registration_manager_rule" model="ir.rule">
+            <field name="name">Vehicle Registration - Manager Full Access</field>
+            <field name="model_id" ref="model_hr_tedi_vehicle_registration"/>
+            <field name="domain_force">[(1, '=', 1)]</field> <!-- Tất cả phiếu -->
+            <field name="groups" eval="[(4, ref('fleet.fleet_group_manager'))]"/>
+            <field name="perm_read">1</field>
+            <field name="perm_write">1</field>
+            <field name="perm_create">1</field>
+            <field name="perm_unlink">1</field>
+        </record>
+
         <!-- Rule 1: Người dùng bình thường chỉ có thể thêm/sửa/xóa phiếu mình tạo -->
         <record id="vehicle_registration_user_rule" model="ir.rule">
             <field name="name">Vehicle Registration - User Rule</field>
