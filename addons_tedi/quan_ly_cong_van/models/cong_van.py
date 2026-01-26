@@ -289,7 +289,7 @@ class ButPhe(models.TransientModel):
     tai_lieu_kem = fields.Binary('Tài liệu kèm')
     quan_trong = fields.Boolean('Quan trọng')
     da_giai_quyet = fields.Boolean('Đã giải quyết')
-    thong_bao_cho_van_thu = fields.Boolean('Thông báo cho văn thư')
+    thong_bao_cho_van_thu = fields.Boolean('Thông báo cho văn thư', default=True)
 
     def but_phe(self):
         doc_id = self.env.context.get('active_id')
@@ -340,6 +340,41 @@ class ButPhe(models.TransientModel):
             'noi_dung_chi_dao': self.y_kien_xu_ly or 'Không có ý kiến',
             'thoi_diem_chi_dao': fields.Datetime.now(),
         })
+        # ===== 4. GỬI EMAIL CHO VĂN THƯ =====
+        if self.thong_bao_cho_van_thu:
+            group = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
+            if group and group.users:
+                # Lấy email văn thư
+                van_thu_emails = []
+                for user in group.users:
+                    if user.email:
+                        van_thu_emails.append(user.email)
+
+                if van_thu_emails:
+                    email_to = ', '.join(van_thu_emails)
+
+                    # Tạo email
+                    subject = f"Văn bản đã bút phê: {doc.trich_yeu[:30]}..." if doc.trich_yeu else "Văn bản đã bút phê"
+
+                    body = f"""
+                            Văn bản đã được bút phê:
+
+                            Số văn bản: {doc.so_vb or 'Chưa có số'}
+                            Trích yếu: {doc.trich_yeu or 'Không có'}
+                            Người bút phê: {employee.name if employee else self.env.user.name}
+                            Ý kiến: {self.y_kien_xu_ly or 'Không có ý kiến'}
+                            Quan trọng: {'Có' if self.quan_trong else 'Không'}
+                            Thời gian: {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}
+
+                            Vui lòng xử lý phân phát.
+                            """
+
+                    # Gửi email
+                    self.env['mail.mail'].sudo().create({
+                        'subject': subject,
+                        'email_to': email_to,
+                        'body_html': body.replace('\n', '<br>'),
+                    }).send()
 
         # ===== 5. Thông báo văn thư (group) =====
         if self.thong_bao_cho_van_thu:
@@ -1915,7 +1950,7 @@ class OfficeDocument(models.Model):
         is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
 
         for record in self:
-            if record.tt_vb == 'cho_but_phe':
+            if record.tt_vb == 'da_duyet':
                 if is_van_thu:
                     record.show_skip_button = True
                 else:
