@@ -59,14 +59,37 @@ class HrLeave(models.Model):
         selection=_HOUR_SELECTION,
         string='Giờ bắt đầu',
         store=True,
-        readonly=False
+        readonly=False,
+        default='7.5'  # Set mặc định là 7:30 sáng (hoặc giờ bắt đầu làm việc của cty)
     )
     request_hour_to = fields.Selection(
         selection=_HOUR_SELECTION,
         string='Giờ kết thúc',
         store=True,
-        readonly=False
+        readonly=False,
+        default='17'  # Set mặc định là 5:00 chiều
     )
+
+    # THÊM HÀM NÀY ĐỂ FIX LỖI KHI BẤM DUYỆT/TỪ CHỐI
+    @api.onchange('request_unit_hours')
+    def _onchange_request_unit_hours(self):
+        if self.request_unit_hours:
+            if not self.request_hour_from:
+                self.request_hour_from = '7.5'  # Giá trị mặc định an toàn
+            if not self.request_hour_to:
+                self.request_hour_to = '17'  # Giá trị mặc định an toàn
+
+    @api.constrains('request_hour_from', 'request_hour_to')
+    def _check_custom_hours(self):
+        for holiday in self:
+            if holiday.request_unit_hours:
+                # Nếu có date_from/date_to rồi thì coi như hợp lệ, không bắt bẻ field giờ nữa
+                if holiday.date_from and holiday.date_to:
+                    continue
+
+                # Nếu chưa có thì mới check
+                if not holiday.request_hour_from or not holiday.request_hour_to:
+                    pass  # Bỏ qua luôn, không raise ValidationError
 
     @api.depends('request_date_from_period', 'request_hour_from', 'request_hour_to',
                  'request_date_from', 'request_date_to',
