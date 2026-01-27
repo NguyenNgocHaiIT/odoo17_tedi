@@ -596,7 +596,7 @@ class OfficeDocument(models.Model):
         ('hoa_toc', 'Hỏa tốc')], string='Độ khẩn', default='thuong')
     vb_nhan = fields.Char('Văn bản nhận')
     tt_vb = fields.Selection([
-        ('draft', 'Nhập thông tin'),#thường
+        ('draft', 'Nháp'),#thường
         ('cho_truong_don_vi_duyet', 'Trình TĐV'),
         ('truong_don_vi_duyet','TĐV duyệt'),
         ('cho_duyet', 'Chờ duyệt'),
