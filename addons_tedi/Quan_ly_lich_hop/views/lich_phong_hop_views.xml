@@ -51,13 +51,13 @@
                                 string="Duyệt Phòng"
                                 type="object"
                                 class="btn-success"
-                                invisible="not can_approve_room"/>
+                                invisible="not can_approve_room or state != 'approved'"/>
 
                         <button name="action_reject_room"
                                 string="Từ chối Phòng"
                                 type="object"
                                 class="btn-danger"
-                                invisible="not can_approve_room"/>
+                                invisible="not can_approve_room or state != 'approved'"/>
 
                         <button name="action_complete"
                                 string="Hoàn thành"

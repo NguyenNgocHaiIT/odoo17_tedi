@@ -641,7 +641,7 @@ class HrTediVehicleRegistration(models.Model):
 
             domain = [
                 ('assigned_vehicle_id', '!=', False),
-                ('state', 'in', ['assigned', 'waiting_return', 'done']),
+                ('state', 'in', ['assigned', 'waiting_return']),
                 ('start_date', '<', rec.end_date),
                 ('end_date', '>', rec.start_date),
             ]
