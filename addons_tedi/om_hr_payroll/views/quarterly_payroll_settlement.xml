@@ -25,19 +25,19 @@
                         <button name="action_add_employee"
                                 string="Thêm nhân sự"
                                 type="object"
-                                 icon="fa-plus" invisible="state == 'approve'" groups="group_hr_payroll_user,group_hr_payroll_manager"/>
+                                 icon="fa-plus" invisible="state == 'approve'" groups="om_hr_payroll.group_hr_payroll_user,om_hr_payroll.group_hr_payroll_manager"/>
                         <button name="action_compute_lines"
                                 string="Xử lý dữ liệu"
                                 type="object"
-                                 icon="fa-asterisk" invisible="state == 'approve'" groups="group_hr_payroll_user,group_hr_payroll_manager"/>
+                                 icon="fa-asterisk" invisible="state == 'approve'" groups="om_hr_payroll.group_hr_payroll_user,om_hr_payroll.group_hr_payroll_manager"/>
                         <button name="action_approve"
                                 string="Duyệt phiếu"
                                 type="object"
-                                icon="fa-check text-success" invisible="state == 'approve'" groups="group_hr_payroll_user,group_hr_payroll_manager"/>
+                                icon="fa-check text-success" invisible="state == 'approve'" groups="om_hr_payroll.group_hr_payroll_user,om_hr_payroll.group_hr_payroll_manager"/>
                         <button name="action_draft"
                                 string="Mở lại phiếu"
                                 type="object"
-                                icon="fa-exclamation text-warning" invisible="state == 'draft'" groups="group_hr_payroll_user,group_hr_payroll_manager"/>
+                                icon="fa-exclamation text-warning" invisible="state == 'draft'" groups="om_hr_payroll.group_hr_payroll_user,om_hr_payroll.group_hr_payroll_manager"/>
                         <field name="state" widget="statusbar"/>
                     </header>
                     <sheet>
