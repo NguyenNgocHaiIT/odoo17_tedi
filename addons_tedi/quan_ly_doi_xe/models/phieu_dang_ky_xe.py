@@ -499,7 +499,7 @@ class HrTediVehicleRegistration(models.Model):
         if not self.assigned_vehicle_id: raise ValidationError("Chưa chọn xe.")
 
         domain = [('id', '!=', self.id), ('assigned_vehicle_id', '=', self.assigned_vehicle_id.id),
-                  ('state', 'in', ['assigned', 'waiting_return', 'done']),
+                  ('state', 'in', ['assigned', 'waiting_return']),
                   ('start_date', '<', self.end_date), ('end_date', '>', self.start_date)]
         if self.search(domain):
             raise ValidationError(f"Xe {self.assigned_vehicle_id.license_plate} bị trùng lịch!")
