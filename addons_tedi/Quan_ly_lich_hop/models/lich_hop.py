@@ -190,8 +190,6 @@ class Calendar(models.Model):
 
         record = super().create(vals)
         record.color = record.id % 12
-
-        record._send_notification_to_dept_managers("created")
         return record
 
     def _send_notification_to_dept_managers(self, action_type="created"):
@@ -465,9 +463,12 @@ class Calendar(models.Model):
         self.write({'state': 'approved'})
 
         # 2. Lấy danh sách cần thông báo
-        employee_ids = self.employee_ids.ids
+        employee_ids = []
+
+        if self.employee_ids:
+            employee_ids.extend(self.employee_ids.ids)
         if self.lanh_dao:
-            employee_ids.append(self.lanh_dao.id)
+            employee_ids.extend(self.lanh_dao.ids)
         employees = self.env['hr.employee'].browse(set(employee_ids))
 
         manager_employees = self.env['hr.employee']
