@@ -72,8 +72,8 @@
             <field name="name">hr.payslip.tree</field>
             <field name="model">hr.payslip</field>
             <field name="arch" type="xml">
-                <tree decoration-info="state in ('done')"
-                      decoration-muted="state == 'cancel'" string="Payslips">
+                <tree decoration-info="state in ('done')" class="excel_style_list_view"
+                      decoration-muted="state == 'cancel'" string="Payslips" create="false" delete="false" duplicate="false">
                     <field name="number"/>
                     <field name="employee_id"/>
                     <field name="name"/>
@@ -137,7 +137,7 @@
             <field name="name">hr.payslip.form</field>
             <field name="model">hr.payslip</field>
             <field name="arch" type="xml">
-                <form string="Payslip">
+                <form string="Payslip" create="false" delete="false" duplicate="false">
                     <header>
                         <button string="Confirm" name="action_payslip_done" type="object"
                                 invisible="state != 'draft'"
@@ -184,7 +184,7 @@
                             <field name="number" readonly="state != 'draft'"/>
                             <field name="struct_id" required="contract_id != False" readonly="state != 'draft'"/>
                             <field name="name" readonly="state != 'draft'"/>
-                            <field name="credit_note" readonly="state != 'draft'"/>
+                            <field name="credit_note" readonly="state != 'draft'" invisible="1"/>
                             <field name="net_pay"/>
                             <field name="currency_id" invisible="1"/>
                         </group>
@@ -192,7 +192,7 @@
                             <page string="Worked Days &amp; Inputs">
                                 <separator string="Worked Days"/>
                                 <field name="worked_days_line_ids" readonly="state != 'draft'">
-                                    <tree string="Worked Days" editable="bottom">
+                                    <tree string="Worked Days" editable="bottom" class="excel_style_list_view">
                                         <field name="name"/>
                                         <field name="code"/>
                                         <field name="number_of_days" sum="Total Working Days"/>
@@ -213,7 +213,7 @@
                                 </field>
                                 <separator string="Other Inputs"/>
                                 <field name="input_line_ids" colspan="4" nolabel="1" readonly="state != 'draft'">
-                                    <tree string="Input Data" editable="bottom">
+                                    <tree string="Input Data" editable="bottom" class="excel_style_list_view">
                                         <field name="name"/>
                                         <field name="code"/>
                                         <field name="amount"/>
@@ -233,7 +233,7 @@
                             </page>
                             <page string="Salary Computation">
                                 <field name="line_ids" colspan="4" nolabel="1" readonly="state != 'draft'">
-                                    <tree string="Salary Structure" editable="bottom" decoration-info="total == 0">
+                                    <tree string="Salary Structure" editable="bottom" decoration-info="total == 0" class="excel_style_list_view">
                                         <field name="name"/>
                                         <field name="code"/>
                                         <field name="category_id"/>
@@ -263,7 +263,7 @@
                                 <field name="details_by_salary_rule_category"
                                        context="{'search_default_category_id':1}"
                                        domain="[('appears_on_payslip', '=', True)]">
-                                    <tree string="Payslip Lines" decoration-info="total == 0">
+                                    <tree string="Payslip Lines" decoration-info="total == 0" class="excel_style_list_view">
                                         <field name="category_id"/>
                                         <field name="name"/>
                                         <field name="code"/>
@@ -329,11 +329,6 @@
             <field name="search_view_id" ref="view_hr_payslip_filter"/>
         </record>
 
-        <menuitem id="menu_department_tree"
-                  action="action_view_hr_payslip_form"
-                  parent="menu_hr_payroll_root"
-                  groups="om_hr_payroll.group_hr_payroll_user"/>
-
         <record id="act_hr_employee_payslip_list" model="ir.actions.act_window">
             <field name="res_model">hr.payslip</field>
             <field name="name">Payslips</field>
@@ -362,11 +357,11 @@
             <field name="name">hr.payslip.run.tree</field>
             <field name="model">hr.payslip.run</field>
             <field name="arch" type="xml">
-                <tree string="Payslips Batches">
+                <tree string="Payslips Batches" class="excel_style_list_view">
                     <field name="name"/>
                     <field name="date_start"/>
                     <field name="date_end"/>
-                    <field name="credit_note"/>
+                    <field name="credit_note" column_invisible="1"/>
                     <field name="state"/>
                 </tree>
             </field>
@@ -418,7 +413,7 @@
                         <button name="%(action_hr_payslip_by_employees)d" type="action" invisible="state != 'draft'"
                                 string="Generate Payslips" class="oe_highlight"/>
                         <button string="Set to Draft" name="draft_payslip_run" type="object" invisible="state != 'close'"/>
-                        <button string="Mark As Done" name="done_payslip_run" type="object" invisible="state != 'draft'"
+                        <button string="Hoàn thành" name="done_payslip_run" type="object" invisible="state != 'draft'"
                                 class="oe_highlight"/>
                         <button name="close_payslip_run" type="object" string="Close" invisible="state != 'draft'"/>
                         <field name="state" widget="statusbar"/>
@@ -452,9 +447,17 @@
             <field name="search_view_id" ref="hr_payslip_run_filter"/>
         </record>
 
+        <menuitem id="menu_hr_payslip" name="Bảng lương"
+                  parent="menu_hr_payroll_root" sequence="1"/>
+
         <menuitem id="menu_hr_payslip_run"
                   action="action_hr_payslip_run_tree"
-                  parent="menu_hr_payroll_root"/>
+                  parent="menu_hr_payslip" sequence="1"/>
+
+        <menuitem id="menu_department_tree"
+                  action="action_view_hr_payslip_form"
+                  parent="menu_hr_payslip" sequence="2"
+                  groups="om_hr_payroll.group_hr_payroll_user"/>
 
         <!--  Shortcuts -->
 

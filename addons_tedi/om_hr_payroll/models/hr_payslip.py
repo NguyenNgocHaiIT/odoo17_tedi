@@ -91,7 +91,7 @@ class HrPayslip(models.Model):
     @api.constrains('date_from', 'date_to')
     def _check_dates(self):
         if any(self.filtered(lambda payslip: payslip.date_from > payslip.date_to)):
-            raise ValidationError(_("Payslip 'Date From' must be earlier 'Date To'."))
+            raise ValidationError("Ngày bắt đầu của phiếu lương phải trước Ngày kết thúc.")
 
     def action_payslip_draft(self):
         return self.write({'state': 'draft'})
@@ -191,7 +191,7 @@ class HrPayslip(models.Model):
             contract_ids = payslip.contract_id.ids or \
                 self.get_contract(payslip.employee_id, payslip.date_from, payslip.date_to)
             if not contract_ids:
-                raise ValidationError(_("No running contract found for the employee: %s or no contract in the given period" % payslip.employee_id.name))
+                raise ValidationError("Không tìm thấy hợp đồng đang hiệu lực nào cho nhân viên: %s hoặc không có hợp đồng nào trong khoảng thời gian đã chọn." % payslip.employee_id.name)
             lines = [(0, 0, line) for line in self._get_payslip_lines(contract_ids, payslip.id)]
             payslip.write({'line_ids': lines, 'number': number})
         return True
@@ -926,9 +926,9 @@ class HrPayslipRun(models.Model):
     name = fields.Char(required=True)
     slip_ids = fields.One2many('hr.payslip', 'payslip_run_id', string='Payslips')
     state = fields.Selection([
-        ('draft', 'Draft'),
-        ('done', 'Done'),
-        ('close', 'Close'),
+        ('draft', 'Đang thực hiện'),
+        ('done', 'Hoàn thành'),
+        ('close', 'Đóng'),
     ], string='Status', index=True, readonly=True, copy=False, default='draft')
     date_start = fields.Date(
         string='Date From', required=True,
@@ -961,5 +961,5 @@ class HrPayslipRun(models.Model):
     def unlink(self):
         for rec in self:
             if rec.state == 'done':
-                raise ValidationError(_('You Cannot Delete Done Payslips Batches'))
+                raise ValidationError('Bạn không thể xóa các lô phiếu lương đã ở trạng thái "Hoàn thành".')
         return super(HrPayslipRun, self).unlink()

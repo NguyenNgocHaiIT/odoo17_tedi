@@ -2,24 +2,24 @@
 <odoo>
     <data>
 
-        <menuitem
-                id="menu_tedi_allowance_group"
-                name="Quản lý Phụ cấp"
-                parent="om_hr_payroll.menu_hr_payroll_root"
-                sequence="25"/>
+<!--        <menuitem-->
+<!--                id="menu_tedi_allowance_group"-->
+<!--                name="Quản lý Phụ cấp"-->
+<!--                parent="om_hr_payroll.menu_hr_payroll_root"-->
+<!--                sequence="25" groups="base.group_no_one"/>-->
 
-        <menuitem
-                id="om_hr_payroll.hr_employee_allowance_menu_action"
-                name="Phụ cấp nhân viên"
-                parent="menu_tedi_allowance_group"
-                sequence="1"/>
+<!--        <menuitem-->
+<!--                id="om_hr_payroll.hr_employee_allowance_menu_action"-->
+<!--                name="Phụ cấp nhân viên"-->
+<!--                parent="menu_tedi_allowance_group"-->
+<!--                sequence="1"/>-->
 
-        <menuitem
-                id="menu_action_tedi_allowance_import"
-                name="Import Excel Phụ cấp"
-                action="action_tedi_allowance_import"
-                parent="menu_tedi_allowance_group"
-                sequence="2"/>
+<!--        <menuitem-->
+<!--                id="menu_action_tedi_allowance_import"-->
+<!--                name="Import Excel Phụ cấp"-->
+<!--                action="action_tedi_allowance_import"-->
+<!--                parent="menu_tedi_allowance_group"-->
+<!--                sequence="2"/>-->
 
         <menuitem
                 id="menu_tedi_insurance_group"

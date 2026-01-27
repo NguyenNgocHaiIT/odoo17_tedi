@@ -16,6 +16,31 @@ def get_quarter_date_range(year: int, quarter: int):
     return date_from, date_to
 
 
+class EmployeeTax(models.Model):
+    _name = 'employee.tax'
+    _description = 'Khấu trừ thuế theo nhân viên'
+
+    employee_id = fields.Many2one('hr.employee', 'Họ và tên')
+    month = fields.Selection([
+        ('1', 'Tháng 1'), ('2', 'Tháng 2'), ('3', 'Tháng 3'), ('4', 'Tháng 4'),
+        ('5', 'Tháng 5'), ('6', 'Tháng 6'), ('7', 'Tháng 7'), ('8', 'Tháng 8'),
+        ('9', 'Tháng 9'), ('10', 'Tháng 10'), ('11', 'Tháng 11'), ('12', 'Tháng 12'),
+    ], string='Tháng', default=lambda self: str(date.today().month))
+    year = fields.Integer(string='Năm', default=lambda self: date.today().year)
+    nguoi_pt = fields.Integer(string='Người PT')
+    currency_id = fields.Many2one(comodel_name='res.currency', default=lambda self: self.env.company.currency_id)
+    tl_truoc_thue = fields.Monetary('TL trước thuế', currency_field='currency_id')
+    giam_tru_ban_than = fields.Monetary('Giảm trừ bản thân', currency_field='currency_id')
+    giam_tru_gia_canh = fields.Monetary('Giảm trừ gia cảnh', currency_field='currency_id')
+    thu_nhap_tinh_thue = fields.Monetary('Thu nhập tính thuế', currency_field='currency_id')
+    thue_tncn = fields.Monetary('Thuế TNCN', currency_field='currency_id')
+    deducted = fields.Boolean('Đã KT')
+    quarterly_settlement_id = fields.Many2one(
+        'quarterly.payroll.settlement',
+        string='Quyết toán quý'
+    )
+
+
 class QuarterlyPayrollSettlementLine(models.Model):
     _name = "quarterly.payroll.settlement.line"
     _description = "Quyết toán lương quý (Chi tiết)"
@@ -40,8 +65,8 @@ class QuarterlyPayrollSettlementLine(models.Model):
     tam_ung_tns = fields.Float('Tạm ứng TNS')
     cong_2 = fields.Float('Cộng')
     tns_con_nhan = fields.Float('TNS còn được nhận')
-    kt_thue_2024 = fields.Float('KT thuế 2024')
-    kt_thue_2025 = fields.Float('KT thuế 2025')
+    kt_thue_ky_truoc = fields.Float('KT thuế kỳ trước')
+    kt_thue_ky_nay = fields.Float('KT thuế kỳ này')
     nld_con_nhan = fields.Float('NLĐ còn được lĩnh')
 
 
@@ -162,6 +187,9 @@ class QuarterlyPayrollSettlement(models.Model):
     #         for line in settlement.line_ids:
     #             settlement._compute_line_for_employee(line)
 
+    def _month_index(self, year, month):
+        return year * 12 + int(month)
+
     def action_compute_lines(self):
         for settlement in self:
             settlement._compute_lines_fast()
@@ -173,14 +201,19 @@ class QuarterlyPayrollSettlement(models.Model):
         if not lines:
             return
 
-        employees = lines.mapped('employee_id')
-        emp_ids = employees.ids
+        emp_ids = lines.mapped('employee_id').ids
 
+        # index quý hiện tại
+        current_q_end = self._month_index(
+            self.year,
+            (int(self.quarter) - 1) * 3 + 3
+        )
+
+        # ------------------------------------------------
+        # PAYSLIP
+        # ------------------------------------------------
         date_from, date_to = get_quarter_date_range(self.year, int(self.quarter))
 
-        # ------------------------------------------------
-        # 1. PAYSLIP (1 QUERY)
-        # ------------------------------------------------
         payslips = self.env['hr.payslip'].sudo().search([
             ('employee_id', 'in', emp_ids),
             ('state', '=', 'done'),
@@ -189,9 +222,9 @@ class QuarterlyPayrollSettlement(models.Model):
             ('date_to', '<=', date_to),
         ])
 
-        payslip_by_emp = {}
         worked_days_map = {}
         slip_line_map = {}
+        payslip_by_emp = {}
 
         for slip in payslips:
             eid = slip.employee_id.id
@@ -199,25 +232,44 @@ class QuarterlyPayrollSettlement(models.Model):
             payslip_by_emp[eid] |= slip
 
             for wd in slip.worked_days_line_ids:
-                key = (eid, wd.code)
-                worked_days_map[key] = worked_days_map.get(key, 0) + wd.number_of_days
+                worked_days_map[(eid, wd.code)] = worked_days_map.get((eid, wd.code), 0) + wd.number_of_days
 
-            for line in slip.line_ids:
-                key = (eid, line.code)
-                slip_line_map[key] = slip_line_map.get(key, 0) + line.total
+            for sl in slip.line_ids:
+                slip_line_map[(eid, sl.code)] = slip_line_map.get((eid, sl.code), 0) + sl.total
 
         # ------------------------------------------------
-        # 2. KPI (1 QUERY)
+        # KPI
         # ------------------------------------------------
         kpis = self.env['evaluation.kpi'].sudo().search([
             ('employee_id', 'in', emp_ids),
             ('evaluate_kpi_id.quarter', '=', self.quarter),
-            ('evaluate_kpi_id.year', '=', self.year),
+            ('evaluate_kpi_id.year', '=', self.year)
         ])
         kpi_map = {k.employee_id.id: k.k_coefficient for k in kpis}
 
         # ------------------------------------------------
-        # 3. TÍNH THƯỞNG & TỔNG THƯỞNG
+        # EMPLOYEE TAX (ALL PAST)
+        # ------------------------------------------------
+        tax_lines = self.env['employee.tax'].sudo().search([
+            ('employee_id', 'in', emp_ids),
+            ('deducted', '=', False),
+        ])
+
+        tax_prev = {}
+        tax_curr = {}
+
+        for t in tax_lines:
+            eid = t.employee_id.id
+            idx = self._month_index(t.year, t.month)
+
+            if idx <= current_q_end:
+                if t.year == self.year and int(t.month) >= (int(self.quarter) - 1) * 3 + 1:
+                    tax_curr[eid] = tax_curr.get(eid, 0) + t.thue_tncn
+                else:
+                    tax_prev[eid] = tax_prev.get(eid, 0) + t.thue_tncn
+
+        # ------------------------------------------------
+        # TÍNH THƯỞNG
         # ------------------------------------------------
         thuong_map = {}
         tong_thuong = 0
@@ -245,17 +297,8 @@ class QuarterlyPayrollSettlement(models.Model):
             line.lv_tt_quy = (luong_cd * so_thang / dv_dk) * lv_tt
             line.che_do_quy = (luong_cd * so_thang / dv_dk) * (le_tet + phep)
 
-            code = grade.code or ''
-            if 'C' in code:
-                line.tns_quy = (grade.advance_amount or 0) - luong_cd
-            elif 'B' in code:
-                line.tns_quy = luong_cd * (grade.bonus_rate or 0) / 100
-            else:
-                line.tns_quy = 0
-
             line.kpi = kpi_map.get(eid, 0)
             line.thuong = lv_tt * line.hs_lcd_pc * line.kpi
-            line.cong_1 = line.lv_tt_quy + line.che_do_quy + line.tns_quy
 
             thuong_map[eid] = line.thuong
             tong_thuong += line.thuong
@@ -263,7 +306,7 @@ class QuarterlyPayrollSettlement(models.Model):
         tong_thuong = tong_thuong or 1
 
         # ------------------------------------------------
-        # 4. CHIA QUỸ + QUYẾT TOÁN
+        # FINAL
         # ------------------------------------------------
         for line in lines:
             eid = line.employee_id.id
@@ -277,7 +320,124 @@ class QuarterlyPayrollSettlement(models.Model):
 
             line.cong_2 = line.nlv_tt_nhan + line.lcd_nhan + line.tam_ung_tns
             line.tns_con_nhan = line.lcd_tns_quy - line.cong_2
-            line.nld_con_nhan = line.tns_con_nhan - line.kt_thue_2024 - line.kt_thue_2025
+
+            line.kt_thue_ky_truoc = tax_prev.get(eid, 0)
+            line.kt_thue_ky_nay = tax_curr.get(eid, 0)
+
+            line.nld_con_nhan = line.tns_con_nhan - line.kt_thue_ky_truoc - line.kt_thue_ky_nay
+
+    # def _compute_lines_fast(self):
+    #     self.ensure_one()
+    #
+    #     lines = self.line_ids.filtered(lambda l: l.employee_id)
+    #     if not lines:
+    #         return
+    #
+    #     employees = lines.mapped('employee_id')
+    #     emp_ids = employees.ids
+    #
+    #     date_from, date_to = get_quarter_date_range(self.year, int(self.quarter))
+    #
+    #     # ------------------------------------------------
+    #     # 1. PAYSLIP (1 QUERY)
+    #     # ------------------------------------------------
+    #     payslips = self.env['hr.payslip'].sudo().search([
+    #         ('employee_id', 'in', emp_ids),
+    #         ('state', '=', 'done'),
+    #         ('struct_id.pay_batch', '=', '2'),
+    #         ('date_from', '>=', date_from),
+    #         ('date_to', '<=', date_to),
+    #     ])
+    #
+    #     payslip_by_emp = {}
+    #     worked_days_map = {}
+    #     slip_line_map = {}
+    #
+    #     for slip in payslips:
+    #         eid = slip.employee_id.id
+    #         payslip_by_emp.setdefault(eid, self.env['hr.payslip'])
+    #         payslip_by_emp[eid] |= slip
+    #
+    #         for wd in slip.worked_days_line_ids:
+    #             key = (eid, wd.code)
+    #             worked_days_map[key] = worked_days_map.get(key, 0) + wd.number_of_days
+    #
+    #         for line in slip.line_ids:
+    #             key = (eid, line.code)
+    #             slip_line_map[key] = slip_line_map.get(key, 0) + line.total
+    #
+    #     # ------------------------------------------------
+    #     # 2. KPI (1 QUERY)
+    #     # ------------------------------------------------
+    #     kpis = self.env['evaluation.kpi'].sudo().search([
+    #         ('employee_id', 'in', emp_ids),
+    #         ('evaluate_kpi_id.quarter', '=', self.quarter),
+    #         ('evaluate_kpi_id.year', '=', self.year)
+    #     ])
+    #     kpi_map = {k.employee_id.id: k.k_coefficient for k in kpis}
+    #
+    #     # ------------------------------------------------
+    #     # 3. TÍNH THƯỞNG & TỔNG THƯỞNG
+    #     # ------------------------------------------------
+    #     thuong_map = {}
+    #     tong_thuong = 0
+    #
+    #     for line in lines:
+    #         eid = line.employee_id.id
+    #         contract = line.employee_id.contract_id
+    #         grade = contract.salary_grade_id
+    #
+    #         lv_tt = worked_days_map.get((eid, 'WORK_REAL'), 0)
+    #         le_tet = worked_days_map.get((eid, 'LEAVE100'), 0)
+    #         phep = worked_days_map.get((eid, 'LEAVE120'), 0)
+    #         dv_dk = worked_days_map.get((eid, 'WORK100'), 0) or 1
+    #
+    #         line.lv_tt = lv_tt
+    #         line.le_tet = le_tet
+    #         line.phep = phep
+    #         line.tong_cong = lv_tt + le_tet + phep
+    #
+    #         line.hs_lcd_pc = grade.salary_coefficient or 0
+    #
+    #         so_thang = len(payslip_by_emp.get(eid, []))
+    #         luong_cd = grade.luong_chuc_danh or 0
+    #
+    #         line.lv_tt_quy = (luong_cd * so_thang / dv_dk) * lv_tt
+    #         line.che_do_quy = (luong_cd * so_thang / dv_dk) * (le_tet + phep)
+    #
+    #         code = grade.code or ''
+    #         if 'C' in code:
+    #             line.tns_quy = (grade.advance_amount or 0) - luong_cd
+    #         elif 'B' in code:
+    #             line.tns_quy = luong_cd * (grade.bonus_rate or 0) / 100
+    #         else:
+    #             line.tns_quy = 0
+    #
+    #         line.kpi = kpi_map.get(eid, 0)
+    #         line.thuong = lv_tt * line.hs_lcd_pc * line.kpi
+    #         line.cong_1 = line.lv_tt_quy + line.che_do_quy + line.tns_quy
+    #
+    #         thuong_map[eid] = line.thuong
+    #         tong_thuong += line.thuong
+    #
+    #     tong_thuong = tong_thuong or 1
+    #
+    #     # ------------------------------------------------
+    #     # 4. CHIA QUỸ + QUYẾT TOÁN
+    #     # ------------------------------------------------
+    #     for line in lines:
+    #         eid = line.employee_id.id
+    #
+    #         line.tns_nhan = (self.quarterly_payroll_fund / tong_thuong) * thuong_map.get(eid, 0)
+    #         line.lcd_tns_quy = line.lv_tt_quy + line.che_do_quy + line.tns_nhan
+    #
+    #         line.nlv_tt_nhan = slip_line_map.get((eid, 'WORK_ATT'), 0)
+    #         line.lcd_nhan = slip_line_map.get((eid, 'LCĐ'), 0)
+    #         line.tam_ung_tns = slip_line_map.get((eid, 'TNS'), 0)
+    #
+    #         line.cong_2 = line.nlv_tt_nhan + line.lcd_nhan + line.tam_ung_tns
+    #         line.tns_con_nhan = line.lcd_tns_quy - line.cong_2
+    #         line.nld_con_nhan = line.tns_con_nhan - line.kt_thue_2024 - line.kt_thue_2025
 
     def action_add_employee(self):
         return {
@@ -291,11 +451,43 @@ class QuarterlyPayrollSettlement(models.Model):
             },
         }
 
+    # def action_approve(self):
+    #     if self.state == 'draft':
+    #         self.state = 'approve'
+
     def action_approve(self):
-        if self.state == 'draft':
-            self.state = 'approve'
+        for rec in self:
+            if rec.state == 'draft':
+                emp_ids = rec.line_ids.mapped('employee_id').ids
+                current_q_end = rec._month_index(rec.year, (int(rec.quarter) - 1) * 3 + 3)
+
+                taxes = self.env['employee.tax'].sudo().search([
+                    ('employee_id', 'in', emp_ids),
+                    ('deducted', '=', False),
+                ])
+
+                mark = taxes.filtered(
+                    lambda t: rec._month_index(t.year, t.month) <= current_q_end
+                )
+
+                mark.write({
+                    'deducted': True,
+                    'quarterly_settlement_id': rec.id
+                })
+
+                rec.state = 'approve'
 
     def action_draft(self):
-        if self.state == 'approve':
-            self.state = 'draft'
+        for rec in self:
+            taxes = self.env['employee.tax'].sudo().search([
+                ('quarterly_settlement_id', '=', rec.id)
+            ])
+
+            taxes.write({
+                'deducted': False,
+                'quarterly_settlement_id': False
+            })
+
+            rec.state = 'draft'
+
 

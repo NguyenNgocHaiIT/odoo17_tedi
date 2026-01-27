@@ -39,7 +39,7 @@
         'views/hr_contract_history_views.xml',
         'views/hr_leave_type_view.xml',
         'views/hr_salary_grade.xml',
-        'views/hr_work_entry_view.xml',
+        # 'views/hr_work_entry_view.xml',
         'views/hr_insurance.xml',
         'views/hr_allowance.xml',
         'views/evaluation_KPI_view.xml',
