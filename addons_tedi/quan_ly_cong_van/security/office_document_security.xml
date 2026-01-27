@@ -30,19 +30,68 @@
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
         </record>
 
-        <!-- Văn thư đơn vị: chỉ xem -->
-        <record id="office_document_rule_van_thu_don_vi" model="ir.rule">
-            <field name="name">Office Document - Văn thư đơn vị: xem tất cả</field>
+        <!-- Rule 1: Quyền READ - Xem văn bản cùng phòng ban HOẶC do mình tạo -->
+        <record id="office_document_rule_van_thu_don_vi_read" model="ir.rule">
+            <field name="name">Office Document - Văn thư đơn vị: Xem cùng phòng ban</field>
             <field name="model_id" ref="model_office_document"/>
-            <field name="domain_force">[(1,'=',1)]</field>
+            <field name="domain_force">
+                ['|',
+                    ('create_uid', '=', user.id),
+                    ('create_uid.employee_ids.department_id', 'in', user.employee_ids.mapped('department_id').ids)
+                ]
+            </field>
             <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_don_vi'))]"/>
-            <field name="perm_read">1</field>
-            <field name="perm_write">0</field>
-            <field name="perm_create">0</field>
-            <field name="perm_unlink">0</field>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
         </record>
 
+        <!-- Rule 2: Quyền WRITE - Sửa văn bản do mình tạo HOẶC đang ở trạng thái draft -->
+        <record id="office_document_rule_van_thu_don_vi_write" model="ir.rule">
+            <field name="name">Office Document - Văn thư đơn vị: Sửa do mình tạo hoặc draft</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">
+                ['|',
+                    ('create_uid', '=', user.id),
+                    ('tt_vb', '=', 'draft')
+                ]
+            </field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_don_vi'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
 
+        <!-- Rule 3: Quyền CREATE - Tạo mới luôn được phép -->
+        <record id="office_document_rule_van_thu_don_vi_create" model="ir.rule">
+            <field name="name">Office Document - Văn thư đơn vị: Tạo mới</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_don_vi'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <!-- Rule 4: Quyền UNLINK - Xóa văn bản do mình tạo HOẶC đang ở trạng thái draft -->
+        <record id="office_document_rule_van_thu_don_vi_unlink" model="ir.rule">
+            <field name="name">Office Document - Văn thư đơn vị: Xóa do mình tạo hoặc draft</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">
+                ['|',
+                    ('create_uid', '=', user.id),
+                    ('tt_vb', '=', 'draft')
+                ]
+            </field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_don_vi'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
 
 
         <!-- Văn thư: xem tất cả -->
