@@ -1877,6 +1877,7 @@ class OfficeDocument(models.Model):
             'target': 'new',
             'context': {
                 'default_office_document_id': self.id,
+                'tag': 'history_back',
             }
         }
 
