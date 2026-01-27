@@ -85,34 +85,52 @@ class HrWorkEntry(models.Model):
         self.write({'state': 'validated'})
         return True
 
+    # def _get_user_tz_datetime(self, dt_utc):
+    #     """
+    #     Hàm phụ trợ: Chuyển đổi datetime từ UTC sang múi giờ của user hiện tại.
+    #     Để hiển thị text cho đúng (VD: 08:00 thay vì 01:00)
+    #     """
+    #     if not dt_utc:
+    #         return False
+    #     user_tz = pytz.timezone(self.env.user.tz or 'UTC')
+    #     return pytz.utc.localize(dt_utc).astimezone(user_tz)
+
     def action_sync_attendance(self):
         """
-        Đồng bộ:
+        Đồng bộ chấm công vào Work Entry:
         1. Entry là Nghỉ phép + Không có chấm công -> Validate.
         2. Entry là Nghỉ phép + Có chấm công -> Conflict.
-        3. Entry là Công thường + Có chấm công -> Cập nhật giờ & Validate.
+        3. Entry là Công thường + Có chấm công -> Cập nhật giờ thực tế & Validate.
+        4. [MỚI] Có chấm công + Không có Work Entry (Làm Chủ Nhật, Lễ) -> Tạo Work Entry Tăng ca.
         """
+        if not self:
+            return True
+
         # 1. Dùng sudo để bypass quyền (Quan trọng)
         sudo_self = self.sudo()
         Attendance = self.env['hr.attendance'].sudo()
         WorkEntry = self.env['hr.work.entry'].sudo()
+        Contract = self.env['hr.contract'].sudo()
 
-        # Lấy loại công Attendance để dùng khi tạo Conflict
+        # Lấy loại công Attendance để dùng khi tạo Conflict hoặc Tăng ca
         attendance_type = self.env.ref('hr_work_entry.work_entry_type_attendance', raise_if_not_found=False)
         if not attendance_type:
             attendance_type = self.env['hr.work.entry.type'].search([('is_leave', '=', False)], limit=1)
 
+        # Tìm loại công Tăng ca (Overtime) - Nếu không có thì dùng tạm loại thường
+        overtime_type = self.env.ref('hr_work_entry.work_entry_type_overtime', raise_if_not_found=False)
+        if not overtime_type:
+            overtime_type = attendance_type
+
         # ==================================================================
         # PHẦN 1: XỬ LÝ WORK ENTRY LÀ NGHỈ PHÉP (LEAVES)
         # ==================================================================
-        # Logic lọc mở rộng: Lấy entry nếu loại là 'is_leave' HOẶC đã gắn 'leave_id'
         leave_entries = sudo_self.filtered(
             lambda w: w.state in ['draft', 'conflict'] and (w.work_entry_type_id.is_leave or w.leave_id)
         )
 
         for leave_entry in leave_entries:
             # Tìm xem có chấm công nào chen vào giờ nghỉ không
-            # Logic Overlap: (CheckIn < EndLeave) và (CheckOut > StartLeave)
             attendances = Attendance.search([
                 ('employee_id', '=', leave_entry.employee_id.id),
                 ('check_in', '<', leave_entry.date_stop),
@@ -159,16 +177,12 @@ class HrWorkEntry(models.Model):
                         })
             else:
                 # [CASE 1.B] KHÔNG CÓ XUNG ĐỘT (Nghỉ êm đẹp)
-                # -> VALIDATE NGAY LẬP TỨC
                 leave_entry.write({'state': 'validated'})
 
         # ==================================================================
-        # PHẦN 2: XỬ LÝ WORK ENTRY LÀ CÔNG THƯỜNG (ATTENDANCE/GENERIC)
+        # PHẦN 2: XỬ LÝ WORK ENTRY LÀ CÔNG THƯỜNG (CÓ TRONG LỊCH)
         # ==================================================================
-        # Lấy tất cả các entry còn lại (không phải leave)
         attendance_entries = sudo_self - leave_entries
-
-        # Chỉ xử lý những cái đang Draft hoặc Conflict
         attendance_entries = attendance_entries.filtered(lambda w: w.state in ['draft', 'conflict'])
 
         for entry in attendance_entries:
@@ -180,10 +194,9 @@ class HrWorkEntry(models.Model):
             ])
 
             if not attendances:
-                # Nếu là công thường mà không có chấm công -> Bỏ qua (Vẫn để Draft hoặc chuyển Cancel tùy logic công ty)
                 continue
 
-            # ... (Giữ nguyên logic tính toán giờ thực tế của bạn) ...
+            # Logic tính toán thời gian thực tế dựa trên giao điểm
             valid_starts = []
             valid_ends = []
             for att in attendances:
@@ -212,5 +225,84 @@ class HrWorkEntry(models.Model):
                     'duration': duration,
                     'state': 'validated'  # Chốt công
                 })
+
+        # ==================================================================
+        # PHẦN 3: [FIXED] XỬ LÝ CÔNG NGOÀI GIỜ (KHÔNG CÓ WORK ENTRY)
+        # ==================================================================
+
+        # 1. Lấy dữ liệu cơ sở từ các dòng đang chọn
+        dates_start = sudo_self.mapped('date_start')
+        dates_stop = sudo_self.mapped('date_stop')
+
+        # [QUAN TRỌNG] Lấy danh sách ID nhân viên để dùng cho search
+        employee_ids = sudo_self.mapped('employee_id').ids
+
+        if not dates_start:
+            return True
+
+        # 2. Tính toán phạm vi quét: Từ ĐẦU THÁNG (của dòng đầu) đến CUỐI THÁNG (của dòng cuối)
+        # Việc này đảm bảo bắt được các ngày cuối tuần hoặc ngày lễ nằm ngoài lịch làm việc.
+
+        min_dt = min(dates_start)
+        max_dt = max(dates_stop)
+
+        # Lấy ngày mùng 1 của tháng bắt đầu
+        search_start = min_dt.replace(day=1, hour=0, minute=0, second=0)
+
+        # Lấy ngày cuối cùng của tháng kết thúc
+        # (Ngày 28 + 4 ngày -> qua tháng sau -> trừ đi số ngày lẻ -> về cuối tháng trước)
+        next_month = max_dt.replace(day=28) + timedelta(days=4)
+        last_day_of_month = next_month - timedelta(days=next_month.day)
+        search_end = last_day_of_month.replace(hour=23, minute=59, second=59)
+
+        # 3. Quét toàn bộ chấm công trong khoảng thời gian rộng này
+        candidate_attendances = Attendance.search([
+            ('employee_id', 'in', employee_ids),
+            ('check_in', '>=', search_start),
+            ('check_out', '<=', search_end),
+            ('check_out', '!=', False)  # Phải đã check-out mới tính
+        ])
+
+        for att in candidate_attendances:
+            # 4. Kiểm tra xem chấm công này có trùng với Work Entry nào đã có không?
+            # (Check mọi trạng thái trừ Cancelled)
+            is_covered = WorkEntry.search_count([
+                ('employee_id', '=', att.employee_id.id),
+                ('date_start', '<', att.check_out),
+                ('date_stop', '>', att.check_in),
+                ('state', '!=', 'cancelled')
+            ])
+
+            # Nếu is_covered == 0 -> Nghĩa là chấm công này "mồ côi" (làm ngoài lịch)
+            if is_covered == 0:
+
+                # 5. Tìm hợp đồng đang chạy (Open) tại thời điểm chấm công
+                contract = Contract.search([
+                    ('employee_id', '=', att.employee_id.id),
+                    ('state', '=', 'open'),
+                    ('date_start', '<=', att.check_in.date()),
+                    '|', ('date_end', '=', False), ('date_end', '>=', att.check_in.date())
+                ], limit=1)
+
+                if contract:
+                    duration = (att.check_out - att.check_in).total_seconds() / 3600
+
+                    # Format tên hiển thị
+                    att_start_local = self._get_user_tz_datetime(att.check_in)
+                    att_end_local = self._get_user_tz_datetime(att.check_out)
+                    entry_name = f"Tăng ca/Ngoài giờ: {att_start_local.strftime('%H:%M')} - {att_end_local.strftime('%H:%M')}"
+
+                    # Tạo Work Entry mới
+                    WorkEntry.create({
+                        'name': entry_name,
+                        'employee_id': att.employee_id.id,
+                        'date_start': att.check_in,
+                        'date_stop': att.check_out,
+                        'work_entry_type_id': overtime_type.id,  # Gán loại Overtime
+                        'state': 'validated',  # Auto validate vì dựa trên chấm công thật
+                        'duration': duration,
+                        'contract_id': contract.id,
+                        'company_id': att.employee_id.company_id.id,
+                    })
 
         return True

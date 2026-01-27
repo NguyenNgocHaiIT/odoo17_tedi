@@ -127,10 +127,68 @@ class HrLeave(models.Model):
     manager_id = fields.Many2one(
         'hr.employee',
         string='Người phê duyệt',
-        readonly=True,
-        help="Người thực tế đã bấm nút duyệt đơn này."
+        compute='_compute_manager_id_by_group',
+        store=True,
+        readonly=False,
+        help="Người trong phòng ban nắm giữ quyền Unit Manager."
     )
 
+    def _get_manager_of_department(self, department):
+        """
+        Hàm phụ: Tìm nhân viên trong 1 phòng ban cụ thể
+        mà User của họ có nhóm quyền 'group_time_off_unit_manager'.
+        """
+        if not department:
+            return False
+
+        # 1. Lấy ID của nhóm quyền Unit Manager
+        # Lưu ý: Thay 'ten_module_cua_ban' bằng tên thư mục module thực tế của bạn
+        # Ví dụ: 'hr_attendance_tedi' hoặc 'quan_ly_nghi_phep'
+        group_xml_id = 'hr_attendance_tedi.group_time_off_unit_manager'
+
+        try:
+            group_id = self.env.ref(group_xml_id).id
+        except ValueError:
+            # Phòng trường hợp gõ sai tên module
+            return False
+
+        # 2. Tìm Employee thuộc phòng ban này VÀ User của họ có Group đó
+        manager = self.env['hr.employee'].search([
+            ('department_id', '=', department.id),
+            ('user_id.groups_id', 'in', [group_id]),
+            ('user_id', '!=', False)  # Phải có user mới check được quyền
+        ], limit=1)  # Lấy người đầu tiên tìm thấy
+
+        return manager
+
+    @api.depends('employee_id', 'employee_id.department_id')
+    def _compute_manager_id_by_group(self):
+        for rec in self:
+            # Chỉ chạy khi đơn mới
+            if rec.state not in ['draft', 'confirm', 'cancel']:
+                continue
+
+            employee = rec.employee_id
+            if not employee or not employee.department_id:
+                rec.manager_id = False
+                continue
+
+            # BƯỚC 1: Tìm người nắm quyền Unit Manager trong phòng của nhân viên
+            current_dept = employee.department_id
+            approver = self._get_manager_of_department(current_dept)
+
+            # BƯỚC 2: Kiểm tra nếu người làm đơn CHÍNH LÀ người vừa tìm thấy
+            # (Tức là Trưởng phòng đang làm đơn)
+            if approver and approver.id == employee.id:
+                # -> Tìm người nắm quyền ở phòng ban cha
+                parent_dept = current_dept.parent_id
+                if parent_dept:
+                    approver = self._get_manager_of_department(parent_dept)
+                else:
+                    # Hết cấp cha -> Không ai duyệt
+                    approver = False
+
+            rec.manager_id = approver
     # =========================================================================
     # 4. FIELD COMPUTE PHÂN QUYỀN
     # =========================================================================
