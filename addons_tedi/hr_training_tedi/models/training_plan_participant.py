@@ -155,12 +155,27 @@ class TrainingPlanParticipation(models.Model):
             })
             rec.message_post(body=_("Hệ thống tự động kết thúc lớp học do đã quá ngày dự kiến."))
 
+    has_schedule = fields.Boolean(
+        string="Đã có lịch",
+        compute="_compute_has_schedule",
+        store=True
+    )
 
+    @api.depends('schedule_ids')
+    def _compute_has_schedule(self):
+        for rec in self:
+            rec.has_schedule = bool(rec.schedule_ids)
+
+    # 2. Chặn trình duyệt nếu chưa có lịch (Validation ở Backend)
     def action_submit(self):
-        """Manager trình duyệt lớp học"""
         for rec in self:
             if rec.state != 'draft':
                 raise ValidationError(_("Chỉ được trình duyệt từ trạng thái Dự thảo."))
+
+            # [CHECK] Bắt buộc phải có lịch
+            if not rec.schedule_ids:
+                raise ValidationError(_("Vui lòng khởi tạo Lịch đào tạo trước khi trình duyệt."))
+
             rec.state = 'pending'
 
     def action_approve(self):
@@ -230,6 +245,7 @@ class TrainingPlanParticipation(models.Model):
     # =========================================================
     # 5. CÁC FIELDS KHÁC (GIỮ NGUYÊN)
     # =========================================================
+
 
     training_plan_id = fields.Many2one(
         "training.plan",
