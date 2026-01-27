@@ -241,7 +241,7 @@ class PhanPhat(models.TransientModel):
 
             # Email
             try:
-                subject = f"[Văn bản mới] {doc.trich_yeu}"
+                subject = f"Văn bản {doc.trich_yeu} đã được phân phát đến bạn"
                 body_html = f"""
                                 <p>Xin chào {employee.name},</p>
                                 <p>Bạn vừa được phân công xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
@@ -947,7 +947,7 @@ class OfficeDocument(models.Model):
                         <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
                     """
                     self.env['mail.mail'].sudo().create({
-                        'subject': f"[Văn bản mới] {self.trich_yeu}",
+                        'subject': f"[Văn bản được trình đến] Văn bản {self.trich_yeu} được trình dến bạn",
                         'email_to': email,
                         'email_from': self.env.user.email or 'no-reply@company.com',
                         'body_html': body_html,
@@ -1002,7 +1002,7 @@ class OfficeDocument(models.Model):
                         <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
                     """
                     self.env['mail.mail'].sudo().create({
-                        'subject': f"[Văn bản mới] {self.trich_yeu}",
+                        'subject': f"[Văn bản được trình đến] Văn bản {self.trich_yeu} được trình đến bạn",
                         'email_to': email,
                         'email_from': self.env.user.email or 'no-reply@company.com',
                         'body_html': body_html,
@@ -1068,7 +1068,7 @@ class OfficeDocument(models.Model):
             # Xác định loại văn bản
             doc_type_display = dict(self._fields['document_type'].selection).get(self.document_type, 'Văn bản')
 
-            subject = f"[{doc_type_display} đã duyệt] {self.trich_yeu[:50]}..."
+            subject = f"[{doc_type_display} đã được duyệt] {self.trich_yeu[:50]}..."
             body_html = f"""
             <p>Xin chào {creator.name},</p>
 
@@ -1890,7 +1890,7 @@ class OfficeDocument(models.Model):
             if not creator or not creator.email:
                 return
 
-            subject = f"Văn bản không đạt: {self.trich_yeu[:50]}..."
+            subject = f"[Văn bản đã bị từ chối]: {self.trich_yeu[:50]}..."
 
             body_html = f"""
             <p>Văn bản của bạn <b>"{self.trich_yeu}"</b> đã bị từ chối.</p>
