@@ -72,7 +72,7 @@
             <field name="name">hr.payslip.tree</field>
             <field name="model">hr.payslip</field>
             <field name="arch" type="xml">
-                <tree decoration-info="state in ('done')" class="excel_style_list_view"
+                <tree decoration-info="state in ('done')"
                       decoration-muted="state == 'cancel'" string="Payslips" create="false" delete="false" duplicate="false">
                     <field name="number"/>
                     <field name="employee_id"/>
@@ -357,7 +357,7 @@
             <field name="name">hr.payslip.run.tree</field>
             <field name="model">hr.payslip.run</field>
             <field name="arch" type="xml">
-                <tree string="Payslips Batches" class="excel_style_list_view">
+                <tree string="Payslips Batches">
                     <field name="name"/>
                     <field name="date_start"/>
                     <field name="date_end"/>

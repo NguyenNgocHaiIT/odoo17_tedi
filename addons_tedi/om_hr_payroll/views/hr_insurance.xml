@@ -5,7 +5,7 @@
         <field name="name">hr_employee_insurance_tree</field>
         <field name="model">hr.employee.insurance</field>
         <field name="arch" type="xml">
-            <tree editable="bottom" class="excel_style_list_view">
+            <tree editable="bottom">
                 <field name="month"/>
                 <field name="year"/>
                 <field name="employee_id"/>
