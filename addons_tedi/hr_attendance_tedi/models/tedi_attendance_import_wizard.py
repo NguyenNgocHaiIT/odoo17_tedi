@@ -4,9 +4,12 @@ from odoo.exceptions import UserError
 import base64
 import io
 import openpyxl
+# [MỚI] Thêm import Alignment để xử lý căn lề
+from openpyxl.styles import Alignment
 from datetime import datetime
 import pytz
 import calendar
+from copy import copy
 
 
 class TediImportConfig(models.Model):
@@ -43,10 +46,7 @@ class TediAttendanceImportWizard(models.TransientModel):
     file = fields.Binary(string='File Excel')
     filename = fields.Char(string='Tên file')
 
-    # 1. Field chứa danh sách sheet (Ẩn)
     sheet_ids = fields.One2many('tedi.sheet.selection', 'wizard_id', string='Danh sách Sheet')
-
-    # 2. Field Dropdown chọn Sheet
     selected_sheet_id = fields.Many2one('tedi.sheet.selection', string="Chọn Sheet dữ liệu",
                                         domain="[('id', 'in', sheet_ids)]")
 
@@ -61,37 +61,131 @@ class TediAttendanceImportWizard(models.TransientModel):
     first_data_row = fields.Integer(string='Dòng nhân viên đầu tiên', default=10,
                                     help="Nhập số dòng chứa dữ liệu của nhân viên đầu tiên trong file Excel")
 
-    # --- Sample File Logic ---
+    generated_file = fields.Binary(string='File đã tạo', readonly=True)
+    generated_filename = fields.Char(string='Tên file đã tạo')
+
     def _get_default_sample_file(self):
         config = self.env['tedi.import.config'].search([], limit=1)
         return config.sample_file if config else False
 
     def _get_default_sample_filename(self):
-        config = self.env['tedi.import.config'].search([], limit=1)
-        return config.sample_filename if config else "Mau_Cham_Cong.xlsx"
+        return "Mau_Cham_Cong_Co_Du_Lieu.xlsx"
 
     sample_file = fields.Binary(string='Tải File Mẫu', default=_get_default_sample_file, readonly=True)
     sample_filename = fields.Char(string='Tên File Mẫu', default=_get_default_sample_filename)
 
+    def _copy_cell_style(self, src_cell, dst_cell):
+        """Copy style từ ô nguồn sang ô đích."""
+        if src_cell.has_style:
+            dst_cell.font = copy(src_cell.font)
+            dst_cell.border = copy(src_cell.border)
+            dst_cell.fill = copy(src_cell.fill)
+            dst_cell.number_format = copy(src_cell.number_format)
+            dst_cell.protection = copy(src_cell.protection)
+            dst_cell.alignment = copy(src_cell.alignment)
+
+    # ========================================================
+    # ACTION: DOWNLOAD SAMPLE
+    # ========================================================
     def action_download_sample(self):
         self.ensure_one()
-        config = self.env['tedi.import.config'].search([], limit=1)
 
+        # --- A. Lấy cấu hình và nhân viên ---
+        config = self.env['tedi.import.config'].search([], limit=1)
         if not config or not config.sample_file:
             raise UserError(_("Chưa có file mẫu trong cấu hình. Vui lòng liên hệ Admin."))
 
-        base_url = '/web/content'
-        model_name = 'tedi.import.config'
-        field_name = 'sample_file'
-        filename = config.sample_filename or 'Mau_Import_Cham_Cong.xlsx'
+        employees = self.env['hr.contract'].search([('state', '=', 'open')]).mapped('employee_id')
+        if not employees:
+            raise UserError(_("Không có nhân viên nào đang có hợp đồng 'Đang chạy'."))
 
-        url = f"{base_url}/{model_name}/{config.id}/{field_name}/{filename}?download=true"
+        num_employees = len(employees)
 
-        return {
-            'type': 'ir.actions.act_url',
-            'url': url,
-            'target': 'new',
-        }
+        # --- B. Xử lý Excel ---
+        try:
+            file_data = base64.b64decode(config.sample_file)
+            data_file = io.BytesIO(file_data)
+            wb = openpyxl.load_workbook(data_file)
+            ws = wb.active
+
+            start_row = self.first_data_row
+            max_col = ws.max_column
+
+            # --- BƯỚC 1: CHÈN DÒNG ---
+            if num_employees > 1:
+                ws.insert_rows(start_row + 1, amount=num_employees - 1)
+
+            # --- GỠ BỎ MERGE TỰ ĐỘNG ---
+            end_row = start_row + num_employees - 1
+            merged_ranges = list(ws.merged_cells.ranges)
+
+            for merged_cell in merged_ranges:
+                if merged_cell.min_row >= start_row and merged_cell.max_row <= end_row:
+                    try:
+                        ws.unmerge_cells(str(merged_cell))
+                    except (KeyError, ValueError, IndexError):
+                        pass
+
+            # --- CẤU HÌNH CỘT ---
+            COL_STT = 1
+            COL_CODE = 2
+            COL_NAME = 3
+
+            # --- BƯỚC 2: DUYỆT VÀ GHI DỮ LIỆU ---
+            for i, emp in enumerate(employees):
+                current_row = start_row + i
+
+                # === COPY STYLE ===
+                for col_idx in range(1, max_col + 1):
+                    src_cell = ws.cell(row=start_row, column=col_idx)
+                    dst_cell = ws.cell(row=current_row, column=col_idx)
+                    if i > 0:
+                        self._copy_cell_style(src_cell, dst_cell)
+
+                # === GHI DỮ LIỆU ===
+                # 1. Số thứ tự
+                cell_stt = ws.cell(row=current_row, column=COL_STT)
+                cell_stt.value = i + 1
+
+                # [FIXED] Tạo Alignment mới thay vì sửa cái cũ để tránh lỗi Immutable
+                old_align = cell_stt.alignment
+                new_align = Alignment(
+                    horizontal='center',  # Force center
+                    vertical=old_align.vertical if old_align else None,
+                    wrap_text=old_align.wrap_text if old_align else None
+                )
+                cell_stt.alignment = new_align
+
+                # 2. Mã Nhân Viên
+                cell_code = ws.cell(row=current_row, column=COL_CODE)
+                cell_code.value = emp.employee_code or ''
+
+                # 3. Tên Nhân Viên
+                cell_name = ws.cell(row=current_row, column=COL_NAME)
+                cell_name.value = emp.name
+
+            # --- C. Lưu và Trả file ---
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            generated_data = base64.b64encode(output.read())
+            wb.close()
+
+            out_filename = f"Cham_Cong_Thang_{self.month}_{self.year}.xlsx"
+            self.write({
+                'generated_file': generated_data,
+                'generated_filename': out_filename
+            })
+
+            return {
+                'type': 'ir.actions.act_url',
+                'url': '/web/content/?model=tedi.attendance.import.wizard&id=%s&field=generated_file&download=true&filename=%s' % (
+                    self.id, out_filename),
+                'target': 'new',
+            }
+
+        except Exception as e:
+            raise UserError(_("Lỗi xử lý file Excel: %s") % str(e))
 
     # --- Onchange đọc Sheet ---
     @api.onchange('file')
@@ -142,7 +236,6 @@ class TediAttendanceImportWizard(models.TransientModel):
             leave_type = self.env['hr.leave.type'].search([('work_entry_type_id.code', '=', search_code)], limit=1)
         return leave_type.id if leave_type else False
 
-    # --- [CẬP NHẬT] Hàm lấy giờ làm việc (Có Fallback về Thứ 2) ---
     def _get_work_hours_from_contract(self, employee, current_date):
         contract = self.env['hr.contract'].search([
             ('employee_id', '=', employee.id),
@@ -156,7 +249,6 @@ class TediAttendanceImportWizard(models.TransientModel):
 
         calendar = contract.resource_calendar_id
 
-        # Hàm con để tính giờ từ list attendances
         def compute_hours_from_lines(lines):
             if not lines: return False
             h_start = min(lines.mapped('hour_from'))
@@ -169,20 +261,17 @@ class TediAttendanceImportWizard(models.TransientModel):
                 h_noon = h_start + (h_end - h_start) / 2
             return h_start, h_end, h_noon
 
-        # 1. Thử lấy lịch của đúng ngày hiện tại
-        day_of_week = str(current_date.weekday())  # 0=Thứ 2, ..., 6=CN
+        day_of_week = str(current_date.weekday())
         current_day_lines = calendar.attendance_ids.filtered(
             lambda a: a.dayofweek == day_of_week and a.display_type != 'line_section'
         )
 
         res = compute_hours_from_lines(current_day_lines)
-        if res: return res  # Nếu ngày đó có lịch thì trả về luôn
+        if res: return res
 
-        # 2. [MỚI] Nếu ngày đó (VD: T7, CN) KHÔNG có lịch -> Lấy lịch Thứ 2 (day '0') làm chuẩn
         monday_lines = calendar.attendance_ids.filtered(
             lambda a: a.dayofweek == '0' and a.display_type != 'line_section'
         )
-        # Trả về giờ của thứ 2, hoặc False nếu thứ 2 cũng không có lịch
         return compute_hours_from_lines(monday_lines)
 
     def _make_utc_from_float(self, date_obj, float_time, l_tz, u_tz):
@@ -219,10 +308,6 @@ class TediAttendanceImportWizard(models.TransientModel):
             file_data = base64.b64decode(self.file)
             data_file = io.BytesIO(file_data)
             wb = openpyxl.load_workbook(data_file, data_only=True)
-
-            if target_sheet_name not in wb.sheetnames:
-                raise UserError(_("Không tìm thấy sheet '%s' trong file.") % target_sheet_name)
-
             sheet = wb[target_sheet_name]
         except Exception as e:
             raise UserError(_("Lỗi đọc file: %s") % e)
@@ -236,24 +321,20 @@ class TediAttendanceImportWizard(models.TransientModel):
         local_tz = pytz.timezone('Asia/Ho_Chi_Minh')
         utc_tz = pytz.utc
 
-        COL_EMP = 1  # Cột B
-        COL_START_DAY = 3  # Cột D
-
+        COL_EMP = 1
+        COL_START_DAY = 3
         START_ROW = self.first_data_row
-
         last_day = calendar.monthrange(self.year, int(self.month))[1]
+
         cnt_att = 0
         cnt_leave = 0
         cnt_skipped = 0
         errors = []
-
         imported_employees = set()
 
         for row_idx, row in enumerate(sheet.iter_rows(min_row=START_ROW, values_only=True), start=START_ROW):
             emp_code = row[COL_EMP]
-
-            if not emp_code:
-                continue
+            if not emp_code: continue
 
             emp_code_str = str(emp_code).strip()
             employee = Employee.search([('employee_code', '=', emp_code_str)], limit=1)
@@ -270,21 +351,15 @@ class TediAttendanceImportWizard(models.TransientModel):
                 if not raw_val: continue
 
                 val = str(raw_val).strip().upper()
-
                 try:
                     curr_date = datetime(self.year, int(self.month), day)
-                except Exception:
+                except:
                     continue
 
-                # --- Đã sửa: Gọi hàm để lấy giờ (ưu tiên ngày thực tế -> fallback thứ 2) ---
                 work_hours = self._get_work_hours_from_contract(employee, curr_date.date())
 
-                if not work_hours:
-                    # Nếu cả Thứ 2 cũng không có lịch thì chịu thua, bỏ qua dòng này
-                    continue
-
+                if not work_hours: continue
                 h_start_float, h_end_float, h_noon_float = work_hours
-                # ---------------------------------------------------------------------------
 
                 is_half = True if ('/2' in val or val == '-') else False
                 base_symbol = val.replace('/2', '') if '/2' in val else ('-' if val == '-' else val)
@@ -303,7 +378,7 @@ class TediAttendanceImportWizard(models.TransientModel):
                                 else:
                                     h_to_temp = h_noon_float if is_half else h_end_float
                                     check_out_dt = self._make_utc_from_float(curr_date, h_to_temp, local_tz, utc_tz)
-                            except Exception:
+                            except:
                                 continue
                     else:
                         h_to_temp = h_noon_float if is_half else h_end_float
@@ -316,21 +391,24 @@ class TediAttendanceImportWizard(models.TransientModel):
 
                         exist_att = Attendance.search_count([
                             ('employee_id', '=', employee.id),
-                            ('check_in', '>=', start_d),
-                            ('check_in', '<=', end_d)
+                            ('check_in', '>=', start_d), ('check_in', '<=', end_d)
                         ])
 
                         if not exist_att:
-                            Attendance.create({
-                                'employee_id': employee.id,
-                                'check_in': check_in_dt,
-                                'check_out': check_out_dt,
-                                'attendance_type': 'attendance'
-                            })
-                            cnt_att += 1
-                            imported_employees.add(employee.name)
+                            try:
+                                with self.env.cr.savepoint():
+                                    Attendance.create({
+                                        'employee_id': employee.id,
+                                        'check_in': check_in_dt,
+                                        'check_out': check_out_dt,
+                                        'attendance_type': 'attendance'
+                                    })
+                                    cnt_att += 1
+                                    imported_employees.add(employee.name)
+                            except Exception as e:
+                                errors.append(f"Dòng {row_idx}: Lỗi tạo công - {str(e)}")
 
-                # 2. Lễ Tết (Bỏ qua)
+                # 2. Lễ Tết
                 elif base_symbol in PUB_SYMBOLS:
                     cnt_skipped += 1
                     continue
@@ -350,30 +428,39 @@ class TediAttendanceImportWizard(models.TransientModel):
                         h_to_temp = h_noon_float if is_half else h_end_float
                         dt_f = self._make_utc_from_float(curr_date, h_start_float, local_tz, utc_tz)
                         dt_t = self._make_utc_from_float(curr_date, h_to_temp, local_tz, utc_tz)
+
                         try:
-                            vals = {'employee_id': employee.id, 'holiday_status_id': int(leave_type_id),
-                                    'date_from': dt_f, 'date_to': dt_t, 'request_date_from': curr_date.date(),
-                                    'request_date_to': curr_date.date(), 'request_unit_hours': True,
-                                    'request_unit_half': False, 'number_of_days': 0.5 if is_half else 1,
-                                    'state': 'confirm', 'name': f'Import {val}', 'is_imported': True}
+                            with self.env.cr.savepoint():
+                                vals = {
+                                    'employee_id': employee.id,
+                                    'holiday_status_id': int(leave_type_id),
+                                    'date_from': dt_f, 'date_to': dt_t,
+                                    'request_date_from': curr_date.date(),
+                                    'request_date_to': curr_date.date(),
+                                    'request_unit_hours': True,
+                                    'request_unit_half': False,
+                                    'number_of_days': 0.5 if is_half else 1,
+                                    'state': 'confirm',
+                                    'name': f'Import {val}',
+                                    'is_imported': True
+                                }
 
-                            leave = Leave.sudo().create(vals)
-                            leave_sudo = leave.with_context(bypass_manager_check=True)
-                            if leave_sudo.state == 'confirm': leave_sudo.action_approve()
-                            if leave_sudo.state == 'validate1': leave_sudo.action_validate()
-                            if leave_sudo.state != 'validate':
-                                leave_sudo.write({'state': 'validate'})
-                                leave_sudo._validate_leave_request()
+                                leave = Leave.sudo().create(vals)
+                                leave_sudo = leave.with_context(bypass_manager_check=True)
+                                if leave_sudo.state == 'confirm': leave_sudo.action_approve()
+                                if leave_sudo.state == 'validate1': leave_sudo.action_validate()
+                                if leave_sudo.state != 'validate':
+                                    leave_sudo.write({'state': 'validate'})
+                                    leave_sudo._validate_leave_request()
 
-                            cnt_leave += 1
-                            imported_employees.add(employee.name)
+                                cnt_leave += 1
+                                imported_employees.add(employee.name)
 
                         except Exception as ex:
                             err_str = str(ex)
                             vn_error = err_str
-
                             if "You do not have any allocation" in err_str:
-                                vn_error = "Hết quỹ nghỉ phép (cần cấp phát thêm)."
+                                vn_error = "Hết quỹ nghỉ phép."
                             elif "must be in the future" in err_str:
                                 vn_error = "Ngày nghỉ phải ở tương lai."
                             elif "overlap" in err_str.lower():
