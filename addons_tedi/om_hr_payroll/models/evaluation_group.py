@@ -129,32 +129,73 @@ class EvaluationReport(models.Model):
         }
 
     def action_start_evaluation(self):
-        """Chuyển sang trạng thái Đang đánh giá và sinh phiếu KPI"""
+        """Chuyển sang trạng thái Đang đánh giá, sinh phiếu KPI và gửi email thông báo"""
         self.ensure_one()
         if not self.report_line_ids:
             raise UserError(_("Vui lòng chọn danh sách nhân viên trước khi bắt đầu!"))
 
         KPIModel = self.env['evaluation.kpi']
 
+        # 1. Lấy URL gốc của hệ thống (Ví dụ: https://my-odoo.com)
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+
         for line in self.report_line_ids:
-            # Kiểm tra xem phiếu đã tồn tại chưa để tránh trùng lặp
-            existing = KPIModel.search([
+            # Kiểm tra xem phiếu đã tồn tại chưa
+            current_kpi = KPIModel.search([
                 ('evaluate_kpi_id', '=', self.id),
                 ('employee_id', '=', line.employee_id.id)
             ], limit=1)
 
-            if not existing:
-                # Tạo phiếu KPI thật
-                new_kpi = KPIModel.create({
+            if not current_kpi:
+                # Tạo phiếu KPI mới nếu chưa có
+                current_kpi = KPIModel.create({
                     'name': 'New',
                     'evaluate_kpi_id': self.id,
                     'employee_id': line.employee_id.id,
                     'quarter': self.quarter,
                     'year': self.year,
-                    'state': 'draft',  # Phiếu KPI con bắt đầu ở nháp
+                    'state': 'draft',
                 })
                 # Trigger lấy tiêu chí
-                new_kpi._onchange_employee_id()
+                current_kpi._onchange_employee_id()
+
+            # --- LOGIC GỬI EMAIL ---
+            if current_kpi and line.employee_id.work_email:
+                # 2. Tạo đường dẫn trực tiếp đến phiếu KPI này
+                # Format: /web#id={ID}&model={MODEL}&view_type=form
+                action_url = f"{base_url}/web#id={current_kpi.id}&model=evaluation.kpi&view_type=form"
+
+                # 3. Soạn nội dung Email (HTML)
+                subject = f"THÔNG BÁO ĐÁNH GIÁ KPI - {self.period}"
+                body_html = f"""
+                <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                    <p>Chào <b>{line.employee_id.name}</b>,</p>
+                    <p>Kỳ đánh giá <b>{self.period}</b> đã chính thức bắt đầu.</p>
+                    <p>Hệ thống đã tạo phiếu đánh giá KPI cho bạn. Vui lòng truy cập đường dẫn bên dưới để thực hiện phần tự đánh giá:</p>
+
+                    <div style="margin: 20px 0;">
+                        <a href="{action_url}" 
+                           style="background-color: #875A7B; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                           TRUY CẬP PHIẾU ĐÁNH GIÁ
+                        </a>
+                    </div>
+
+                    <p>Vui lòng hoàn thành trước thời hạn quy định.</p>
+                    <p>Trân trọng,<br/>Phòng Nhân Sự</p>
+                </div>
+                """
+
+                # 4. Tạo và gửi Email
+                mail_values = {
+                    'subject': subject,
+                    'email_from': self.env.user.company_id.email or self.env.user.email_formatted,
+                    'email_to': line.employee_id.work_email,
+                    'body_html': body_html,
+                    'state': 'outgoing',  # outgoing: chờ cron gửi, sent: đã gửi (nếu dùng hàm send)
+                }
+                # Tạo record mail và gửi ngay lập tức
+                mail = self.env['mail.mail'].create(mail_values)
+                mail.send()  # Gửi ngay lập tức (có thể bỏ dòng này nếu muốn để Cron job tự quét gửi sau)
 
         self.write({'state': 'in_progress'})
 
