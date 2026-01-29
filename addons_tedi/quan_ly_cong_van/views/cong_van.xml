@@ -797,11 +797,11 @@
                                     <field name="da_giai_quyet"/>
                                 </group>
                             </div>
-                            <div class="col-3">
+                            <!--<div class="col-3">
                                 <group>
                                     <field name="thong_bao_cho_van_thu"/>
                                 </group>
-                            </div>
+                            </div>-->
                         </div>
                     </sheet>
                     <footer>
