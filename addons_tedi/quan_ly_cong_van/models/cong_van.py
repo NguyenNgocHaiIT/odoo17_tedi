@@ -623,6 +623,7 @@ class OfficeDocument(models.Model):
     nguoi_theo_doi = fields.Many2one('res.users', string='Người theo dõi')
     ngay_bat_dau = fields.Date('Ngày bắt đầu', default=fields.Date.context_today)
     ho_so_cong_viec = fields.Char('Hồ sơ công việc')
+    attachment_ids = fields.Many2many('ir.attachment', string='Tài liệu đính kèm')
     attachment_id = fields.Many2one(
         'ir.attachment',
         string='Tài liệu',
