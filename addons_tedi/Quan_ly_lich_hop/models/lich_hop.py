@@ -304,22 +304,114 @@ class Calendar(models.Model):
         if self.state != 'draft':
             raise UserError("Chỉ có thể gửi duyệt phiếu ở trạng thái Nháp.")
 
-        # Gửi thông báo đặc biệt khi gửi duyệt
         web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
         creator_name = self.create_uid.name if self.create_uid else "Người tạo"
-        time_str = f"{self.start.strftime('%H:%M %d/%m/%Y')} → {self.stop.strftime('%H:%M %d/%m/%Y')}" if self.start and self.stop else ""
+        time_str = f"{self.start.strftime('%H:%M %d/%m/%Y')} → {self.stop.strftime('%H:%M %d/%m/Y')}" if self.start and self.stop else ""
 
         # Lấy danh sách trưởng đơn vị
+        current_user = self.env.user
+        user_employee = self.env['hr.employee'].search([('user_id', '=', current_user.id)], limit=1)
         manager_employees = self.env['hr.employee']
-        for dept in self.don_vi:
-            if dept.manager_id:
-                manager_employees |= dept.manager_id
 
+        if user_employee and user_employee.department_id and user_employee.department_id.manager_id:
+            manager_employees |= user_employee.department_id.manager_id
+
+        # GỬI EMAIL NHÓM CHO TẤT CẢ TRƯỞNG ĐƠN VỊ
+        if manager_employees:
+            try:
+                # Thu thập email
+                email_list = []
+                name_list = []
+
+                for manager in manager_employees:
+                    if manager.work_email:
+                        email_list.append(manager.work_email)
+                        name_list.append(manager.name)
+
+                if email_list:
+                    # Tạo danh sách người nhận
+                    email_to = ', '.join(email_list)
+                    names_str = ', '.join(name_list)
+
+                    subject = f"[CẦN PHÊ DUYỆT] Lịch họp: {self.name}"
+                    event_url = f"{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
+
+                    body_html = f"""
+                    <div style="font-family: Arial, sans-serif; padding: 20px;">
+                        <div style="border-left:4px solid #f39c12;padding-left:15px;background:#fff8e1; margin-bottom: 20px;">
+                            <h3 style="color:#d35400; margin-top:0;">⚠️ YÊU CẦU PHÊ DUYỆT LỊCH HỌP</h3>
+                        </div>
+
+                        <p>Kính gửi: {names_str},</p>
+                        <p>Nhân viên <b>{creator_name}</b> vừa gửi yêu cầu phê duyệt lịch họp cho đơn vị của Quý Anh/Chị.</p>
+
+                        <p><b>Thông tin cuộc họp cần duyệt:</b></p>
+                        <table style="border-collapse:collapse;width:100%; margin-bottom: 20px;">
+                            <tr style="background:#f8f9fa;">
+                                <td style="border:1px solid #ddd;padding:8px; width:30%;"><b>Chủ đề</b></td>
+                                <td style="border:1px solid #ddd;padding:8px;">{self.name}</td>
+                            </tr>
+                            <tr>
+                                <td style="border:1px solid #ddd;padding:8px;"><b>Thời gian</b></td>
+                                <td style="border:1px solid #ddd;padding:8px;">{time_str}</td>
+                            </tr>
+                            <tr style="background:#f8f9fa;">
+                                <td style="border:1px solid #ddd;padding:8px;"><b>Người chủ trì</b></td>
+                                <td style="border:1px solid #ddd;padding:8px;">{self.chu_tri.name if self.chu_tri else ''}</td>
+                            </tr>
+                            <tr>
+                                <td style="border:1px solid #ddd;padding:8px;"><b>Đơn vị tham gia</b></td>
+                                <td style="border:1px solid #ddd;padding:8px;">
+                                    {', '.join(dept.name for dept in self.don_vi) if self.don_vi else ''}
+                                </td>
+                            </tr>
+                            <tr style="background:#f8f9fa;">
+                                <td style="border:1px solid #ddd;padding:8px;"><b>Người tạo</b></td>
+                                <td style="border:1px solid #ddd;padding:8px;">{creator_name}</td>
+                            </tr>
+                        </table>
+
+                        <div style="background:#e8f4fd; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                            <p><b>📋 Hướng dẫn:</b></p>
+                            <ul>
+                                <li>Vui lòng xem xét và phê duyệt lịch họp này</li>
+                                <li>Có thể từ chối nếu lịch họp không phù hợp</li>
+                                <li>Thời gian xử lý đề xuất: Trong vòng 24 giờ</li>
+                            </ul>
+                        </div>
+
+                        <p style="text-align: center; margin: 20px 0;">
+                            <a href="{event_url}" 
+                               style="background:#3498db;color:white;padding:10px 20px;border-radius:5px;
+                                      text-decoration:none;font-weight:bold;display:inline-block;">
+                                Xem & Phê duyệt ngay
+                            </a>
+                        </p>
+
+                        <p style="color:#7f8c8d;font-size:12px;margin-top:20px;">
+                            <i>Vui lòng phê duyệt hoặc từ chối lịch họp này trong vòng 24 giờ.</i>
+                        </p>
+                    </div>
+                    """
+
+                    # Gửi 1 email cho tất cả trưởng đơn vị
+                    self.env['mail.mail'].sudo().create({
+                        'subject': subject,
+                        'email_to': email_to,
+                        'email_from': self.env.user.email or self.env.company.email,
+                        'body_html': body_html,
+                    }).send()
+
+                    _logger.info(f"Đã gửi email yêu cầu phê duyệt đến {len(email_list)} trưởng đơn vị")
+
+            except Exception as e:
+                _logger.error(f"Lỗi gửi email yêu cầu phê duyệt: {str(e)}")
+
+        # Gửi popup cho từng trưởng đơn vị (giữ nguyên)
         for manager in manager_employees:
             if not manager.user_id:
                 continue
 
-            # Popup với action rõ ràng
             self.env['bus.bus']._sendone(
                 manager.user_id.partner_id,
                 'simple_notification',
@@ -331,73 +423,7 @@ class Calendar(models.Model):
                 }
             )
 
-            # Chatter trên lịch họp
-            approval_message = f"⏳ Đã gửi yêu cầu phê duyệt tới trưởng đơn vị: {manager.name}"
-            self.message_post(
-                body=approval_message,
-                message_type='notification',
-                subtype_xmlid='mail.mt_comment'
-            )
-
         self.write({'state': 'pending'})
-
-        # Gửi email chi tiết
-        for manager in manager_employees:
-            if not manager.work_email:
-                continue
-
-            event_url = f"{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
-            subject = f"[CẦN PHÊ DUYỆT] Lịch họp: {self.name}"
-            body_html = f"""
-                <div style="border-left:4px solid #f39c12;padding-left:15px;background:#fff8e1;">
-                    <h3 style="color:#d35400;">⚠️ YÊU CẦU PHÊ DUYỆT LỊCH HỌP</h3>
-                </div>
-                <p>Kính gửi <b>{manager.name}</b>,</p>
-                <p>Nhân viên <b>{creator_name}</b> vừa gửi yêu cầu phê duyệt lịch họp cho đơn vị của Quý Anh/Chị.</p>
-
-                <p><b>Thông tin cuộc họp cần duyệt:</b></p>
-                <table style="border-collapse:collapse;width:100%;">
-                    <tr style="background:#f8f9fa;">
-                        <td style="border:1px solid #ddd;padding:8px;"><b>Chủ đề</b></td>
-                        <td style="border:1px solid #ddd;padding:8px;">{self.name}</td>
-                    </tr>
-                    <tr>
-                        <td style="border:1px solid #ddd;padding:8px;"><b>Thời gian</b></td>
-                        <td style="border:1px solid #ddd;padding:8px;">{time_str}</td>
-                    </tr>
-                    <tr style="background:#f8f9fa;">
-                        <td style="border:1px solid #ddd;padding:8px;"><b>Người chủ trì</b></td>
-                        <td style="border:1px solid #ddd;padding:8px;">{self.chu_tri.name if self.chu_tri else ''}</td>
-                    </tr>
-                    <tr>
-                        <td style="border:1px solid #ddd;padding:8px;"><b>Đơn vị tham gia</b></td>
-                        <td style="border:1px solid #ddd;padding:8px;">
-                            {', '.join(dept.name for dept in self.don_vi) if self.don_vi else ''}
-                        </td>
-                    </tr>
-                </table>
-
-                <p style="margin-top:20px;">
-                    <a href="{event_url}" 
-                       style="background:#3498db;color:white;padding:10px 20px;border-radius:5px;text-decoration:none;font-weight:bold;display:inline-block;">
-                        📋 Xem & Phê duyệt ngay
-                    </a>
-                </p>
-
-                <p style="color:#7f8c8d;font-size:12px;margin-top:20px;">
-                    <i>Vui lòng phê duyệt hoặc từ chối lịch họp này trong vòng 24 giờ.</i>
-                </p>
-            """
-
-            try:
-                self.env['mail.mail'].sudo().create({
-                    'subject': subject,
-                    'body_html': body_html,
-                    'email_to': manager.work_email,
-                    'email_from': self.env.user.email or self.env.company.email,
-                }).send()
-            except Exception as e:
-                _logger.error(f"Lỗi gửi email yêu cầu phê duyệt: {str(e)}")
 
     # --- 5. BUTTON ACTIONS ---
     def action_complete(self):
@@ -463,51 +489,136 @@ class Calendar(models.Model):
         self.write({'state': 'approved'})
 
         # 2. Lấy danh sách cần thông báo
-        employee_ids = []
+        all_recipients = self.env['hr.employee']  # ✅ TẠO DANH SÁCH TẤT CẢ NGƯỜI NHẬN
 
+        # Thêm tất cả người tham gia vào danh sách
         if self.employee_ids:
-            employee_ids.extend(self.employee_ids.ids)
+            all_recipients |= self.employee_ids
         if self.lanh_dao:
-            employee_ids.extend(self.lanh_dao.ids)
-        employees = self.env['hr.employee'].browse(set(employee_ids))
-
-        manager_employees = self.env['hr.employee']
-        for dept in self.don_vi:
-            if dept.manager_id:
-                manager_employees |= dept.manager_id
+            all_recipients |= self.lanh_dao
 
         # ✅ THÊM: Người tạo phiếu (nếu có employee record)
         creator_employee = self.env['hr.employee'].search([('user_id', '=', self.create_uid.id)], limit=1)
         if creator_employee:
-            employees |= creator_employee
+            all_recipients |= creator_employee
 
-        # Hàm helper tạo kênh chat
-        def get_or_create_direct_chat(employee1, employee2):
-            if not employee1.user_id or not employee2.user_id:
-                return None
-            partner1 = employee1.user_id.partner_id
-            partner2 = employee2.user_id.partner_id
-            domain = [
-                ('channel_type', '=', 'chat'),
-                ('channel_member_ids.partner_id', 'in', [partner1.id, partner2.id])
-            ]
-            channels = self.env['discuss.channel'].sudo().search(domain)
-            for channel in channels:
-                members = channel.channel_member_ids.mapped('partner_id')
-                if len(members) == 2 and set(members.ids) == {partner1.id, partner2.id}:
-                    return channel
-            return self.env['discuss.channel'].sudo().create({
-                'name': f"Lời mời họp: {employee2.name}",
-                'channel_type': 'chat',
-                'channel_member_ids': [
-                    (0, 0, {'partner_id': partner1.id}),
-                    (0, 0, {'partner_id': partner2.id}),
-                ]
-            })
+        # ✅ THÊM: Trưởng đơn vị tham gia
+        for dept in self.don_vi:
+            if dept.manager_id:
+                all_recipients |= dept.manager_id
 
-        # Gửi notification
-        all_notify_employees = employees | manager_employees
-        for employee in all_notify_employees:
+        # Loại bỏ trùng lặp và chỉ lấy những người có email
+        all_recipients = all_recipients.filtered(lambda emp: emp.work_email)
+
+        # --- GỬI EMAIL NHÓM CHO TẤT CẢ NGƯỜI LIÊN QUAN ---
+        if all_recipients:
+            try:
+                # Thu thập thông tin người nhận
+                email_list = []
+                name_list = []
+
+                for employee in all_recipients:
+                    email = employee.work_email
+                    if email and email not in email_list:
+                        email_list.append(email)
+                        name_list.append(employee.name)
+
+                if email_list:
+                    # Tạo danh sách người nhận (tất cả trong 1 email)
+                    email_to = ', '.join(email_list)
+                    names_str = ', '.join(name_list)
+
+                    # Thông tin cuộc họp
+                    time_str = f"{self.start.strftime('%H:%M %d/%m/%Y')} → {self.stop.strftime('%H:%M %d/%m/%Y')}" if self.start and self.stop else ""
+                    event_url = f"{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
+                    approver_name = self.env.user.name
+
+                    subject = f"[THÔNG BÁO MỜI HỌP] {self.name}"
+
+                    # Tạo HTML email chuyên nghiệp
+                    body_html = f"""
+                    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; color: white; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px;">📅 LỊCH HỌP MỚI</h1>
+                            <p style="font-size: 18px; margin-top: 10px;">{self.name}</p>
+                        </div>
+
+                        <div style="padding: 30px; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px; background: white;">
+                            <p>Kính gửi: <b>{names_str}</b>,</p>
+                            <p>Bạn/Đơn vị của bạn được mời tham dự cuộc họp quan trọng sau:</p>
+
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                                <h3 style="color: #2c3e50; margin-top: 0;">📋 THÔNG TIN CUỘC HỌP</h3>
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="padding: 10px; width: 30%; font-weight: bold;">Chủ đề:</td>
+                                        <td style="padding: 10px;">{self.name}</td>
+                                    </tr>
+                                    <tr style="background: #f0f0f0;">
+                                        <td style="padding: 10px; font-weight: bold;">Thời gian:</td>
+                                        <td style="padding: 10px;">{time_str}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 10px; font-weight: bold;">Người chủ trì:</td>
+                                        <td style="padding: 10px;">{self.chu_tri.name if self.chu_tri else 'Chưa xác định'}</td>
+                                    </tr>
+                                    <tr style="background: #f0f0f0;">
+                                        <td style="padding: 10px; font-weight: bold;">Đơn vị tham gia:</td>
+                                        <td style="padding: 10px;">
+                                            {', '.join(dept.name for dept in self.don_vi) if self.don_vi else 'Chưa xác định'}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 10px; font-weight: bold;">Người tạo:</td>
+                                        <td style="padding: 10px;">{creator_employee.name if creator_employee else self.create_uid.name}</td>
+                                    </tr>
+                                    <tr style="background: #f0f0f0;">
+                                        <td style="padding: 10px; font-weight: bold;">Người duyệt:</td>
+                                        <td style="padding: 10px; color: #27ae60;">{approver_name}</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="{event_url}" 
+                                   style="background: #3498db; color: white; padding: 15px 30px; 
+                                          text-decoration: none; border-radius: 5px; font-weight: bold; 
+                                          font-size: 16px; display: inline-block;">
+                                    📅 XEM CHI TIẾT & XÁC NHẬN THAM DỰ
+                                </a>
+                            </div>
+
+                            <div style="background: #e8f6ef; padding: 15px; border-radius: 5px; border-left: 4px solid #27ae60;">
+                                <p style="margin: 0; color: #27ae60; font-weight: bold;">
+                                    ✅ Lịch họp đã được phê duyệt và sẵn sàng
+                                </p>
+                            </div>
+
+                            <hr style="border: none; border-top: 2px solid #eee; margin: 30px 0;">
+
+                            <p style="color: #7f8c8d; font-size: 12px; text-align: center;">
+                                Đây là email tự động từ Hệ thống Quản lý Lịch họp.<br>
+                                Vui lòng không trả lời email này.
+                            </p>
+                        </div>
+                    </div>
+                    """
+
+                    # Gửi 1 email cho tất cả người liên quan
+                    self.env['mail.mail'].sudo().create({
+                        'subject': subject,
+                        'body_html': body_html,
+                        'email_to': email_to,
+                        'email_from': self.env.user.email or self.env.company.email,
+                    }).send()
+
+                    _logger.info(f"✅ Đã gửi email thông báo mời họp đến {len(email_list)} người liên quan")
+
+            except Exception as e:
+                _logger.error(f"Lỗi gửi email mời họp nhóm: {str(e)}")
+
+        # Gửi popup notification (giữ nguyên)
+        for employee in all_recipients:
             if not employee.user_id:
                 continue
 
@@ -536,114 +647,6 @@ class Calendar(models.Model):
                         'type': 'info',
                     }
                 )
-
-            # Chat
-            time_str = f"{self.start.strftime('%H:%M %d/%m/%Y')} → {self.stop.strftime('%H:%M %d/%m/%Y')}" if self.start and self.stop else ""
-            body_chat = f"""
-                <p>📅 Cuộc họp: <b>{self.name}</b></p>
-                <p>⏰ {time_str}</p>
-                <p>🏢 Phòng: {self.room.name if self.room else 'Chưa đăng ký'}</p>
-                <p><a href="{web_url}/web#id={self.id}&model=calendar.event&view_type=form" 
-                      style="background:#28a745;color:white;padding:4px 8px;border-radius:4px;text-decoration:none;">📨 Xem chi tiết</a></p>
-            """
-            try:
-                if odoobot_employee and odoobot_employee.user_id:
-                    channel = get_or_create_direct_chat(odoobot_employee, employee)
-                    if channel:
-                        # Thêm thông điệp đặc biệt cho người tạo
-                        if employee.id == creator_employee.id:
-                            extra_msg = "<p style='color:#27ae60;font-weight:bold;'>✅ Lịch họp của bạn đã được phê duyệt thành công!</p>"
-                            body_chat = extra_msg + body_chat
-
-                        channel.sudo().message_post(
-                            body=body_chat, message_type='comment', subtype_xmlid='mail.mt_comment',
-                            author_id=odoobot_employee.user_id.partner_id.id, body_is_html=True
-                        )
-            except Exception as e:
-                _logger.error(f"Lỗi gửi chat: {str(e)}")
-
-        # ✅ THÊM: Gửi email cho người tạo
-        if creator_employee and creator_employee.work_email:
-            approver_name = self.env.user.name
-            time_str = f"{self.start.strftime('%H:%M %d/%m/%Y')} → {self.stop.strftime('%H:%M %d/%m/%Y')}" if self.start and self.stop else ""
-            event_url = f"{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
-            subject = f"[ĐÃ DUYỆT] Lịch họp: {self.name}"
-            body_html = f"""
-                <div style="border-left:4px solid #27ae60;padding-left:15px;background:#e8f6ef;">
-                    <h3 style="color:#27ae60;">✅ LỊCH HỌP ĐÃ ĐƯỢC DUYỆT</h3>
-                </div>
-                <p>Kính gửi <b>{creator_employee.name}</b>,</p>
-                <p>Lịch họp của bạn đã được <b>{approver_name}</b> phê duyệt thành công.</p>
-
-                <p><b>Thông tin cuộc họp đã duyệt:</b></p>
-                <table style="border-collapse:collapse;width:100%;">
-                    <tr style="background:#f8f9fa;">
-                        <td style="border:1px solid #ddd;padding:8px;"><b>Chủ đề</b></td>
-                        <td style="border:1px solid #ddd;padding:8px;">{self.name}</td>
-                    </tr>
-                    <tr>
-                        <td style="border:1px solid #ddd;padding:8px;"><b>Thời gian</b></td>
-                        <td style="border:1px solid #ddd;padding:8px;">{time_str}</td>
-                    </tr>
-                    <tr style="background:#f8f9fa;">
-                        <td style="border:1px solid #ddd;padding:8px;"><b>Trạng thái</b></td>
-                        <td style="border:1px solid #ddd;padding:8px;color:#27ae60;font-weight:bold;">✅ ĐÃ DUYỆT</td>
-                    </tr>
-                    <tr>
-                        <td style="border:1px solid #ddd;padding:8px;"><b>Người duyệt</b></td>
-                        <td style="border:1px solid #ddd;padding:8px;">{approver_name}</td>
-                    </tr>
-                </table>
-
-                <p style="margin-top:20px;">
-                    <b>Tiếp theo:</b> Bây giờ bạn có thể đăng ký phòng họp nếu cần.
-                </p>
-
-                <p style="margin-top:20px;">
-                    <a href="{event_url}" 
-                       style="background:#27ae60;color:white;padding:10px 20px;border-radius:5px;text-decoration:none;font-weight:bold;display:inline-block;">
-                        📋 Xem chi tiết lịch họp
-                    </a>
-                </p>
-            """
-            try:
-                self.env['mail.mail'].sudo().create({
-                    'subject': subject,
-                    'body_html': body_html,
-                    'email_to': creator_employee.work_email,
-                    'email_from': self.env.user.email or self.env.company.email,
-                }).send()
-                _logger.info(f"Đã gửi email thông báo duyệt cho người tạo: {creator_employee.name}")
-            except Exception as e:
-                _logger.error(f"Lỗi gửi email cho người tạo: {str(e)}")
-
-        # Gửi email manager
-        for employee in manager_employees:
-            if not employee.work_email:
-                continue
-            user_create = self.create_uid
-            event_url = f"{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
-            subject = f"Mời họp: {self.name}"
-            body_html = f"""
-                <p>Kính gửi {employee.name},</p>
-                <p>Đơn vị được mời tham dự cuộc họp <b>{self.name}</b>.</p>
-                <p>Thời gian: {time_str}</p>
-                <p><a href="{event_url}">Xem chi tiết</a></p>
-            """
-            self.env['mail.mail'].sudo().create({
-                'subject': subject, 'body_html': body_html, 'email_to': employee.work_email
-            }).send()
-
-        # ✅ THÊM: Chatter message thông báo đã duyệt
-        approver = self.env.user.name
-        self.message_post(
-            body=f"✅ <b>Lịch họp đã được {approver} phê duyệt.</b><br/>"
-                 f"Thời gian: {time_str}<br/>"
-                 f"Trạng thái: Đã duyệt → Có thể đăng ký phòng họp.",
-            message_type='comment',
-            subtype_xmlid='mail.mt_comment',
-            body_is_html=True
-        )
 
         return True
 
@@ -827,13 +830,29 @@ class Calendar(models.Model):
             raise UserError("Vui lòng đợi Lịch họp được duyệt trước khi đăng ký phòng!")
         if not self.start or not self.stop:
             raise UserError("Vui lòng nhập thời gian bắt đầu và kết thúc.")
+
+        # Mở form lịch họp với view đặc biệt cho đăng ký phòng
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Đăng ký phòng họp',
-            'res_model': 'room.booking.wizard',
+            'name': f'Đăng ký phòng họp - {self.name}',
+            'res_model': 'calendar.event',
+            'res_id': self.id,
             'view_mode': 'form',
-            'target': 'new',
-            'context': {'default_event_id': self.id},
+            'target': 'current',  # Mở trong tab hiện tại
+            'view_id': self.env.ref('Quan_ly_lich_hop.view_calendar_event_room_form').id,  # Sử dụng form đặc biệt
+            'views': [(self.env.ref('Quan_ly_lich_hop.view_calendar_event_room_form').id, 'form')],
+            'context': {
+                'default_event_id': self.id,
+                'form_view_ref': 'Quan_ly_lich_hop.view_calendar_event_room_form',  # Đảm bảo mở đúng form
+                'default_room': self.room.id if self.room else False,
+                'search_default_state': 'approved',  # Chỉ hiển thị lịch đã duyệt
+                'hide_create_button': True,  # Ẩn nút tạo mới
+                'hide_edit_button': not self.is_current_user_creator,  # Ẩn nút chỉnh sửa nếu không phải người tạo
+            },
+            'flags': {
+                'mode': 'readonly' if not self.is_current_user_creator else 'edit',
+                'form_view_ref': 'Quan_ly_lich_hop.view_calendar_event_room_form',
+            }
         }
 
     def on_TV(self): # Mở dashboard TV
@@ -995,194 +1014,111 @@ class Calendar(models.Model):
                 all_recipients |= dept.manager_id
 
         # Loại bỏ trùng lặp
-        all_recipients = all_recipients.filtered(lambda emp: emp.user_id)
+        all_recipients = all_recipients.filtered(lambda emp: emp.work_email)
 
         if not all_recipients:
-            _logger.warning(f"Không có người nhận thông báo cho cuộc họp {self.id}")
+            _logger.warning(f"Không có email của người nhận thông báo cho cuộc họp {self.id}")
             return
 
-        # --- NỘI DUNG THÔNG BÁO ---
-        subject = f"⏰ NHẮC NHỞ: Cuộc họp {self.name} sắp bắt đầu"
+        # --- GỬI EMAIL NHÓM CHO TẤT CẢ NGƯỜI THAM GIA ---
+        try:
+            # Thu thập email
+            email_list = []
+            name_list = []
 
-        # HTML cho email
-        body_html = f"""
-        <div style="background-color:#e8f4fd; padding:20px; border-radius:10px; border-left:5px solid #2196F3;">
-            <h2 style="color:#1565C0;">⏰ NHẮC NHỞ CUỘC HỌP</h2>
-            <p>Cuộc họp sẽ bắt đầu sau <strong>{int(time_until_start)} phút</strong> nữa.</p>
-        </div>
+            for employee in all_recipients:
+                email = employee.work_email
+                if email and email not in email_list:
+                    email_list.append(email)
+                    name_list.append(employee.name)
 
-        <div style="margin:20px 0;">
-            <h3 style="color:#333;">📋 Thông tin cuộc họp</h3>
-            <table style="width:100%; border-collapse:collapse; margin-top:10px;">
-                <tr style="background-color:#f5f5f5;">
-                    <td style="padding:10px; border:1px solid #ddd; width:30%;"><strong>Chủ đề</strong></td>
-                    <td style="padding:10px; border:1px solid #ddd;">{self.name}</td>
-                </tr>
-                <tr>
-                    <td style="padding:10px; border:1px solid #ddd;"><strong>Thời gian</strong></td>
-                    <td style="padding:10px; border:1px solid #ddd;">{start_time_str}</td>
-                </tr>
-                <tr style="background-color:#f5f5f5;">
-                    <td style="padding:10px; border:1px solid #ddd;"><strong>Người chủ trì</strong></td>
-                    <td style="padding:10px; border:1px solid #ddd;">{self.chu_tri.name if self.chu_tri else 'Chưa xác định'}</td>
-                </tr>
-                <tr>
-                    <td style="padding:10px; border:1px solid #ddd;"><strong>Địa điểm</strong></td>
-                    <td style="padding:10px; border:1px solid #ddd;">{room_info}</td>
-                </tr>
-                <tr style="background-color:#f5f5f5;">
-                    <td style="padding:10px; border:1px solid #ddd;"><strong>Loại họp</strong></td>
-                    <td style="padding:10px; border:1px solid #ddd;">
-                        {'Họp online' if self.loai_cuoc_hop == 'online' else 'Họp offline'}
-                    </td>
-                </tr>
-            </table>
-        </div>
+            if email_list:
+                # Tạo danh sách người nhận
+                email_to = ', '.join(email_list)
+                names_str = ', '.join(name_list)
 
-        <div style="margin:20px 0; padding:15px; background-color:#fff8e1; border-radius:5px;">
-            <p><strong>📝 Lưu ý:</strong></p>
-            <ul>
-                <li>Vui lòng có mặt đúng giờ</li>
-                <li>Chuẩn bị tài liệu cần thiết trước khi họp</li>
-                <li>Kiểm tra thiết bị (nếu họp online)</li>
-            </ul>
-        </div>
+                subject = f"⏰ NHẮC NHỞ: Cuộc họp {self.name} sắp bắt đầu"
 
-        <div style="text-align:center; margin-top:30px;">
-            <a href="{meeting_url}" 
-               style="background-color:#2196F3; color:white; padding:12px 24px; 
-                      text-decoration:none; border-radius:5px; font-weight:bold; 
-                      display:inline-block;">
-                📅 Xem chi tiết cuộc họp
-            </a>
-        </div>
+                # HTML cho email
+                body_html = f"""
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <div style="background-color:#e8f4fd; padding:20px; border-radius:10px; border-left:5px solid #2196F3; margin-bottom: 20px;">
+                        <h2 style="color:#1565C0; margin-top:0;">⏰ NHẮC NHỞ CUỘC HỌP</h2>
+                        <p>Kính gửi: {names_str},</p>
+                        <p>Cuộc họp sẽ bắt đầu sau <strong style="color:#e74c3c; font-size: 18px;">{int(time_until_start)} phút</strong> nữa.</p>
+                    </div>
 
-        <hr style="margin:30px 0; border:none; border-top:1px solid #eee;">
+                    <div style="margin:20px 0;">
+                        <h3 style="color:#333;">📋 Thông tin cuộc họp</h3>
+                        <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+                            <tr style="background-color:#f5f5f5;">
+                                <td style="padding:10px; border:1px solid #ddd; width:30%;"><strong>Chủ đề</strong></td>
+                                <td style="padding:10px; border:1px solid #ddd;">{self.name}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:10px; border:1px solid #ddd;"><strong>Thời gian</strong></td>
+                                <td style="padding:10px; border:1px solid #ddd;">{start_time_str}</td>
+                            </tr>
+                            <tr style="background-color:#f5f5f5;">
+                                <td style="padding:10px; border:1px solid #ddd;"><strong>Người chủ trì</strong></td>
+                                <td style="padding:10px; border:1px solid #ddd;">{self.chu_tri.name if self.chu_tri else 'Chưa xác định'}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:10px; border:1px solid #ddd;"><strong>Địa điểm/Link</strong></td>
+                                <td style="padding:10px; border:1px solid #ddd;">{room_info}</td>
+                            </tr>
+                            <tr style="background-color:#f5f5f5;">
+                                <td style="padding:10px; border:1px solid #ddd;"><strong>Loại họp</strong></td>
+                                <td style="padding:10px; border:1px solid #ddd;">
+                                    {'Họp online' if self.loai_cuoc_hop == 'online' else 'Họp offline'}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
 
-        <p style="color:#666; font-size:12px;">
-            Đây là thông báo tự động từ hệ thống Quản lý Lịch họp.<br>
-            Vui lòng không trả lời email này.
-        </p>
-        """
+                    <div style="margin:20px 0; padding:15px; background-color:#fff8e1; border-radius:5px;">
+                        <p><strong>📝 Lưu ý quan trọng:</strong></p>
+                        <ul style="margin-top: 5px;">
+                            <li>Vui lòng có mặt đúng giờ tại cuộc họp</li>
+                            <li>Chuẩn bị tài liệu cần thiết trước khi họp</li>
+                            <li>Kiểm tra thiết bị và đường truyền internet (nếu họp online)</li>
+                            <li>Đối với họp online, vui lòng truy cập đường link trước 5 phút</li>
+                        </ul>
+                    </div>
 
-        # --- GỬI THÔNG BÁO ---
-        for employee in all_recipients:
-            # 1. Gửi email
-            if employee.work_email:
-                try:
-                    self.env['mail.mail'].sudo().create({
-                        'subject': subject,
-                        'body_html': body_html,
-                        'email_to': employee.work_email,
-                        'email_from': self.env.user.email or self.env.company.email,
-                    }).send()
-                    _logger.info(f"Đã gửi email nhắc nhở cho {employee.name} ({employee.work_email})")
-                except Exception as e:
-                    _logger.error(f"Lỗi gửi email cho {employee.name}: {str(e)}")
+                    <div style="text-align:center; margin-top:30px;">
+                        <a href="{meeting_url}" 
+                           style="background-color:#2196F3; color:white; padding:12px 24px; 
+                                  text-decoration:none; border-radius:5px; font-weight:bold; 
+                                  display:inline-block; font-size: 16px;">
+                            📅 Xem chi tiết cuộc họp
+                        </a>
+                    </div>
 
-            # 2. Gửi popup notification
-            if employee.user_id:
-                try:
-                    self.env['bus.bus']._sendone(
-                        employee.user_id.partner_id,
-                        'simple_notification',
-                        {
-                            'title': '⏰ Nhắc nhở cuộc họp',
-                            'message': f"Cuộc họp '{self.name}' sẽ bắt đầu sau {int(time_until_start)} phút",
-                            'sticky': True,  # Hiển thị lâu hơn
-                            'type': 'warning',
-                        }
-                    )
-                except Exception as e:
-                    _logger.error(f"Lỗi gửi popup cho {employee.name}: {str(e)}")
+                    <hr style="margin:30px 0; border:none; border-top:1px solid #eee;">
 
-            # 3. Gửi chat message
-            try:
-                if employee.user_id:
-                    odoobot = self.env.ref('base.user_root')
-                    odoobot_employee = self.env['hr.employee'].search(
-                        [('user_id', '=', odoobot.id)],
-                        limit=1
-                    )
+                    <p style="color:#666; font-size:12px;">
+                        Đây là thông báo tự động từ hệ thống Quản lý Lịch họp.<br>
+                        Vui lòng không trả lời email này.
+                    </p>
+                </div>
+                """
 
-                    if odoobot_employee and odoobot_employee.user_id:
-                        # Tìm hoặc tạo kênh chat
-                        partner1 = odoobot_employee.user_id.partner_id
-                        partner2 = employee.user_id.partner_id
+                # Gửi 1 email cho tất cả người tham gia
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject,
+                    'body_html': body_html,
+                    'email_to': email_to,
+                    'email_from': self.env.user.email or self.env.company.email,
+                }).send()
 
-                        domain = [
-                            ('channel_type', '=', 'chat'),
-                            ('channel_member_ids.partner_id', 'in', [partner1.id, partner2.id])
-                        ]
+                _logger.info(f"Đã gửi email nhắc nhở đến {len(email_list)} người tham gia cuộc họp")
 
-                        channels = self.env['discuss.channel'].sudo().search(domain)
-                        channel = None
-
-                        for ch in channels:
-                            members = ch.channel_member_ids.mapped('partner_id')
-                            if len(members) == 2 and set(members.ids) == {partner1.id, partner2.id}:
-                                channel = ch
-                                break
-
-                        if not channel:
-                            channel = self.env['discuss.channel'].sudo().create({
-                                'name': f"⏰ Nhắc nhở họp: {employee.name}",
-                                'channel_type': 'chat',
-                                'channel_member_ids': [
-                                    (0, 0, {'partner_id': partner1.id}),
-                                    (0, 0, {'partner_id': partner2.id}),
-                                ]
-                            })
-
-                        # Nội dung chat
-                        chat_body = f"""
-                        <div style="background:#fff3cd; padding:10px; border-radius:5px; border-left:4px solid #ffc107;">
-                            <p><strong>⏰ NHẮC NHỞ CUỘC HỌP</strong></p>
-                            <p>Cuộc họp <b>{self.name}</b> sẽ bắt đầu sau <b>{int(time_until_start)} phút</b>.</p>
-                            <p><b>Thời gian:</b> {start_time_str}</p>
-                            <p><b>Phòng:</b> {self.room.name if self.room else 'Chưa đăng ký'}</p>
-                            <p>
-                                <a href="{meeting_url}" style="background:#2196F3; color:white; padding:5px 10px; 
-                                   text-decoration:none; border-radius:3px; font-size:12px;">
-                                    Xem chi tiết
-                                </a>
-                            </p>
-                        </div>
-                        """
-
-                        channel.sudo().message_post(
-                            body=chat_body,
-                            message_type='comment',
-                            subtype_xmlid='mail.mt_comment',
-                            author_id=partner1.id,
-                            body_is_html=True
-                        )
-
-                        _logger.info(f"Đã gửi chat nhắc nhở cho {employee.name}")
-            except Exception as e:
-                _logger.error(f"Lỗi gửi chat cho {employee.name}: {str(e)}")
+        except Exception as e:
+            _logger.error(f"Lỗi gửi email nhắc nhở: {str(e)}")
 
         # Đánh dấu đã gửi nhắc nhở
         self.reminder_sent = True
-
-        # Ghi log vào chatter
-        reminder_msg = f"""
-        <div style="background:#e8f4fd; padding:10px; border-radius:5px; margin:10px 0;">
-            <p><strong>⏰ ĐÃ GỬI NHẮC NHỞ 30 PHÚT TRƯỚC KHI HỌP</strong></p>
-            <p>Thời gian: {now.strftime('%H:%M %d/%m/%Y')}</p>
-            <p>Người nhận: {len(all_recipients)} người</p>
-            <p>Thời gian còn lại: {int(time_until_start)} phút</p>
-        </div>
-        """
-
-        self.message_post(
-            body=reminder_msg,
-            message_type='comment',
-            subtype_xmlid='mail.mt_comment',
-            body_is_html=True
-        )
-
-        _logger.info(f"Đã gửi thông báo nhắc nhở 30 phút cho cuộc họp {self.id}: {self.name}")
 
 
 class RoomMaterials(models.Model):
@@ -1349,7 +1285,91 @@ class CalendarAddParticipantsWizard(models.TransientModel):
         time_str = f"{self.event_id.start.strftime('%H:%M %d/%m/%Y')} → {self.event_id.stop.strftime('%H:%M %d/%m/%Y')}" if self.event_id.start and self.event_id.stop else ""
         room_name = self.event_id.room.name if self.event_id.room else 'Chưa đăng ký'
 
-        # 1. Gửi notification popup + chat
+        # --- GỬI EMAIL NHÓM CHO TẤT CẢ NGƯỜI ĐƯỢC THÊM MỚI ---
+        email_list = []
+        name_list = []
+
+        for employee in new_employees:
+            if employee.work_email:
+                email = employee.work_email
+                if email and email not in email_list:
+                    email_list.append(email)
+                    name_list.append(employee.name)
+
+        if email_list:
+            try:
+                # Tạo danh sách người nhận (tất cả trong 1 email)
+                email_to = ', '.join(email_list)
+                names_str = ', '.join(name_list)
+
+                subject = f"📅 Bạn đã được thêm tham dự cuộc họp: {self.event_id.name}"
+                event_url = f"{web_url}/web#id={self.event_id.id}&model=calendar.event&view_type=form"
+
+                body_html = f"""
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <div style="background: #e8f4fd; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h2 style="color: #1565C0; margin-top: 0;">📅 THÔNG BÁO THÊM THAM DỰ CUỘC HỌP</h2>
+                        <p>Kính gửi: <b>{names_str}</b>,</p>
+                    </div>
+
+                    <p>Bạn đã được thêm vào danh sách tham dự cuộc họp sau:</p>
+
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 6px; margin: 20px 0;">
+                        <h3 style="color: #2c3e50;">📋 THÔNG TIN CUỘC HỌP</h3>
+                        <table style="width: 100%;">
+                            <tr>
+                                <td style="padding: 8px; width: 30%;"><b>Chủ đề:</b></td>
+                                <td style="padding: 8px;">{self.event_id.name}</td>
+                            </tr>
+                            <tr style="background: #f0f0f0;">
+                                <td style="padding: 8px;"><b>Thời gian:</b></td>
+                                <td style="padding: 8px;">{time_str}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px;"><b>Phòng họp:</b></td>
+                                <td style="padding: 8px;">{room_name}</td>
+                            </tr>
+                            <tr style="background: #f0f0f0;">
+                                <td style="padding: 8px;"><b>Người chủ trì:</b></td>
+                                <td style="padding: 8px;">{self.event_id.chu_tri.name if self.event_id.chu_tri else 'Chưa xác định'}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px;"><b>Người thêm:</b></td>
+                                <td style="padding: 8px;">{self.env.user.name}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{event_url}" 
+                           style="background: #28a745; color: white; padding: 12px 24px; 
+                                  text-decoration: none; border-radius: 5px; font-weight: bold;">
+                            📋 XEM CHI TIẾT CUỘC HỌP
+                        </a>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+
+                    <p style="color: #7f8c8d; font-size: 12px; text-align: center;">
+                        Đây là thông báo tự động từ hệ thống Quản lý Lịch họp.
+                    </p>
+                </div>
+                """
+
+                # Gửi 1 email cho tất cả người được thêm mới
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject,
+                    'body_html': body_html,
+                    'email_to': email_to,
+                    'email_from': self.env.user.email or self.env.company.email,
+                }).send()
+
+                _logger.info(f"✅ Đã gửi email thông báo thêm tham dự đến {len(email_list)} người")
+
+            except Exception as e:
+                _logger.error(f"Lỗi gửi email thêm tham dự: {str(e)}")
+
+        # --- GỬI THÔNG BÁO POPUP & CHAT (giữ nguyên) ---
         for employee in new_employees:
             if not employee.user_id:
                 continue
@@ -1366,7 +1386,7 @@ class CalendarAddParticipantsWizard(models.TransientModel):
                 }
             )
 
-            # Chat HTML
+            # Chat HTML (giữ nguyên)
             body_chat = f"""
                 <p>📅 Bạn đã được thêm tham dự cuộc họp: <b>{self.event_id.name}</b></p>
                 <p>⏰ {time_str}</p>
@@ -1404,24 +1424,5 @@ class CalendarAddParticipantsWizard(models.TransientModel):
                     )
             except Exception as e:
                 _logger.error(f"Lỗi gửi chat cho {employee.name}: {str(e)}")
-
-            # 2. Gửi email
-            if employee.work_email:
-                subject = f"Mời họp {self.event_id.name}"
-                body_html = f"""
-                    <p>Kính gửi {employee.name},</p>
-                    <p>Bạn đã được thêm tham dự cuộc họp <b>{self.event_id.name}</b> với nội dung chi tiết:</p>
-                    <p><b>Thời gian:</b> {time_str}</p>
-                    <p><b>Phòng:</b> {room_name}</p>
-                    <p>Anh/chị truy cập đường link dưới đây để xem chi tiết cuộc họp:</p>
-                    <p><a href="{web_url}/web#id={self.event_id.id}&model=calendar.event&view_type=form">{web_url}/web#id={self.event_id.id}&model=calendar.event&view_type=form</a></p>
-                    <p>Trân trọng,</p>
-                    <p>{self.event_id.create_uid.name}</p>
-                """
-                self.env['mail.mail'].sudo().create({
-                    'subject': subject,
-                    'body_html': body_html,
-                    'email_to': employee.work_email,
-                }).send()
 
         return {'type': 'ir.actions.act_window_close'}
