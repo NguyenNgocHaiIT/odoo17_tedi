@@ -287,6 +287,48 @@ class HrLeave(models.Model):
             return
         super(HrLeave, self)._check_double_validation_rules(employees, state)
 
+    def _send_refusal_email(self):
+        # _logger.info("========== BAT DAU GOI HAM GUI MAIL ==========")
+        try:
+            template = self.env.ref('hr_attendance_tedi.email_template_leave_refuse_notification',
+                                    raise_if_not_found=False)
+            if not template:
+                _logger.error("!!! KHONG TIM THAY XML ID: hr_attendance_tedi.email_template_leave_refuse_notification")
+                return
+
+            for leave in self:
+                _logger.info("Dang gui mail cho don ID: %s - Email NV: %s", leave.id, leave.employee_id.work_email)
+                if leave.employee_id.work_email:
+                    template.sudo().send_mail(leave.id, force_send=True)
+                    _logger.info("--- GUI MAIL THANH CONG ---")
+                else:
+                    _logger.warning("--- NV KHONG CO EMAIL ---")
+        except Exception as e:
+            _logger.error("!!! LOI KHI GUI MAIL: %s", str(e))
+
+    def action_refuse(self):
+        # _logger.info("========== CLICK NUT TU CHOI ==========")
+        current_employee = self.env.user.employee_id
+
+        # In ra de check quyen Unit Manager
+        # _logger.info("User: %s - can_approve_by_unit_manager: %s", self.env.user.name, self.can_approve_by_unit_manager)
+
+        if current_employee:
+            self.sudo().write({'manager_id': current_employee.id})
+
+        if self.can_approve_by_unit_manager:
+            # _logger.info("Duyet theo luong Unit Manager")
+            self.sudo().with_context(bypass_manager_check=True).write({'state': 'refuse'})
+            res = True
+        else:
+            # _logger.info("Duyet theo luong chuan Odoo")
+            res = super(HrLeave, self).action_refuse()
+
+        # Goi gui mail
+        self._send_refusal_email()
+        return res
+
+
     def action_approve(self):
         if self.can_approve_by_unit_manager:
             current_employee = self.env.user.employee_id
@@ -316,14 +358,7 @@ class HrLeave(models.Model):
             return True
         return super(HrLeave, self).action_validate()
 
-    def action_refuse(self):
-        current_employee = self.env.user.employee_id
-        if current_employee:
-            self.sudo().write({'manager_id': current_employee.id})
-        if self.can_approve_by_unit_manager:
-            self.sudo().with_context(bypass_manager_check=True).write({'state': 'refuse'})
-            return True
-        return super(HrLeave, self).action_refuse()
+
 
     # =========================================================================
     # 7. FIX WORK ENTRY CHỒNG LẤN
