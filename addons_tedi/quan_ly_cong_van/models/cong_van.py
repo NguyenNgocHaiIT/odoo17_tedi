@@ -341,59 +341,57 @@ class ButPhe(models.TransientModel):
             'thoi_diem_chi_dao': fields.Datetime.now(),
         })
         # ===== 4. GỬI EMAIL CHO VĂN THƯ =====
-        if self.thong_bao_cho_van_thu:
-            group = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-            if group and group.users:
-                # Lấy email văn thư
-                van_thu_emails = []
-                for user in group.users:
-                    if user.email:
-                        van_thu_emails.append(user.email)
+        group = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
+        if group and group.users:
+            # Lấy email văn thư
+            van_thu_emails = []
+            for user in group.users:
+                if user.email:
+                    van_thu_emails.append(user.email)
 
-                if van_thu_emails:
-                    email_to = ', '.join(van_thu_emails)
+            if van_thu_emails:
+                email_to = ', '.join(van_thu_emails)
 
-                    # Tạo email
-                    subject = f"Văn bản đã bút phê: {doc.trich_yeu[:30]}..." if doc.trich_yeu else "Văn bản đã bút phê"
+                # Tạo email
+                subject = f"Văn bản đã bút phê: {doc.trich_yeu[:30]}..." if doc.trich_yeu else "Văn bản đã bút phê"
 
-                    body = f"""
-                            Văn bản đã được bút phê:
+                body = f"""
+                        Văn bản đã được bút phê:
 
-                            Số văn bản: {doc.so_vb or 'Chưa có số'}
-                            Trích yếu: {doc.trich_yeu or 'Không có'}
-                            Người bút phê: {employee.name if employee else self.env.user.name}
-                            Ý kiến: {self.y_kien_xu_ly or 'Không có ý kiến'}
-                            Quan trọng: {'Có' if self.quan_trong else 'Không'}
-                            Thời gian: {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}
+                        Số văn bản: {doc.so_vb or 'Chưa có số'}
+                        Trích yếu: {doc.trich_yeu or 'Không có'}
+                        Người bút phê: {employee.name if employee else self.env.user.name}
+                        Ý kiến: {self.y_kien_xu_ly or 'Không có ý kiến'}
+                        Quan trọng: {'Có' if self.quan_trong else 'Không'}
+                        Thời gian: {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}
 
-                            Vui lòng xử lý phân phát.
-                            """
+                        Vui lòng xử lý phân phát.
+                        """
 
-                    # Gửi email
-                    self.env['mail.mail'].sudo().create({
-                        'subject': subject,
-                        'email_to': email_to,
-                        'body_html': body.replace('\n', '<br>'),
-                    }).send()
+                # Gửi email
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject,
+                    'email_to': email_to,
+                    'body_html': body.replace('\n', '<br>'),
+                }).send()
 
         # ===== 5. Thông báo văn thư (group) =====
-        if self.thong_bao_cho_van_thu:
-            group = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-            if group:
-                partners = group.users.mapped('partner_id').ids
-                if partners:
-                    doc.message_post(
-                        body=f"""
-                                    <p><b>Văn bản đã được bút phê:</b> {doc.trich_yeu or 'Không có trích yếu'}</p>
-                                    <p><b>Người bút phê:</b> {employee.name if employee else self.env.user.name}</p>
-                                    <p><b>Ý kiến bút phê:</b> {self.y_kien_xu_ly or 'Không có ý kiến'}</p>
-                                    <p><b>Quan trọng:</b> {'Có' if self.quan_trong else 'Không'}</p>
-                                    <p><b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
-                                    """,
-                        subject=f"Văn bản đã được bút phê: {doc.trich_yeu[:50]}..." if doc.trich_yeu else "Văn bản đã được bút phê",
-                        partner_ids=partners,
-                        body_is_html=True,
-                    )
+        group = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
+        if group:
+            partners = group.users.mapped('partner_id').ids
+            if partners:
+                doc.message_post(
+                    body=f"""
+                                <p><b>Văn bản đã được bút phê:</b> {doc.trich_yeu or 'Không có trích yếu'}</p>
+                                <p><b>Người bút phê:</b> {employee.name if employee else self.env.user.name}</p>
+                                <p><b>Ý kiến bút phê:</b> {self.y_kien_xu_ly or 'Không có ý kiến'}</p>
+                                <p><b>Quan trọng:</b> {'Có' if self.quan_trong else 'Không'}</p>
+                                <p><b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                                """,
+                    subject=f"Văn bản đã được bút phê: {doc.trich_yeu[:50]}..." if doc.trich_yeu else "Văn bản đã được bút phê",
+                    partner_ids=partners,
+                    body_is_html=True,
+                )
 
         # ===== 6. Lưu tài liệu kèm =====
         if self.tai_lieu_kem:
@@ -1035,6 +1033,8 @@ class OfficeDocument(models.Model):
         if self.document_type in ['outgoing', 'outgoing_internal', 'resolution']:
             # Công văn đi, quyết định: gửi thông báo cho văn thư
             self._send_approval_notification_to_van_thu()
+            self._send_approval_notification_to_creator()
+            self._send_approval_notification_to_truong_don_vi()
         elif self.document_type in ['incoming', 'incoming_internal']:
             # Công văn đến: gửi thông báo cho người tạo
             self._send_approval_notification_to_creator()
@@ -1046,6 +1046,63 @@ class OfficeDocument(models.Model):
 
         self._send_approval_notification_to_creator()
         return True
+
+
+    def _send_approval_notification_to_truong_don_vi(self):
+        """Gửi thông báo cho Trưởng đơn vị khi công văn đi được duyệt"""
+        # Lấy phòng ban của người tạo công văn
+        if self.create_uid and self.create_uid.employee_ids:
+            # Lấy employee đầu tiên của user
+            creator_employee = self.create_uid.employee_ids[0]
+
+            # Lấy phòng ban của người tạo
+            department = creator_employee.department_id
+
+            if department and department.manager_id:
+                # Lấy thông tin trưởng đơn vị
+                truong_don_vi = department.manager_id
+
+                if truong_don_vi.user_id and truong_don_vi.user_id.email:
+                    # Gửi email cho trưởng đơn vị
+                    email_to = truong_don_vi.user_id.email
+
+                    subject = f"Công văn đi đã được duyệt: {self.trich_yeu[:30]}..." if self.trich_yeu else "Công văn đi đã được duyệt"
+
+                    body = f"""
+                            Công văn đi đã được duyệt và chuyển cho văn thư xử lý:
+
+                            Số văn bản: {self.so_vb or 'Chưa có số'}
+                            Trích yếu: {self.trich_yeu or 'Không có'}
+                            Loại văn bản: {self._get_document_type_display()}
+                            Người tạo: {self.create_uid.name}
+                            Phòng ban: {department.name}
+                            Thời gian duyệt: {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}
+
+                            Công văn đã sẵn sàng để văn thư xử lý.
+                            """
+
+                    # Gửi email
+                    self.env['mail.mail'].sudo().create({
+                        'subject': subject,
+                        'email_to': email_to,
+                        'body_html': body.replace('\n', '<br>'),
+                    }).send()
+
+                    # Gửi thông báo trên Odoo
+                    self.message_post(
+                        body=f"""
+                            <p><b>Thông báo cho Trưởng đơn vị:</b> {truong_don_vi.name}</p>
+                            <p><b>Công văn đi đã được duyệt:</b> {self.trich_yeu or 'Không có trích yếu'}</p>
+                            <p><b>Loại văn bản:</b> {self._get_document_type_display()}</p>
+                            <p><b>Người tạo:</b> {self.create_uid.name}</p>
+                            <p><b>Phòng ban:</b> {department.name}</p>
+                            <p><b>Thời gian duyệt:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                            <p><i>Công văn đã được chuyển cho văn thư xử lý.</i></p>
+                            """,
+                        subject=f"Công văn đi đã được duyệt: {self.trich_yeu[:50]}..." if self.trich_yeu else "Công văn đi đã được duyệt",
+                        partner_ids=[truong_don_vi.user_id.partner_id.id],
+                        body_is_html=True,
+                    )
 
     def _send_approval_notification_to_creator(self):
         """Gửi thông báo cho người tạo khi công văn đến/incoming được duyệt"""
