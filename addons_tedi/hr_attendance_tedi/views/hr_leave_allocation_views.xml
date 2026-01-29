@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="hr_leave_allocation_view_form_manager_custom" model="ir.ui.view">
+            <field name="name">hr.leave.allocation.view.form.manager.custom</field>
+            <field name="model">hr.leave.allocation</field>
+            <field name="inherit_id" ref="hr_holidays.hr_leave_allocation_view_form_manager"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//button[@name='action_validate']" position="attributes">
+                    <attribute name="string">Cấp phát</attribute>
+                </xpath>
+
+                <xpath expr="//button[@name='action_refuse']" position="attributes">
+                    <attribute name="string">Hủy</attribute>
+                </xpath>
+
+                <xpath expr="//button[@name='action_refuse']" position="after">
+                    <button string="Về nháp" name="action_draft" type="object"
+                        class="oe_highlight"
+                        invisible="state != 'refuse'"/>
+                </xpath>
+
+                <xpath expr="//field[@name='holiday_status_id']" position="attributes">
+                    <attribute name="readonly">state == 'validate'</attribute>
+                </xpath>
+                <xpath expr="//field[@name='holiday_type']" position="attributes">
+                    <attribute name="readonly">state == 'validate'</attribute>
+                </xpath>
+                <xpath expr="//field[@name='employee_id']" position="attributes">
+                    <attribute name="readonly">state == 'validate'</attribute>
+                </xpath>
+                <xpath expr="//field[@name='employee_ids']" position="attributes">
+                    <attribute name="readonly">state == 'validate'</attribute>
+                </xpath>
+                <xpath expr="//field[@name='department_id']" position="attributes">
+                    <attribute name="readonly">state == 'validate'</attribute>
+                </xpath>
+                <xpath expr="//field[@name='mode_company_id']" position="attributes">
+                    <attribute name="readonly">state == 'validate'</attribute>
+                </xpath>
+                <xpath expr="//field[@name='category_id']" position="attributes">
+                    <attribute name="readonly">state == 'validate'</attribute>
+                </xpath>
+                <xpath expr="//field[@name='number_of_days_display']" position="attributes">
+                    <attribute name="readonly">state == 'validate'</attribute>
+                </xpath>
+                <xpath expr="//field[@name='number_of_hours_display']" position="attributes">
+                    <attribute name="readonly">state == 'validate'</attribute>
+                </xpath>
+                <xpath expr="//field[@name='notes']" position="attributes">
+                    <attribute name="readonly">state == 'validate'</attribute>
+                </xpath>
+
+            </field>
+        </record>
+    </data>
+</odoo>

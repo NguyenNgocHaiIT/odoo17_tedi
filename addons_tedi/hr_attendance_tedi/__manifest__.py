@@ -11,6 +11,8 @@
         "security/ir.model.access.csv",
         # "data/data_hr_leave_type.xml",
 
+        "data/mail_template_data.xml",
+
         "wizard/attendance_import_views.xml",
         "wizard/generate_work_entry_wizard_views.xml",
         "views/attendance_views.xml",
@@ -19,6 +21,7 @@
         'views/hr_leave_type_views.xml',
         'views/work_entry_views.xml',
         'views/work_entry_type_views.xml',
+        "views/hr_leave_allocation_views.xml",
         # 'data/data_work_entry_type.xml',
 
         "views/menu.xml",

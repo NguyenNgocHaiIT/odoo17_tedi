@@ -356,15 +356,20 @@ class TediAttendanceImportWizard(models.TransientModel):
                 except:
                     continue
 
+                # Lấy lịch làm việc: h_start (8h), h_end (17h), h_noon (12h)
                 work_hours = self._get_work_hours_from_contract(employee, curr_date.date())
 
                 if not work_hours: continue
                 h_start_float, h_end_float, h_noon_float = work_hours
 
+                # Xác định xem có phải nửa ngày không
                 is_half = True if ('/2' in val or val == '-') else False
+                # Lấy mã gốc (VD: P/2 -> P)
                 base_symbol = val.replace('/2', '') if '/2' in val else ('-' if val == '-' else val)
 
-                # 1. Chấm công
+                # ---------------------------------------------------------
+                # CASE 1: CHẤM CÔNG THƯỜNG (+ hoặc Giờ cụ thể)
+                # ---------------------------------------------------------
                 if base_symbol in ATT_SYMBOLS or ':' in val:
                     check_in_dt = False
                     if ':' in val:
@@ -376,16 +381,19 @@ class TediAttendanceImportWizard(models.TransientModel):
                                 if len(valid_times) > 1:
                                     check_out_dt = self._parse_to_utc(curr_date, valid_times[-1], local_tz, utc_tz)
                                 else:
+                                    # Nếu chỉ có 1 giờ checkin -> Checkout mặc định theo ca
                                     h_to_temp = h_noon_float if is_half else h_end_float
                                     check_out_dt = self._make_utc_from_float(curr_date, h_to_temp, local_tz, utc_tz)
                             except:
                                 continue
                     else:
+                        # Dấu cộng (+) -> Lấy full giờ theo ca
                         h_to_temp = h_noon_float if is_half else h_end_float
                         check_in_dt = self._make_utc_from_float(curr_date, h_start_float, local_tz, utc_tz)
                         check_out_dt = self._make_utc_from_float(curr_date, h_to_temp, local_tz, utc_tz)
 
                     if check_in_dt and check_out_dt:
+                        # Kiểm tra trùng lặp
                         start_d = check_in_dt.replace(hour=0, minute=0)
                         end_d = check_in_dt.replace(hour=23, minute=59)
 
@@ -408,29 +416,42 @@ class TediAttendanceImportWizard(models.TransientModel):
                             except Exception as e:
                                 errors.append(f"Dòng {row_idx}: Lỗi tạo công - {str(e)}")
 
-                # 2. Lễ Tết
+                # ---------------------------------------------------------
+                # CASE 2: LỄ TẾT
+                # ---------------------------------------------------------
                 elif base_symbol in PUB_SYMBOLS:
                     cnt_skipped += 1
                     continue
 
-                # 3. Nghỉ phép
+                # ---------------------------------------------------------
+                # CASE 3: NGHỈ PHÉP (ĐÃ UPDATE LOGIC)
+                # ---------------------------------------------------------
                 else:
-                    leave_type_id = self._find_leave_type_by_code(val)
+                    # [Logic Mới] Tìm theo base_symbol trước (VD: P/2 -> Tìm P)
+                    leave_type_id = self._find_leave_type_by_code(base_symbol)
+                    if not leave_type_id:
+                        # Fallback: Tìm theo mã gốc nếu base không thấy
+                        leave_type_id = self._find_leave_type_by_code(val)
+
                     if not leave_type_id:
                         errors.append(f"Dòng {row_idx} ({emp_code}): Không tìm thấy loại nghỉ '{val}'")
                         continue
 
+                    # Kiểm tra trùng đơn
                     domain = [('employee_id', '=', employee.id), ('state', 'in', ['confirm', 'validate1', 'validate']),
                               ('request_date_from', '<=', curr_date.date()),
                               ('request_date_to', '>=', curr_date.date())]
 
                     if not Leave.search_count(domain):
-                        h_to_temp = h_noon_float if is_half else h_end_float
+                        # Tính giờ nghỉ: Nếu nửa ngày thì nghỉ đến trưa (h_noon), cả ngày thì đến chiều (h_end)
+                        h_leave_to = h_noon_float if is_half else h_end_float
+
                         dt_f = self._make_utc_from_float(curr_date, h_start_float, local_tz, utc_tz)
-                        dt_t = self._make_utc_from_float(curr_date, h_to_temp, local_tz, utc_tz)
+                        dt_t = self._make_utc_from_float(curr_date, h_leave_to, local_tz, utc_tz)
 
                         try:
                             with self.env.cr.savepoint():
+                                # 1. TẠO ĐƠN NGHỈ PHÉP
                                 vals = {
                                     'employee_id': employee.id,
                                     'holiday_status_id': int(leave_type_id),
@@ -446,6 +467,7 @@ class TediAttendanceImportWizard(models.TransientModel):
                                 }
 
                                 leave = Leave.sudo().create(vals)
+                                # Validate đơn
                                 leave_sudo = leave.with_context(bypass_manager_check=True)
                                 if leave_sudo.state == 'confirm': leave_sudo.action_approve()
                                 if leave_sudo.state == 'validate1': leave_sudo.action_validate()
@@ -455,6 +477,30 @@ class TediAttendanceImportWizard(models.TransientModel):
 
                                 cnt_leave += 1
                                 imported_employees.add(employee.name)
+
+                                # 2. [QUAN TRỌNG] TẠO CHẤM CÔNG BÙ CHO NỬA NGÀY CÒN LẠI
+                                # Chỉ thực hiện nếu là nghỉ nửa ngày VÀ lịch làm việc dài hơn giờ nghỉ trưa
+                                if is_half and h_end_float > h_noon_float:
+                                    # Tạo chấm công từ Trưa -> Chiều
+                                    att_check_in = self._make_utc_from_float(curr_date, h_noon_float, local_tz, utc_tz)
+                                    att_check_out = self._make_utc_from_float(curr_date, h_end_float, local_tz, utc_tz)
+
+                                    if att_check_in and att_check_out:
+                                        # Check trùng chấm công
+                                        exist_att_half = Attendance.search_count([
+                                            ('employee_id', '=', employee.id),
+                                            ('check_in', '=', att_check_in),
+                                            ('check_out', '=', att_check_out)
+                                        ])
+
+                                        if not exist_att_half:
+                                            Attendance.create({
+                                                'employee_id': employee.id,
+                                                'check_in': att_check_in,
+                                                'check_out': att_check_out,
+                                                'attendance_type': 'attendance'
+                                            })
+                                            cnt_att += 1
 
                         except Exception as ex:
                             err_str = str(ex)
@@ -470,7 +516,7 @@ class TediAttendanceImportWizard(models.TransientModel):
 
         msg = (f"Hoàn tất xử lý!\n"
                f"- Số nhân viên có dữ liệu: {len(imported_employees)}\n"
-               f"- Tổng bản ghi Chấm công: {cnt_att}\n"
+               f"- Tổng bản ghi Chấm công (bao gồm tự động): {cnt_att}\n"
                f"- Tổng bản ghi Nghỉ Phép: {cnt_leave}\n"
                f"- Bỏ qua (Lễ/Tết): {cnt_skipped}")
 
