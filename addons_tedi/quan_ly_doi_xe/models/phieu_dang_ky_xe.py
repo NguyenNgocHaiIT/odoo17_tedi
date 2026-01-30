@@ -32,102 +32,71 @@ class VehicleNoCarWizard(models.TransientModel):
             option_label = dict(self._fields['booking_option'].selection).get(self.booking_option)
             record.message_post(body=f"Báo hết xe. Phương án: {option_label}. Ghi chú: {self.note or 'Không'}")
 
-            # 3. GỬI EMAIL NHÓM CHO TẤT CẢ QUẢN LÝ XE
+            # 3. GỬI EMAIL CHO NGƯỜI TẠO PHIẾU (người đề nghị)
             try:
-                # Lấy nhóm quản lý xe
-                group = self.env.ref('fleet.fleet_group_manager', raise_if_not_found=False)
-                if group and group.users:
-                    # Thu thập email của tất cả quản lý
-                    manager_emails = []
-                    manager_names = []
-                    for user in group.users:
-                        if user.email:
-                            manager_emails.append(user.email)
-                            manager_names.append(user.name)
+                # Lấy thông tin người đề nghị (người tạo phiếu)
+                requester = record.requester_id
+                if requester and (requester.work_email or requester.user_id.email or record.create_uid.email):
+                    # Lấy email người nhận
+                    email_to = requester.work_email or requester.user_id.email or record.create_uid.email
+                    requester_name = requester.name or "Người đề nghị"
 
-                    if manager_emails:
-                        web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
-                        detail_url = f"{web_url}/web#id={record.id}&model=hr_tedi.vehicle.registration"
+                    web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+                    detail_url = f"{web_url}/web#id={record.id}&model=hr_tedi.vehicle.registration"
 
-                        email_to = ', '.join(manager_emails)
-                        names_str = ', '.join(manager_names)
-                        option_label = dict(record._fields['external_booking_type'].selection).get(
-                            record.external_booking_type)
+                    option_label = dict(record._fields['external_booking_type'].selection).get(
+                        record.external_booking_type)
 
-                        subject = f"[BÁO HẾT XE] Phiếu xe {record.code}"
+                    subject = f"[BÁO HẾT XE] Phiếu xe {record.code}"
 
-                        body_html = f"""
-                        <div style="font-family: Arial, sans-serif; padding: 20px;">
-                            <p>Kính gửi: {names_str},</p>
+                    body_html = f"""
+                    <div style="font-family: Arial, sans-serif; padding: 20px;">
+                        <p>Xin chào <b>{requester_name}</b>,</p>
 
-                            <div style="background:#ff980015; border-left: 4px solid #ff9800; padding: 15px; margin: 15px 0;">
-                                <h3 style="color:#ff9800; margin-top:0;">THÔNG BÁO: HẾT XE</h3>
-                                <p><b>Mã phiếu:</b> {record.code}</p>
-                                <p><b>Người đề nghị:</b> {record.requester_id.name if record.requester_id else 'Không có'}</p>
-                                <p><b>Phương án xử lý:</b> {option_label}</p>
-                                <p><b>Ghi chú:</b> {record.no_car_note or 'Không có'}</p>
-                                <p><b>Thời gian yêu cầu:</b> {record.start_date.strftime('%d/%m/%Y %H:%M') if record.start_date else ''}</p>
-                                <p><b>Địa điểm:</b> {record.destination or 'Không có'}</p>
-                                <p><b>Thời gian thông báo:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
-                            </div>
-
-                            <div style="background:#f8f9fa; padding: 15px; margin: 15px 0; border-radius: 5px;">
-                                <h4 style="margin-top:0;">📋 Thông tin bổ sung:</h4>
-                                <ul>
-                                    <li><b>Loại công tác:</b> {dict(record._fields['trip_type'].selection).get(record.trip_type)}</li>
-                                    <li><b>Số người đi kèm:</b> {record.num_passengers}</li>
-                                    <li><b>Nội dung công việc:</b> {record.work_content[:150]}...</li>
-                                </ul>
-                            </div>
-
-                            <p style="text-align: center; margin: 20px 0;">
-                                <a href="{detail_url}" style="background:#ff9800; color:white; padding: 10px 20px; text-decoration:none; border-radius:5px;">
-                                    Xem chi tiết phiếu
-                                </a>
-                            </p>
-
-                            <p style="color:#666; font-size:14px;">
-                                Trân trọng,<br>
-                                <b>Đội ngũ quản lý xe</b>
-                            </p>
+                        <div style="background:#ff980015; border-left: 4px solid #ff9800; padding: 15px; margin: 15px 0;">
+                            <h3 style="color:#ff9800; margin-top:0;">THÔNG BÁO: HẾT XE</h3>
+                            <p><b>Mã phiếu:</b> {record.code}</p>
+                            <p><b>Phương án xử lý:</b> {option_label}</p>
+                            <p><b>Ghi chú:</b> {record.no_car_note or 'Không có'}</p>
+                            <p><b>Thời gian yêu cầu:</b> {record.start_date.strftime('%d/%m/%Y %H:%M') if record.start_date else ''}</p>
+                            <p><b>Địa điểm:</b> {record.destination or 'Không có'}</p>
+                            <p><b>Thời gian thông báo:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
                         </div>
-                        """
 
-                        # Gửi 1 email cho tất cả quản lý
-                        self.env['mail.mail'].sudo().create({
-                            'subject': subject,
-                            'email_to': email_to,
-                            'email_from': self.env.user.email or 'no-reply@company.com',
-                            'body_html': body_html,
-                        }).send()
+                        <div style="background:#f8f9fa; padding: 15px; margin: 15px 0; border-radius: 5px;">
+                            <h4 style="margin-top:0;">📋 Hướng dẫn xử lý:</h4>
+                            <ul>
+                                <li><b>Trường hợp Quản lý đặt xe:</b> Văn phòng/đội xe sẽ hỗ trợ đặt xe ngoài và thông báo lại</li>
+                                <li><b>Trường hợp Đơn vị tự đặt:</b> Vui lòng tự liên hệ đặt xe ngoài theo quy định</li>
+                                <li>Nếu có thắc mắc, vui lòng liên hệ bộ phận quản lý xe</li>
+                            </ul>
+                        </div>
 
-                        _logger.info(f"Đã gửi email báo hết xe đến {len(manager_emails)} quản lý xe")
+                        <p style="text-align: center; margin: 20px 0;">
+                            <a href="{detail_url}" style="background:#ff9800; color:white; padding: 10px 20px; text-decoration:none; border-radius:5px;">
+                                Xem chi tiết phiếu
+                            </a>
+                        </p>
+
+                        <p style="color:#666; font-size:14px;">
+                            Trân trọng,<br>
+                            <b>Đội ngũ quản lý xe</b>
+                        </p>
+                    </div>
+                    """
+
+                    # Gửi email trực tiếp
+                    self.env['mail.mail'].sudo().create({
+                        'subject': subject,
+                        'email_to': email_to,
+                        'email_from': self.env.user.email or 'no-reply@company.com',
+                        'body_html': body_html,
+                    }).send()
+
+                    _logger.info(f"Đã gửi email báo hết xe đến người tạo phiếu: {email_to}")
 
             except Exception as e:
                 _logger.error(f"Lỗi gửi email báo hết xe: {str(e)}")
-
-            # 4. Vẫn gửi email template cho người đề nghị (riêng lẻ - đúng vì đây là 1 người)
-            template = self.env.ref('quan_ly_doi_xe.email_template_vehicle_registration_no_car',
-                                    raise_if_not_found=False)
-
-            if template:
-                # Lấy email người nhận (chỉ 1 người)
-                email_to = record.requester_id.work_email or record.requester_id.user_id.email or record.create_uid.email or False
-
-                # Lấy email người gửi
-                email_from = self.env.user.email_formatted or self.env.company.email or 'unknown@example.com'
-
-                if email_to:
-                    email_values = {'email_to': email_to}
-                    try:
-                        template.send_mail(record.id, force_send=True, email_values=email_values)
-                        _logger.info(">>> Gửi lệnh Send Mail thành công cho người đề nghị!")
-                    except Exception as e:
-                        _logger.error(f">>> LỖI GỬI MAIL: {str(e)}")
-                else:
-                    _logger.warning(">>> KHÔNG TÌM THẤY EMAIL NGƯỜI NHẬN!")
-            else:
-                _logger.warning(">>> KHÔNG TÌM THẤY TEMPLATE XML!")
 
         return {'type': 'ir.actions.act_window_close'}
 

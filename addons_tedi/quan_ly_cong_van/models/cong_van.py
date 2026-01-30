@@ -2765,9 +2765,13 @@ class RejectDocumentWizard(models.TransientModel):
         # 3. Gửi thông báo cho người tạo
         self._send_rejection_notification()
 
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        tree_url = f"{base_url}/web#action=&model=office.document&view_type=list"
+
         return {
-            'type': 'ir.actions.client',
-            'tag': 'history_back',  # Tag phải khớp với tên đăng ký trong JS
+            'type': 'ir.actions.act_url',
+            'url': tree_url,
+            'target': 'self',
         }
 
     def _send_rejection_notification(self):
