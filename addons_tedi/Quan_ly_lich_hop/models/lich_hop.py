@@ -1610,6 +1610,9 @@ class CalendarAddParticipantsWizard(models.TransientModel):
         time_str = f"{self.event_id.start.strftime('%H:%M %d/%m/%Y')} → {self.event_id.stop.strftime('%H:%M %d/%m/%Y')}" if self.event_id.start and self.event_id.stop else ""
         room_name = self.event_id.room.name if self.event_id.room else 'Chưa đăng ký'
 
+        # Lấy thông tin người tạo lịch họp
+        creator_employee = self.env['hr.employee'].search([('user_id', '=', self.event_id.create_uid.id)], limit=1)
+
         # --- GỬI EMAIL NHÓM CHO TẤT CẢ NGƯỜI ĐƯỢC THÊM MỚI ---
         email_list = []
         name_list = []
@@ -1694,6 +1697,95 @@ class CalendarAddParticipantsWizard(models.TransientModel):
             except Exception as e:
                 _logger.error(f"Lỗi gửi email thêm tham dự: {str(e)}")
 
+        # --- GỬI EMAIL RIÊNG CHO NGƯỜI TẠO LỊCH HỌP ---
+        if creator_employee and creator_employee.work_email and creator_employee.id != self.env.user.employee_ids.id:
+            try:
+                # Danh sách người được thêm (format đẹp)
+                added_employees_list = ""
+                for employee in new_employees:
+                    added_employees_list += f"<li>{employee.name} ({employee.department_id.name if employee.department_id else 'Không có phòng ban'})</li>"
+
+                subject_creator = f"📋 Đã thêm {len(new_employees)} người vào cuộc họp: {self.event_id.name}"
+                event_url = f"{web_url}/web#id={self.event_id.id}&model=calendar.event&view_type=form"
+
+                body_html_creator = f"""
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3498db;">
+                        <h2 style="color: #2980b9; margin-top: 0;">📋 BÁO CÁO THÊM NGƯỜI THAM DỰ</h2>
+                        <p>Kính gửi <b>{creator_employee.name}</b>,</p>
+                        <p>Đã có <b style="color: #27ae60;">{len(new_employees)} người</b> được thêm vào cuộc họp mà bạn đã tạo.</p>
+                    </div>
+
+                    <div style="background: white; padding: 20px; border-radius: 6px; border: 1px solid #e0e0e0; margin: 20px 0;">
+                        <h3 style="color: #2c3e50;">📅 THÔNG TIN CUỘC HỌP</h3>
+                        <table style="width: 100%; margin-bottom: 20px;">
+                            <tr>
+                                <td style="padding: 10px; width: 30%;"><b>Chủ đề:</b></td>
+                                <td style="padding: 10px;">{self.event_id.name}</td>
+                            </tr>
+                            <tr style="background: #f9f9f9;">
+                                <td style="padding: 10px;"><b>Thời gian:</b></td>
+                                <td style="padding: 10px;">{time_str}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;"><b>Phòng họp:</b></td>
+                                <td style="padding: 10px;">{room_name}</td>
+                            </tr>
+                            <tr style="background: #f9f9f9;">
+                                <td style="padding: 10px;"><b>Người thêm:</b></td>
+                                <td style="padding: 10px;">{self.env.user.name}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;"><b>Thời gian thêm:</b></td>
+                                <td style="padding: 10px;">{fields.Datetime.now().strftime('%H:%M %d/%m/%Y')}</td>
+                            </tr>
+                        </table>
+
+                        <h3 style="color: #2c3e50; margin-top: 20px;">👥 DANH SÁCH NGƯỜI ĐƯỢC THÊM</h3>
+                        <ul style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                            {added_employees_list}
+                        </ul>
+
+                        <div style="margin-top: 20px; padding: 10px; background: #e8f6ef; border-radius: 5px;">
+                            <p><b>📊 Tổng số người tham dự hiện tại:</b> {len(self.event_id.employee_ids)} người</p>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{event_url}" 
+                           style="background: #3498db; color: white; padding: 12px 24px; 
+                                  text-decoration: none; border-radius: 5px; font-weight: bold; 
+                                  display: inline-block;">
+                            📋 XEM CHI TIẾT CUỘC HỌP
+                        </a>
+                    </div>
+
+                    <div style="background: #fff8e1; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #f39c12;">
+                        <p><b>💡 Lưu ý:</b> Những người này đã nhận được thông báo mời họp tự động từ hệ thống.</p>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+
+                    <p style="color: #7f8c8d; font-size: 12px; text-align: center;">
+                        Đây là thông báo tự động từ hệ thống Quản lý Lịch họp.<br>
+                        Vui lòng không trả lời email này.
+                    </p>
+                </div>
+                """
+
+                # Gửi email riêng cho người tạo
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject_creator,
+                    'body_html': body_html_creator,
+                    'email_to': creator_employee.work_email,
+                    'email_from': self.env.user.email or self.env.company.email,
+                }).send()
+
+                _logger.info(f"✅ Đã gửi email báo cáo thêm người tham dự cho người tạo: {creator_employee.name}")
+
+            except Exception as e:
+                _logger.error(f"Lỗi gửi email cho người tạo: {str(e)}")
+
         # --- GỬI THÔNG BÁO POPUP & CHAT (giữ nguyên) ---
         for employee in new_employees:
             if not employee.user_id:
@@ -1710,44 +1802,5 @@ class CalendarAddParticipantsWizard(models.TransientModel):
                     'type': 'info',
                 }
             )
-
-            # Chat HTML (giữ nguyên)
-            body_chat = f"""
-                <p>📅 Bạn đã được thêm tham dự cuộc họp: <b>{self.event_id.name}</b></p>
-                <p>⏰ {time_str}</p>
-                <p>🏢 Phòng: {room_name}</p>
-                <p>
-                    <a href="{web_url}/web#id={self.event_id.id}&model=calendar.event&view_type=form"
-                       style="background:#28a745;color:blue;padding:6px 12px;border-radius:4px;text-decoration:none;">📨 Xem cuộc họp</a>
-                </p>
-            """
-            try:
-                if odoobot_employee and odoobot_employee.user_id:
-                    # Chat với OdooBot
-                    channels = self.env['discuss.channel'].sudo().search([
-                        ('channel_type', '=', 'chat'),
-                        ('channel_member_ids.partner_id', 'in',
-                         [odoobot_employee.user_id.partner_id.id, employee.user_id.partner_id.id])
-                    ])
-                    if channels:
-                        channel = channels[0]
-                    else:
-                        channel = self.env['discuss.channel'].sudo().create({
-                            'name': f"Lời mời họp: {employee.name}",
-                            'channel_type': 'chat',
-                            'channel_member_ids': [
-                                (0, 0, {'partner_id': odoobot_employee.user_id.partner_id.id}),
-                                (0, 0, {'partner_id': employee.user_id.partner_id.id}),
-                            ]
-                        })
-                    channel.sudo().message_post(
-                        body=body_chat,
-                        message_type='comment',
-                        subtype_xmlid='mail.mt_comment',
-                        author_id=odoobot_employee.user_id.partner_id.id,
-                        body_is_html=True,
-                    )
-            except Exception as e:
-                _logger.error(f"Lỗi gửi chat cho {employee.name}: {str(e)}")
 
         return {'type': 'ir.actions.act_window_close'}
