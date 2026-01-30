@@ -585,7 +585,7 @@ class OfficeDocument(models.Model):
     vb_nhan = fields.Char('Văn bản nhận')
     tt_vb = fields.Selection([
         ('draft', 'Nháp'),#thường
-        ('cho_truong_don_vi_duyet', 'Trình TĐV'),
+        ('cho_truong_don_vi_duyet', 'Chờ TĐV duyệt'),
         ('truong_don_vi_duyet','TĐV duyệt'),
         ('cho_duyet', 'Chờ duyệt'),
         ('da_duyet', 'Đã duyệt'),#vàng
@@ -1139,7 +1139,6 @@ class OfficeDocument(models.Model):
 
                             Số văn bản: {self.so_vb or 'Chưa có số'}
                             Trích yếu: {self.trich_yeu or 'Không có'}
-                            Loại văn bản: {self._get_document_type_display()}
                             Người tạo: {self.create_uid.name}
                             Phòng ban: {department.name}
                             Thời gian duyệt: {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}
@@ -1159,7 +1158,6 @@ class OfficeDocument(models.Model):
                         body=f"""
                             <p><b>Thông báo cho Trưởng đơn vị:</b> {truong_don_vi.name}</p>
                             <p><b>Công văn đi đã được duyệt:</b> {self.trich_yeu or 'Không có trích yếu'}</p>
-                            <p><b>Loại văn bản:</b> {self._get_document_type_display()}</p>
                             <p><b>Người tạo:</b> {self.create_uid.name}</p>
                             <p><b>Phòng ban:</b> {department.name}</p>
                             <p><b>Thời gian duyệt:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
