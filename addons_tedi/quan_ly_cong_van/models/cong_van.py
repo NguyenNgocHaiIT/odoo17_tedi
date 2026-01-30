@@ -957,7 +957,6 @@ class OfficeDocument(models.Model):
                         <p><strong>Thông tin văn bản:</strong></p>
                         <ul>
                             <li>Trích yếu: {self.trich_yeu}</li>
-                            <li>Loại văn bản: {self.loai_vb or 'N/A'}</li>
                             <li>Người trình: {self.env.user.name}</li>
                             <li>Thời hạn xử lý: {self.thoi_han_xu_ly or 'Không có'}</li>
                         </ul>
@@ -2765,6 +2764,9 @@ class RejectDocumentWizard(models.TransientModel):
         # 3. Gửi thông báo cho người tạo
         self._send_rejection_notification()
 
+        self.env.cr.commit()
+
+        # 5. Redirect về tree view
         base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
         tree_url = f"{base_url}/web#action=&model=office.document&view_type=list"
 
