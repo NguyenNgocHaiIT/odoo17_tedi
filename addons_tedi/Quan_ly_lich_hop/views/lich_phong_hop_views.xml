@@ -108,7 +108,7 @@
                                 <field name="lanh_dao" string="Lãnh đạo" readonly="not is_current_user_creator or state == 'completed'" widget="many2many_tags"/>
                                 <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia" readonly="not is_current_user_creator or state == 'completed'"/>
                                 <field name="employee_ids" widget="many2many_tags" string="Người tham gia" readonly="1"/>
-                                <field name="total_participants" readonly="1"/>
+                                <field name="total_participants" readonly="not is_current_user_creator or state == 'completed'"/>
                             </group>
                         </group>
                     </sheet>
