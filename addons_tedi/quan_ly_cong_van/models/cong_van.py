@@ -167,9 +167,6 @@ class PhanPhat(models.TransientModel):
             self.env['office.document.detail2'].create(lines_to_create)
 
         # --- 3. Chuẩn bị thông tin gửi popup, chat, email ---
-        odoobot = self.env.ref('base.user_root')
-        odoobot_partner = odoobot.partner_id
-
         # Lấy tất cả nhân viên cần thông báo
         employees_to_notify = self.env['hr.employee'].browse(nguoi_xu_ly_chinh_ids + nguoi_dong_xu_ly_ids)
         users_to_notify = employees_to_notify.mapped('user_id').filtered(lambda u: u.partner_id)
@@ -186,27 +183,7 @@ class PhanPhat(models.TransientModel):
         </p>
         """
 
-        # --- 4. Hàm tạo kênh chat 1-1 ---
-        def get_or_create_direct_chat(partner1, partner2):
-            domain = [
-                ('channel_type', '=', 'chat'),
-                ('channel_member_ids.partner_id', 'in', [partner1.id, partner2.id])
-            ]
-            channels = self.env['discuss.channel'].sudo().search(domain)
-            for channel in channels:
-                members = channel.channel_member_ids.mapped('partner_id')
-                if len(members) == 2 and set(members.ids) == {partner1.id, partner2.id}:
-                    return channel
-            return self.env['discuss.channel'].sudo().create({
-                'name': f"Phân phát: {partner2.name}",
-                'channel_type': 'chat',
-                'channel_member_ids': [
-                    (0, 0, {'partner_id': partner1.id}),
-                    (0, 0, {'partner_id': partner2.id}),
-                ]
-            })
-
-        # --- 5. Gửi popup, chat, email ---
+        # --- 5. Gửi popup và chat riêng cho từng người ---
         for employee in employees_to_notify:
             user = employee.user_id
             if not user or not user.partner_id:
@@ -226,46 +203,59 @@ class PhanPhat(models.TransientModel):
                 }
             )
 
-            # Chat Discuss
-            try:
-                channel = get_or_create_direct_chat(odoobot_partner, partner)
-                channel.sudo().message_post(
-                    body=body_chat,
-                    message_type='comment',
-                    subtype_xmlid='mail.mt_comment',
-                    author_id=odoobot_partner.id,
-                    body_is_html=True,
-                )
-            except Exception as e:
-                _logger.error(f"Lỗi gửi chat cho {partner.name}: {str(e)}")
+        # --- 6. Gửi EMAIL CHO TẤT CẢ NGƯỜI NHẬN (1 email nhiều người) ---
+        try:
+            # Thu thập tất cả email (KHÔNG thu thập trong vòng lặp)
+            email_list = []
+            name_list = []
 
-            # Email
-            try:
-                subject = f"Văn bản {doc.trich_yeu} đã được phân phát đến bạn"
-                body_html = f"""
-                                <p>Xin chào {employee.name},</p>
-                                <p>Bạn vừa được phân công xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
-                                <p>
-                                    <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
-                                        Xem chi tiết văn bản
-                                    </a>
-                                </p>
-                                <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
-                            """
-                email = employee.work_email or user.email
-                if not email:
+            # Duyệt qua tất cả nhân viên một lần duy nhất
+            for employee in employees_to_notify:
+                user = employee.user_id
+                if not user:
                     continue
 
-                self.env['mail.mail'].sudo().create({
+                # Ưu tiên work_email, sau đó là user email
+                email = employee.work_email or user.email
+                if email and email not in email_list:  # Tránh trùng email
+                    email_list.append(email)
+                    name_list.append(employee.name)
+
+            # Chỉ gửi email nếu có ít nhất 1 email
+            if email_list:
+                # Tạo danh sách người nhận (dùng dấu phẩy phân cách)
+                email_to = ', '.join(email_list)
+                names_str = ', '.join(name_list)
+
+                subject = f"Văn bản {doc.trich_yeu} đã được phân phát"
+
+                # Nội dung email chung
+                body_html = f"""
+                    <p>Kính gửi: {names_str},</p>
+                    <p>Các bạn vừa được phân công xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
+                    <p>
+                        <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
+                            Xem chi tiết văn bản
+                        </a>
+                    </p>
+                    <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
+                """
+
+                # Gửi một email duy nhất cho tất cả
+                mail = self.env['mail.mail'].sudo().create({
                     'subject': subject,
-                    'email_to': email,
+                    'email_to': email_to,
                     'email_from': self.env.user.email or 'no-reply@company.com',
                     'body_html': body_html,
-                }).send()
-            except Exception as e:
-                _logger.warning(f"Gửi mail thất bại cho {employee.name}: {str(e)}")
+                })
 
-        # --- 6. Thông báo thành công ---
+                mail.send()
+                _logger.info(f"Đã gửi email phân phát đến {len(email_list)} người")
+
+        except Exception as e:
+            _logger.error(f"Lỗi gửi email phân phát: {str(e)}")
+
+        # --- 7. Thông báo thành công ---
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -623,6 +613,14 @@ class OfficeDocument(models.Model):
     nguoi_theo_doi = fields.Many2one('res.users', string='Người theo dõi')
     ngay_bat_dau = fields.Date('Ngày bắt đầu', default=fields.Date.context_today)
     ho_so_cong_viec = fields.Char('Hồ sơ công việc')
+    attachment_ids = fields.Many2many(
+        'ir.attachment',
+        'office_document_attachment_rel',
+        'document_id',
+        'attachment_id',
+        string='Tài liệu đính kèm'
+    )
+
     attachment_id = fields.Many2one(
         'ir.attachment',
         string='Tài liệu',
@@ -919,6 +917,7 @@ class OfficeDocument(models.Model):
             'res_model': 'office.document.but.phe',
             'target': 'new'
         }
+
     def trinh_lanh_dao_cong_van_di_but_phe(self):
         self.ensure_one()
         if not self.lanh_dao_theo_doi:
@@ -929,101 +928,168 @@ class OfficeDocument(models.Model):
         doc_url = self.get_form_url()
         employees_to_notify = [self.lanh_dao_theo_doi]
 
+        # Thu thập tất cả email
+        email_list = []
+        user_partners = []  # Cho notification
+
         for emp in employees_to_notify:
-            # 1. Gửi email
-            try:
-                email = emp.user_id.email or emp.work_email
-                if email:
-                    body_html = f"""
-                        <p>Xin chào {emp.name},</p>
-                        <p>Văn bản <b>{self.trich_yeu}</b> cần xử lý.</p>
-                        <p>
-                            <a href="{doc_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
-                                Xem chi tiết văn bản
-                            </a>
-                        </p>
-                        <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
-                    """
-                    self.env['mail.mail'].sudo().create({
-                        'subject': f"[Văn bản được trình đến] Văn bản {self.trich_yeu} được trình dến bạn",
-                        'email_to': email,
-                        'email_from': self.env.user.email or 'no-reply@company.com',
-                        'body_html': body_html,
-                    }).send()
-            except Exception as e:
-                _logger.warning(f"Gửi mail thất bại cho {emp.name}: {str(e)}")
+            email = emp.user_id.email or emp.work_email
+            if email:
+                email_list.append(email)
 
-            # 2. Gửi popup/notification nếu có user liên kết
             if emp.user_id:
-                try:
-                    partner = emp.user_id.partner_id
-                    self.env['bus.bus']._sendone(
-                        partner,
-                        'simple_notification',
-                        {
-                            'title': 'Phân công xử lý văn bản',
-                            'message': f"Bạn vừa được giao xử lý văn bản: {self.trich_yeu}",
-                            'sticky': False,
-                            'type': 'info',
-                        }
-                    )
-                except Exception as e:
-                    _logger.warning(f"Gửi notification thất bại cho {emp.name}: {str(e)}")
+                user_partners.append(emp.user_id.partner_id)
 
+        # 1. Gửi email cho tất cả mọi người trong một lần
+        if email_list:
+            try:
+                # Gộp tất cả email thành một string cách nhau bởi dấu phẩy
+                email_to = ', '.join(email_list)
+
+                # Tạo message cho nhiều người
+                body_html = f"""
+                    <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                        <p>Xin chào Quý lãnh đạo,</p>
+
+                        <p>Văn bản <b>{self.trich_yeu}</b> (Số: {self.so_vb or 'N/A'}) 
+                        đã được trình lên để xử lý/bút phê.</p>
+
+                        <p><strong>Thông tin văn bản:</strong></p>
+                        <ul>
+                            <li>Trích yếu: {self.trich_yeu}</li>
+                            <li>Loại văn bản: {self.loai_vb or 'N/A'}</li>
+                            <li>Người trình: {self.env.user.name}</li>
+                            <li>Thời hạn xử lý: {self.thoi_han_xu_ly or 'Không có'}</li>
+                        </ul>
+
+                        <div style="margin: 20px 0; text-align: center;">
+                            <a href="{doc_url}" 
+                               style="background:#875A7B;color:white;padding:10px 20px;text-decoration:none;
+                                      border-radius:5px;font-weight:bold;display:inline-block;">
+                                XEM CHI TIẾT VĂN BẢN
+                            </a>
+                        </div>
+
+                        <p style="color: #666; font-size: 14px;">
+                            <em>Vui lòng truy cập hệ thống để thực hiện bút phê/xử lý văn bản.</em>
+                        </p>
+
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+
+                        <p>Trân trọng,<br/>
+                        <strong>Hệ thống quản lý công văn</strong><br/>
+                        {self.env.company.name or ''}</p>
+                    </div>
+                """
+
+                # Tạo mail với nhiều người nhận
+                mail_vals = {
+                    'subject': f"[CẦN XỬ LÝ] Văn bản {self.trich_yeu[:50]}{'...' if len(self.trich_yeu) > 50 else ''}",
+                    'email_to': email_to,  # Tất cả email trong một field
+                    'email_from': self.env.user.email or self.env.company.email or 'no-reply@company.com',
+                    'body_html': body_html,
+                    'auto_delete': True,
+                    'reply_to': self.env.user.email or self.env.company.email,
+                }
+
+                # Có thể thêm CC hoặc BCC nếu cần
+                # mail_vals['email_cc'] = 'cc_email@example.com'
+                # mail_vals['email_bcc'] = 'bcc_email@example.com'
+
+                mail = self.env['mail.mail'].sudo().create(mail_vals)
+                mail.send()
+
+            except Exception as e:
+                _logger.error(f"Gửi email thất bại: {str(e)}")
+                raise UserError(f"Không thể gửi email: {str(e)}")
+
+        # 2. Gửi notification cho từng user
+        for partner in user_partners:
+            try:
+                self.env['bus.bus']._sendone(
+                    partner,
+                    'simple_notification',
+                    {
+                        'title': 'Văn bản cần xử lý',
+                        'message': f"Văn bản '{self.trich_yeu[:30]}...' cần bạn xử lý",
+                        'sticky': True,
+                        'type': 'warning',
+                        'buttons': [{
+                            'label': 'Xem ngay',
+                            'action': {
+                                'type': 'ir.actions.act_url',
+                                'url': doc_url,
+                            }
+                        }]
+                    }
+                )
+            except Exception as e:
+                _logger.warning(f"Gửi notification thất bại: {str(e)}")
+
+        # Hiển thị thông báo thành công
+        message = f"Đã trình văn bản cho {len(email_list)} người"
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Thành công',
+                'message': message,
+                'type': 'success',
+                'sticky': False,
+                'next': {'type': 'ir.actions.act_window_close'},
+            }
+        }
 
     def trinh_lanh_dao_cong_van_den(self):
         self.ensure_one()
 
-        if not self.lanh_dao_xu_ly or not self.lanh_dao_xu_ly.ids:
+        if not self.lanh_dao_xu_ly:
             raise UserError("Vui lòng chọn lãnh đạo xử lý trước khi trình.")
 
         self.tt_vb = 'cho_but_phe'
-
         doc_url = self.get_form_url()
-        employees_to_notify = self.lanh_dao_xu_ly
 
-        for emp in employees_to_notify:
-            # 1. Gửi email
-            try:
-                email = emp.user_id.email or emp.work_email
-                if email:
-                    body_html = f"""
-                        <p>Xin chào {emp.name},</p>
-                        <p>Văn bản <b>{self.trich_yeu}</b> cần xử lý.</p>
-                        <p>
-                            <a href="{doc_url}"
-                               style="background:#E57373;color:white;padding:6px 12px;
-                                      text-decoration:none;border-radius:4px;font-size:12px;">
-                                Xem chi tiết văn bản
-                            </a>
-                        </p>
-                        <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
-                    """
-                    self.env['mail.mail'].sudo().create({
-                        'subject': f"[Văn bản được trình đến] Văn bản {self.trich_yeu} được trình đến bạn",
-                        'email_to': email,
-                        'email_from': self.env.user.email or 'no-reply@company.com',
-                        'body_html': body_html,
-                    }).send()
-            except Exception as e:
-                _logger.warning(f"Gửi mail thất bại cho {emp.name}: {str(e)}")
+        # Thu thập email của tất cả lãnh đạo
+        email_list = []
+        user_partners = []
 
-            # 2. Gửi popup/notification
+        for emp in self.lanh_dao_xu_ly:
+            email = emp.user_id.email or emp.work_email
+            if email:
+                email_list.append(email)
             if emp.user_id:
-                try:
-                    partner = emp.user_id.partner_id
-                    self.env['bus.bus']._sendone(
-                        partner,
-                        'simple_notification',
-                        {
-                            'title': 'Phân công xử lý văn bản',
-                            'message': f"Bạn vừa được giao xử lý văn bản: {self.trich_yeu}",
-                            'sticky': False,
-                            'type': 'info',
-                        }
-                    )
-                except Exception as e:
-                    _logger.warning(f"Gửi notification thất bại cho {emp.name}: {str(e)}")
+                user_partners.append(emp.user_id.partner_id)
+
+        # Gửi MỘT email cho tất cả
+        if email_list:
+            email_to = ', '.join(email_list)
+            body_html = f"""
+                <p>Kính gửi Quý lãnh đạo,</p>
+                <p>Văn bản <b>{self.trich_yeu}</b> cần được xử lý.</p>
+                <p><a href="{doc_url}" style="background:#E57373;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;">Xem chi tiết</a></p>
+                <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
+            """
+
+            self.env['mail.mail'].sudo().create({
+                'subject': f"[Cần xử lý] {self.trich_yeu[:50]}...",
+                'email_to': email_to,
+                'email_from': self.env.user.email or 'no-reply@company.com',
+                'body_html': body_html,
+            }).send()
+
+        # Gửi notification cho từng người
+        for partner in user_partners:
+            self.env['bus.bus']._sendone(
+                partner,
+                'simple_notification',
+                {
+                    'title': 'Văn bản cần xử lý',
+                    'message': f"Văn bản '{self.trich_yeu[:30]}...' cần bạn xử lý",
+                    'type': 'info',
+                }
+            )
+
+        return True
 
 
     def approve(self):
@@ -1235,10 +1301,13 @@ class OfficeDocument(models.Model):
             """
 
             # Gửi email đến tất cả văn thư
-            for email in van_thu_emails:
+            # Gửi email đến tất cả văn thư (1 email nhiều người)
+            if van_thu_emails:
+                email_to = ', '.join(van_thu_emails)
+
                 self.env['mail.mail'].sudo().create({
                     'subject': subject,
-                    'email_to': email,
+                    'email_to': email_to,
                     'email_from': self.env.user.email or 'no-reply@company.com',
                     'body_html': body_html,
                 }).send()
@@ -1632,52 +1701,37 @@ class OfficeDocument(models.Model):
         if not self.lanh_dao_theo_doi:
             raise UserError("Vui lòng chọn lãnh đạo xử lý trước khi trình.")
 
-        # Cập nhật trạng thái
         self.tt_vb = 'cho_duyet'
-
         doc_url = self.get_form_url()
-        employees_to_notify = [self.lanh_dao_theo_doi]
 
-        for emp in employees_to_notify:
-            # 1. Gửi email
-            try:
-                email = emp.user_id.email or emp.work_email
-                if email:
-                    body_html = f"""
-                        <p>Xin chào {emp.name},</p>
-                        <p>Văn bản <b>{self.trich_yeu}</b> đã được trình lãnh đạo bạn để duyệt.</p>
-                        <p>
-                            <a href="{doc_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
-                                Xem chi tiết văn bản
-                            </a>
-                        </p>
-                        <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
-                    """
-                    self.env['mail.mail'].sudo().create({
-                        'subject': f"[Văn bản cần duyệt] {self.trich_yeu}",
-                        'email_to': email,
-                        'email_from': self.env.user.email or 'no-reply@company.com',
-                        'body_html': body_html,
-                    }).send()
-            except Exception as e:
-                _logger.warning(f"Gửi mail thất bại cho {emp.name}: {str(e)}")
+        # Gửi email cho lãnh đạo theo dõi
+        email = self.lanh_dao_theo_doi.user_id.email or self.lanh_dao_theo_doi.work_email
+        if email:
+            body_html = f"""
+                <p>Xin chào {self.lanh_dao_theo_doi.name},</p>
+                <p>Văn bản <b>{self.trich_yeu}</b> đã được trình lên bạn để duyệt.</p>
+                <p><a href="{doc_url}" style="background:#875A7B;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;">Xem chi tiết</a></p>
+                <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
+            """
 
-            # 2. Gửi popup/notification nếu có user liên kết
-            if emp.user_id:
-                try:
-                    partner = emp.user_id.partner_id
-                    self.env['bus.bus']._sendone(
-                        partner,
-                        'simple_notification',
-                        {
-                            'title': 'Văn bản cần duyệt',
-                            'message': f"Văn bản '{self.trich_yeu}' đã được trình để duyệt.",
-                            'sticky': False,
-                            'type': 'info',
-                        }
-                    )
-                except Exception as e:
-                    _logger.warning(f"Gửi notification thất bại cho {emp.name}: {str(e)}")
+            self.env['mail.mail'].sudo().create({
+                'subject': f"[Cần duyệt] {self.trich_yeu[:50]}...",
+                'email_to': email,
+                'email_from': self.env.user.email or 'no-reply@company.com',
+                'body_html': body_html,
+            }).send()
+
+        # Gửi notification
+        if self.lanh_dao_theo_doi.user_id:
+            self.env['bus.bus']._sendone(
+                self.lanh_dao_theo_doi.user_id.partner_id,
+                'simple_notification',
+                {
+                    'title': 'Văn bản cần duyệt',
+                    'message': f"Văn bản '{self.trich_yeu[:30]}...' cần bạn duyệt",
+                    'type': 'info',
+                }
+            )
 
         return True
 
@@ -1770,132 +1824,57 @@ class OfficeDocument(models.Model):
         """Gửi email thông báo cho nhóm văn thư khi có văn bản cần duyệt"""
         self.ensure_one()
 
-        try:
-            # Lấy nhóm văn thư
-            group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
+        # Lấy nhóm văn thư
+        group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
+        if not group_van_thu:
+            return
 
-            if not group_van_thu:
-                _logger.warning("Không tìm thấy nhóm văn thư.")
-                return
+        # Lấy tất cả email của văn thư
+        van_thu_emails = []
+        van_thu_users = []
 
-            # Lấy tất cả người dùng trong nhóm văn thư
-            van_thu_users = group_van_thu.users
+        for user in group_van_thu.users:
+            if user.email:
+                van_thu_emails.append(user.email)
+                van_thu_users.append(user)
 
-            # Lấy danh sách email của văn thư
-            van_thu_emails = []
-            for user in van_thu_users:
-                if user.email:
-                    van_thu_emails.append(user.email)
+        if not van_thu_emails:
+            return
 
-            if not van_thu_emails:
-                _logger.warning("Không có email nào trong nhóm văn thư.")
-                return
+        # Gửi MỘT email cho tất cả văn thư
+        email_to = ', '.join(van_thu_emails)
+        web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        detail_url = f"{web_url}/web#id={self.id}&model=office.document&view_type=form"
 
-            # Chuẩn bị nội dung email
-            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
-            detail_url = f"{web_url}/web#id={self.id}&model=office.document&view_type=form"
-
-            current_user = self.env.user.name
-
-            subject = f"[Văn bản cần duyệt] {self.trich_yeu}"
-            body_html = f"""
-            <p>Kính gửi</p>
-            <p>Người dùng <b>{current_user}</b> vừa xác nhận văn bản sau và cần được duyệt:</p>
-
-            <div style="background:#f5f5f5; padding:10px; margin:10px 0; border-left:4px solid #4CAF50;">
-                <p><b>Trích yếu:</b> {self.trich_yeu or 'Không có'}</p>
-                <p><b>Loại văn bản:</b> {dict(self._fields['document_type'].selection).get(self.document_type, 'Không xác định')}</p>
-                <p><b>Số hiệu:</b> {self.so_hieu or 'Chưa có'}</p>
-                <p><b>Ngày đến:</b> {self.ngay_den.strftime('%d/%m/%Y') if self.ngay_den else 'Chưa có'}</p>
-                <p><b>Nơi gửi:</b> {self.noi_gui or 'Không có'}</p>
-            </div>
-
-            <p>
-                <a href="{detail_url}" style="background:#4CAF50;color:white;padding:8px 16px;text-decoration:none;border-radius:4px;font-size:14px;font-weight:bold;">
-                    Xem chi tiết và duyệt văn bản
-                </a>
-            </p>
-
-            <p>Vui lòng kiểm tra và duyệt văn bản trong thời gian sớm nhất.</p>
+        body_html = f"""
+            <p>Kính gửi nhóm văn thư,</p>
+            <p>Người dùng <b>{self.env.user.name}</b> vừa xác nhận văn bản cần duyệt.</p>
+            <p><b>Văn bản:</b> {self.trich_yeu}</p>
+            <p><a href="{detail_url}" style="background:#4CAF50;color:white;padding:8px 16px;text-decoration:none;border-radius:4px;">Xem chi tiết</a></p>
             <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
-            """
+        """
 
-            # Gửi email đến tất cả văn thư
-            for email in van_thu_emails:
-                self.env['mail.mail'].sudo().create({
-                    'subject': subject,
-                    'email_to': email,
-                    'email_from': self.env.user.email or 'no-reply@company.com',
-                    'body_html': body_html,
-                }).send()
+        self.env['mail.mail'].sudo().create({
+            'subject': f"[Cần duyệt] {self.trich_yeu[:50]}...",
+            'email_to': email_to,
+            'email_from': self.env.user.email or 'no-reply@company.com',
+            'body_html': body_html,
+        }).send()
 
-            _logger.info(f"Đã gửi email thông báo đến {len(van_thu_emails)} văn thư cho văn bản {self.id}")
+        # Gửi notification cho từng văn thư
+        for user in van_thu_users:
+            if user.partner_id and user != self.env.user:
+                self.env['bus.bus']._sendone(
+                    user.partner_id,
+                    'simple_notification',
+                    {
+                        'title': 'Văn bản cần duyệt',
+                        'message': f"Văn bản '{self.trich_yeu[:30]}...' cần duyệt",
+                        'type': 'warning',
+                    }
+                )
 
-            # Gửi thông báo popup cho văn thư (nếu có user online)
-            odoobot = self.env.ref('base.user_root')
-            odoobot_partner = odoobot.partner_id
-
-            for user in van_thu_users:
-                if user.partner_id and user != self.env.user:
-                    try:
-                        # Gửi popup thông báo
-                        self.env['bus.bus']._sendone(
-                            user.partner_id,
-                            'simple_notification',
-                            {
-                                'title': 'Văn bản cần duyệt',
-                                'message': f"Có văn bản mới cần duyệt: {self.trich_yeu[:50]}...",
-                                'sticky': False,
-                                'type': 'warning',
-                            }
-                        )
-
-                        # Gửi tin nhắn chat qua Discuss
-                        domain = [
-                            ('channel_type', '=', 'chat'),
-                            ('channel_member_ids.partner_id', 'in', [user.partner_id.id, odoobot_partner.id])
-                        ]
-                        channels = self.env['discuss.channel'].sudo().search(domain)
-
-                        channel = channels.filtered(
-                            lambda c: set(c.channel_member_ids.mapped('partner_id').ids) == {user.partner_id.id,
-                                                                                             odoobot_partner.id}
-                        )
-
-                        if not channel:
-                            channel = self.env['discuss.channel'].sudo().create({
-                                'name': f"Văn bản cần duyệt: {self.trich_yeu[:30]}...",
-                                'channel_type': 'chat',
-                                'channel_member_ids': [
-                                    (0, 0, {'partner_id': user.partner_id.id}),
-                                    (0, 0, {'partner_id': odoobot_partner.id})
-                                ]
-                            })
-
-                        body_chat = f"""
-                        <p>📋 <b>Văn bản cần duyệt</b></p>
-                        <p><b>Trích yếu:</b> {self.trich_yeu}</p>
-                        <p><b>Người gửi:</b> {current_user}</p>
-                        <p>
-                            <a href="{detail_url}" style="background:#4CAF50;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
-                                Xem và duyệt
-                            </a>
-                        </p>
-                        """
-
-                        channel.sudo().message_post(
-                            body=body_chat,
-                            message_type='comment',
-                            subtype_xmlid='mail.mt_comment',
-                            author_id=odoobot_partner.id,
-                            body_is_html=True,
-                        )
-
-                    except Exception as e:
-                        _logger.error(f"Lỗi gửi thông báo cho văn thư {user.name}: {str(e)}")
-
-        except Exception as e:
-            _logger.error(f"Lỗi khi gửi email thông báo cho văn thư: {str(e)}")
+        return True
 
     # Thêm field rejection_ids
     rejection_ids = fields.One2many(
