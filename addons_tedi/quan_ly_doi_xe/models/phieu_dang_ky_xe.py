@@ -302,7 +302,6 @@ class HrTediVehicleRegistration(models.Model):
 
     def action_submit(self):
         self.ensure_one()
-        if not self.start_date or not self.end_date: raise ValidationError("Nhập đủ thời gian.")
         if self.start_date >= self.end_date: raise ValidationError("Thời gian kết thúc phải lớn hơn bắt đầu.")
         self.state = 'submitted'
         self._send_notification_to_vehicle_managers('submit')
@@ -587,9 +586,6 @@ class HrTediVehicleRegistration(models.Model):
         # 1. Check quyền
         if not self.env.user.has_group('fleet.fleet_group_user') and not self.env.user.has_group('base.group_system'):
             raise AccessError("Chỉ bộ phận Quản lý đội xe mới được xác nhận hoàn thành.")
-
-        if not self.attachment_ids:
-            raise ValidationError("Vui lòng thêm đính kèm xác nhận hoàn thành.")
 
         if self.distance_km <= 0:
             raise ValidationError("Vui lòng nhập 'Số km thực tế đi được' trước khi xác nhận.")
