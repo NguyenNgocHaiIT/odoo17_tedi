@@ -292,11 +292,165 @@ class Calendar(models.Model):
             # Nếu thay đổi thời gian hoặc đơn vị tham gia
             if any(field in vals for field in ['start', 'stop', 'don_vi']):
                 rec._send_notification_to_dept_managers("updated")
-            # Nếu chuyển từ draft sang pending (gửi duyệt)
-            elif vals.get('state') == 'pending' and old_states.get(rec.id) == 'draft':
-                rec._send_notification_to_dept_managers("pending_for_approval")
 
         return result
+
+    def action_request_room_approval(self):
+        """Gửi yêu cầu duyệt phòng đến quản lý phòng"""
+        self.ensure_one()
+
+        # Kiểm tra điều kiện
+        if not self.room:
+            raise UserError("Vui lòng chọn phòng họp trước khi gửi duyệt.")
+
+        if self.room_sign == 'pending':
+            raise UserError("Yêu cầu duyệt phòng đã được gửi trước đó.")
+
+        # Cập nhật trạng thái
+        self.write({'room_sign': 'pending'})
+
+        # Gửi thông báo đến quản lý phòng
+        self._send_room_approval_request()
+
+        # Ghi log
+        self.message_post(body=f"📤 Đã gửi yêu cầu duyệt phòng '{self.room.name}' đến Quản lý phòng.")
+
+        return True
+
+    def _send_room_approval_request(self):
+        """Gửi email yêu cầu duyệt phòng đến quản lý phòng"""
+        try:
+            # Lấy nhóm quản lý phòng
+            group = self.env.ref('Quan_ly_lich_hop.group_meeting_room_manager', raise_if_not_found=False)
+
+            if not group or not group.users:
+                _logger.warning("Không tìm thấy nhóm Quản lý phòng họp")
+                return
+
+            # Thu thập email của tất cả quản lý phòng
+            manager_emails = []
+            manager_names = []
+
+            for user in group.users:
+                if user.email:
+                    manager_emails.append(user.email)
+                    manager_names.append(user.name)
+
+            if not manager_emails:
+                _logger.warning("Không có email nào trong nhóm quản lý phòng")
+                return
+
+            # Chuẩn bị nội dung email
+            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            detail_url = f"{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
+
+            creator_name = self.create_uid.name if self.create_uid else "Người tạo"
+            time_str = f"{self.start.strftime('%H:%M %d/%m/%Y')} → {self.stop.strftime('%H:%M %d/%m/%Y')}" if self.start and self.stop else ""
+
+            # Tạo danh sách người nhận
+            email_to = ', '.join(manager_emails)
+            names_str = ', '.join(manager_names)
+
+            subject = f"[CẦN DUYỆT PHÒNG] Lịch họp: {self.name}"
+
+            body_html = f"""
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <div style="border-left:4px solid #f39c12;padding-left:15px;background:#fff8e1; margin-bottom: 20px;">
+                    <h3 style="color:#d35400; margin-top:0;">⚠️ YÊU CẦU DUYỆT PHÒNG HỌP</h3>
+                </div>
+
+                <p>Kính gửi: {names_str},</p>
+                <p>Nhân viên <b>{creator_name}</b> vừa gửi yêu cầu duyệt phòng họp.</p>
+
+                <p><b>Thông tin yêu cầu cần duyệt:</b></p>
+                <table style="border-collapse:collapse;width:100%; margin-bottom: 20px;">
+                    <tr style="background:#f8f9fa;">
+                        <td style="border:1px solid #ddd;padding:8px; width:30%;"><b>Chủ đề họp</b></td>
+                        <td style="border:1px solid #ddd;padding:8px;">{self.name}</td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #ddd;padding:8px;"><b>Thời gian</b></td>
+                        <td style="border:1px solid #ddd;padding:8px;">{time_str}</td>
+                    </tr>
+                    <tr style="background:#f8f9fa;">
+                        <td style="border:1px solid #ddd;padding:8px;"><b>Phòng yêu cầu</b></td>
+                        <td style="border:1px solid #ddd;padding:8px;">
+                            <strong style="color:#2980b9;">{self.room.name if self.room else ''}</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #ddd;padding:8px;"><b>Người tạo</b></td>
+                        <td style="border:1px solid #ddd;padding:8px;">{creator_name}</td>
+                    </tr>
+                    <tr style="background:#f8f9fa;">
+                        <td style="border:1px solid #ddd;padding:8px;"><b>Đơn vị tham gia</b></td>
+                        <td style="border:1px solid #ddd;padding:8px;">
+                            {', '.join(dept.name for dept in self.don_vi) if self.don_vi else 'Không có'}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #ddd;padding:8px;"><b>Số người tham gia</b></td>
+                        <td style="border:1px solid #ddd;padding:8px;">{self.so_nguoi_tham_gia or '0'}</td>
+                    </tr>
+                    <tr style="background:#f8f9fa;">
+                        <td style="border:1px solid #ddd;padding:8px;"><b>Loại cuộc họp</b></td>
+                        <td style="border:1px solid #ddd;padding:8px;">
+                            {'Họp online' if self.loai_cuoc_hop == 'online' else 'Họp offline'}
+                        </td>
+                    </tr>
+                </table>
+
+                <div style="background:#e8f4fd; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <p><b>📋 Hướng dẫn xử lý:</b></p>
+                    <ul>
+                        <li>Kiểm tra phòng họp có sẵn sàng không</li>
+                        <li>Kiểm tra thiết bị trong phòng (nếu có yêu cầu)</li>
+                        <li>Duyệt hoặc từ chối yêu cầu này</li>
+                        <li>Thời gian xử lý đề xuất: Trong vòng 2 giờ</li>
+                    </ul>
+                </div>
+
+                <p style="text-align: center; margin: 20px 0;">
+                    <a href="{detail_url}" 
+                       style="background:#3498db;color:white;padding:10px 20px;border-radius:5px;
+                              text-decoration:none;font-weight:bold;display:inline-block;">
+                        Xem & Duyệt phòng ngay
+                    </a>
+                </p>
+
+                <p style="color:#7f8c8d;font-size:12px;margin-top:20px;">
+                    <i>Vui lòng duyệt hoặc từ chối yêu cầu này trong vòng 2 giờ làm việc.</i>
+                </p>
+            </div>
+            """
+
+            # Gửi 1 email cho tất cả quản lý phòng
+            self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'email_to': email_to,
+                'email_from': self.env.user.email or self.env.company.email,
+                'body_html': body_html,
+            }).send()
+
+            _logger.info(f"Đã gửi email yêu cầu duyệt phòng đến {len(manager_emails)} quản lý phòng")
+
+            # Gửi popup notification cho từng quản lý
+            for user in group.users:
+                if user.partner_id:
+                    self.env['bus.bus']._sendone(
+                        user.partner_id,
+                        'simple_notification',
+                        {
+                            'title': '⚠️ Yêu cầu duyệt phòng họp',
+                            'message': f"Có yêu cầu duyệt phòng: {self.room.name if self.room else ''}",
+                            'sticky': True,
+                            'type': 'warning',
+                        }
+                    )
+
+        except Exception as e:
+            _logger.error(f"Lỗi gửi email yêu cầu duyệt phòng: {str(e)}")
+            raise UserError(f"Có lỗi khi gửi yêu cầu: {str(e)}")
 
     def action_send_request(self):
         """Nhân viên gửi duyệt - Gửi thông báo đặc biệt cho trưởng đơn vị"""
