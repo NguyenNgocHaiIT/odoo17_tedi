@@ -26,13 +26,11 @@
                     <field name="chu_tri" string="Người chủ trì"/>
                     <field name="employee_ids" string="Thành phần tham gia" widget="many2many_tags"/>
 
-                    <field name="state"
+                    <field name="room_sign"
                            widget="badge"
-                           decoration-info="state == 'draft'"
-                           decoration-warning="state == 'pending'"
-                           decoration-success="state == 'approved'"
-                           decoration-primary="state == 'completed'"
-                           decoration-muted="state == 'canceled'"/>
+                           decoration-info="room_sign == 'no_sign'"
+                           decoration-warning="room_sign == 'pending'"
+                           decoration-success="room_sign == 'have_sign'"/>
                 </tree>
             </field>
         </record>
@@ -47,17 +45,21 @@
                     <field name="state" invisible="1"/>
 
                     <header>
+                        <button name="action_request_room_approval"
+                                string="Gửi duyệt"
+                                type="object"
+                                invisible="not is_current_user_creator or room_sign != 'no_sign'"/>
                         <button name="action_approve_room"
                                 string="Duyệt Phòng"
                                 type="object"
                                 class="btn-success"
-                                invisible="not can_approve_room or state != 'approved'"/>
+                                invisible="not can_approve_room or state != 'approved' or room_sign != 'pending'"/>
 
                         <button name="action_reject_room"
                                 string="Từ chối Phòng"
                                 type="object"
                                 class="btn-danger"
-                                invisible="not can_approve_room or state != 'approved'"/>
+                                invisible="not can_approve_room or state != 'approved' or room_sign != 'pending'"/>
 
                         <button name="action_complete"
                                 string="Hoàn thành"
