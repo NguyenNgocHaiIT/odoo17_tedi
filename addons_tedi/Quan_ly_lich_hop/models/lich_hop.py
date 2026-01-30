@@ -1414,8 +1414,6 @@ class Calendar(models.Model):
 
     total_participants = fields.Integer(
         string="Tổng số người tham gia",
-        compute="_compute_total_participants",
-        store=True
     )
 
     @api.depends('employee_ids', 'lanh_dao', 'chu_tri', 'don_vi')
