@@ -74,7 +74,7 @@
                         <button name="action_add_participants"
                                 string="Thêm người tham gia"
                                 type="object"
-                                invisible="room_sign == 'no_sign' or state in ('draft','pending') or not can_add_participants"
+                                invisible="state in ('draft','pending') or not can_add_participants"
                                 class="btn-primary"/>
                     </header>
 
