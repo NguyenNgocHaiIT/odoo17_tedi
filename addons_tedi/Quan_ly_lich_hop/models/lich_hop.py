@@ -94,6 +94,25 @@ class Calendar(models.Model):
         help='Đánh dấu đã gửi thông báo nhắc nhở trước 30 phút'
     )
 
+    can_complete_meeting = fields.Boolean(
+        string="Có thể hoàn thành",
+        compute="_compute_can_complete_meeting",
+        store=False
+    )
+
+    @api.depends_context('uid')
+    @api.depends('create_uid', 'state')
+    def _compute_can_complete_meeting(self):
+        """Tính toán xem user hiện tại có thể hoàn thành cuộc họp không"""
+        current_user = self.env.user
+        is_room_manager = current_user.has_group('Quan_ly_lich_hop.group_meeting_room_manager')
+
+        for rec in self:
+            # Người tạo HOẶC quản lý phòng
+            rec.can_complete_meeting = rec.state == 'approved' and (
+                    is_room_manager or rec.is_current_user_creator
+            )
+
     @api.depends_context('uid')
     def _compute_is_current_user_creator(self):
         current_user = self.env.user
@@ -836,22 +855,44 @@ class Calendar(models.Model):
 
     def _send_room_approval_notification(self, approved=True):
         """
-        Gửi thông báo duyệt/từ chối phòng cho người tạo
+        Gửi thông báo duyệt/từ chối phòng cho người tạo VÀ tất cả người liên quan
 
         :param approved: True nếu duyệt, False nếu từ chối
         """
-        # Lấy thông tin người tạo
+        # 1. LẤY DANH SÁCH TẤT CẢ NGƯỜI NHẬN THÔNG BÁO
+        all_recipients = self.env['hr.employee']
+
+        # a) Người tạo phiếu
         creator_employee = self.env['hr.employee'].search([('user_id', '=', self.create_uid.id)], limit=1)
-        if not creator_employee or not creator_employee.work_email:
-            _logger.warning(f"Không tìm thấy email của người tạo lịch họp: {self.create_uid.name}")
+        if creator_employee:
+            all_recipients |= creator_employee
+
+        # b) Người chủ trì
+        if self.chu_tri:
+            all_recipients |= self.chu_tri
+
+        # c) Lãnh đạo
+        if self.lanh_dao:
+            all_recipients |= self.lanh_dao
+
+        # d) Người tham gia
+        if self.employee_ids:
+            all_recipients |= self.employee_ids
+
+        # Loại bỏ trùng lặp và chỉ lấy những người có email
+        all_recipients = all_recipients.filtered(lambda emp: emp.work_email)
+
+        if not all_recipients:
+            _logger.warning(f"Không có email của người nhận thông báo cho cuộc họp {self.id}")
             return
 
-        # Lấy thông tin cần thiết
+        # 2. CHUẨN BỊ THÔNG TIN CHUNG
         web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
         approver_name = self.env.user.name
         time_str = f"{self.start.strftime('%H:%M %d/%m/%Y')} → {self.stop.strftime('%H:%M %d/%m/%Y')}" if self.start and self.stop else ""
+        event_url = f"{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
 
-        # Chuẩn bị nội dung email
+        # 3. CHUẨN BỊ NỘI DUNG EMAIL THEO TRẠNG THÁI
         if approved:
             subject = f"[ĐÃ DUYỆT PHÒNG] Lịch họp: {self.name}"
             status_text = "✅ ĐÃ DUYỆT"
@@ -860,14 +901,19 @@ class Calendar(models.Model):
             bg_color = "#e8f6ef"
             action_text = "được duyệt"
             button_text = "Xem chi tiết"
-            next_steps = """
-                <p><b>📋 Lịch họp của bạn đã sẵn sàng:</b></p>
-                <ul>
-                    <li>Phòng họp: <b>{}</b></li>
-                    <li>Thời gian: <b>{}</b></li>
-                    <li>Vui lòng có mặt đúng giờ tại phòng họp.</li>
-                </ul>
-            """.format(self.room.name if self.room else "", time_str)
+
+            next_steps = f"""
+                <div style="background:#e8f6ef; padding:15px; border-radius:5px; border-left:4px solid #27ae60; margin:20px 0;">
+                    <p style="font-weight:bold; color:#27ae60; margin-top:0;">📋 THÔNG BÁO QUAN TRỌNG:</p>
+                    <p>Lịch họp đã được sắp xếp phòng và sẵn sàng tổ chức.</p>
+                    <ul style="margin-bottom:0;">
+                        <li><b>Phòng họp:</b> {self.room.name if self.room else "Chưa có"}</li>
+                        <li><b>Thời gian:</b> {time_str}</li>
+                        <li><b>Loại họp:</b> {"Họp online" if self.loai_cuoc_hop == 'online' else "Họp offline"}</li>
+                        {"<li><b>Link họp:</b> " + self.link_cuoc_hop + "</li>" if self.loai_cuoc_hop == 'online' and self.link_cuoc_hop else ""}
+                    </ul>
+                </div>
+            """
         else:
             subject = f"[TỪ CHỐI PHÒNG] Lịch họp: {self.name}"
             status_text = "❌ BỊ TỪ CHỐI"
@@ -875,108 +921,200 @@ class Calendar(models.Model):
             border_color = "#e74c3c"
             bg_color = "#fdedec"
             action_text = "bị từ chối"
-            button_text = "Đăng ký lại phòng"
-            next_steps = """
-                <p><b>🔄 Cần thực hiện:</b></p>
-                <ul>
-                    <li>Yêu cầu phòng họp của bạn đã bị từ chối.</li>
-                    <li>Vui lòng chọn phòng khác hoặc điều chỉnh thời gian.</li>
-                    <li>Nhấn nút "Đăng ký phòng họp" để chọn phòng khác.</li>
-                </ul>
+            button_text = "Xem chi tiết"
+
+            next_steps = f"""
+                <div style="background:#fdedec; padding:15px; border-radius:5px; border-left:4px solid #e74c3c; margin:20px 0;">
+                    <p style="font-weight:bold; color:#e74c3c; margin-top:0;">⚠️ LƯU Ý QUAN TRỌNG:</p>
+                    <p>Yêu cầu phòng họp đã bị từ chối. Người tạo lịch họp cần đăng ký phòng khác.</p>
+                    <ul style="margin-bottom:0;">
+                        <li>Lịch họp này chưa có phòng họp</li>
+                        <li>Người tạo lịch họp sẽ đăng ký phòng khác</li>
+                        <li>Bạn sẽ nhận được thông báo mới khi có phòng họp</li>
+                    </ul>
+                </div>
             """
 
-        # Tạo nội dung email HTML
-        event_url = f"{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
+        # 4. TẠO DANH SÁCH EMAIL NGƯỜI NHẬN (NHÓM)
+        email_list = []
+        name_list = []
+        for employee in all_recipients:
+            email = employee.work_email
+            if email and email not in email_list:
+                email_list.append(email)
+                name_list.append(employee.name)
+
+        # 5. TẠO NỘI DUNG EMAIL HTML
         body_html = f"""
-            <div style="border-left:4px solid {border_color};padding-left:15px;background:{bg_color};">
-                <h3 style="color:{status_color};">{status_text} - YÊU CẦU PHÒNG HỌP</h3>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 800px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; color: white; text-align: center; }}
+                .content {{ padding: 30px; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px; background: white; }}
+                .info-table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+                .info-table td {{ padding: 12px; border: 1px solid #e0e0e0; }}
+                .info-table tr:nth-child(even) {{ background: #f9f9f9; }}
+                .info-table tr:hover {{ background: #f5f5f5; }}
+                .button {{ background: {status_color}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; }}
+                .status-badge {{ background: {bg_color}; border-left: 4px solid {border_color}; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+                .footer {{ color: #7f8c8d; font-size: 12px; text-align: center; margin-top: 30px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin: 0; font-size: 28px;">{status_text} - PHÒNG HỌP</h1>
+                    <p style="font-size: 18px; margin-top: 10px;">{self.name}</p>
+                </div>
+
+                <div class="content">
+                    <p>Kính gửi: <b>{', '.join(name_list)}</b>,</p>
+
+                    <div class="status-badge">
+                        <h3 style="margin-top: 0; color: {status_color};">
+                            Yêu cầu phòng họp cho lịch họp này đã <b>{action_text}</b> bởi <b>{approver_name}</b>
+                        </h3>
+                    </div>
+
+                    <h3>📋 THÔNG TIN CUỘC HỌP</h3>
+                    <table class="info-table">
+                        <tr>
+                            <td style="width: 30%; font-weight: bold;">Chủ đề cuộc họp:</td>
+                            <td>{self.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Thời gian:</td>
+                            <td>{time_str}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Phòng họp:</td>
+                            <td>
+                                <span style="color: {status_color}; font-weight: bold;">
+                                    {self.room.name if self.room and approved else 'CHƯA CÓ PHÒNG'}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Trạng thái phòng:</td>
+                            <td style="color: {status_color}; font-weight: bold;">{status_text}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Người chủ trì:</td>
+                            <td>{self.chu_tri.name if self.chu_tri else 'Chưa xác định'}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Đơn vị tham gia:</td>
+                            <td>{', '.join(dept.name for dept in self.don_vi) if self.don_vi else 'Không có'}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Số người tham gia:</td>
+                            <td>{self.so_nguoi_tham_gia or '0'}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Loại cuộc họp:</td>
+                            <td>{'Họp online' if self.loai_cuoc_hop == 'online' else 'Họp offline'}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Người xử lý:</td>
+                            <td>{approver_name}</td>
+                        </tr>
+                    </table>
+
+                    {next_steps}
+
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{event_url}" class="button">
+                            📋 {button_text}
+                        </a>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+                    <div class="footer">
+                        <p>Đây là email tự động từ Hệ thống Quản lý Lịch họp.</p>
+                        <p>Vui lòng không trả lời email này.</p>
+                    </div>
+                </div>
             </div>
-
-            <p>Kính gửi <b>{creator_employee.name}</b>,</p>
-
-            <p>Yêu cầu phòng họp cho lịch họp của bạn đã <b>{action_text}</b> bởi <b>{approver_name}</b>.</p>
-
-            <p><b>Thông tin cuộc họp:</b></p>
-            <table style="border-collapse:collapse;width:100%;margin-bottom:20px;">
-                <tr style="background:#f8f9fa;">
-                    <td style="border:1px solid #ddd;padding:8px;"><b>Chủ đề</b></td>
-                    <td style="border:1px solid #ddd;padding:8px;">{self.name}</td>
-                </tr>
-                <tr>
-                    <td style="border:1px solid #ddd;padding:8px;"><b>Thời gian</b></td>
-                    <td style="border:1px solid #ddd;padding:8px;">{time_str}</td>
-                </tr>
-                <tr style="background:#f8f9fa;">
-                    <td style="border:1px solid #ddd;padding:8px;"><b>Phòng họp</b></td>
-                    <td style="border:1px solid #ddd;padding:8px;">
-                        {self.room.name if self.room and approved else '<span style="color:#e74c3c;">Không có phòng</span>'}
-                    </td>
-                </tr>
-                <tr>
-                    <td style="border:1px solid #ddd;padding:8px;"><b>Trạng thái phòng</b></td>
-                    <td style="border:1px solid #ddd;padding:8px;color:{status_color};font-weight:bold;">
-                        {status_text}
-                    </td>
-                </tr>
-                <tr style="background:#f8f9fa;">
-                    <td style="border:1px solid #ddd;padding:8px;"><b>Người xử lý</b></td>
-                    <td style="border:1px solid #ddd;padding:8px;">{approver_name}</td>
-                </tr>
-            </table>
-
-            {next_steps}
-
-            <p style="margin-top:20px;">
-                <a href="{event_url}" 
-                   style="background:{status_color};color:white;padding:10px 20px;border-radius:5px;text-decoration:none;font-weight:bold;display:inline-block;">
-                    📋 {button_text}
-                </a>
-            </p>
-
-            <hr style="border:none;border-top:1px solid #eee;margin:20px 0;"/>
-
-            <p style="color:#7f8c8d;font-size:12px;">
-                <i>Đây là email tự động từ Hệ thống Quản lý Lịch họp.</i><br/>
-                <i>Vui lòng không trả lời email này.</i>
-            </p>
+        </body>
+        </html>
         """
 
-        # Gửi email
+        # 6. GỬI EMAIL CHO TẤT CẢ NGƯỜI LIÊN QUAN
         try:
+            # Gửi 1 email cho tất cả người nhận
+            email_to = ', '.join(email_list)
+
             self.env['mail.mail'].sudo().create({
                 'subject': subject,
                 'body_html': body_html,
-                'email_to': creator_employee.work_email,
+                'email_to': email_to,
                 'email_from': self.env.user.email or self.env.company.email,
             }).send()
-            _logger.info(f"Đã gửi email thông báo {action_text} phòng cho người tạo: {creator_employee.name}")
+
+            _logger.info(f"✅ Đã gửi email thông báo {action_text} phòng đến {len(email_list)} người liên quan")
+
         except Exception as e:
             _logger.error(f"Lỗi gửi email thông báo phòng: {str(e)}")
 
-        # ✅ THÊM: Gửi popup notification cho người tạo (nếu đang online)
-        if creator_employee.user_id:
-            if approved:
-                self.env['bus.bus']._sendone(
-                    creator_employee.user_id.partner_id,
-                    'simple_notification',
-                    {
-                        'title': '✅ Phòng họp đã được duyệt',
-                        'message': f"Phòng '{self.room.name if self.room else ''}' đã được duyệt cho cuộc họp '{self.name}'",
-                        'sticky': True,
-                        'type': 'success',
-                    }
-                )
+        # 7. GỬI POPUP NOTIFICATION CHO TỪNG NGƯỜI (NẾU ĐANG ONLINE)
+        for employee in all_recipients:
+            if not employee.user_id:
+                continue
+
+            # Tùy chỉnh thông báo popup theo vai trò
+            if employee.id == creator_employee.id:
+                # Thông báo đặc biệt cho người tạo
+                if approved:
+                    self.env['bus.bus']._sendone(
+                        employee.user_id.partner_id,
+                        'simple_notification',
+                        {
+                            'title': '✅ Phòng họp đã được duyệt',
+                            'message': f"Phòng '{self.room.name if self.room else ''}' đã được duyệt cho '{self.name}'",
+                            'sticky': True,
+                            'type': 'success',
+                        }
+                    )
+                else:
+                    self.env['bus.bus']._sendone(
+                        employee.user_id.partner_id,
+                        'simple_notification',
+                        {
+                            'title': '❌ Yêu cầu phòng bị từ chối',
+                            'message': f"Yêu cầu phòng họp cho '{self.name}' đã bị từ chối",
+                            'sticky': True,
+                            'type': 'warning',
+                        }
+                    )
             else:
-                self.env['bus.bus']._sendone(
-                    creator_employee.user_id.partner_id,
-                    'simple_notification',
-                    {
-                        'title': '❌ Yêu cầu phòng bị từ chối',
-                        'message': f"Yêu cầu phòng họp cho '{self.name}' đã bị từ chối",
-                        'sticky': True,
-                        'type': 'warning',
-                    }
-                )
+                # Thông báo thông thường cho người tham gia
+                if approved:
+                    self.env['bus.bus']._sendone(
+                        employee.user_id.partner_id,
+                        'simple_notification',
+                        {
+                            'title': '📅 Cập nhật phòng họp',
+                            'message': f"Phòng họp cho '{self.name}' đã được xác nhận: {self.room.name if self.room else ''}",
+                            'sticky': False,
+                            'type': 'info',
+                        }
+                    )
+                else:
+                    self.env['bus.bus']._sendone(
+                        employee.user_id.partner_id,
+                        'simple_notification',
+                        {
+                            'title': '⚠️ Cập nhật phòng họp',
+                            'message': f"Phòng họp cho '{self.name}' đã bị từ chối",
+                            'sticky': False,
+                            'type': 'warning',
+                        }
+                    )
 
     def open_room_booking_wizard(self):
         self.ensure_one()
@@ -1274,6 +1412,41 @@ class Calendar(models.Model):
         # Đánh dấu đã gửi nhắc nhở
         self.reminder_sent = True
 
+    total_participants = fields.Integer(
+        string="Tổng số người tham gia",
+        compute="_compute_total_participants",
+        store=True
+    )
+
+    @api.depends('employee_ids', 'lanh_dao', 'chu_tri', 'don_vi')
+    def _compute_total_participants(self):
+        for rec in self:
+            total = 0
+
+            # Đếm người tham gia từ employee_ids
+            total += len(rec.employee_ids)
+
+            # Đếm lãnh đạo (loại trùng với employee_ids)
+            for leader in rec.lanh_dao:
+                if leader not in rec.employee_ids:
+                    total += 1
+
+            # Đếm người chủ trì (loại trùng)
+            if rec.chu_tri and rec.chu_tri not in rec.employee_ids and rec.chu_tri not in rec.lanh_dao:
+                total += 1
+
+            # Đếm trưởng đơn vị tham gia (loại trùng)
+            for dept in rec.don_vi:
+                if dept.manager_id and \
+                        dept.manager_id not in rec.employee_ids and \
+                        dept.manager_id not in rec.lanh_dao and \
+                        dept.manager_id != rec.chu_tri:
+                    total += 1
+
+            rec.total_participants = total
+
+            # Cập nhật luôn vào trường so_nguoi_tham_gia nếu muốn
+            rec.so_nguoi_tham_gia = total
 
 class RoomMaterials(models.Model):
     _name = 'room.materials'
