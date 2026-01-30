@@ -110,6 +110,7 @@
                                 <field name="employee_ids" widget="many2many_tags"
                                        string="Người tham gia"
                                        readonly="1"/>
+                                <field name="total_participants" readonly="1"/>
                             </group>
                         </group>
                     </sheet>
@@ -189,6 +190,7 @@
                     <footer>
                         <button string="Xác nhận" type="object" name="action_confirm" class="btn-primary"/>
                         <button string="Hủy" class="btn-secondary" special="cancel"/>
+
                     </footer>
                 </form>
             </field>

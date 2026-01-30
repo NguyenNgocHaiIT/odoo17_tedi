@@ -1274,6 +1274,41 @@ class Calendar(models.Model):
         # Đánh dấu đã gửi nhắc nhở
         self.reminder_sent = True
 
+    total_participants = fields.Integer(
+        string="Tổng số người tham gia",
+        compute="_compute_total_participants",
+        store=True
+    )
+
+    @api.depends('employee_ids', 'lanh_dao', 'chu_tri', 'don_vi')
+    def _compute_total_participants(self):
+        for rec in self:
+            total = 0
+
+            # Đếm người tham gia từ employee_ids
+            total += len(rec.employee_ids)
+
+            # Đếm lãnh đạo (loại trùng với employee_ids)
+            for leader in rec.lanh_dao:
+                if leader not in rec.employee_ids:
+                    total += 1
+
+            # Đếm người chủ trì (loại trùng)
+            if rec.chu_tri and rec.chu_tri not in rec.employee_ids and rec.chu_tri not in rec.lanh_dao:
+                total += 1
+
+            # Đếm trưởng đơn vị tham gia (loại trùng)
+            for dept in rec.don_vi:
+                if dept.manager_id and \
+                        dept.manager_id not in rec.employee_ids and \
+                        dept.manager_id not in rec.lanh_dao and \
+                        dept.manager_id != rec.chu_tri:
+                    total += 1
+
+            rec.total_participants = total
+
+            # Cập nhật luôn vào trường so_nguoi_tham_gia nếu muốn
+            rec.so_nguoi_tham_gia = total
 
 class RoomMaterials(models.Model):
     _name = 'room.materials'

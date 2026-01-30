@@ -89,7 +89,7 @@
 
                         <group>
                             <group>
-                                <field name="room" string="Phòng" readonly="not is_current_user_creator or state == 'completed'" required="1"/>
+                                <field name="room" string="Phòng" readonly="state == 'completed'" required="1"/>
                                 <label for="start" string="Thời gian" />
                                 <div style="display: flex;" >
                                     <field name="start" class="oe_inline" style="flex:1;" readonly="not is_current_user_creator or state == 'completed'" required="1"/>
@@ -108,6 +108,7 @@
                                 <field name="lanh_dao" string="Lãnh đạo" readonly="not is_current_user_creator or state == 'completed'" widget="many2many_tags"/>
                                 <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia" readonly="not is_current_user_creator or state == 'completed'"/>
                                 <field name="employee_ids" widget="many2many_tags" string="Người tham gia" readonly="not is_current_user_creator or state == 'completed'"/>
+                                <field name="total_participants" readonly="1"/>
                             </group>
                         </group>
                     </sheet>
