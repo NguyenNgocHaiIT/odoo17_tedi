@@ -65,13 +65,13 @@
                                 string="Hoàn thành"
                                 type="object"
                                 class="btn-primary"
-                                groups="Quan_ly_lich_hop.group_meeting_room_manager"
-                                invisible="state != 'approved'"
+                                invisible="not can_complete_meeting"
                                 confirm="Xác nhận cuộc họp đã kết thúc và phòng đã được trả?"/>
 
                         <button name="on_TV" string="Xem lịch trên TV" type="object" />
 
                         <field name="room_sign" widget="statusbar" statusbar_visible="approved,completed"/>
+                        <field name="can_complete_meeting" invisible="1"/>
                     </header>
 
                     <field name="is_current_user_creator" invisible="1"/>
@@ -107,7 +107,7 @@
                                 <field name="chu_tri" string="Người chủ trì" readonly="not is_current_user_creator or state == 'completed'" required="1"/>
                                 <field name="lanh_dao" string="Lãnh đạo" readonly="not is_current_user_creator or state == 'completed'" widget="many2many_tags"/>
                                 <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia" readonly="not is_current_user_creator or state == 'completed'"/>
-                                <field name="employee_ids" widget="many2many_tags" string="Người tham gia" readonly="not is_current_user_creator or state == 'completed'"/>
+                                <field name="employee_ids" widget="many2many_tags" string="Người tham gia" readonly="1"/>
                                 <field name="total_participants" readonly="1"/>
                             </group>
                         </group>

@@ -94,6 +94,25 @@ class Calendar(models.Model):
         help='Đánh dấu đã gửi thông báo nhắc nhở trước 30 phút'
     )
 
+    can_complete_meeting = fields.Boolean(
+        string="Có thể hoàn thành",
+        compute="_compute_can_complete_meeting",
+        store=False
+    )
+
+    @api.depends_context('uid')
+    @api.depends('create_uid', 'state')
+    def _compute_can_complete_meeting(self):
+        """Tính toán xem user hiện tại có thể hoàn thành cuộc họp không"""
+        current_user = self.env.user
+        is_room_manager = current_user.has_group('Quan_ly_lich_hop.group_meeting_room_manager')
+
+        for rec in self:
+            # Người tạo HOẶC quản lý phòng
+            rec.can_complete_meeting = rec.state == 'approved' and (
+                    is_room_manager or rec.is_current_user_creator
+            )
+
     @api.depends_context('uid')
     def _compute_is_current_user_creator(self):
         current_user = self.env.user
