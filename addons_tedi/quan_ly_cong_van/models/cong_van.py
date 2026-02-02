@@ -618,14 +618,66 @@ class OfficeDocument(models.Model):
         'office_document_attachment_rel',
         'document_id',
         'attachment_id',
+        compute='_compute_attachment_ids',
+        inverse='_inverse_attachment_ids',
         string='Tài liệu đính kèm'
     )
+
+    def _inverse_attachment_ids(self):
+        Attachment = self.env['ir.attachment'].sudo()
+
+        for doc in self:
+            attachments = Attachment.search([
+                ('res_model', '=', doc._name),
+                ('res_id', '=', doc.id),
+            ])
+
+            # Attachment mới được thêm
+            new_attachments = doc.attachment_ids - attachments
+            # Attachment bị xóa
+            removed_attachments = attachments - doc.attachment_ids
+
+            # Gắn attachment mới
+            new_attachments.write({
+                'res_model': doc._name,
+                'res_id': doc.id,
+            })
+
+            # Gỡ attachment bị xóa
+            removed_attachments.write({
+                'res_model': False,
+                'res_id': False,
+            })
+
+        if doc.attachment_id in removed_attachments:
+            doc.attachment_id = False
+
+    def _compute_attachment_ids(self):
+        Attachment = self.env['ir.attachment'].sudo()
+        for doc in self:
+            doc.attachment_ids = Attachment.search([
+                ('res_model', '=', 'office.document'),
+                ('res_id', '=', doc.id),
+            ])
+
+    """attachment_id = fields.Many2one(
+        'ir.attachment',
+        string='Tài liệu',
+    )"""
 
     attachment_id = fields.Many2one(
         'ir.attachment',
         string='Tài liệu',
-        ondelete='cascade'
+        domain="[('id', 'in', attachment_ids)]",
     )
+
+    @api.onchange('attachment_ids')
+    def _onchange_attachment_ids(self):
+        for doc in self:
+            # Nếu chưa chọn file nào → tự chọn file mới nhất
+            if doc.attachment_ids:
+                if not doc.attachment_id or doc.attachment_id not in doc.attachment_ids:
+                    doc.attachment_id = doc.attachment_ids[-1]
 
     attachment_datas = fields.Binary(
         string='Tài liệu',
@@ -1958,7 +2010,7 @@ class OfficeDocument(models.Model):
             # Văn thư: draft hoặc chờ duyệt thì sửa được
             rec.is_van_thu = (
                     is_van_thu_user and
-                    rec.tt_vb in ('draft', 'cho_duyet', 'da_duyet')
+                    rec.tt_vb in ('draft', 'cho_truong_don_vi_duyet', 'truong_don_vi_duyet', 'cho_duyet', 'da_duyet')
             )
 
             # Không phải văn thư: chỉ draft mới sửa được
