@@ -627,6 +627,7 @@ class OfficeDocument(models.Model):
         Attachment = self.env['ir.attachment'].sudo()
 
         for doc in self:
+            # Lấy tất cả attachment hiện tại của document
             attachments = Attachment.search([
                 ('res_model', '=', doc._name),
                 ('res_id', '=', doc.id),
@@ -634,23 +635,52 @@ class OfficeDocument(models.Model):
 
             # Attachment mới được thêm
             new_attachments = doc.attachment_ids - attachments
-            # Attachment bị xóa
+            # Attachment bị xóa khỏi document này
             removed_attachments = attachments - doc.attachment_ids
 
             # Gắn attachment mới
-            new_attachments.write({
-                'res_model': doc._name,
-                'res_id': doc.id,
-            })
+            if new_attachments:
+                new_attachments.write({
+                    'res_model': doc._name,
+                    'res_id': doc.id,
+                })
 
-            # Gỡ attachment bị xóa
-            removed_attachments.write({
-                'res_model': False,
-                'res_id': False,
-            })
+                # Tự động chọn file PDF mới nhất
+                pdf_files = new_attachments.filtered(
+                    lambda x: x.mimetype == 'application/pdf'
+                )
+                if pdf_files:
+                    latest_pdf = pdf_files.sorted(
+                        key=lambda x: x.create_date, reverse=True
+                    )[0]
+                    if (not doc.attachment_id or
+                            latest_pdf.create_date > (doc.attachment_id.create_date or fields.Datetime.now())):
+                        doc.attachment_id = latest_pdf
 
-        if doc.attachment_id in removed_attachments:
-            doc.attachment_id = False
+            # Xử lý attachment bị xóa
+            if removed_attachments:
+                # Nếu attachment đang được chọn bị xóa
+                if doc.attachment_id in removed_attachments:
+                    doc.attachment_id = False
+
+                # Kiểm tra và xóa các attachment không còn được reference bởi document nào
+                for attachment in removed_attachments:
+                    # Gỡ attachment khỏi document hiện tại
+                    attachment.write({
+                        'res_model': False,
+                        'res_id': False,
+                    })
+
+                    # Kiểm tra xem attachment có còn được reference bởi document nào khác không
+                    other_refs = Attachment.search_count([
+                        ('id', '=', attachment.id),
+                        ('res_model', '!=', False),
+                        ('res_id', '!=', False),
+                    ])
+
+                    # Nếu không còn document nào reference, xóa attachment
+                    if other_refs == 0:
+                        attachment.unlink()
 
     def _compute_attachment_ids(self):
         Attachment = self.env['ir.attachment'].sudo()
@@ -668,7 +698,7 @@ class OfficeDocument(models.Model):
     attachment_id = fields.Many2one(
         'ir.attachment',
         string='Tài liệu',
-        domain="[('id', 'in', attachment_ids)]",
+        domain="[('id', 'in', attachment_ids), ('mimetype', '=', 'application/pdf')]",
     )
 
     @api.onchange('attachment_ids')
@@ -692,7 +722,7 @@ class OfficeDocument(models.Model):
         store=False
     )
 
-    @api.depends('attachment_id', 'attachment_id.datas', 'attachment_id.name')
+    @api.depends('attachment_id', 'attachment_id.datas', 'attachment_id.name', 'attachment_id.write_date')
     def _compute_attachment_datas(self):
         """Chiều 1: attachment_id → attachment_datas"""
         for record in self:
@@ -713,6 +743,8 @@ class OfficeDocument(models.Model):
                         'datas': record.attachment_datas,
                         'name': record.attachment_filename or record.attachment_id.name,
                     })
+                    # QUAN TRỌNG: Buộc recompute pdf_viewer_key
+                    record._compute_pdf_viewer_key()
                 else:
                     # Tạo attachment mới
                     attachment = self.env['ir.attachment'].create({
@@ -723,10 +755,27 @@ class OfficeDocument(models.Model):
                         'mimetype': 'application/pdf',
                     })
                     record.attachment_id = attachment.id
+                    # QUAN TRỌNG: Buộc recompute pdf_viewer_key
+                    record._compute_pdf_viewer_key()
             else:
                 # Nếu xóa attachment_datas thì xóa attachment_id
                 if record.attachment_id:
                     record.attachment_id.unlink()
+
+    pdf_viewer_key = fields.Char(
+        compute='_compute_pdf_viewer_key',
+        store=False
+    )
+
+    @api.depends('attachment_id', 'attachment_id.datas', 'attachment_id.write_date')
+    def _compute_pdf_viewer_key(self):
+        for r in self:
+            if r.attachment_id:
+                # Dùng ID + write_date để tạo key unique
+                # Key sẽ thay đổi khi attachment_id thay đổi hoặc datas thay đổi
+                r.pdf_viewer_key = f"{r.attachment_id.id}_{r.attachment_id.write_date or ''}"
+            else:
+                r.pdf_viewer_key = 'empty'
 
     note = fields.Text('Ghi chú')
     don_vi_ban_hanh_ngoai = fields.Many2one('res.partner', string='Đơn vị ban hành')
@@ -768,27 +817,77 @@ class OfficeDocument(models.Model):
     detail1 = fields.One2many('office.document.detail1', 'office_document_id', string='Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ')
     detail2 = fields.One2many('office.document.detail2', 'office_document_id', string='Ý KIẾN CẤP LÃNH ĐẠO')
     detail3 = fields.One2many('office.document.detail3', 'office_document_id', string='XỬ LÝ VĂN BẢN CỦA BAN/PHÒNG')
+    # Thay thế các định nghĩa field cũ
+    # Các trường liên kết với context riêng
     outgoing_internal_id = fields.Many2one(
         'office.document',
         string="Công văn nội bộ đi liên quan",
-        domain="[('document_type','in',['outgoing_internal'])]"
+        domain="[('document_type','=','outgoing_internal'), ('id', '!=', id)]"
     )
+
     incoming_internal_id = fields.Many2one(
         'office.document',
         string="Công văn nội bộ đến liên quan",
-        domain="[('document_type','in',['incoming_internal'])]"
-    )
-    outgoing_id = fields.Many2one(
-        'office.document',
-        string="Công văn đi liên quan ",
-        domain="[('document_type','in',['outgoing'])]"
-    )
-    incoming_id = fields.Many2one(
-        'office.document',
-        string="Công văn đến liên quan ",
-        domain="[('document_type','in',['incoming'])]"
+        domain="[('document_type','=','incoming_internal'), ('id', '!=', id)]"
     )
 
+    outgoing_id = fields.Many2one(
+        'office.document',
+        string="Công văn đi liên quan",
+        domain="[('document_type','=','outgoing'), ('id', '!=', id)]"
+    )
+
+    incoming_id = fields.Many2one(
+        'office.document',
+        string="Công văn đến liên quan",
+        domain="[('document_type','=','incoming'), ('id', '!=', id)]"
+    )
+
+    # ========== GHI ĐÈ NAME_SEARCH CÓ ĐIỀU KIỆN ==========
+
+    @api.model
+    def name_search(self, name='', args=None, operator='ilike', limit=100):
+        """
+        Chỉ lọc theo quyền khi:
+        1. Domain có điều kiện document_type (field liên kết)
+        2. Người dùng không phải văn thư
+        """
+        user = self.env.user
+
+        # Nếu là văn thư, không cần lọc thêm
+        if user.has_group('quan_ly_cong_van.group_van_thu'):
+            return super().name_search(name, args, operator, limit)
+
+        # Kiểm tra xem đây có phải tìm kiếm cho field liên kết không
+        is_linked_field = False
+        if args:
+            for arg in args:
+                if isinstance(arg, (list, tuple)) and len(arg) == 3:
+                    if arg[0] == 'document_type' and arg[1] == '=':
+                        is_linked_field = True
+                        break
+
+        # Chỉ áp dụng filter cho field liên kết
+        if is_linked_field:
+            args = args or []
+
+            # Thêm domain theo quyền của bạn
+            permission_domain = [
+                '|', '|',
+                ('create_uid', '=', user.id),
+                ('detail2.nguoi_nhap_y_kien.user_id', '=', user.id),
+                '&',
+                ('tt_vb', '!=', 'draft'),
+                '|', '|',
+                ('truong_don_vi_duyet.user_id', '=', user.id),
+                ('lanh_dao_xu_ly.user_id', '=', user.id),
+                ('lanh_dao_theo_doi.user_id', '=', user.id)
+            ]
+
+            # Kết hợp: (domain cũ) VÀ (permission_domain)
+            args = args + permission_domain
+
+        return super().name_search(name, args, operator, limit)
 
     can_duyet = fields.Boolean(string='Văn bản có cần duyệt không ?', default=True)
     co_the_but_phe_cong_van_di = fields.Boolean(
@@ -802,6 +901,7 @@ class OfficeDocument(models.Model):
         compute='_compute_co_the_but_phe_cong_van_den',
         store=False  # Không lưu vào database, tính toán real-time
     )
+
 
     ngay_xuat = fields.Date(string='Ngày xuất', default=fields.Date.context_today)
 

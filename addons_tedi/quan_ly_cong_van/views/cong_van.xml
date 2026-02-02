@@ -78,7 +78,7 @@
                                        invisible="document_type != 'incoming'"
                                        readonly="not (is_van_thu or not_is_van_thu)"
                                        widget="many2one_clickable"/>
-                                <field name="tt_vb" readonly="1"/>
+                                <field name="tt_vb" readonly="1" decoration-warning="True"/>
                                 <field name="so_den_tong_hop" string="Số công văn" readonly="1"/>
                                 <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                                 <field name="don_vi_ban_hanh"
@@ -123,13 +123,18 @@
                             </group>
                             <group colspan="7">
                                 <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
-                                <field name="attachment_id" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                <field name="attachment_id"
+                                       string="Tài liệu xem trước"
+                                       readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
                                 <field name="attachment_datas"
-                                       widget="pdf_viewer"
+                                       string=""
                                        filename="attachment_filename"
                                        readonly="1"
+                                       widget="pdf_viewer_reload"
+                                       key="pdf_viewer_key"
                                        style="width: 100%; height: 100%;"/>
                                 <field name="attachment_filename" invisible="1"/>
+                                <field name="pdf_viewer_key" invisible="1"/>
                             </group>
                         </group>
                         <label for="trich_yeu" string="Trích yếu"/>
@@ -332,7 +337,7 @@
                                        widget="many2one_clickable"/>
                                 <field name="document_type" invisible="1"/>
                                 <field name="so_di_tong_hop" readonly="1"/>
-                                <field name="tt_vb" readonly="1"/>
+                                <field name="tt_vb" readonly="1" decoration-warning="True"/>
                                 <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="don_vi_ban_hanh"
                                        invisible="not (document_type in ('incoming_internal','outgoing_internal','resolution','outgoing'))"
@@ -375,13 +380,18 @@
                             </group>
                             <group colspan="7">
                                 <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
-                                <field name="attachment_id" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                <field name="attachment_id"
+                                       string="Tài liệu xem trước"
+                                       readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
                                 <field name="attachment_datas"
-                                       widget="pdf_viewer"
+                                       string=""
                                        filename="attachment_filename"
                                        readonly="1"
+                                       widget="pdf_viewer_reload"
+                                       key="pdf_viewer_key"
                                        style="width: 100%; height: 100%;"/>
                                 <field name="attachment_filename" invisible="1"/>
+                                <field name="pdf_viewer_key" invisible="1"/>
 
                             </group>
                         </group>
@@ -565,7 +575,7 @@
                         <field name="trich_yeu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                         <group col="12">
                             <group colspan="5">
-                                <field name="tt_vb" readonly="1"/>
+                                <field name="tt_vb" readonly="1" decoration-warning="True"/>
                                 <field name="so_di_tong_hop" string="Số quyết định"
                                        required="document_type == 'resolution'"
                                        invisible="document_type != 'resolution'"
@@ -614,13 +624,18 @@
                             </group>
                             <group colspan="7">
                                 <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
-                                <field name="attachment_id" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                <field name="attachment_id"
+                                       string="Tài liệu xem trước"
+                                       readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
                                 <field name="attachment_datas"
-                                       widget="pdf_viewer"
+                                       string=""
                                        filename="attachment_filename"
                                        readonly="1"
+                                       widget="pdf_viewer_reload"
+                                       key="pdf_viewer_key"
                                        style="width: 100%; height: 100%;"/>
                                 <field name="attachment_filename" invisible="1"/>
+                                <field name="pdf_viewer_key" invisible="1"/>
                             </group>
                         </group>
 
