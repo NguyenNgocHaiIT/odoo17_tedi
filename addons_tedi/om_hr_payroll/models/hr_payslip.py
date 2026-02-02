@@ -396,13 +396,13 @@ class HrPayslip(models.Model):
                 holiday = leave.holiday_id
                 code = 'GLOBAL'
                 name = 'Ngày nghỉ chung'
-                # wet = leave.work_entry_type_id[:1]
-                # if wet:
-                #     code = wet.code
-                #     name = wet.name
-                if leave.work_entry_type_id.code:
-                    code = leave.work_entry_type_id.code
-                    name = leave.name
+                wet = leave.work_entry_type_id[:1]
+                if wet:
+                    code = wet.code
+                    name = wet.name
+                # if leave.work_entry_type_id.code:
+                #     code = leave.work_entry_type_id.code
+                #     name = leave.name
                 if holiday.holiday_status_id.work_entry_type_id and holiday.holiday_status_id.work_entry_type_id.code:
                     code = holiday.holiday_status_id.work_entry_type_id.code
                     name = holiday.holiday_status_id.name
