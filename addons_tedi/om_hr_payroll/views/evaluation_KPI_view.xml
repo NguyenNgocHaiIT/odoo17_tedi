@@ -4,13 +4,12 @@
             <field name="name">evaluation.kpi.tree</field>
             <field name="model">evaluation.kpi</field>
             <field name="arch" type="xml">
-                <tree string="Phiếu đánh giá KPI">
+                <tree string="Phiếu đánh giá KPI" create="0" delete="0" duplicate="0">
                     <field name="name"/>
                     <field name="year" string="Năm" width="150px"/>
                     <field name="quarter" string="Quý"/>
                     <field name="employee_id"/>
                     <field name="job_id"/>
-<!--                    <field name="total_score_percent" widget="progressbar" string="Tiến độ (Điểm)"/>-->
                     <field name="total_score" optional="show" string="Điểm tổng"/>
                     <field name="k_coefficient" string="Hệ số k"/>
 
@@ -24,7 +23,7 @@
             <field name="name">evaluation.kpi.form</field>
             <field name="model">evaluation.kpi</field>
             <field name="arch" type="xml">
-                <form string="Phiếu đánh giá KPI">
+                <form string="Phiếu đánh giá KPI" create="0" delete="0" duplicate="0">
                     <style>
                         .o_list_view .o_data_row.o_is_line_section,
                         .o_list_view .o_data_row.o_is_line_section > .o_data_cell {
@@ -159,7 +158,7 @@
             </field>
         </record>
 
-         <record id="action_evaluation_kpi" model="ir.actions.act_window">
+        <record id="action_evaluation_kpi" model="ir.actions.act_window">
             <field name="name">Phiếu đánh giá KPI</field>
             <field name="res_model">evaluation.kpi</field>
             <field name="view_mode">tree,form</field>

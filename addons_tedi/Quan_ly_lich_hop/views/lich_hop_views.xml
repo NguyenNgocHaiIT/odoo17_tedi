@@ -74,7 +74,7 @@
                         <button name="action_add_participants"
                                 string="Thêm người tham gia"
                                 type="object"
-                                invisible="room_sign == 'no_sign' or state != 'approved' or not can_add_participants"
+                                invisible="state in ('draft','pending') or not can_add_participants"
                                 class="btn-primary"/>
                     </header>
 
@@ -110,6 +110,7 @@
                                 <field name="employee_ids" widget="many2many_tags"
                                        string="Người tham gia"
                                        readonly="1"/>
+                                <field name="total_participants" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
                             </group>
                         </group>
                     </sheet>
@@ -189,6 +190,7 @@
                     <footer>
                         <button string="Xác nhận" type="object" name="action_confirm" class="btn-primary"/>
                         <button string="Hủy" class="btn-secondary" special="cancel"/>
+
                     </footer>
                 </form>
             </field>
