@@ -389,13 +389,17 @@ class HrPayslip(models.Model):
             calendar = contract.resource_calendar_id
             print(calendar)
             tz = timezone(calendar.tz)
-            day_leave_intervals = contract.employee_id.list_leaves(day_from, day_to,
+            day_leave_intervals = contract.employee_id.sudo().list_leaves(day_from, day_to,
                                                                    calendar=contract.resource_calendar_id)
             print(day_leave_intervals)
             for day, hours, leave in day_leave_intervals:
                 holiday = leave.holiday_id
                 code = 'GLOBAL'
                 name = 'Ngày nghỉ chung'
+                # wet = leave.work_entry_type_id[:1]
+                # if wet:
+                #     code = wet.code
+                #     name = wet.name
                 if leave.work_entry_type_id.code:
                     code = leave.work_entry_type_id.code
                     name = leave.name
@@ -413,7 +417,7 @@ class HrPayslip(models.Model):
                     'contract_id': contract.id,
                 })
                 current_leave_struct['number_of_hours'] += hours
-                work_hours = calendar.get_work_hours_count(
+                work_hours = calendar.sudo().get_work_hours_count(
                     tz.localize(datetime.combine(day, time.min)),
                     tz.localize(datetime.combine(day, time.max)),
                     compute_leaves=False,
@@ -441,7 +445,7 @@ class HrPayslip(models.Model):
             if effective_from > effective_to:
                 work_data = {'days': 0.0, 'hours': 0.0}
             else:
-                work_data = contract.employee_id._get_work_days_data(
+                work_data = contract.employee_id.sudo()._get_work_days_data(
                     effective_from,
                     effective_to,
                     calendar=contract.resource_calendar_id,
