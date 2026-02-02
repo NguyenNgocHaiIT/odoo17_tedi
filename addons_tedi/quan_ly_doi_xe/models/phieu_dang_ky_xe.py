@@ -710,3 +710,15 @@ class HrTediVehicleRegistration(models.Model):
 
             rec.available_vehicle_ids = vehicles
 
+    def action_open_airline_expenses(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Chi phí vé máy bay',
+            'res_model': 'hr.expense',
+            'view_mode': 'form',
+            'views': [
+                (self.env.ref('quan_ly_doi_xe.view_hr_expense_airlines_form').id, 'form')
+            ],
+            'target': 'current',
+        }
