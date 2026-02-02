@@ -548,28 +548,144 @@ class HrTediVehicleRegistration(models.Model):
 
     def action_office_assign(self):
         self.ensure_one()
-        if self.state != 'approved': raise ValidationError("Phiếu chưa được duyệt.")
-        if not self.assigned_vehicle_id: raise ValidationError("Chưa chọn xe.")
+        if self.state != 'approved':
+            raise ValidationError("Phiếu chưa được duyệt.")
+        if not self.assigned_vehicle_id:
+            raise ValidationError("Chưa chọn xe.")
 
-        domain = [('id', '!=', self.id), ('assigned_vehicle_id', '=', self.assigned_vehicle_id.id),
-                  ('state', 'in', ['assigned', 'waiting_return']),
-                  ('start_date', '<', self.end_date), ('end_date', '>', self.start_date)]
+        # Kiểm tra trùng lịch
+        domain = [
+            ('id', '!=', self.id),
+            ('assigned_vehicle_id', '=', self.assigned_vehicle_id.id),
+            ('state', 'in', ['assigned', 'waiting_return']),
+            ('start_date', '<', self.end_date),
+            ('end_date', '>', self.start_date)
+        ]
         if self.search(domain):
             raise ValidationError(f"Xe {self.assigned_vehicle_id.license_plate} bị trùng lịch!")
 
+        # Gán tài xế từ xe nếu chưa có
         if not self.tedi_driver_employee_id and hasattr(self.assigned_vehicle_id,
                                                         'tedi_driver_employee_id') and self.assigned_vehicle_id.tedi_driver_employee_id:
             self.tedi_driver_employee_id = self.assigned_vehicle_id.tedi_driver_employee_id
             self._onchange_tedi_driver_employee_id()
 
+        # Cập nhật thông tin tài xế trên xe
         if self.assigned_vehicle_id:
             vals_update = {'driver_id': self.driver_id.id}
             if hasattr(self.assigned_vehicle_id, 'tedi_driver_employee_id'):
                 vals_update['tedi_driver_employee_id'] = self.tedi_driver_employee_id.id
             self.assigned_vehicle_id.write(vals_update)
 
+        # Cập nhật trạng thái
         self.state = 'assigned'
+
+        # Gửi email cho người tạo phiếu (đã có sẵn trong _send_email_to_creator)
         self._send_email_to_creator('assigned')
+
+        # Gửi email cho tài xế
+        self._send_email_to_driver()
+
+    def _send_email_to_driver(self):
+        """Gửi email thông báo cho tài xế khi được phân công lái xe"""
+        self.ensure_one()
+
+        try:
+            # Kiểm tra xem có tài xế không
+            driver_email = None
+            driver_name = None
+
+            # Ưu tiên tài xế là nhân viên (tedi_driver_employee_id)
+            if self.tedi_driver_employee_id:
+                driver_email = self.tedi_driver_employee_id.work_email
+                driver_name = self.tedi_driver_employee_id.name
+            # Fallback: tài xế partner
+            elif self.driver_id and self.driver_id.email:
+                driver_email = self.driver_id.email
+                driver_name = self.driver_id.name
+
+            if not driver_email:
+                _logger.warning(f"Không có email cho tài xế của phiếu: {self.code}")
+                return
+
+            # Chuẩn bị nội dung email
+            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            detail_url = f"{web_url}/web#id={self.id}&model=hr_tedi.vehicle.registration"
+
+            requester_name = self.requester_id.name if self.requester_id else "Người đề nghị"
+            vehicle_info = f"{self.assigned_vehicle_id.license_plate} - {self.assigned_vehicle_id.model_id.name if self.assigned_vehicle_id.model_id else ''}"
+            start_time = self.start_date.strftime('%d/%m/%Y %H:%M') if self.start_date else ''
+            end_time = self.end_date.strftime('%d/%m/%Y %H:%M') if self.end_date else ''
+
+            subject = f"[PHÂN CÔNG LÁI XE] Phiếu xe {self.code}"
+
+            body_html = f"""
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <p>Kính gửi <b>{driver_name}</b>,</p>
+
+                <div style="background:#007bff15; border-left: 4px solid #007bff; padding: 15px; margin: 15px 0;">
+                    <h3 style="color:#007bff; margin-top:0;">THÔNG BÁO PHÂN CÔNG LÁI XE MỚI</h3>
+                    <p><b>Mã phiếu:</b> {self.code}</p>
+                    <p><b>Người đề nghị:</b> {requester_name}</p>
+                    <p><b>Xe được phân:</b> {vehicle_info}</p>
+                    <p><b>Thời gian lái:</b> Từ {start_time} đến {end_time}</p>
+                    <p><b>Địa điểm:</b> {self.destination or 'Không có'}</p>
+                    <p><b>Nội dung công việc:</b> {self.work_content}</p>
+                    <p><b>Số người đi kèm:</b> {self.num_passengers}</p>
+                    <p><b>Loại công tác:</b> {dict(self._fields['trip_type'].selection).get(self.trip_type)}</p>
+                </div>
+
+                <div style="background:#f8f9fa; padding: 15px; margin: 15px 0; border-radius: 5px;">
+                    <h4 style="margin-top:0;">📋 Lưu ý quan trọng:</h4>
+                    <ul>
+                        <li>Vui lòng có mặt đúng giờ tại địa điểm đón khách</li>
+                        <li>Kiểm tra xe trước khi xuất phát (nhiên liệu, lốp, an toàn)</li>
+                        <li>Liên hệ với người đề nghị qua số: {self.requester_id.work_phone or self.requester_id.mobile or 'Đang cập nhật'}</li>
+                        <li>Ghi nhật ký hành trình và số km thực tế</li>
+                        <li>Tuân thủ luật giao thông và quy định an toàn</li>
+                    </ul>
+                </div>
+
+                <p><b>Liên hệ người đề nghị:</b></p>
+                <ul>
+                    <li>Họ tên: {requester_name}</li>
+                    <li>Điện thoại: {self.requester_id.work_phone or self.requester_id.mobile or 'Đang cập nhật'}</li>
+                    <li>Phòng ban: {self.requester_id.department_id.name if self.requester_id.department_id else 'Đang cập nhật'}</li>
+                </ul>
+
+                <p style="text-align: center; margin: 20px 0;">
+                    <a href="{detail_url}" style="background:#007bff; color:white; padding: 10px 20px; text-decoration:none; border-radius:5px;">
+                        Xem chi tiết phiếu
+                    </a>
+                </p>
+
+                <p style="color:#666; font-size:14px;">
+                    Trân trọng,<br>
+                    <b>Đội ngũ quản lý xe</b><br>
+                    Liên hệ hỗ trợ: {self.env.user.email or 'no-reply@company.com'}
+                </p>
+            </div>
+            """
+
+            # Gửi email
+            self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'email_to': driver_email,
+                'email_from': self.env.user.email or 'no-reply@company.com',
+                'body_html': body_html,
+            }).send()
+
+            _logger.info(f"Đã gửi email phân công lái xe đến tài xế: {driver_email}")
+
+            # Thêm thông báo vào chatter
+            self.message_post(
+                body=f"Đã gửi email thông báo phân công lái xe đến tài xế: {driver_name} ({driver_email})",
+                subject="Thông báo cho tài xế"
+            )
+
+        except Exception as e:
+            _logger.error(f"Lỗi gửi email cho tài xế: {str(e)}")
+            # Không raise exception để không ảnh hưởng đến quy trình chính
 
     def action_send_feedback(self):
         """Bước 1: Người dùng đánh giá xong -> Chuyển sang chờ trả xe"""
