@@ -392,23 +392,62 @@ class HrPayslip(models.Model):
             day_leave_intervals = contract.employee_id.sudo().list_leaves(day_from, day_to,
                                                                    calendar=contract.resource_calendar_id)
             print(day_leave_intervals)
+            # for day, hours, leave in day_leave_intervals:
+            #     holiday = leave.holiday_id
+            #     code = 'GLOBAL'
+            #     name = 'Ngày nghỉ chung'
+            #     wet = leave.work_entry_type_id[:1]
+            #     if wet:
+            #         code = wet.code
+            #         name = wet.name
+            #     # if leave.work_entry_type_id.code:
+            #     #     code = leave.work_entry_type_id.code
+            #     #     name = leave.name
+            #     if holiday.holiday_status_id.work_entry_type_id and holiday.holiday_status_id.work_entry_type_id.code:
+            #         code = holiday.holiday_status_id.work_entry_type_id.code
+            #         name = holiday.holiday_status_id.name
+            #     elif holiday.holiday_status_id and holiday.holiday_status_id.code:
+            #         name = holiday.holiday_status_id.name
+            #     current_leave_struct = leaves.setdefault(holiday.holiday_status_id, {
+            #         'name': name,
+            #         'sequence': 5,
+            #         'code': code,
+            #         'number_of_days': 0.0,
+            #         'number_of_hours': 0.0,
+            #         'contract_id': contract.id,
+            #     })
+            #     current_leave_struct['number_of_hours'] += hours
+            #     work_hours = calendar.sudo().get_work_hours_count(
+            #         tz.localize(datetime.combine(day, time.min)),
+            #         tz.localize(datetime.combine(day, time.max)),
+            #         compute_leaves=False,
+            #     )
+            #     if work_hours:
+            #         current_leave_struct['number_of_days'] += hours / work_hours
             for day, hours, leave in day_leave_intervals:
                 holiday = leave.holiday_id
-                code = 'GLOBAL'
+                holiday_status = holiday.holiday_status_id if holiday else False
+
+                wet = False
                 name = 'Ngày nghỉ chung'
-                wet = leave.work_entry_type_id[:1]
+                code = 'GLOBAL'
+
+                # 1️⃣ ưu tiên holiday status
+                if holiday_status and holiday_status.work_entry_type_id:
+                    wet = holiday_status.work_entry_type_id[:1]
+                    name = holiday_status.name
+
+                # 2️⃣ fallback leave
+                elif leave.work_entry_type_id:
+                    wet = leave.work_entry_type_id.filtered(lambda w: w.code)[:1]
+                    name = leave.name
+
                 if wet:
                     code = wet.code
-                    name = wet.name
-                # if leave.work_entry_type_id.code:
-                #     code = leave.work_entry_type_id.code
-                #     name = leave.name
-                if holiday.holiday_status_id.work_entry_type_id and holiday.holiday_status_id.work_entry_type_id.code:
-                    code = holiday.holiday_status_id.work_entry_type_id.code
-                    name = holiday.holiday_status_id.name
-                elif holiday.holiday_status_id and holiday.holiday_status_id.code:
-                    name = holiday.holiday_status_id.name
-                current_leave_struct = leaves.setdefault(holiday.holiday_status_id, {
+
+                key = wet.id if wet else 'GLOBAL'
+
+                current_leave_struct = leaves.setdefault(key, {
                     'name': name,
                     'sequence': 5,
                     'code': code,
@@ -416,7 +455,9 @@ class HrPayslip(models.Model):
                     'number_of_hours': 0.0,
                     'contract_id': contract.id,
                 })
+
                 current_leave_struct['number_of_hours'] += hours
+
                 work_hours = calendar.sudo().get_work_hours_count(
                     tz.localize(datetime.combine(day, time.min)),
                     tz.localize(datetime.combine(day, time.max)),
