@@ -14,7 +14,6 @@
 		'views/quan_ly_cong_viec.xml',
 		'views/cong_van.xml',
 		'views/cau_hinh.xml',
-        'views/chi_phi_phat_sinh.xml',
 		'views/menu.xml',
 	],
 	'assets': {

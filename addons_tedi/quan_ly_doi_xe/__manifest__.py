@@ -21,6 +21,7 @@
         'views/vehicle_fix.xml',
         'views/vehicle_odometer.xml',
         'views/bao_cao_wizard.xml',
+        'views/chi_phi_phat_sinh.xml',
         'views/menu.xml',
     ],
 

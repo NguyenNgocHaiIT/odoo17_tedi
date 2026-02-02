@@ -95,7 +95,7 @@
                                 <div style="display: flex;" >
                                     <field name="start" class="oe_inline" style="flex:1;" readonly="not is_current_user_creator or (state not in ('draft','pending'))" required="1"/>
                                     <span class="o_form_label" style="padding: 0 4px;">→</span>
-                                    <field name="stop" class="oe_inline" style="flex:1;" readonly="not is_current_user_creator or (state not in ('draft','pending'))" required="1"/>
+                                    <field name="stop" class="oe_inline" style="flex:1;" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
                                 </div>
 
                                 <field name="name" string="Nội dung" readonly="not is_current_user_creator or (state not in ('draft','pending'))" required="1"/>

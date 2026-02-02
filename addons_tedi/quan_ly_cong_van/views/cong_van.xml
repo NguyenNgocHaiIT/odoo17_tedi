@@ -122,14 +122,14 @@
                                 <field name="dv_dong_xu_ly" widget="many2many_tags" readonly="1"/>
                             </group>
                             <group colspan="7">
-                                <field name="attachment_ids" widget="many2many_binary"/>
+                                <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                <field name="attachment_id" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
                                 <field name="attachment_datas"
                                        widget="pdf_viewer"
                                        filename="attachment_filename"
-                                       readonly="not (is_van_thu or not_is_van_thu)"
+                                       readonly="1"
                                        style="width: 100%; height: 100%;"/>
                                 <field name="attachment_filename" invisible="1"/>
-                                <field name="attachment_id" invisible="1"/>
                             </group>
                         </group>
                         <label for="trich_yeu" string="Trích yếu"/>
@@ -374,14 +374,14 @@
                                 <!--                                <field name="so_di_tong_hop_so_den_theo_so"/>-->
                             </group>
                             <group colspan="7">
-                                <field name="attachment_ids" widget="many2many_binary"/>
+                                <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                <field name="attachment_id" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
                                 <field name="attachment_datas"
                                        widget="pdf_viewer"
                                        filename="attachment_filename"
-                                       readonly="not (is_van_thu or not_is_van_thu)"
+                                       readonly="1"
                                        style="width: 100%; height: 100%;"/>
                                 <field name="attachment_filename" invisible="1"/>
-                                <field name="attachment_id" invisible="1"/>
 
                             </group>
                         </group>
@@ -613,14 +613,14 @@
                                 <!--                                <field name="so_di_tong_hop_so_den_theo_so"/>-->
                             </group>
                             <group colspan="7">
-                                <field name="attachment_ids" widget="many2many_binary"/>
+                                <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                <field name="attachment_id" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
                                 <field name="attachment_datas"
                                        widget="pdf_viewer"
                                        filename="attachment_filename"
-                                       readonly="not (is_van_thu or not_is_van_thu)"
+                                       readonly="1"
                                        style="width: 100%; height: 100%;"/>
                                 <field name="attachment_filename" invisible="1"/>
-                                <field name="attachment_id" invisible="1"/>
                             </group>
                         </group>
 

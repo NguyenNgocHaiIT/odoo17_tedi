@@ -618,14 +618,66 @@ class OfficeDocument(models.Model):
         'office_document_attachment_rel',
         'document_id',
         'attachment_id',
+        compute='_compute_attachment_ids',
+        inverse='_inverse_attachment_ids',
         string='Tài liệu đính kèm'
     )
+
+    def _inverse_attachment_ids(self):
+        Attachment = self.env['ir.attachment'].sudo()
+
+        for doc in self:
+            attachments = Attachment.search([
+                ('res_model', '=', doc._name),
+                ('res_id', '=', doc.id),
+            ])
+
+            # Attachment mới được thêm
+            new_attachments = doc.attachment_ids - attachments
+            # Attachment bị xóa
+            removed_attachments = attachments - doc.attachment_ids
+
+            # Gắn attachment mới
+            new_attachments.write({
+                'res_model': doc._name,
+                'res_id': doc.id,
+            })
+
+            # Gỡ attachment bị xóa
+            removed_attachments.write({
+                'res_model': False,
+                'res_id': False,
+            })
+
+        if doc.attachment_id in removed_attachments:
+            doc.attachment_id = False
+
+    def _compute_attachment_ids(self):
+        Attachment = self.env['ir.attachment'].sudo()
+        for doc in self:
+            doc.attachment_ids = Attachment.search([
+                ('res_model', '=', 'office.document'),
+                ('res_id', '=', doc.id),
+            ])
+
+    """attachment_id = fields.Many2one(
+        'ir.attachment',
+        string='Tài liệu',
+    )"""
 
     attachment_id = fields.Many2one(
         'ir.attachment',
         string='Tài liệu',
-        ondelete='cascade'
+        domain="[('id', 'in', attachment_ids)]",
     )
+
+    @api.onchange('attachment_ids')
+    def _onchange_attachment_ids(self):
+        for doc in self:
+            # Nếu chưa chọn file nào → tự chọn file mới nhất
+            if doc.attachment_ids:
+                if not doc.attachment_id or doc.attachment_id not in doc.attachment_ids:
+                    doc.attachment_id = doc.attachment_ids[-1]
 
     attachment_datas = fields.Binary(
         string='Tài liệu',
@@ -1096,10 +1148,8 @@ class OfficeDocument(models.Model):
         self.tt_vb = 'da_duyet'
 
         if self.document_type in ['outgoing', 'outgoing_internal', 'resolution']:
-            # Công văn đi, quyết định: gửi thông báo cho văn thư
-            self._send_approval_notification_to_van_thu()
-            self._send_approval_notification_to_creator()
-            self._send_approval_notification_to_truong_don_vi()
+            # Công văn đi, quyết định: gửi thông báo cho văn thư, trưởng đơn vị và người tạo,
+            self._send_approval_notification_to_all()
         elif self.document_type in ['incoming', 'incoming_internal']:
             # Công văn đến: gửi thông báo cho người tạo
             self._send_approval_notification_to_creator()
@@ -1112,6 +1162,65 @@ class OfficeDocument(models.Model):
         self._send_approval_notification_to_creator()
         return True
 
+    def _send_approval_notification_to_all(self):
+        """Gửi thông báo duy nhất cho tất cả đối tượng khi văn bản được duyệt"""
+        self.ensure_one()
+
+        try:
+            # 1. DANH SÁCH NGƯỜI NHẬN
+            recipients = []  # Danh sách email
+
+            # Người tạo
+            creator = self.create_uid
+            if creator and creator.email:
+                recipients.append(creator.email)
+
+            # Trưởng đơn vị
+            if creator and creator.employee_ids:
+                creator_employee = creator.employee_ids[0]
+                department = creator_employee.department_id
+                if department and department.manager_id and department.manager_id.user_id:
+                    manager = department.manager_id.user_id
+                    if manager.email and manager.email not in recipients:
+                        recipients.append(manager.email)
+
+            # Văn thư
+            group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
+            if group_van_thu:
+                for user in group_van_thu.users:
+                    if user.email and user.email not in recipients:
+                        recipients.append(user.email)
+
+            if not recipients:
+                return
+
+            # 2. NỘI DUNG EMAIL ĐƠN GIẢN
+            subject = f"Văn bản đã được duyệt: {self.trich_yeu[:50] if self.trich_yeu else 'Văn bản'}"
+
+            body = f"""
+                    Văn bản đã được duyệt:
+                
+                    Số văn bản: {self.so_vb or self.so_den_tong_hop or 'Chưa có số'}
+                    Trích yếu: {self.trich_yeu or 'Không có'}
+                    Người tạo: {creator.name if creator else 'Không xác định'}
+                    Người duyệt: {self.env.user.name}
+                    Thời gian: {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}
+                
+                    Văn bản đã sẵn sàng để xử lý tiếp.
+                    """
+
+            # 3. GỬI EMAIL DUY NHẤT
+            email_to = ', '.join(recipients)
+            self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'email_to': email_to,
+                'body_html': body.replace('\n', '<br>'),
+            }).send()
+
+            _logger.info(f"Đã gửi thông báo duyệt đến {len(recipients)} người")
+
+        except Exception as e:
+            _logger.error(f"Lỗi khi gửi thông báo: {str(e)}")
 
     def _send_approval_notification_to_truong_don_vi(self):
         """Gửi thông báo cho Trưởng đơn vị khi công văn đi được duyệt"""
@@ -1958,7 +2067,7 @@ class OfficeDocument(models.Model):
             # Văn thư: draft hoặc chờ duyệt thì sửa được
             rec.is_van_thu = (
                     is_van_thu_user and
-                    rec.tt_vb in ('draft', 'cho_duyet', 'da_duyet')
+                    rec.tt_vb in ('draft', 'cho_truong_don_vi_duyet', 'truong_don_vi_duyet', 'cho_duyet', 'da_duyet')
             )
 
             # Không phải văn thư: chỉ draft mới sửa được

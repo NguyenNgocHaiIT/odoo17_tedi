@@ -23,14 +23,14 @@
                             string="Duyệt"
                             type="object"
                             class="btn-success"
-                            groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                            groups="base.group_system, fleet.fleet_group_manager"
                             invisible="state != 'submitted'"/>
 
                     <button name="action_refuse_expense"
                             string="Từ chối"
                             type="object"
                             class="btn-danger"
-                            groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                            groups="base.group_system, fleet.fleet_group_manager"
                             invisible="state != 'submitted'"/>
 
                     <field name="state"

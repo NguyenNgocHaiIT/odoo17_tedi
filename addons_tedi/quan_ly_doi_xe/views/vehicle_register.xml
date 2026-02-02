@@ -75,7 +75,7 @@
                         <button name="action_office_assign" string="Phân phối xe" type="object" class="oe_highlight" groups="fleet.fleet_group_manager" invisible="state != 'approved'"/>
 
                         <button name="action_office_no_car" string="Báo hết xe" type="object" class="btn-warning" groups="fleet.fleet_group_manager" invisible="state != 'approved'"/>
-
+                        <button name="action_open_airline_expenses" string="Chi phí phát sinh" type="object" invisible="state != 'no_car'"/>
                         <button name="action_send_feedback" string="Hoàn thành công tác" type="object" class="oe_highlight" invisible="state != 'assigned'"/>
                         <button name="action_confirm_return" string="Xác nhận" type="object" class="oe_highlight" groups="fleet.fleet_group_manager" invisible="state != 'waiting_return'"/>
                         <button name="action_draft" string="Về nháp" type="object" invisible="state != 'submitted'" groups="fleet.fleet_group_manager"/>
