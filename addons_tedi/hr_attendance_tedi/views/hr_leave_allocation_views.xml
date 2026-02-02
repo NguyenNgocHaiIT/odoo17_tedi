@@ -9,46 +9,18 @@
 
                 <xpath expr="//button[@name='action_validate']" position="attributes">
                     <attribute name="string">Cấp phát</attribute>
+                    <attribute name="invisible">state != 'confirm'</attribute>
                 </xpath>
 
                 <xpath expr="//button[@name='action_refuse']" position="attributes">
-                    <attribute name="string">Hủy</attribute>
-                </xpath>
-
-                <xpath expr="//button[@name='action_refuse']" position="after">
-                    <button string="Về nháp" name="action_draft" type="object"
-                        class="oe_highlight"
-                        invisible="state != 'refuse'"/>
+                    <attribute name="string">Hủy &amp; Làm lại</attribute>
+                    <attribute name="invisible">state != 'validate'</attribute>
                 </xpath>
 
                 <xpath expr="//field[@name='holiday_status_id']" position="attributes">
                     <attribute name="readonly">state == 'validate'</attribute>
                 </xpath>
-                <xpath expr="//field[@name='holiday_type']" position="attributes">
-                    <attribute name="readonly">state == 'validate'</attribute>
-                </xpath>
                 <xpath expr="//field[@name='employee_id']" position="attributes">
-                    <attribute name="readonly">state == 'validate'</attribute>
-                </xpath>
-                <xpath expr="//field[@name='employee_ids']" position="attributes">
-                    <attribute name="readonly">state == 'validate'</attribute>
-                </xpath>
-                <xpath expr="//field[@name='department_id']" position="attributes">
-                    <attribute name="readonly">state == 'validate'</attribute>
-                </xpath>
-                <xpath expr="//field[@name='mode_company_id']" position="attributes">
-                    <attribute name="readonly">state == 'validate'</attribute>
-                </xpath>
-                <xpath expr="//field[@name='category_id']" position="attributes">
-                    <attribute name="readonly">state == 'validate'</attribute>
-                </xpath>
-                <xpath expr="//field[@name='number_of_days_display']" position="attributes">
-                    <attribute name="readonly">state == 'validate'</attribute>
-                </xpath>
-                <xpath expr="//field[@name='number_of_hours_display']" position="attributes">
-                    <attribute name="readonly">state == 'validate'</attribute>
-                </xpath>
-                <xpath expr="//field[@name='notes']" position="attributes">
                     <attribute name="readonly">state == 'validate'</attribute>
                 </xpath>
 
