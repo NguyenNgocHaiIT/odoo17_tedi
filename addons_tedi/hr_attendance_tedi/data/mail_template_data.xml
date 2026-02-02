@@ -67,5 +67,36 @@
                 </div>
             </field>
         </record>
+
+
+        <record id="email_template_allocation_validate" model="mail.template">
+            <field name="name">Thông báo: Được cấp phát phép</field>
+            <field name="model_id" ref="hr_holidays.model_hr_leave_allocation"/>
+            <field name="subject">Thông báo cấp phát phép: {{ object.holiday_status_id.name }}</field>
+            <field name="email_to">{{ object.employee_id.work_email }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Chào <t t-out="object.employee_id.name"/>,</p>
+                    <p>Bạn vừa được cấp phát <strong><t t-out="object.number_of_days"/> ngày</strong> thuộc loại <strong><t t-out="object.holiday_status_id.name"/></strong>.</p>
+                    <p>Trạng thái: Đã phê duyệt.</p>
+                    <p>Trân trọng!</p>
+                </div>
+            </field>
+        </record>
+
+        <record id="email_template_allocation_refuse" model="mail.template">
+            <field name="name">Thông báo: Hủy cấp phát phép</field>
+            <field name="model_id" ref="hr_holidays.model_hr_leave_allocation"/>
+            <field name="subject">Thông báo hủy/điều chỉnh phân bổ phép: {{ object.holiday_status_id.name }}</field>
+            <field name="email_to">{{ object.employee_id.work_email }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Chào <t t-out="object.employee_id.name"/>,</p>
+                    <p>Đơn phân bổ phép loại <strong><t t-out="object.holiday_status_id.name"/></strong> của bạn đã bị hủy hoặc chuyển về trạng thái chờ xử lý để điều chỉnh.</p>
+                    <p>Vui lòng liên hệ phòng nhân sự để biết thêm chi tiết.</p>
+                    <p>Trân trọng!</p>
+                </div>
+            </field>
+        </record>
     </data>
 </odoo>
