@@ -142,7 +142,7 @@ class HrTediVehicleRegistration(models.Model):
             rec.can_edit_requester = is_manager
 
     start_date = fields.Datetime(string="Thời gian bắt đầu", required=True, tracking=True)
-    end_date = fields.Datetime(string="Thời gian kết thúc", tracking=True)
+    end_date = fields.Datetime(string="Thời gian kết thúc", required=True, tracking=True)
     trip_type = fields.Selection([('noi_thanh', 'Nội thành'), ('ngoai_thanh', 'Ngoại thành')], string="Loại công tác",
                                  required=True)
     destination = fields.Char(string="Địa điểm cụ thể", required=True, tracking=True)
