@@ -125,7 +125,7 @@
                                 <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
                                 <field name="attachment_id"
                                        string="Tài liệu xem trước"
-                                       readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                       options="{'no_create': True, 'no_open': True}"/>
                                 <field name="attachment_datas"
                                        string=""
                                        filename="attachment_filename"
@@ -382,7 +382,7 @@
                                 <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
                                 <field name="attachment_id"
                                        string="Tài liệu xem trước"
-                                       readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                       options="{'no_create': True, 'no_open': True}"/>
                                 <field name="attachment_datas"
                                        string=""
                                        filename="attachment_filename"
@@ -626,7 +626,7 @@
                                 <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
                                 <field name="attachment_id"
                                        string="Tài liệu xem trước"
-                                       readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                       options="{'no_create': True, 'no_open': True}"/>
                                 <field name="attachment_datas"
                                        string=""
                                        filename="attachment_filename"
