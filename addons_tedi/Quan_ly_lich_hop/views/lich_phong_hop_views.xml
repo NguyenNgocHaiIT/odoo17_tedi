@@ -48,6 +48,7 @@
                         <button name="action_request_room_approval"
                                 string="Gửi duyệt"
                                 type="object"
+                                class="btn-primary"
                                 invisible="not is_current_user_creator or room_sign != 'no_sign'"/>
                         <button name="action_approve_room"
                                 string="Duyệt Phòng"

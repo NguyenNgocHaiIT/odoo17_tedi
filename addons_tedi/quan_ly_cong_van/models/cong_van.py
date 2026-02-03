@@ -1076,6 +1076,7 @@ class OfficeDocument(models.Model):
             raise UserError("Vui lòng chọn lãnh đạo xử lý trước khi trình.")
 
         self.tt_vb = 'cho_but_phe'
+        self._auto_phan_phat_to_leaders_or_manager()
 
         doc_url = self.get_form_url()
         employees_to_notify = [self.lanh_dao_theo_doi]
@@ -1110,7 +1111,6 @@ class OfficeDocument(models.Model):
                         <ul>
                             <li>Trích yếu: {self.trich_yeu}</li>
                             <li>Người trình: {self.env.user.name}</li>
-                            <li>Thời hạn xử lý: {self.thoi_han_xu_ly or 'Không có'}</li>
                         </ul>
 
                         <div style="margin: 20px 0; text-align: center;">
@@ -1199,6 +1199,7 @@ class OfficeDocument(models.Model):
 
         self.tt_vb = 'cho_but_phe'
         doc_url = self.get_form_url()
+        self._auto_phan_phat_to_leaders_or_manager()
 
         # Thu thập email của tất cả lãnh đạo
         email_list = []
@@ -1909,6 +1910,7 @@ class OfficeDocument(models.Model):
 
         self.tt_vb = 'cho_duyet'
         doc_url = self.get_form_url()
+        self._auto_phan_phat_to_leaders_or_manager()
 
         # Gửi email cho lãnh đạo theo dõi
         email = self.lanh_dao_theo_doi.user_id.email or self.lanh_dao_theo_doi.work_email
@@ -2538,6 +2540,7 @@ class OfficeDocument(models.Model):
 
         # Gửi thông báo cho trưởng đơn vị
         self._send_notification_to_truong_don_vi()
+        self._auto_phan_phat_to_leaders_or_manager()
 
         return True
 
@@ -2622,6 +2625,78 @@ class OfficeDocument(models.Model):
             rec.show_phan_phat_button = any(
                 detail.allow_phan_phat for detail in user_detail
             )
+
+    # Thêm phương thức tiện ích trong class OfficeDocument
+    def _auto_phan_phat_to_leaders_or_manager(self):
+        """Tự động phân phát văn bản cho lãnh đạo / trưởng đơn vị đang được trình"""
+        self.ensure_one()
+
+        employees_to_assign = self.env['hr.employee']
+        is_for_leaders = False
+        is_for_manager = False
+
+        if self.tt_vb == 'cho_but_phe':
+            # Trường hợp trình lãnh đạo
+            if self.document_type in ['outgoing', 'outgoing_internal', 'resolution']:
+                if self.lanh_dao_theo_doi:
+                    employees_to_assign |= self.lanh_dao_theo_doi
+                    is_for_leaders = True
+            elif self.document_type in ['incoming', 'incoming_internal']:
+                if self.lanh_dao_xu_ly:
+                    employees_to_assign |= self.lanh_dao_xu_ly
+                    is_for_leaders = True
+
+        elif self.tt_vb == 'cho_truong_don_vi_duyet':
+            # Trường hợp trình trưởng đơn vị
+            if self.truong_don_vi_duyet:
+                employees_to_assign |= self.truong_don_vi_duyet
+                is_for_manager = True
+
+        elif self.tt_vb == 'cho_duyet':
+            # Trường hợp trình lãnh đạo
+            if self.document_type in ['outgoing', 'outgoing_internal', 'resolution']:
+                if self.lanh_dao_theo_doi:
+                    employees_to_assign |= self.lanh_dao_theo_doi
+                    is_for_leaders = True
+
+        if not employees_to_assign:
+            return
+
+        # Chuẩn bị dữ liệu phân phát
+        nguoi_xu_ly_chinh_ids = employees_to_assign.ids
+        nguoi_dong_xu_ly_ids = []
+
+        # Cập nhật trường Many2many trên văn bản
+        update_data = {
+            'nguoi_xu_ly_chinh': [(6, 0, nguoi_xu_ly_chinh_ids)] if nguoi_xu_ly_chinh_ids else [(5,)],
+            'nguoi_dong_xu_ly': [(6, 0, nguoi_dong_xu_ly_ids)] if nguoi_dong_xu_ly_ids else [(5,)],
+            'tt_vb': 'cho_xu_ly',  # Đánh dấu đã phân phát
+        }
+
+        # Nếu trình trưởng đơn vị → cập nhật thêm trường đơn vị
+        if is_for_manager and self.truong_don_vi_duyet.department_id:
+            update_data.update({
+                'dv_xu_ly_chinh': self.truong_don_vi_duyet.department_id.id,
+            })
+
+        self.write(update_data)
+
+        # Tạo record detail2 cho từng người được phân phát
+        lines_to_create = []
+        now = fields.Datetime.now()
+        for emp in employees_to_assign:
+            if not self.detail2.filtered(lambda l: l.nguoi_nhap_y_kien == emp):
+                role = 'Lãnh đạo xử lý' if is_for_leaders else 'Trưởng đơn vị duyệt'
+                lines_to_create.append({
+                    'office_document_id': self.id,
+                    'nguoi_nhap_y_kien': emp.id,
+                    'nhom_phong_ban': emp.department_id.name or 'Không xác định',
+                    'noi_dung_chi_dao': role,
+                    'thoi_diem_chi_dao': now,
+                })
+
+        if lines_to_create:
+            self.env['office.document.detail2'].create(lines_to_create)
 
 
 '''class AssignTaskWizard(models.TransientModel):

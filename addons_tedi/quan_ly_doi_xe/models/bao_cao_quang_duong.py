@@ -204,6 +204,27 @@ class FleetVehicleOdometer(models.Model):
             vals['date'] = vals['end_date_period']
         return super(FleetVehicleOdometer, self).create(vals)
 
+    # Thêm vào class FleetVehicleOdometer (sau hàm action_calculate_data)
+    def action_open_vehicle_report(self):
+        """Mở wizard xuất báo cáo thanh toán"""
+        self.ensure_one()
+
+        # Trả về action mở wizard
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Xuất báo cáo thanh toán',
+            'res_model': 'thanh.toan.xe.report.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_vehicle_id': self.vehicle_id.id,
+                'default_report_type': self.report_type,
+                'default_month': self.month if self.report_type == 'monthly' else None,
+                'default_year': self.year if self.report_type == 'monthly' else None,
+                'default_start_date': self.start_date_period if self.report_type == 'period' else None,
+                'default_end_date': self.end_date_period if self.report_type == 'period' else None,
+            }
+        }
 
 class ThanhToanXeReportWizard(models.TransientModel):
     _name = 'thanh.toan.xe.report.wizard'
