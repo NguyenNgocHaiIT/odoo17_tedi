@@ -605,9 +605,9 @@ class Calendar(models.Model):
 
         # 1. Check quyền: Là quản lý HOẶC là người tạo ra phiếu này
         is_manager = self.env.user.has_group('Quan_ly_lich_hop.group_meeting_room_manager')
+        is_creator = self.env.user == self.create_uid  # Kiểm tra người tạo
 
-
-        if not (is_manager):
+        if not (is_manager or is_creator):
             raise UserError("Bạn không có quyền xác nhận hoàn thành (Chỉ Người đăng ký hoặc Quản lý).")
 
         # 2. Xử lý logic
