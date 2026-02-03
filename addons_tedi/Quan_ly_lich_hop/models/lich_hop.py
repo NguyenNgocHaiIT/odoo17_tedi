@@ -605,9 +605,9 @@ class Calendar(models.Model):
 
         # 1. Check quyền: Là quản lý HOẶC là người tạo ra phiếu này
         is_manager = self.env.user.has_group('Quan_ly_lich_hop.group_meeting_room_manager')
+        is_creator = self.env.user == self.create_uid  # Kiểm tra người tạo
 
-
-        if not (is_manager):
+        if not (is_manager or is_creator):
             raise UserError("Bạn không có quyền xác nhận hoàn thành (Chỉ Người đăng ký hoặc Quản lý).")
 
         # 2. Xử lý logic
@@ -642,6 +642,34 @@ class Calendar(models.Model):
 
     def action_cancel(self):
         """Hủy phiếu"""
+        # Gửi email đơn giản cho người tạo
+        for rec in self:
+            if rec.create_uid and rec.create_uid.email:
+                try:
+                    subject = f"[Đã hủy] Lịch họp: {rec.name}"
+                    body = f"""
+                    Lịch họp của bạn đã bị hủy:
+
+                    Tiêu đề: {rec.name}
+                    Thời gian: {rec.start.strftime('%d/%m/%Y %H:%M') if rec.start else ''}
+                    Người hủy: {self.env.user.name}
+
+                    Thông báo này được gửi tự động từ hệ thống.
+                    """
+
+                    self.env['mail.mail'].sudo().create({
+                        'subject': subject,
+                        'body_html': body,
+                        'email_to': rec.create_uid.email,
+                        'email_from': self.env.user.email or self.env.company.email,
+                    }).send()
+
+                    _logger.info(f"Đã gửi email hủy lịch họp đến {rec.create_uid.email}")
+
+                except Exception as e:
+                    _logger.error(f"Lỗi gửi email: {str(e)}")
+
+        # Cập nhật trạng thái
         self.write({'state': 'canceled'})
 
     def approve(self):
