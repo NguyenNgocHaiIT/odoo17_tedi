@@ -24,6 +24,12 @@
         'views/chi_phi_phat_sinh.xml',
         'views/menu.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'quan_ly_doi_xe/static/src/js/odometer_tree_header_button.js',
+
+        ],
+    },
 
 
     'installable': True,

@@ -591,24 +591,38 @@ class HrTediVehicleRegistration(models.Model):
         self.ensure_one()
 
         try:
-            # Kiểm tra xem có tài xế không
+            # KIỂM TRA XE ĐƯỢC PHÂN CÔNG
+            if not self.assigned_vehicle_id:
+                _logger.warning(f"Phiếu {self.code}: Không có xe được phân công, không gửi email cho tài xế")
+                return
+
+            # LẤY TÀI XẾ TỪ XE (ƯU TIÊN NHÂN VIÊN)
             driver_email = None
             driver_name = None
 
-            # Ưu tiên tài xế là nhân viên (tedi_driver_employee_id)
-            if self.tedi_driver_employee_id:
-                driver_email = self.tedi_driver_employee_id.work_email
-                driver_name = self.tedi_driver_employee_id.name
-            # Fallback: tài xế partner
+            # Ưu tiên 1: Tài xế là nhân viên từ xe
+            if self.assigned_vehicle_id.tedi_driver_employee_id:
+                driver_email = self.assigned_vehicle_id.tedi_driver_employee_id.work_email
+                driver_name = self.assigned_vehicle_id.tedi_driver_employee_id.name
+                _logger.info(f"Lấy tài xế nhân viên từ xe: {driver_name} ({driver_email})")
+
+            # Ưu tiên 2: Tài xế là partner từ xe
+            elif self.assigned_vehicle_id.driver_id and self.assigned_vehicle_id.driver_id.email:
+                driver_email = self.assigned_vehicle_id.driver_id.email
+                driver_name = self.assigned_vehicle_id.driver_id.name
+                _logger.info(f"Lấy tài xế partner từ xe: {driver_name} ({driver_email})")
+
+            # Ưu tiên 3: Tài xế từ phiếu đăng ký (nếu có)
             elif self.driver_id and self.driver_id.email:
                 driver_email = self.driver_id.email
                 driver_name = self.driver_id.name
+                _logger.info(f"Lấy tài xế từ phiếu đăng ký: {driver_name} ({driver_email})")
 
             if not driver_email:
-                _logger.warning(f"Không có email cho tài xế của phiếu: {self.code}")
+                _logger.warning(f"Không có email cho tài xế của xe {self.assigned_vehicle_id.license_plate}")
                 return
 
-            # Chuẩn bị nội dung email
+            # Phần còn lại của hàm giữ nguyên...
             web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
             detail_url = f"{web_url}/web#id={self.id}&model=hr_tedi.vehicle.registration"
 
@@ -675,7 +689,7 @@ class HrTediVehicleRegistration(models.Model):
                 'body_html': body_html,
             }).send()
 
-            _logger.info(f"Đã gửi email phân công lái xe đến tài xế: {driver_email}")
+            _logger.info(f"Đã gửi email phân công lái xe đến tài xế: {driver_name} ({driver_email})")
 
             # Thêm thông báo vào chatter
             self.message_post(
