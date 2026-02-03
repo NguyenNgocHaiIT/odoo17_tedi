@@ -1585,108 +1585,102 @@ class CalendarAddParticipantsWizard(models.TransientModel):
     event_id = fields.Many2one('calendar.event', string="Cuộc họp", required=True)
     employee_ids = fields.Many2many('hr.employee', string="Người tham gia")
 
-    class CalendarAddParticipantsWizard(models.TransientModel):
-        _name = 'calendar.add.participants.wizard'
-        _description = 'Thêm người tham gia cuộc họp'
 
-        event_id = fields.Many2one('calendar.event', string="Cuộc họp", required=True)
-        employee_ids = fields.Many2many('hr.employee', string="Người tham gia")
-
-        def action_confirm(self):
-            self.ensure_one()
-            if not self.employee_ids:
-                return {'type': 'ir.actions.act_window_close'}
-
-            new_employees = self.employee_ids - self.event_id.employee_ids
-            if not new_employees:
-                return {'type': 'ir.actions.act_window_close'}
-
-            # Thêm vào event
-            for employee in new_employees:
-                self.event_id.employee_ids = [(4, employee.id)]
-
-            # ==========================
-            # GỬI EMAIL CHO TẤT CẢ NGƯỜI THAM GIA (KỂ CẢ NGƯỜI TẠO)
-            # ==========================
-            try:
-                # Lấy tất cả người tham dự (đã bao gồm người tạo nếu người tạo là nhân viên)
-                all_participants = self.event_id.employee_ids
-
-                # THÊM NGƯỜI TẠO CUỘC HỌP vào danh sách gửi email
-                # Người tạo có thể là người dùng hệ thống, không phải nhân viên
-                creator_email = self.event_id.create_uid.email if self.event_id.create_uid else None
-                creator_name = self.event_id.create_uid.name if self.event_id.create_uid else None
-
-                # Thu thập email từ tất cả người tham dự
-                email_list = []
-                email_to_names = {}  # Lưu tên để hiển thị trong email
-
-                # 1. Thêm email của tất cả người tham dự (employee)
-                for participant in all_participants:
-                    if participant.work_email and participant.work_email.strip():
-                        email = participant.work_email.strip()
-                        if email and email not in email_list:
-                            email_list.append(email)
-                            email_to_names[email] = participant.name
-
-                # 2. Thêm email của người tạo nếu chưa có trong danh sách
-                if creator_email and creator_email.strip():
-                    creator_email_clean = creator_email.strip()
-                    if creator_email_clean and creator_email_clean not in email_list:
-                        email_list.append(creator_email_clean)
-                        email_to_names[creator_email_clean] = creator_name
-
-                if email_list:
-                    # Tạo nội dung email
-                    time_str = f"{self.event_id.start.strftime('%H:%M %d/%m/%Y')} → {self.event_id.stop.strftime('%H:%M %d/%m/%Y')}" if self.event_id.start and self.event_id.stop else ""
-                    room_name = self.event_id.room.name if self.event_id.room else 'Chưa đăng ký'
-                    web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
-
-                    # Danh sách người tham dự để hiển thị trong email
-                    participant_names = list(email_to_names.values())
-                    participants_str = ", ".join(participant_names) if participant_names else ""
-
-                    email_to = ', '.join(email_list)
-
-                    body_html = f"""
-                    <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-                        <p>Kính gửi thành viên tham dự,</p>
-                        <p>Cuộc họp <strong>{self.event_id.name}</strong> đã được cập nhật danh sách tham dự.</p>
-
-                        <p><strong>Thông tin chi tiết:</strong></p>
-                        <ul style="list-style-type: none; padding-left: 0;">
-                            <li>📅 <strong>Thời gian:</strong> {time_str}</li>
-                            <li>📍 <strong>Phòng họp:</strong> {room_name}</li>
-                            <li>👨‍💼 <strong>Chủ trì:</strong> {self.event_id.chu_tri.name if self.event_id.chu_tri else 'Chưa xác định'}</li>
-                            <li>👥 <strong>Người tham dự:</strong> {participants_str}</li>
-                            <li>🔢 <strong>Tổng số người:</strong> {len(participant_names)}</li>
-                        </ul>
-
-                        <p>Vui lòng kiểm tra lịch và tham dự đúng giờ.</p>
-                        <p>Trân trọng.</p>
-
-                        <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-                        <p style="font-size: 12px; color: #666;">
-                            <em>Email này được gửi tự động từ hệ thống quản lý cuộc họp.</em>
-                        </p>
-                    </div>
-                    """
-
-                    # Gửi email
-                    self.env['mail.mail'].sudo().create({
-                        'subject': f'[Cập nhật] Thông tin cuộc họp: {self.event_id.name}',
-                        'body_html': body_html,
-                        'email_to': email_to,
-                        'email_from': self.env.user.email or self.env.company.email,
-                        # Có thể thêm reply_to nếu cần
-                        # 'reply_to': self.env.user.email,
-                    }).send()
-
-                    # Ghi log để debug
-                    _logger.info(f"Đã gửi email cho {len(email_list)} người tham dự: {', '.join(email_list)}")
-
-            except Exception as e:
-                _logger.error(f"Lỗi gửi email: {str(e)}")
-                # Không nên raise exception ở đây để không làm ảnh hưởng đến quá trình thêm người tham dự
-
+    def action_confirm(self):
+        self.ensure_one()
+        if not self.employee_ids:
             return {'type': 'ir.actions.act_window_close'}
+
+        new_employees = self.employee_ids - self.event_id.employee_ids
+        if not new_employees:
+            return {'type': 'ir.actions.act_window_close'}
+
+        # Thêm vào event
+        for employee in new_employees:
+            self.event_id.employee_ids = [(4, employee.id)]
+
+        # ==========================
+        # GỬI EMAIL CHO TẤT CẢ NGƯỜI THAM GIA (KỂ CẢ NGƯỜI TẠO)
+        # ==========================
+        try:
+            # Lấy tất cả người tham dự (đã bao gồm người tạo nếu người tạo là nhân viên)
+            all_participants = self.event_id.employee_ids
+
+            # THÊM NGƯỜI TẠO CUỘC HỌP vào danh sách gửi email
+            # Người tạo có thể là người dùng hệ thống, không phải nhân viên
+            creator_email = self.event_id.create_uid.email if self.event_id.create_uid else None
+            creator_name = self.event_id.create_uid.name if self.event_id.create_uid else None
+
+            # Thu thập email từ tất cả người tham dự
+            email_list = []
+            email_to_names = {}  # Lưu tên để hiển thị trong email
+
+            # 1. Thêm email của tất cả người tham dự (employee)
+            for participant in all_participants:
+                if participant.work_email and participant.work_email.strip():
+                    email = participant.work_email.strip()
+                    if email and email not in email_list:
+                        email_list.append(email)
+                        email_to_names[email] = participant.name
+
+            # 2. Thêm email của người tạo nếu chưa có trong danh sách
+            if creator_email and creator_email.strip():
+                creator_email_clean = creator_email.strip()
+                if creator_email_clean and creator_email_clean not in email_list:
+                    email_list.append(creator_email_clean)
+                    email_to_names[creator_email_clean] = creator_name
+
+            if email_list:
+                # Tạo nội dung email
+                time_str = f"{self.event_id.start.strftime('%H:%M %d/%m/%Y')} → {self.event_id.stop.strftime('%H:%M %d/%m/%Y')}" if self.event_id.start and self.event_id.stop else ""
+                room_name = self.event_id.room.name if self.event_id.room else 'Chưa đăng ký'
+                web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+
+                # Danh sách người tham dự để hiển thị trong email
+                participant_names = list(email_to_names.values())
+                participants_str = ", ".join(participant_names) if participant_names else ""
+
+                email_to = ', '.join(email_list)
+
+                body_html = f"""
+                <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                    <p>Kính gửi thành viên tham dự,</p>
+                    <p>Cuộc họp <strong>{self.event_id.name}</strong> đã được cập nhật danh sách tham dự.</p>
+
+                    <p><strong>Thông tin chi tiết:</strong></p>
+                    <ul style="list-style-type: none; padding-left: 0;">
+                        <li>📅 <strong>Thời gian:</strong> {time_str}</li>
+                        <li>📍 <strong>Phòng họp:</strong> {room_name}</li>
+                        <li>👨‍💼 <strong>Chủ trì:</strong> {self.event_id.chu_tri.name if self.event_id.chu_tri else 'Chưa xác định'}</li>
+                        <li>👥 <strong>Người tham dự:</strong> {participants_str}</li>
+                        <li>🔢 <strong>Tổng số người:</strong> {len(participant_names)}</li>
+                    </ul>
+
+                    <p>Vui lòng kiểm tra lịch và tham dự đúng giờ.</p>
+                    <p>Trân trọng.</p>
+
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                    <p style="font-size: 12px; color: #666;">
+                        <em>Email này được gửi tự động từ hệ thống quản lý cuộc họp.</em>
+                    </p>
+                </div>
+                """
+
+                # Gửi email
+                self.env['mail.mail'].sudo().create({
+                    'subject': f'[Cập nhật] Thông tin cuộc họp: {self.event_id.name}',
+                    'body_html': body_html,
+                    'email_to': email_to,
+                    'email_from': self.env.user.email or self.env.company.email,
+                    # Có thể thêm reply_to nếu cần
+                    # 'reply_to': self.env.user.email,
+                }).send()
+
+                # Ghi log để debug
+                _logger.info(f"Đã gửi email cho {len(email_list)} người tham dự: {', '.join(email_list)}")
+
+        except Exception as e:
+            _logger.error(f"Lỗi gửi email: {str(e)}")
+            # Không nên raise exception ở đây để không làm ảnh hưởng đến quá trình thêm người tham dự
+
+        return {'type': 'ir.actions.act_window_close'}

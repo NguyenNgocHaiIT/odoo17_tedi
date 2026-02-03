@@ -2670,7 +2670,6 @@ class OfficeDocument(models.Model):
         update_data = {
             'nguoi_xu_ly_chinh': [(6, 0, nguoi_xu_ly_chinh_ids)] if nguoi_xu_ly_chinh_ids else [(5,)],
             'nguoi_dong_xu_ly': [(6, 0, nguoi_dong_xu_ly_ids)] if nguoi_dong_xu_ly_ids else [(5,)],
-            'tt_vb': 'cho_xu_ly',  # Đánh dấu đã phân phát
         }
 
         # Nếu trình trưởng đơn vị → cập nhật thêm trường đơn vị

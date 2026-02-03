@@ -564,13 +564,24 @@ class HrTediVehicleRegistration(models.Model):
         if self.search(domain):
             raise ValidationError(f"Xe {self.assigned_vehicle_id.license_plate} bị trùng lịch!")
 
-        # Gán tài xế từ xe nếu chưa có
+        # THÊM/ĐIỀU CHỈNH: Đồng bộ tài xế từ phiếu lên xe TRƯỚC khi gửi email
+        # ----------------------------------------------------------------
+        if self.tedi_driver_employee_id:
+            # Cập nhật cả TEDI driver và partner driver lên xe
+            driver_vals = {
+                'tedi_driver_employee_id': self.tedi_driver_employee_id.id,
+                'driver_id': self.driver_id.id if self.driver_id else False
+            }
+            self.assigned_vehicle_id.write(driver_vals)
+        # ----------------------------------------------------------------
+
+        # Gán tài xế từ xe nếu chưa có (fallback logic)
         if not self.tedi_driver_employee_id and hasattr(self.assigned_vehicle_id,
                                                         'tedi_driver_employee_id') and self.assigned_vehicle_id.tedi_driver_employee_id:
             self.tedi_driver_employee_id = self.assigned_vehicle_id.tedi_driver_employee_id
             self._onchange_tedi_driver_employee_id()
 
-        # Cập nhật thông tin tài xế trên xe
+        # Cập nhật thông tin tài xế trên xe (đảm bảo lại)
         if self.assigned_vehicle_id:
             vals_update = {'driver_id': self.driver_id.id}
             if hasattr(self.assigned_vehicle_id, 'tedi_driver_employee_id'):
@@ -580,10 +591,10 @@ class HrTediVehicleRegistration(models.Model):
         # Cập nhật trạng thái
         self.state = 'assigned'
 
-        # Gửi email cho người tạo phiếu (đã có sẵn trong _send_email_to_creator)
+        # Gửi email cho người tạo phiếu
         self._send_email_to_creator('assigned')
 
-        # Gửi email cho tài xế
+        # Gửi email cho tài xế - BÂY GIỜ XE ĐÃ CÓ TÀI XẾ ĐƯỢC CẬP NHẬT
         self._send_email_to_driver()
 
     def _send_email_to_driver(self):
@@ -596,33 +607,71 @@ class HrTediVehicleRegistration(models.Model):
                 _logger.warning(f"Phiếu {self.code}: Không có xe được phân công, không gửi email cho tài xế")
                 return
 
+            # LOG DEBUG: Kiểm tra thông tin tài xế
+            _logger.info(f"=== DEBUG: Tìm tài xế cho phiếu {self.code} ===")
+            _logger.info(f"1. Tài xế từ phiếu:")
+            _logger.info(
+                f"   - TEDI Driver Employee: {self.tedi_driver_employee_id.name if self.tedi_driver_employee_id else 'None'}")
+            _logger.info(f"   - Partner Driver: {self.driver_id.name if self.driver_id else 'None'}")
+            _logger.info(f"2. Tài xế từ xe {self.assigned_vehicle_id.license_plate}:")
+            _logger.info(
+                f"   - TEDI Driver từ xe: {self.assigned_vehicle_id.tedi_driver_employee_id.name if self.assigned_vehicle_id.tedi_driver_employee_id else 'None'}")
+            _logger.info(
+                f"   - Partner từ xe: {self.assigned_vehicle_id.driver_id.name if self.assigned_vehicle_id.driver_id else 'None'}")
+
             # LẤY TÀI XẾ TỪ XE (ƯU TIÊN NHÂN VIÊN)
             driver_email = None
             driver_name = None
 
-            # Ưu tiên 1: Tài xế là nhân viên từ xe
-            if self.assigned_vehicle_id.tedi_driver_employee_id:
-                driver_email = self.assigned_vehicle_id.tedi_driver_employee_id.work_email
-                driver_name = self.assigned_vehicle_id.tedi_driver_employee_id.name
-                _logger.info(f"Lấy tài xế nhân viên từ xe: {driver_name} ({driver_email})")
+            # **ƯU TIÊN 1: Lấy tài xế từ PHIẾU ĐĂNG KÝ**
+            if self.tedi_driver_employee_id and self.tedi_driver_employee_id.work_email:
+                driver_email = self.tedi_driver_employee_id.work_email
+                driver_name = self.tedi_driver_employee_id.name
+                _logger.info(f"Ưu tiên 1: Lấy tài xế từ phiếu đăng ký: {driver_name} ({driver_email})")
 
-            # Ưu tiên 2: Tài xế là partner từ xe
-            elif self.assigned_vehicle_id.driver_id and self.assigned_vehicle_id.driver_id.email:
-                driver_email = self.assigned_vehicle_id.driver_id.email
-                driver_name = self.assigned_vehicle_id.driver_id.name
-                _logger.info(f"Lấy tài xế partner từ xe: {driver_name} ({driver_email})")
-
-            # Ưu tiên 3: Tài xế từ phiếu đăng ký (nếu có)
             elif self.driver_id and self.driver_id.email:
                 driver_email = self.driver_id.email
                 driver_name = self.driver_id.name
-                _logger.info(f"Lấy tài xế từ phiếu đăng ký: {driver_name} ({driver_email})")
+                _logger.info(f"Ưu tiên 1b: Lấy partner từ phiếu: {driver_name} ({driver_email})")
+
+            # **ƯU TIÊN 2: Lấy từ xe (fallback)**
+            elif self.assigned_vehicle_id.tedi_driver_employee_id and self.assigned_vehicle_id.tedi_driver_employee_id.work_email:
+                driver_email = self.assigned_vehicle_id.tedi_driver_employee_id.work_email
+                driver_name = self.assigned_vehicle_id.tedi_driver_employee_id.name
+                _logger.info(f"Ưu tiên 2: Lấy tài xế nhân viên từ xe: {driver_name} ({driver_email})")
+
+            elif self.assigned_vehicle_id.driver_id and self.assigned_vehicle_id.driver_id.email:
+                driver_email = self.assigned_vehicle_id.driver_id.email
+                driver_name = self.assigned_vehicle_id.driver_id.name
+                _logger.info(f"Ưu tiên 2b: Lấy tài xế partner từ xe: {driver_name} ({driver_email})")
 
             if not driver_email:
-                _logger.warning(f"Không có email cho tài xế của xe {self.assigned_vehicle_id.license_plate}")
+                _logger.warning(f"Không tìm thấy email cho tài xế. Thông tin:")
+                _logger.warning(
+                    f"  - Phiếu TEDI driver: {self.tedi_driver_employee_id.name if self.tedi_driver_employee_id else 'None'}")
+                _logger.warning(f"  - Phiếu partner driver: {self.driver_id.name if self.driver_id else 'None'}")
+                _logger.warning(
+                    f"  - Xe TEDI driver: {self.assigned_vehicle_id.tedi_driver_employee_id.name if self.assigned_vehicle_id.tedi_driver_employee_id else 'None'}")
+                _logger.warning(
+                    f"  - Xe partner driver: {self.assigned_vehicle_id.driver_id.name if self.assigned_vehicle_id.driver_id else 'None'}")
                 return
 
-            # Phần còn lại của hàm giữ nguyên...
+            # **FIX: Kiểm tra các trường điện thoại đúng của hr.employee**
+            requester_phone = None
+            if self.requester_id:
+                # Kiểm tra các trường điện thoại có thể có trong hr.employee
+                if hasattr(self.requester_id, 'work_phone') and self.requester_id.work_phone:
+                    requester_phone = self.requester_id.work_phone
+                elif hasattr(self.requester_id, 'mobile_phone') and self.requester_id.mobile_phone:
+                    requester_phone = self.requester_id.mobile_phone
+                elif hasattr(self.requester_id, 'personal_mobile') and self.requester_id.personal_mobile:
+                    requester_phone = self.requester_id.personal_mobile
+                elif hasattr(self.requester_id, 'phone') and self.requester_id.phone:
+                    requester_phone = self.requester_id.phone
+
+            phone_display = requester_phone or 'Đang cập nhật'
+
+            # Phần còn lại giữ nguyên...
             web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
             detail_url = f"{web_url}/web#id={self.id}&model=hr_tedi.vehicle.registration"
 
@@ -654,7 +703,7 @@ class HrTediVehicleRegistration(models.Model):
                     <ul>
                         <li>Vui lòng có mặt đúng giờ tại địa điểm đón khách</li>
                         <li>Kiểm tra xe trước khi xuất phát (nhiên liệu, lốp, an toàn)</li>
-                        <li>Liên hệ với người đề nghị qua số: {self.requester_id.work_phone or self.requester_id.mobile or 'Đang cập nhật'}</li>
+                        <li>Liên hệ với người đề nghị qua số: {phone_display}</li>
                         <li>Ghi nhật ký hành trình và số km thực tế</li>
                         <li>Tuân thủ luật giao thông và quy định an toàn</li>
                     </ul>
@@ -663,8 +712,8 @@ class HrTediVehicleRegistration(models.Model):
                 <p><b>Liên hệ người đề nghị:</b></p>
                 <ul>
                     <li>Họ tên: {requester_name}</li>
-                    <li>Điện thoại: {self.requester_id.work_phone or self.requester_id.mobile or 'Đang cập nhật'}</li>
-                    <li>Phòng ban: {self.requester_id.department_id.name if self.requester_id.department_id else 'Đang cập nhật'}</li>
+                    <li>Điện thoại: {phone_display}</li>
+                    <li>Phòng ban: {self.requester_id.department_id.name if self.requester_id and self.requester_id.department_id else 'Đang cập nhật'}</li>
                 </ul>
 
                 <p style="text-align: center; margin: 20px 0;">
@@ -682,14 +731,16 @@ class HrTediVehicleRegistration(models.Model):
             """
 
             # Gửi email
-            self.env['mail.mail'].sudo().create({
+            mail = self.env['mail.mail'].sudo().create({
                 'subject': subject,
                 'email_to': driver_email,
                 'email_from': self.env.user.email or 'no-reply@company.com',
                 'body_html': body_html,
-            }).send()
+            })
+            mail.send()
 
-            _logger.info(f"Đã gửi email phân công lái xe đến tài xế: {driver_name} ({driver_email})")
+            _logger.info(f"Đã tạo và gửi email phân công lái xe đến tài xế: {driver_name} ({driver_email})")
+            _logger.info(f"Mail ID: {mail.id}, State: {mail.state}")
 
             # Thêm thông báo vào chatter
             self.message_post(
@@ -698,8 +749,7 @@ class HrTediVehicleRegistration(models.Model):
             )
 
         except Exception as e:
-            _logger.error(f"Lỗi gửi email cho tài xế: {str(e)}")
-            # Không raise exception để không ảnh hưởng đến quy trình chính
+            _logger.error(f"Lỗi gửi email cho tài xế: {str(e)}", exc_info=True)
 
     def action_send_feedback(self):
         """Bước 1: Người dùng đánh giá xong -> Chuyển sang chờ trả xe"""
