@@ -2697,6 +2697,22 @@ class OfficeDocument(models.Model):
         if lines_to_create:
             self.env['office.document.detail2'].create(lines_to_create)
 
+    def tu_choi_cua_lanh_dao(self):
+        """Lãnh đạo từ chối và chuyển về chờ trưởng đơn vị duyệt"""
+        self.ensure_one()
+
+        return {
+            'name': 'Từ chối văn bản (Lãnh đạo)',
+            'type': 'ir.actions.act_window',
+            'view_mode': 'form',
+            'view_id': self.env.ref('quan_ly_cong_van.view_lanh_dao_reject_document_wizard_form').id,
+            'res_model': 'office.document.lanh.dao.reject.wizard',
+            'target': 'new',
+            'context': {
+                'default_office_document_id': self.id,
+                'default_current_user_id': self.env.user.id,
+            }
+        }
 
 '''class AssignTaskWizard(models.TransientModel):
     _name = 'assign.task.wizard'
@@ -3118,6 +3134,233 @@ class RejectDocumentWizard(models.TransientModel):
 
         except Exception as e:
             _logger.error(f"Lỗi gửi thông báo từ chối: {str(e)}")
+
+    def action_cancel(self):
+        """Hủy từ chối"""
+        return {'type': 'ir.actions.act_window_close'}
+
+
+class OfficeDocumentLanhDaoRejectWizard(models.TransientModel):
+    """Wizard lãnh đạo từ chối văn bản và chuyển về chờ trưởng đơn vị duyệt"""
+    _name = 'office.document.lanh.dao.reject.wizard'
+    _description = 'Lãnh đạo từ chối văn bản'
+
+    office_document_id = fields.Many2one(
+        'office.document',
+        string='Văn bản',
+        required=True,
+        readonly=True
+    )
+
+    current_user_id = fields.Many2one(
+        'res.users',
+        string='Người từ chối',
+        default=lambda self: self.env.user,
+        readonly=True
+    )
+
+    rejection_reason = fields.Text(
+        string='Lý do từ chối',
+        required=True,
+        placeholder='Vui lòng nhập lý do từ chối văn bản...'
+    )
+
+    @api.model
+    def default_get(self, fields_list):
+        """Lấy giá trị mặc định"""
+        res = super().default_get(fields_list)
+        if self._context.get('default_office_document_id'):
+            doc = self.env['office.document'].browse(
+                self._context['default_office_document_id']
+            )
+            if doc.exists():
+                res['office_document_id'] = doc.id
+        return res
+
+    def action_confirm_reject(self):
+        """Xác nhận từ chối và chuyển về chờ trưởng đơn vị duyệt"""
+        self.ensure_one()
+
+        doc = self.office_document_id
+
+        # 1. Tạo bản ghi lịch sử từ chối
+        self.env['office.document.rejection'].create({
+            'office_document_id': doc.id,
+            'rejection_reason': self.rejection_reason,
+            'rejected_by': self.current_user_id.id,
+            'rejection_date': fields.Datetime.now(),
+        })
+
+        # 2. Cập nhật trạng thái văn bản thành "Chờ trưởng đơn vị duyệt"
+        doc.tt_vb = 'cho_truong_don_vi_duyet'
+
+        # 4. Gửi thông báo cho trưởng đơn vị và người tạo
+        self._send_rejection_notifications()
+
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        tree_url = f"{base_url}/web#action=&model=office.document&view_type=list"
+
+
+        # 5. Đóng wizard
+        return {
+            'type': 'ir.actions.act_url',
+            'url': tree_url,
+            'target': 'self',
+        }
+
+    def _send_rejection_notifications(self):
+        """Gửi thông báo cho trưởng đơn vị và người tạo"""
+        doc = self.office_document_id
+        creator = doc.create_uid
+        truong_don_vi = doc.truong_don_vi_duyet
+
+        if not creator:
+            return
+
+        web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        detail_url = f"{web_url}/web#id={doc.id}&model=office.document&view_type=form"
+
+        # 1. Gửi cho người tạo
+        if creator and creator.email:
+            try:
+                subject_creator = f"[Văn bản bị lãnh đạo từ chối] {doc.trich_yeu[:50]}..."
+                body_html_creator = f"""
+                <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                    <p>Xin chào {creator.name},</p>
+
+                    <p><b>Văn bản "{doc.trich_yeu}"</b> đã bị lãnh đạo từ chối và được chuyển về trạng thái chờ trưởng đơn vị duyệt.</p>
+
+                    <div style="background:#fff3cd; padding:12px; margin:15px 0; border-left:4px solid #ffc107;">
+                        <p><b>Thông tin từ chối:</b></p>
+                        <ul style="margin:5px 0; padding-left:20px;">
+                            <li><b>Người từ chối:</b> {self.current_user_id.name}</li>
+                            <li><b>Vai trò:</b> Lãnh đạo xử lý</li>
+                            <li><b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</li>
+                            <li><b>Lý do:</b></li>
+                        </ul>
+                        <div style="background:#f8f9fa; padding:8px; margin:8px 0; border-radius:4px;">
+                            <p style="white-space: pre-wrap; margin:0;">{self.rejection_reason}</p>
+                        </div>
+                    </div>
+
+                    <p><b>Trạng thái hiện tại:</b> Chờ trưởng đơn vị duyệt</p>
+                    <p><b>Trưởng đơn vị:</b> {truong_don_vi.name if truong_don_vi else 'Chưa xác định'}</p>
+
+                    <div style="margin:20px 0;">
+                        <a href="{detail_url}" 
+                           style="background:#ffc107;color:#212529;padding:10px 20px;text-decoration:none;
+                                  border-radius:5px;font-weight:bold;display:inline-block;border:1px solid #ffc107;">
+                            XEM LẠI VĂN BẢN
+                        </a>
+                    </div>
+
+                    <p style="color:#6c757d; font-size:14px;">
+                        <em>Vui lòng liên hệ với trưởng đơn vị để biết thêm chi tiết.</em>
+                    </p>
+
+                    <hr style="border:none; border-top:1px solid #dee2e6; margin:20px 0;">
+
+                    <p>Trân trọng,<br/>
+                    <strong>Hệ thống quản lý công văn</strong></p>
+                </div>
+                """
+
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject_creator,
+                    'email_to': creator.email,
+                    'email_from': self.env.user.email or 'no-reply@company.com',
+                    'body_html': body_html_creator,
+                }).send()
+
+                # Gửi popup notification cho người tạo
+                if creator.partner_id:
+                    self.env['bus.bus']._sendone(
+                        creator.partner_id,
+                        'simple_notification',
+                        {
+                            'title': 'Văn bản bị lãnh đạo từ chối',
+                            'message': f'Văn bản "{doc.trich_yeu[:50]}..." đã bị lãnh đạo từ chối.',
+                            'sticky': False,
+                            'type': 'warning',
+                        }
+                    )
+
+            except Exception as e:
+                _logger.error(f"Lỗi gửi thông báo cho người tạo: {str(e)}")
+
+        # 2. Gửi cho trưởng đơn vị
+        if truong_don_vi and truong_don_vi.user_id and truong_don_vi.user_id.email:
+            try:
+                email_tdv = truong_don_vi.work_email or truong_don_vi.user_id.email
+
+                subject_tdv = f"[Văn bản cần duyệt lại] {doc.trich_yeu[:50]}..."
+                body_html_tdv = f"""
+                <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                    <p>Xin chào {truong_don_vi.name},</p>
+
+                    <p><b>Văn bản "{doc.trich_yeu}"</b> đã bị lãnh đạo từ chối và được chuyển về để bạn duyệt lại.</p>
+
+                    <div style="background:#d1ecf1; padding:12px; margin:15px 0; border-left:4px solid #0dcaf0;">
+                        <p><b>Thông tin văn bản:</b></p>
+                        <ul style="margin:5px 0; padding-left:20px;">
+                            <li><b>Số văn bản:</b> {doc.so_vb or doc.so_den_tong_hop or 'Chưa có'}</li>
+                            <li><b>Người tạo:</b> {creator.name if creator else 'Không xác định'}</li>
+                            <li><b>Lãnh đạo từ chối:</b> {self.current_user_id.name}</li>
+                            <li><b>Thời gian từ chối:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</li>
+                            <li><b>Lý do từ chối:</b></li>
+                        </ul>
+                        <div style="background:#f8f9fa; padding:8px; margin:8px 0; border-radius:4px;">
+                            <p style="white-space: pre-wrap; margin:0;">{self.rejection_reason}</p>
+                        </div>
+                    </div>
+
+                    <p><b>Trạng thái hiện tại:</b> Chờ trưởng đơn vị duyệt</p>
+                    <p><b>Yêu cầu:</b> Vui lòng xem xét lại văn bản và thực hiện duyệt hoặc từ chối.</p>
+
+                    <div style="margin:20px 0;">
+                        <a href="{detail_url}" 
+                           style="background:#0dcaf0;color:white;padding:10px 20px;text-decoration:none;
+                                  border-radius:5px;font-weight:bold;display:inline-block;">
+                            XEM VÀ XỬ LÝ VĂN BẢN
+                        </a>
+                    </div>
+
+                    <hr style="border:none; border-top:1px solid #dee2e6; margin:20px 0;">
+
+                    <p>Trân trọng,<br/>
+                    <strong>Hệ thống quản lý công văn</strong></p>
+                </div>
+                """
+
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject_tdv,
+                    'email_to': email_tdv,
+                    'email_from': self.env.user.email or 'no-reply@company.com',
+                    'body_html': body_html_tdv,
+                }).send()
+
+                # Gửi popup notification cho trưởng đơn vị
+                if truong_don_vi.user_id.partner_id:
+                    self.env['bus.bus']._sendone(
+                        truong_don_vi.user_id.partner_id,
+                        'simple_notification',
+                        {
+                            'title': 'Văn bản cần duyệt lại',
+                            'message': f'Văn bản "{doc.trich_yeu[:50]}..." cần bạn duyệt lại.',
+                            'sticky': True,
+                            'type': 'warning',
+                            'buttons': [{
+                                'label': 'Xem ngay',
+                                'action': {
+                                    'type': 'ir.actions.act_url',
+                                    'url': detail_url,
+                                }
+                            }]
+                        }
+                    )
+
+            except Exception as e:
+                _logger.error(f"Lỗi gửi thông báo cho trưởng đơn vị: {str(e)}")
 
     def action_cancel(self):
         """Hủy từ chối"""

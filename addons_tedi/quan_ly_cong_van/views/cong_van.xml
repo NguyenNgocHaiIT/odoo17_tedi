@@ -286,7 +286,7 @@
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
                         <button name="approve" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
-                        <button name="khong_dat" string="Từ chối" type="object"
+                        <button name="tu_choi_cua_lanh_dao" string="Từ chối" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
                         <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
                                 type="object"
@@ -533,7 +533,7 @@
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
                         <button name="approve" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
-                        <button name="khong_dat" string="Từ chối" type="object"
+                        <button name="tu_choi_cua_lanh_dao" string="Từ chối" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
                         <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
                                 type="object"
@@ -902,6 +902,31 @@
         <record id="view_reject_document_wizard_form" model="ir.ui.view">
             <field name="name">office.document.reject.wizard.form</field>
             <field name="model">office.document.reject.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Từ chối văn bản">
+                    <sheet>
+                        <field name="office_document_id" invisible="1"/>
+
+                        <field name="rejection_reason"
+                               placeholder="Nhập lý do từ chối văn bản..."
+                               required="1"/>
+                    </sheet>
+
+                    <footer>
+                        <button string="Xác nhận"
+                                type="object"
+                                name="action_confirm_reject"
+                                class="btn-danger"/>
+                        <button string="Hủy"
+                                special="cancel"
+                                class="btn-secondary"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        <record id="view_lanh_dao_reject_document_wizard_form" model="ir.ui.view">
+            <field name="name">office.document.lanh.dao.reject.wizard.form</field>
+            <field name="model">office.document.lanh.dao.reject.wizard</field>
             <field name="arch" type="xml">
                 <form string="Từ chối văn bản">
                     <sheet>
