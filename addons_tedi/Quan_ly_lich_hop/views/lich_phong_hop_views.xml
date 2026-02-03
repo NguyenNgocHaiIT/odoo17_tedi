@@ -90,12 +90,16 @@
 
                         <group>
                             <group>
-                                <field name="room" string="Phòng" readonly="state == 'completed'" required="1"/>
+                                <field name="room" string="Phòng" readonly="state == 'completed' or (not can_approve_room and (not is_current_user_creator and room_sign == 'no_sign'))"
+                                       required="1"/>
                                 <label for="start" string="Thời gian" />
                                 <div style="display: flex;" >
-                                    <field name="start" class="oe_inline" style="flex:1;" readonly="not is_current_user_creator or state == 'completed'" required="1"/>
+                                    <field name="start" class="oe_inline" style="flex:1;"
+                                           readonly="state == 'completed' or (not can_approve_room and (not is_current_user_creator and room_sign == 'no_sign'))"
+                                           required="1"/>
                                     <span class="o_form_label" style="padding: 0 4px;">→</span>
-                                    <field name="stop" class="oe_inline" style="flex:1;" readonly="not is_current_user_creator or state == 'completed'"/>
+                                    <field name="stop" class="oe_inline" style="flex:1;"
+                                           readonly="state == 'completed' or (not can_approve_room and (not is_current_user_creator and room_sign == 'no_sign'))"/>
                                 </div>
 
                                 <field name="name" string="Nội dung" readonly="not is_current_user_creator or state == 'completed'" required="1"/>
