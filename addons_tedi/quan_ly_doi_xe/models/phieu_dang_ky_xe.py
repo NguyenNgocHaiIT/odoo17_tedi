@@ -148,7 +148,65 @@ class HrTediVehicleRegistration(models.Model):
     destination = fields.Char(string="Địa điểm cụ thể", required=True, tracking=True)
     work_content = fields.Text(string="Nội dung công việc", required=True)
     num_passengers = fields.Integer(string="Số người đi kèm", default=1)
-    attachment_ids = fields.Many2many('ir.attachment', string="Tệp đính kèm")
+    attachment_ids = fields.Many2many(
+        'ir.attachment',
+        'vehicle_reg_attachment_rel',  # Tên relation
+        'registration_id',
+        'attachment_id',
+        compute='_compute_attachment_ids',
+        inverse='_inverse_attachment_ids',
+        string='Tệp đính kèm'
+    )
+
+    def _compute_attachment_ids(self):
+        """Luôn lấy attachments có res_model và res_id đúng"""
+        for record in self:
+            attachments = self.env['ir.attachment'].search([
+                ('res_model', '=', self._name),
+                ('res_id', '=', record.id),
+            ])
+            record.attachment_ids = attachments
+
+    def _inverse_attachment_ids(self):
+        """Khi thay đổi attachments, đảm bảo res_id đúng"""
+        Attachment = self.env['ir.attachment'].sudo()
+
+        for record in self:
+            # Lấy tất cả attachment hiện tại của vehicle registration
+            current_attachments = Attachment.search([
+                ('res_model', '=', record._name),
+                ('res_id', '=', record.id),
+            ])
+
+            # Attachment mới được thêm
+            new_attachments = record.attachment_ids - current_attachments
+            # Attachment bị xóa khỏi record này
+            removed_attachments = current_attachments - record.attachment_ids
+
+            # Gắn attachment mới
+            if new_attachments:
+                new_attachments.write({
+                    'res_model': record._name,
+                    'res_id': record.id,
+                    'public': True,  # Thêm public=True để đảm bảo quyền
+                })
+
+            # Xử lý attachment bị xóa
+            if removed_attachments:
+                for att in removed_attachments:
+                    # Kiểm tra xem attachment có còn được reference bởi record nào khác không
+                    other_refs = Attachment.search_count([
+                        ('id', '=', att.id),
+                        ('res_model', '!=', False),
+                        ('res_id', '!=', False),
+                    ])
+
+                    # Nếu không còn record nào reference, xóa attachment
+                    if other_refs == 0:
+                        att.write({
+                            'res_model': False,
+                            'res_id': False,
+                        })
 
     assigned_vehicle_id = fields.Many2one(
         'fleet.vehicle', string="Phân công xe", tracking=True,
@@ -285,53 +343,17 @@ class HrTediVehicleRegistration(models.Model):
 
     @api.model
     def create(self, vals):
-        """Phiên bản ngắn gọn nhưng vẫn hiệu quả"""
-
-        # 1. Tách attachments ra xử lý sau
-        attachment_vals = vals.pop('attachment_ids', None)
-
-        # 2. Tạo record bình thường
+        # current_employee = self.env.user.employee_id
+        # if not current_employee: raise ValidationError("Tài khoản chưa liên kết hồ sơ Nhân viên.")
+        # vals['requester_id'] = current_employee.id
         if vals.get('code', 'New') == 'New':
             vals['code'] = self.env['ir.sequence'].next_by_code('hr_tedi.vehicle.registration') or 'New'
-
-        # Xử lý tài xế
         if vals.get('tedi_driver_employee_id') and not vals.get('driver_id'):
             emp = self.env['hr.employee'].browse(vals['tedi_driver_employee_id'])
             partner = self._get_partner_from_employee(emp)
-            if partner:
-                vals['driver_id'] = partner.id
+            if partner: vals['driver_id'] = partner.id
+        return super(HrTediVehicleRegistration, self).create(vals)
 
-        record = super(HrTediVehicleRegistration, self).create(vals)
-
-        # 3. Xử lý attachments sau khi có ID
-        if attachment_vals:
-            record._link_attachments(attachment_vals)
-
-        return record
-
-    def _link_attachments(self, attachment_commands):
-        """Liên kết attachments với record"""
-        for command in attachment_commands:
-            if command[0] == 0:  # CREATE
-                att_vals = command[2]
-                att_vals.update({
-                    'res_model': self._name,
-                    'res_id': self.id,
-                    'public': True,
-                })
-                self.env['ir.attachment'].create(att_vals)
-            elif command[0] in (4, 6):  # LINK or REPLACE
-                attachment_ids = command[1] if command[0] == 4 else command[2]
-                if attachment_ids:
-                    attachments = self.env['ir.attachment'].browse(
-                        attachment_ids if isinstance(attachment_ids, list) else [attachment_ids]
-                    )
-                    attachments.write({
-                        'res_model': self._name,
-                        'res_id': self.id,
-                        'public': True,
-                    })
-        return True
 
     # ========================================================
     # 3. ACTIONS
