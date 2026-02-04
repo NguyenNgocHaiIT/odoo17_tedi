@@ -285,16 +285,53 @@ class HrTediVehicleRegistration(models.Model):
 
     @api.model
     def create(self, vals):
-        # current_employee = self.env.user.employee_id
-        # if not current_employee: raise ValidationError("Tài khoản chưa liên kết hồ sơ Nhân viên.")
-        # vals['requester_id'] = current_employee.id
+        """Phiên bản ngắn gọn nhưng vẫn hiệu quả"""
+
+        # 1. Tách attachments ra xử lý sau
+        attachment_vals = vals.pop('attachment_ids', None)
+
+        # 2. Tạo record bình thường
         if vals.get('code', 'New') == 'New':
             vals['code'] = self.env['ir.sequence'].next_by_code('hr_tedi.vehicle.registration') or 'New'
+
+        # Xử lý tài xế
         if vals.get('tedi_driver_employee_id') and not vals.get('driver_id'):
             emp = self.env['hr.employee'].browse(vals['tedi_driver_employee_id'])
             partner = self._get_partner_from_employee(emp)
-            if partner: vals['driver_id'] = partner.id
-        return super(HrTediVehicleRegistration, self).create(vals)
+            if partner:
+                vals['driver_id'] = partner.id
+
+        record = super(HrTediVehicleRegistration, self).create(vals)
+
+        # 3. Xử lý attachments sau khi có ID
+        if attachment_vals:
+            record._link_attachments(attachment_vals)
+
+        return record
+
+    def _link_attachments(self, attachment_commands):
+        """Liên kết attachments với record"""
+        for command in attachment_commands:
+            if command[0] == 0:  # CREATE
+                att_vals = command[2]
+                att_vals.update({
+                    'res_model': self._name,
+                    'res_id': self.id,
+                    'public': True,
+                })
+                self.env['ir.attachment'].create(att_vals)
+            elif command[0] in (4, 6):  # LINK or REPLACE
+                attachment_ids = command[1] if command[0] == 4 else command[2]
+                if attachment_ids:
+                    attachments = self.env['ir.attachment'].browse(
+                        attachment_ids if isinstance(attachment_ids, list) else [attachment_ids]
+                    )
+                    attachments.write({
+                        'res_model': self._name,
+                        'res_id': self.id,
+                        'public': True,
+                    })
+        return True
 
     # ========================================================
     # 3. ACTIONS
