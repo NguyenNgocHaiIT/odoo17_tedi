@@ -122,7 +122,7 @@
                                 <field name="dv_dong_xu_ly" widget="many2many_tags" readonly="1"/>
                             </group>
                             <group colspan="7">
-                                <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                <field name="attachment_ids" widget="many2many_binary" required="1" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
                                 <field name="attachment_id"
                                        string="Tài liệu xem trước"
                                        options="{'no_create': True, 'no_open': True}"/>
