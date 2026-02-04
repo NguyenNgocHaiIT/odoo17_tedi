@@ -43,6 +43,7 @@
                     <field name="can_approve_room" invisible="1"/>
                     <field name="room_sign" invisible="1"/>
                     <field name="state" invisible="1"/>
+                    <field name="available_room_ids" invisible="1"/>
 
                     <header>
                         <button name="action_request_room_approval"

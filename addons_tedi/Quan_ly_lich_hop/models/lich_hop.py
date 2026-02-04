@@ -55,7 +55,12 @@ class Calendar(models.Model):
     )
 
     chu_tri = fields.Many2one("hr.employee", string="Người chủ trì")
-    room = fields.Many2one('room.room', string='Phòng')
+    # Thêm domain cho field room
+    room = fields.Many2one(
+        'room.room',
+        string='Phòng',
+        domain="[('id', 'in', available_room_ids)]"  # Thêm domain này
+    )
     calendar_label = fields.Char(string="Nhãn trên calendar", compute="_compute_calendar_label")
     color = fields.Integer(string='Màu', default=0)
     start_stop = fields.Char(string="Thời gian", compute="_compute_start_stop")
@@ -1476,6 +1481,52 @@ class Calendar(models.Model):
 
             # Cập nhật luôn vào trường so_nguoi_tham_gia nếu muốn
             rec.so_nguoi_tham_gia = total
+
+    available_room_ids = fields.Many2many(
+        'room.room',
+        compute='_compute_available_rooms',
+        string='Phòng có sẵn',
+        store=False
+    )
+
+    # Thêm hàm compute
+    @api.depends('start', 'stop', 'room_sign', 'state')
+    def _compute_available_rooms(self):
+        """
+        Tính toán các phòng còn trống trong khoảng thời gian được chọn
+        """
+        for rec in self:
+            if not rec.start or not rec.stop:
+                rec.available_room_ids = self.env['room.room']
+                continue
+
+            # 👉 ID thật (chỉ có khi record đã save)
+            real_id = rec._origin.id
+
+            # Tìm các cuộc họp đã đăng ký phòng trong cùng khoảng thời gian
+            domain = [
+                ('room', '!=', False),
+                ('room_sign', '!=', 'no_sign'),  # Đã đăng ký hoặc chờ duyệt
+                ('state', 'not in', ['canceled', 'draft', 'completed']),  # Không tính những cuộc đã hủy
+                ('start', '<', rec.stop),
+                ('stop', '>', rec.start),
+            ]
+
+            # CHỈ thêm điều kiện loại trừ khi đã có id thật
+            if real_id:
+                domain.append(('id', '!=', real_id))
+
+            # Lấy các cuộc họp bị trùng
+            conflicting_events = self.search(domain)
+
+            # Lấy danh sách ID các phòng đã bận
+            busy_room_ids = conflicting_events.mapped('room').ids
+
+            # Lấy tất cả phòng có sẵn (loại trừ những phòng đang bận)
+            all_rooms = self.env['room.room'].search([])
+            available_rooms = all_rooms.filtered(lambda r: r.id not in busy_room_ids)
+
+            rec.available_room_ids = available_rooms
 
 class RoomMaterials(models.Model):
     _name = 'room.materials'
