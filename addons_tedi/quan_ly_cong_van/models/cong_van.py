@@ -205,52 +205,100 @@ class PhanPhat(models.TransientModel):
 
         # --- 6. Gửi EMAIL CHO TẤT CẢ NGƯỜI NHẬN (1 email nhiều người) ---
         try:
-            # Thu thập tất cả email (KHÔNG thu thập trong vòng lặp)
-            email_list = []
-            name_list = []
+            email_dict = {}  # {email: (name, employee_id)}
 
-            # Duyệt qua tất cả nhân viên một lần duy nhất
             for employee in employees_to_notify:
-                user = employee.user_id
-                if not user:
+                # QUAN TRỌNG: Lấy email TRỰC TIẾP từ nhân viên, không cần user
+                email = None
+
+                # Ưu tiên 1: work_email từ chính nhân viên (có thể set mà không cần user)
+                if employee.work_email:
+                    email = employee.work_email.strip()
+
+                # Ưu tiên 2: Nếu có user, lấy từ user/partner
+                if not email and employee.user_id:
+                    if employee.user_id.email:
+                        email = employee.user_id.email.strip()
+                    elif employee.user_id.partner_id.email:
+                        email = employee.user_id.partner_id.email.strip()
+
+                # Ưu tiên 3: private_email hoặc các trường email khác nếu có
+                if not email and hasattr(employee, 'private_email') and employee.private_email:
+                    email = employee.private_email.strip()
+
+                # Nếu vẫn không có email, bỏ qua
+                if not email:
+                    _logger.warning(f"Nhân viên {employee.name} (ID: {employee.id}) không có email nào được cấu hình")
                     continue
 
-                # Ưu tiên work_email, sau đó là user email
-                email = employee.work_email or user.email
-                if email and email not in email_list:  # Tránh trùng email
-                    email_list.append(email)
-                    name_list.append(employee.name)
+                # Kiểm tra tính hợp lệ của email
+                if '@' not in email or '.' not in email:
+                    _logger.warning(f"Email không hợp lệ cho nhân viên {employee.name}: {email}")
+                    continue
 
-            # Chỉ gửi email nếu có ít nhất 1 email
-            if email_list:
-                # Tạo danh sách người nhận (dùng dấu phẩy phân cách)
+                # Lưu vào dict (tránh trùng email)
+                if email not in email_dict:
+                    email_dict[email] = (employee.name, employee.id)
+
+            # Chỉ gửi email nếu có ít nhất 1 email hợp lệ
+            if email_dict:
+                email_list = list(email_dict.keys())
+                names_list = [info[0] for info in email_dict.values()]
+
+                # Thống kê
+                total_employees = len(employees_to_notify)
+                employees_with_email = len(email_dict)
+                employees_without_email = total_employees - employees_with_email
+
+                # Tạo danh sách người nhận
                 email_to = ', '.join(email_list)
-                names_str = ', '.join(name_list)
+                names_str = ', '.join(names_list)
 
                 subject = f"Văn bản {doc.trich_yeu} đã được phân phát"
 
                 # Nội dung email chung
                 body_html = f"""
-                    <p>Kính gửi: {names_str},</p>
-                    <p>Các bạn vừa được phân công xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
-                    <p>
-                        <a href="{detail_url}" style="background:#875A7B;color:white;padding:6px 12px;text-decoration:none;border-radius:4px;font-size:12px;">
-                            Xem chi tiết văn bản
-                        </a>
-                    </p>
-                    <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
-                """
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                            <p>Kính gửi: {names_str},</p>
+                            <p>Các bạn vừa được phân công xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
+                            <p><b>Mã văn bản:</b> {doc.name or 'Không có mã'}</p>
+                            <p><b>Ngày phân phát:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                            <div style="text-align: center; margin: 20px 0;">
+                                <a href="{detail_url}" style="background:#875A7B;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;font-size:14px;display:inline-block;">
+                                    📄 Xem chi tiết văn bản
+                                </a>
+                            </div>
+                            <p style="color: #666; font-size: 12px; margin-top: 20px;">
+                                Đây là email tự động từ hệ thống. Vui lòng không trả lời email này.
+                            </p>
+                            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                            <p>Trân trọng,<br/><b>Hệ thống quản lý công văn</b></p>
+                        </div>
+                    """
 
-                # Gửi một email duy nhất cho tất cả
+                # Gửi email
                 mail = self.env['mail.mail'].sudo().create({
                     'subject': subject,
                     'email_to': email_to,
-                    'email_from': self.env.user.email or 'no-reply@company.com',
+                    'email_from': self.env.user.email or self.env.company.email or 'no-reply@company.com',
                     'body_html': body_html,
+                    'auto_delete': True,
                 })
 
-                mail.send()
-                _logger.info(f"Đã gửi email phân phát đến {len(email_list)} người")
+                # Thử gửi ngay lập tức
+                try:
+                    mail.send()
+                    _logger.info(f"""
+                        ✅ Đã gửi email phân phát:
+                        - Tổng nhân viên: {total_employees}
+                        - Có email: {employees_with_email}
+                        - Không có email: {employees_without_email}
+                        - Email gửi đến: {email_to}
+                        """)
+                except Exception as mail_error:
+                    _logger.error(f"❌ Lỗi khi gửi email: {str(mail_error)}")
+            else:
+                _logger.warning(f"Không có email hợp lệ nào trong {len(employees_to_notify)} nhân viên")
 
         except Exception as e:
             _logger.error(f"Lỗi gửi email phân phát: {str(e)}")
