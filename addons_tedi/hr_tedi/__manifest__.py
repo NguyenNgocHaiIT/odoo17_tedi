@@ -5,7 +5,7 @@
     'category': 'TEDI/Quản lý nhân viên',
     'author': 'Phạm Hải Huy',
     'website': 'https://yourcompany.com',
-    'depends': ['hr', 'base','web','hr_skills','hr_contract'],  # thêm 'base' cho chắc chắn khi có model/attachment
+    'depends': ['hr', 'base','web','hr_skills','hr_contract','hr_holidays'],  # thêm 'base' cho chắc chắn khi có model/attachment
     'data': [
         "security/ir.model.access.csv",
         "views/employee_education_views.xml",
