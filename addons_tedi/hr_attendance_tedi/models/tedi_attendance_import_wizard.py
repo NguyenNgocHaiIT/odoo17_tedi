@@ -109,60 +109,79 @@ class TediAttendanceImportWizard(models.TransientModel):
             ws = wb.active
 
             start_row = self.first_data_row
+            day_row = start_row - 3  # Dòng chứa số ngày (VD: dòng 8)
+            weekday_row = start_row - 2  # Dòng chứa Thứ (VD: dòng 9)
             max_col = ws.max_column
 
-            # --- BƯỚC 1: CHÈN DÒNG ---
+            # --- BƯỚC 1: ĐIỀN THỨ TỰ ĐỘNG THEO THÁNG/NĂM CHỌN ---
+            # Giả sử cột bắt đầu ngày là cột 4 (D), kết thúc là 4 + 30
+            COL_START_DAY = 4
+            # Lấy số ngày của tháng được chọn
+            num_days_in_month = calendar.monthrange(self.year, int(self.month))[1]
+
+            # Danh sách hiển thị thứ
+            weekday_names = {0: 'T2', 1: 'T3', 2: 'T4', 3: 'T5', 4: 'T6', 5: 'T7', 6: 'CN'}
+
+            for day in range(1, 32):  # Duyệt tối đa 31 cột ngày
+                col_idx = COL_START_DAY + (day - 1)
+                cell_weekday = ws.cell(row=weekday_row, column=col_idx)
+
+                if day <= num_days_in_month:
+                    # Tính thứ cho ngày đó
+                    current_date = datetime(self.year, int(self.month), day)
+                    weekday_str = weekday_names[current_date.weekday()]
+                    cell_weekday.value = weekday_str
+
+                    # Style cho thứ (tự chọn center)
+                    cell_weekday.alignment = Alignment(horizontal='center', vertical='center')
+
+                    # Highlight ngày cuối tuần (Tùy chọn: Nếu muốn tô màu CN)
+                    # if current_date.weekday() == 6:
+                    #     from openpyxl.styles import PatternFill
+                    #     cell_weekday.fill = PatternFill(start_color="FFC0CB", end_color="FFC0CB", fill_type="solid")
+                else:
+                    # Xóa dữ liệu các ngày thừa (VD: tháng 2 chỉ có 28 ngày thì xóa cột 29, 30, 31)
+                    cell_weekday.value = ""
+                    ws.cell(row=day_row, column=col_idx).value = ""
+
+            # --- BƯỚC 2: CHÈN DÒNG NHÂN VIÊN ---
             if num_employees > 1:
                 ws.insert_rows(start_row + 1, amount=num_employees - 1)
 
             # --- GỠ BỎ MERGE TỰ ĐỘNG ---
             end_row = start_row + num_employees - 1
             merged_ranges = list(ws.merged_cells.ranges)
-
             for merged_cell in merged_ranges:
                 if merged_cell.min_row >= start_row and merged_cell.max_row <= end_row:
                     try:
                         ws.unmerge_cells(str(merged_cell))
-                    except (KeyError, ValueError, IndexError):
+                    except:
                         pass
 
-            # --- CẤU HÌNH CỘT ---
+            # --- CẤU HÌNH CỘT NHÂN VIÊN ---
             COL_STT = 1
             COL_CODE = 2
             COL_NAME = 3
 
-            # --- BƯỚC 2: DUYỆT VÀ GHI DỮ LIỆU ---
+            # --- BƯỚC 3: DUYỆT VÀ GHI DỮ LIỆU NHÂN VIÊN ---
             for i, emp in enumerate(employees):
                 current_row = start_row + i
 
-                # === COPY STYLE ===
+                # Copy style từ dòng mẫu đầu tiên
                 for col_idx in range(1, max_col + 1):
                     src_cell = ws.cell(row=start_row, column=col_idx)
                     dst_cell = ws.cell(row=current_row, column=col_idx)
                     if i > 0:
                         self._copy_cell_style(src_cell, dst_cell)
 
-                # === GHI DỮ LIỆU ===
-                # 1. Số thứ tự
+                # Ghi STT
                 cell_stt = ws.cell(row=current_row, column=COL_STT)
                 cell_stt.value = i + 1
+                cell_stt.alignment = Alignment(horizontal='center', vertical='center')
 
-                # [FIXED] Tạo Alignment mới thay vì sửa cái cũ để tránh lỗi Immutable
-                old_align = cell_stt.alignment
-                new_align = Alignment(
-                    horizontal='center',  # Force center
-                    vertical=old_align.vertical if old_align else None,
-                    wrap_text=old_align.wrap_text if old_align else None
-                )
-                cell_stt.alignment = new_align
-
-                # 2. Mã Nhân Viên
-                cell_code = ws.cell(row=current_row, column=COL_CODE)
-                cell_code.value = emp.employee_code or ''
-
-                # 3. Tên Nhân Viên
-                cell_name = ws.cell(row=current_row, column=COL_NAME)
-                cell_name.value = emp.name
+                # Ghi Mã + Tên
+                ws.cell(row=current_row, column=COL_CODE).value = emp.employee_code or ''
+                ws.cell(row=current_row, column=COL_NAME).value = emp.name
 
             # --- C. Lưu và Trả file ---
             output = io.BytesIO()
@@ -186,7 +205,6 @@ class TediAttendanceImportWizard(models.TransientModel):
 
         except Exception as e:
             raise UserError(_("Lỗi xử lý file Excel: %s") % str(e))
-
     # --- Onchange đọc Sheet ---
     @api.onchange('file')
     def _onchange_file(self):

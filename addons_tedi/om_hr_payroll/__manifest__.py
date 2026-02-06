@@ -23,6 +23,7 @@
         'data/hr_payroll_sequence.xml',
         'data/hr_payroll_category.xml',
         'data/hr_payroll_data.xml',
+        'data/kpi_cron.xml',
         'wizard/hr_payroll_payslips_by_employees_views.xml',
         'views/hr_contract_type_views.xml',
         'views/hr_contract_views.xml',

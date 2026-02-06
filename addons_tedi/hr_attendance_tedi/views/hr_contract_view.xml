@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="hr_contract_view_form_inherit_custom_start" model="ir.ui.view">
+            <field name="name">hr.contract.view.form.inherit.custom.start</field>
+            <field name="model">hr.contract</field>
+            <field name="inherit_id" ref="hr_contract.hr_contract_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//header" position="inside">
+                    <button name="action_start_contract_running"
+                            string="Bắt đầu Hợp đồng"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'draft'"
+                            groups="hr_contract.group_hr_contract_manager"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="hr_leave_accrual_plan_view_form_inherit_default" model="ir.ui.view">
+            <field name="name">hr.leave.accrual.plan.view.form.inherit.default</field>
+            <field name="model">hr.leave.accrual.plan</field>
+            <field name="inherit_id" ref="hr_holidays.hr_accrual_plan_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="is_default" widget="boolean_toggle"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
