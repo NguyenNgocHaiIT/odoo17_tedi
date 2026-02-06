@@ -3,159 +3,218 @@
     <t t-name="hr_attendance_tedi.AttendanceGantt">
       <Layout display="props.display" className="'h-100 d-flex flex-column overflow-hidden bg-white'">
 
+        <style>
+            .o_tedi_calendar_cell { transition: background-color 0.2s; border-color: #f0f0f0 !important; }
+            .o_tedi_calendar_cell:hover { background-color: #f8f9fa !important; }
+            .o_tedi_add_btn { opacity: 0; transition: opacity 0.2s, transform 0.2s; transform: scale(0.8); }
+            .o_tedi_calendar_cell:hover .o_tedi_add_btn { opacity: 1; transform: scale(1); }
+            .o_tedi_event_chip { font-size: 11px; font-weight: 600; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: transform 0.1s; border-left: 3px solid rgba(0,0,0,0.1); }
+            .o_tedi_event_chip:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); opacity: 0.95; }
+            .o_tedi_calendar_scroll::-webkit-scrollbar { width: 6px; }
+            .o_tedi_calendar_scroll::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 3px; }
+
+            /* [MỚI] Class cho cột cuối tuần trong bảng Manager */
+            .o_tedi_weekend_col { background-color: #f1f3f5 !important; }
+        </style>
+
         <div class="o_tedi_attendance_gantt d-flex flex-column h-100 w-100 bg-white">
 
-          <div class="o_tedi_ag_header d-flex align-items-center p-2 border-bottom gap-3 flex-shrink-0 bg-white">
+          <div class="o_tedi_ag_header d-flex align-items-center px-3 py-2 border-bottom gap-3 flex-shrink-0 bg-white shadow-sm" style="z-index: 10;">
               <div class="d-flex align-items-center gap-2">
-                  <div class="btn-group">
-                      <button type="button" class="btn btn-outline-secondary" t-on-click="goPrev"><i class="fa fa-chevron-left"/></button>
-                      <button type="button" class="btn btn-outline-secondary" t-on-click="goToToday">Hôm nay</button>
-                      <button type="button" class="btn btn-outline-secondary" t-on-click="goNext"><i class="fa fa-chevron-right"/></button>
+                  <div class="btn-group shadow-sm">
+                      <button type="button" class="btn btn-white border" t-on-click="goPrev"><i class="fa fa-chevron-left text-muted"/></button>
+                      <button type="button" class="btn btn-white border fw-bold px-3" t-on-click="goToToday">Hôm nay</button>
+                      <button type="button" class="btn btn-white border" t-on-click="goNext"><i class="fa fa-chevron-right text-muted"/></button>
                   </div>
-                  <h4 class="m-0 text-primary fw-bold ms-2"><t t-esc="state.viewLabel"/></h4>
+                  <h4 class="m-0 text-dark fw-bold ms-3" style="font-family: sans-serif;"><t t-esc="state.viewLabel"/></h4>
               </div>
 
               <div class="ms-auto d-flex align-items-center gap-2">
                   <t t-if="state.isManager">
-                    <button type="button" class="btn btn-success text-white shadow-sm" t-on-click="onImportClick">
-                        <i class="fa fa-file-excel-o me-1"/> Import Excel
+                    <button type="button" class="btn btn-success text-white shadow-sm fw-bold" t-on-click="onImportClick">
+                        <i class="fa fa-file-excel-o me-1"/> Import
                     </button>
                   </t>
-                  <div class="d-flex align-items-center gap-1 bg-light p-1 rounded border">
-                      <input type="date" class="form-control form-control-sm border-0 bg-transparent" style="width: 130px;" t-att-value="state.inputStart" t-on-change="onDateChange"/>
-                  </div>
-                  <div class="btn-group" role="group">
-                      <button type="button" class="btn" t-att-class="state.mode == 'day' ? 'btn-primary' : 'btn-outline-primary'" t-on-click="() => this.setViewMode('day')">Ngày</button>
-                      <button type="button" class="btn" t-att-class="state.mode == 'week' ? 'btn-primary' : 'btn-outline-primary'" t-on-click="() => this.setViewMode('week')">Tuần</button>
-                      <button type="button" class="btn" t-att-class="state.mode == 'month' ? 'btn-primary' : 'btn-outline-primary'" t-on-click="() => this.setViewMode('month')">Tháng</button>
-                  </div>
+                  <t t-if="state.isManager">
+                      <div class="d-flex align-items-center gap-1 bg-light p-1 rounded border">
+                          <input type="date" class="form-control form-control-sm border-0 bg-transparent fw-bold text-muted" style="width: 130px;" t-att-value="state.inputStart" t-on-change="onDateChange"/>
+                      </div>
+                      <div class="btn-group shadow-sm" role="group">
+                          <button type="button" class="btn btn-sm fw-bold" t-att-class="state.mode == 'day' ? 'btn-primary' : 'btn-white border'" t-on-click="() => this.setViewMode('day')">Ngày</button>
+                          <button type="button" class="btn btn-sm fw-bold" t-att-class="state.mode == 'week' ? 'btn-primary' : 'btn-white border'" t-on-click="() => this.setViewMode('week')">Tuần</button>
+                          <button type="button" class="btn btn-sm fw-bold" t-att-class="state.mode == 'month' ? 'btn-primary' : 'btn-white border'" t-on-click="() => this.setViewMode('month')">Tháng</button>
+                      </div>
+                  </t>
               </div>
           </div>
 
-          <div class="o_tedi_ag_table_wrapper overflow-auto bg-white"
+          <div class="o_tedi_ag_table_wrapper overflow-hidden bg-white d-flex flex-column"
                style="flex: 1 1 0; min-height: 0; width: 100%; position: relative;">
 
-            <table class="o_tedi_ag_table table table-sm table-bordered text-center table-hover mb-0"
-                   style="width: max-content; min-width: 100%; table-layout: fixed;">
-
-              <thead class="table-light sticky-top" style="top: 0; z-index: 20;">
-                <tr>
-                  <th class="o_tedi_ag_col_employee text-start align-middle shadow-sm ps-2"
-                      style="width: 170px; min-width: 170px; max-width: 170px; position: sticky; left: 0; z-index: 30; background-color: #f8f9fa; border-right: 2px solid #dee2e6;">
-                    <span class="text-uppercase text-muted small fw-bold">Nhân viên</span>
-                  </th>
-                  <t t-if="state.mode == 'day'">
-                      <t t-foreach="state.hours" t-as="hour" t-key="hour">
-                          <th class="align-middle text-muted small bg-white" style="min-width: 45px; border-bottom: 2px solid #dee2e6;">
-                              <t t-esc="hour"/>h
+            <t t-if="state.isManager">
+                <div class="overflow-auto h-100">
+                    <table class="o_tedi_ag_table table table-sm table-bordered text-center table-hover mb-0"
+                           style="width: max-content; min-width: 100%; table-layout: fixed;">
+                      <thead class="table-light sticky-top shadow-sm" style="top: 0; z-index: 20;">
+                        <tr>
+                          <th class="text-start align-middle ps-3 border-bottom"
+                              style="width: 220px; min-width: 220px; position: sticky; left: 0; z-index: 30; background-color: #f8f9fa; border-right: 1px solid #dee2e6;">
+                            <span class="text-uppercase text-secondary small fw-bold">Nhân viên</span>
                           </th>
-                      </t>
-                  </t>
-                  <t t-else="">
-                      <t t-foreach="state.days" t-as="dayInfo" t-key="dayInfo.keyStr">
-                        <th class="o_tedi_ag_col_day align-middle p-1"
-                            t-att-class="dayInfo.isSunday ? 'bg-light' : 'bg-white'"
-                            t-att-style="state.mode === 'month' ? 'width: 40px; min-width: 40px; max-width: 40px; border-bottom: 2px solid #dee2e6;' : 'width: 100px; min-width: 100px; max-width: 100px; border-bottom: 2px solid #dee2e6;'">
-                          <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100 overflow-hidden">
-                              <span class="text-uppercase fw-bold" t-att-class="dayInfo.isSunday ? 'text-danger' : (dayInfo.isWeekend ? 'text-primary' : 'text-muted')" style="font-size: 0.65rem; line-height: 1;"><t t-esc="dayInfo.weekday"/></span>
-                              <span class="fw-bolder mt-1 text-dark" style="font-size: 1.1rem; line-height: 1;"><t t-esc="dayInfo.dayNum"/></span>
-                              <span t-if="state.mode == 'week'" class="text-muted small mt-1" style="font-size: 0.65rem;"><t t-esc="dayInfo.fullDate"/></span>
-                          </div>
-                        </th>
-                      </t>
-                  </t>
-                </tr>
-              </thead>
 
-              <tbody>
-                  <t t-foreach="state.rowsData" t-as="row" t-key="row.id">
-                    <tr>
-                        <td class="o_tedi_ag_employee_cell text-start fw-bold align-middle bg-white text-muted"
-                            t-attf-style="position: sticky; left: 0; z-index: 10; border-right: 2px solid #dee2e6;">
-                            <span class="ps-2"><t t-esc="row.name"/></span>
-                        </td>
+                          <t t-if="state.mode == 'day'">
+                              <t t-foreach="state.hours" t-as="hour" t-key="hour">
+                                  <th class="align-middle text-muted small bg-white border-bottom" style="min-width: 50px;">
+                                      <t t-esc="hour"/>h
+                                  </th>
+                              </t>
+                          </t>
+                          <t t-else="">
+                              <t t-foreach="state.days" t-as="dayInfo" t-key="dayInfo.keyStr">
+                                <th class="align-middle p-1 border-bottom"
+                                    t-att-class="dayInfo.isWeekend ? 'o_tedi_weekend_col' : 'bg-white'"
+                                    t-att-style="state.mode === 'month' ? 'width: 45px; min-width: 45px;' : 'width: 100px; min-width: 100px;'">
+                                  <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100">
+                                      <span class="text-uppercase fw-bold" t-att-class="dayInfo.isSunday ? 'text-danger' : (dayInfo.isWeekend ? 'text-primary' : 'text-muted')" style="font-size: 0.7rem;"><t t-esc="dayInfo.weekday"/></span>
+                                      <span class="fw-bolder mt-1 text-dark h6 m-0"><t t-esc="dayInfo.dayNum"/></span>
+                                  </div>
+                                </th>
+                              </t>
+                          </t>
+                        </tr>
+                      </thead>
 
-                      <t t-if="state.mode == 'day'">
-                        <td colspan="24"
-                            class="p-1 align-middle"
-                            style="background-color: #fcfcfc;">
-
-                            <t t-set="currentDaySegs" t-value="row.segmentsByDate[state.inputStart] || []"/>
-                            <div class="d-flex flex-column gap-1">
-                                <t t-if="currentDaySegs.length">
-                                    <t t-foreach="currentDaySegs" t-as="bar" t-key="bar.id + '_' + bar.index + '_' + bar.type">
-                                        <div class="position-relative w-100" style="height: 40px;">
-                                            <div class="d-flex w-100 h-100 position-absolute top-0 start-0" style="z-index:0;">
-                                                <t t-foreach="state.hours" t-as="h" t-key="h">
-                                                    <div class="flex-fill border-end" style="border-color:#eee;"></div>
+                      <tbody>
+                          <t t-foreach="state.rowsData" t-as="row" t-key="row.id">
+                            <tr>
+                                <td class="text-start align-middle bg-white text-dark border-bottom"
+                                    t-attf-style="position: sticky; left: 0; z-index: 10; border-right: 1px solid #dee2e6;">
+                                    <div class="ps-3 py-2 text-truncate" t-att-title="row.name">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                                                 style="width: 32px; height: 32px; font-size: 12px;">
+                                                <t t-esc="row.name.charAt(0)"/>
+                                            </div>
+                                            <div class="d-flex flex-column justify-content-center overflow-hidden">
+                                                <span class="fw-bold text-dark text-truncate" style="font-size: 13px; line-height: 1.2;">
+                                                    <t t-esc="row.name"/>
+                                                </span>
+                                                <t t-if="row.employee_code">
+                                                    <span class="text-muted small text-truncate" style="font-size: 11px;">
+                                                        (<t t-esc="row.employee_code"/>)
+                                                    </span>
                                                 </t>
                                             </div>
-                                            <div t-on-click="(ev) => { ev.stopPropagation(); openDocument(bar.id, bar.resModel); }"
-                                                 class="position-absolute rounded shadow-sm d-flex align-items-center justify-content-center cursor-pointer text-white text-truncate"
-                                                 t-att-class="bar.colorClass"
-                                                 t-att-style="bar.style + ' top:50%; transform:translateY(-50%); height:70%; z-index:5; font-size:0.75rem; opacity:0.9; cursor: pointer;'"
-                                                 t-att-title="bar.label">
-                                                <span class="px-1"><t t-esc="bar.label"/></span>
-                                            </div>
-                                        </div>
-                                    </t>
-                                </t>
-                                <t t-else="">
-                                    <div class="position-relative w-100" style="height:40px;">
-                                        <div class="d-flex w-100 h-100 position-absolute top-0 start-0">
-                                            <t t-foreach="state.hours" t-as="h" t-key="h">
-                                                <div class="flex-fill border-end" style="border-color:#eee;"></div>
-                                            </t>
                                         </div>
                                     </div>
+                                </td>
+
+                                <t t-if="state.mode == 'day'">
+                                    <td colspan="24" class="p-1 align-middle bg-light bg-opacity-10">
+                                        <t t-set="currentDaySegs" t-value="row.segmentsByDate[state.inputStart] || []"/>
+                                        <div class="d-flex flex-column gap-1">
+                                            <t t-foreach="currentDaySegs" t-as="bar" t-key="bar.id + '_' + bar.index + '_' + bar.type">
+                                                <div class="position-relative w-100" style="height: 36px;">
+                                                     <div t-on-click="(ev) => { ev.stopPropagation(); openDocument(bar.id, bar.resModel); }"
+                                                         class="position-absolute rounded-1 shadow-sm d-flex align-items-center justify-content-center cursor-pointer text-white text-truncate"
+                                                         t-att-class="bar.colorClass"
+                                                         t-att-style="bar.style + ' top:50%; transform:translateY(-50%); height:28px; z-index:5; font-size:11px; opacity:0.9;'">
+                                                        <span class="px-2"><t t-esc="bar.label"/></span>
+                                                    </div>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </td>
                                 </t>
-                            </div>
-                        </td>
-                      </t>
+                                <t t-else="">
+                                    <td t-att-colspan="state.days.length" class="p-0 align-middle position-relative" style="height: auto;">
 
-                      <t t-else="">
-                        <td t-att-colspan="state.days.length"
-                            class="p-1 align-middle"
-                            style="background-color: #fcfcfc; height: auto;">
+                                        <div class="d-flex w-100 h-100 position-absolute top-0 start-0" style="z-index:0;">
+                                            <t t-foreach="state.days" t-as="d" t-key="d.keyStr">
+                                                <div class="flex-fill border-end"
+                                                     t-att-class="d.isWeekend ? 'o_tedi_weekend_col' : ''"
+                                                     style="border-color:#f5f5f5;"></div>
+                                            </t>
+                                        </div>
 
-                            <t t-set="bars" t-value="state.weekBars[row.id] || []"/>
+                                        <t t-set="bars" t-value="state.weekBars[row.id] || []"/>
+                                        <t t-set="maxLvl" t-value="bars.length > 0 ? bars[0].maxLevels : 1"/>
+                                        <div class="position-relative w-100" t-att-style="'height:' + (maxLvl * 32 &lt; 40 ? 40 : maxLvl * 32) + 'px;'">
+                                            <t t-foreach="bars" t-as="wb" t-key="wb.id + '_' + wb.index + '_' + wb.type">
+                                                <div t-on-click="(ev) => { ev.stopPropagation(); openDocument(wb.id, wb.resModel); }"
+                                                     class="position-absolute rounded-1 shadow-sm d-flex align-items-center justify-content-center text-white cursor-pointer"
+                                                     t-att-class="wb.colorClass"
+                                                     t-att-style="'left:' + wb.left + '%; width:' + wb.width + '%; top:' + (wb.level * 30 + 5) + 'px; height: 24px; z-index:5; font-size:10px; opacity:0.9;'"
+                                                     t-att-title="wb.label">
+                                                    <span class="text-truncate w-100 text-center px-1 fw-bold"><t t-esc="wb.label"/></span>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </td>
+                                </t>
+                            </tr>
+                          </t>
+                      </tbody>
+                    </table>
+                </div>
+            </t>
 
-                            <t t-set="maxLvl" t-value="bars.length > 0 ? bars[0].maxLevels : 1"/>
-                            <t t-set="rowHeight" t-value="maxLvl * 30"/>
-                            <t t-if="rowHeight &lt; 40" t-set="rowHeight" t-value="40"/>
+            <t t-else="">
+                <div class="o_tedi_calendar_view h-100 w-100 bg-white d-flex flex-column">
+                    <div class="d-flex border-bottom bg-white py-2 shadow-sm" style="z-index: 5;">
+                        <div class="flex-fill text-center text-dark fw-bolder text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Thứ 2</div>
+                        <div class="flex-fill text-center text-dark fw-bolder text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Thứ 3</div>
+                        <div class="flex-fill text-center text-dark fw-bolder text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Thứ 4</div>
+                        <div class="flex-fill text-center text-dark fw-bolder text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Thứ 5</div>
+                        <div class="flex-fill text-center text-dark fw-bolder text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Thứ 6</div>
+                        <div class="flex-fill text-center text-primary fw-bolder text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Thứ 7</div>
+                        <div class="flex-fill text-center text-danger fw-bolder text-uppercase" style="font-size: 11px; letter-spacing: 1px;">CN</div>
+                    </div>
 
-                            <div class="position-relative w-100" t-att-style="'height:' + rowHeight + 'px;'">
-                                <div class="d-flex w-100 h-100 position-absolute top-0 start-0" style="z-index:0;">
-                                    <t t-foreach="state.days" t-as="d" t-key="d.keyStr">
-                                        <div class="flex-fill border-end" style="border-color:#eee;"></div>
+                    <div class="d-flex flex-wrap flex-fill o_tedi_calendar_scroll overflow-auto align-content-start bg-light bg-opacity-10">
+                        <t t-foreach="state.calendarDays" t-as="day" t-key="day.dateKey || day_index">
+                            <div class="d-flex flex-column p-2 border-end border-bottom o_tedi_calendar_cell position-relative bg-white"
+                                 t-att-class="!day.isCurrentMonth ? 'bg-light bg-opacity-50 text-muted' : ''"
+                                 style="width: 14.28%; min-height: 130px; height: 20%;">
+
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div t-att-class="day.isToday ? 'bg-primary text-white shadow-sm' : (day.isCurrentMonth ? 'text-dark' : 'text-muted')"
+                                          class="rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                                          style="width: 28px; height: 28px; font-size: 14px; transition: all 0.2s;">
+                                        <t t-esc="day.dayNum"/>
+                                    </div>
+                                    <t t-if="day.isCurrentMonth and state.currentUserEmployeeId">
+                                        <button class="btn btn-sm btn-light text-primary o_tedi_add_btn rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm"
+                                                style="width: 24px; height: 24px;"
+                                                t-on-click="() => this.onDayCellClick(state.currentUserEmployeeId, day.dateKey)"
+                                                title="Thêm mới">
+                                            <i class="fa fa-plus" style="font-size: 10px;"/>
+                                        </button>
                                     </t>
                                 </div>
 
-                                <t t-foreach="bars" t-as="wb" t-key="wb.id + '_' + wb.index + '_' + wb.type">
-                                    <div t-on-click="(ev) => { ev.stopPropagation(); openDocument(wb.id, wb.resModel); }"
-                                         class="position-absolute rounded shadow-sm d-flex align-items-center justify-content-center text-white cursor-pointer"
-                                         t-att-class="wb.colorClass"
-                                         t-att-style="'left:' + wb.left + '%; width:' + wb.width + '%; ' +
-                                                      'top:' + (wb.level * 30 + 4) + 'px; ' +
-                                                      'height: 24px; ' +
-                                                      'z-index:5; font-size:0.7rem; opacity:0.9; cursor: pointer;'"
-                                         t-att-title="wb.label">
-                                        <span class="text-truncate w-100 text-center px-0">
-                                            <t t-esc="wb.label"/>
-                                        </span>
-                                    </div>
-                                </t>
+                                <div class="d-flex flex-column gap-1 overflow-hidden">
+                                    <t t-if="day.segments">
+                                        <t t-foreach="day.segments" t-as="seg" t-key="seg.id + '_' + seg.type + '_' + seg.index">
+                                            <div t-on-click="(ev) => { ev.stopPropagation(); openDocument(seg.id, seg.resModel); }"
+                                                 class="o_tedi_event_chip px-2 py-1 text-white text-truncate cursor-pointer d-flex align-items-center"
+                                                 t-att-class="seg.colorClass"
+                                                 t-att-title="seg.label">
+                                                <i t-if="seg.type == 'leave'" class="fa fa-plane me-1 opacity-75" style="font-size: 9px;"/>
+                                                <i t-else="" class="fa fa-clock-o me-1 opacity-75" style="font-size: 9px;"/>
+                                                <span class="flex-fill text-truncate"><t t-esc="seg.label"/></span>
+                                            </div>
+                                        </t>
+                                    </t>
+                                </div>
+
                             </div>
-                        </td>
-                      </t>
+                        </t>
+                    </div>
+                </div>
+            </t>
 
-                    </tr>
-                  </t>
-              </tbody>
-
-            </table>
           </div>
-
         </div>
       </Layout>
     </t>

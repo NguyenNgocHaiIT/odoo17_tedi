@@ -221,15 +221,15 @@ export class WorkEntryMonthlyGrid extends Component {
             { order: "date_start asc" }
         );
 
-        // [EDIT] Đã bỏ 'avatar_128' khỏi danh sách fields
-        const employees = await this.orm.searchRead("hr.employee", [], ['name']);
+        // [EDIT] Lấy thêm employee_code
+        const employees = await this.orm.searchRead("hr.employee", [], ['name', 'employee_code']);
 
         const rowMap = {};
         employees.forEach(emp => {
             rowMap[emp.id] = {
                 id: emp.id,
                 name: emp.name,
-                // [EDIT] Đã bỏ hasAvatar
+                employee_code: emp.employee_code, // [EDIT] Store code
                 cells: {},
                 totalDuration: 0
             };

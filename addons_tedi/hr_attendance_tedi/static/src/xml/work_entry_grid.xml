@@ -15,6 +15,11 @@
                     animation: pulse-red 2s infinite;
                 }
 
+                /* [MỚI] Class nền đậm cho ngày cuối tuần */
+                .o_tedi_weekend_col {
+                    background-color: #e9ecef !important; /* Màu xám đậm hơn bg-light */
+                }
+
                 @keyframes pulse-red {
                     0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
                     70% { box-shadow: 0 0 0 4px rgba(220, 53, 69, 0); }
@@ -147,7 +152,7 @@
 
                                 <th t-if="col.type == 'day'"
                                     class="align-middle p-1 position-relative group-hover-target"
-                                    t-att-class="col.dateObj.getDay() == 0 ? 'bg-light' : 'bg-white'"
+                                    t-att-class="col.isWeekend ? 'o_tedi_weekend_col' : 'bg-white'"
                                     style="height: 50px;">
 
                                     <div class="d-flex flex-column justify-content-center align-items-center w-100 h-100 position-relative overflow-hidden">
@@ -193,6 +198,11 @@
 
                                         <div class="d-flex flex-column overflow-hidden justify-content-center">
                                             <span class="fw-bold text-dark small text-wrap" style="line-height: 1.2;"><t t-esc="emp.name"/></span>
+
+                                            <t t-if="emp.employee_code">
+                                                <span class="text-muted" style="font-size: 0.65rem;">(<t t-esc="emp.employee_code"/>)</span>
+                                            </t>
+
                                             <span class="fw-bold text-primary mt-1" style="font-size: 0.7rem;"><t t-esc="formatHours(emp.totalDuration)"/></span>
                                         </div>
                                     </div>
@@ -200,7 +210,7 @@
                                 <t t-foreach="columns" t-as="col" t-key="col.type + '_' + col.day + '_' + col.groupId">
                                     <t t-if="col.type == 'day'">
                                         <t t-set="cellData" t-value="emp.cells[col.day]"/>
-                                        <td class="align-middle p-1" t-att-class="col.isWeekend ? 'bg-light' : ''">
+                                        <td class="align-middle p-1" t-att-class="col.isWeekend ? 'o_tedi_weekend_col' : ''">
                                             <div class="d-flex flex-column gap-1 w-100 h-100 justify-content-center">
                                                 <t t-if="cellData">
                                                     <t t-foreach="cellData" t-as="entry" t-key="entry.id">

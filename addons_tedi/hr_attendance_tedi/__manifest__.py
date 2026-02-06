@@ -22,6 +22,7 @@
         'views/work_entry_views.xml',
         'views/work_entry_type_views.xml',
         "views/hr_leave_allocation_views.xml",
+        "views/hr_contract_view.xml",
         # 'data/data_work_entry_type.xml',
 
         "views/menu.xml",
