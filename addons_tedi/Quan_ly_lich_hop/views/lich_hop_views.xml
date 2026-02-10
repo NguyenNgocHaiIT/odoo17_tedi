@@ -68,7 +68,7 @@
                                 string="Đăng ký phòng họp"
                                 type="object"
                                 class="btn-primary"
-                                invisible="room_sign != 'no_sign' or state != 'approved' or not is_current_user_creator"/>
+                                invisible="(room_sign != 'no_sign' and not is_current_user_creator) or state != 'approved'"/>
 
                         <field name="can_add_participants" invisible="1"/>
                         <button name="action_add_participants"
