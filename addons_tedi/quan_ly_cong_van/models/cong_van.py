@@ -833,7 +833,21 @@ class OfficeDocument(models.Model):
     nguoi_theo_doi_chinh = fields.Many2one('res.users', string='Người theo dõi chính')
     so_den_theo_so = fields.Char('Số đến theo sổ')
     so_di_theo_so = fields.Char('Số đi theo sổ')
-    so_vb = fields.Char('Số văn bản')
+    so_vb = fields.Char('Số văn bản', compute='_compute_so_vb')
+
+    @api.depends('document_type', 'so_den_tong_hop', 'so_di_tong_hop')
+    def _compute_so_vb(self):
+        """Tự động lấy số văn bản dựa vào loại công văn"""
+        for record in self:
+            if record.document_type in ['incoming', 'incoming_internal']:
+                # Công văn đến và văn bản nội bộ đến → lấy số đến tổng hợp
+                record.so_vb = record.so_den_tong_hop
+            elif record.document_type:
+                # Các loại còn lại → lấy số đi tổng hợp
+                record.so_vb = record.so_di_tong_hop
+            else:
+                record.so_vb = False
+
     ngay_hieu_luc = fields.Date('Ngày hiệu lực', default=fields.Date.context_today)
     ngay_ky = fields.Date('Ngày ký')
     chuc_vu = fields.Char('Chức vụ')
