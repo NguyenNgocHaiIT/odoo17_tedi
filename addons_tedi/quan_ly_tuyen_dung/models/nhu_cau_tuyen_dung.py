@@ -31,7 +31,7 @@ class RecruitmentNeeds(models.Model):
         "recruitment.plan",
         string="Thuộc Kế hoạch Quý",
         # Lấy loại là 'quarter' VÀ trạng thái là 'in_process'
-        domain="[('type', '=', 'quarter'), ('recruitment_status', 'in', ['notify', 'approved', 'in_process'])]",
+        domain="[('type', '=', 'quarter'), ('recruitment_status', '=', 'draft')]",
     )
 
     create_date = fields.Date(

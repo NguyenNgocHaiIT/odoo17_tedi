@@ -127,7 +127,6 @@ class TrainingPlan(models.Model):
         self.detail_ids = new_lines
 
     def _generate_participants_from_survey(self):
-        # ... (Giữ nguyên logic của bạn) ...
         Participation = self.env['training.plan.participation']
         ParticipationDetail = self.env['training.plan.participation.detail']
         TrainingNeeds = self.env['trainings.needs']
@@ -147,12 +146,21 @@ class TrainingPlan(models.Model):
 
             for course_id, items in course_map.items():
                 detail = plan.detail_ids.filtered(lambda d: d.course_id.id == course_id)[:1]
+
+                # --- ĐOẠN CẦN SỬA Ở ĐÂY ---
                 if not detail:
+                    # Nếu là Kế hoạch Quý:
+                    # Bỏ qua các môn không có trong danh sách (vì đó là môn của Quý khác)
+                    if plan.type == 'quarter':
+                        continue
+
+                        # Nếu là Kế hoạch Năm hoặc loại khác: Giữ nguyên logic cũ (tự tạo dòng)
                     detail = self.env['training.plan.detail'].create({
                         'plan_id': plan.id,
                         'course_id': course_id,
                         'execution_date': plan.plan_execute_date or fields.Date.today()
                     })
+                # --------------------------
 
                 participation = Participation.search([
                     ('training_plan_id', '=', plan.id),
@@ -164,7 +172,7 @@ class TrainingPlan(models.Model):
                         'training_plan_id': plan.id,
                         'training_plan_detail_id': detail.id,
                         'create_date': fields.Date.today(),
-                        'state': 'draft',  # <--- QUAN TRỌNG: Sinh ra ở trạng thái Dự thảo
+                        'state': 'draft',
                     })
 
                 for student, line in items:

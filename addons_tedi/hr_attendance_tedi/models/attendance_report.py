@@ -305,41 +305,50 @@ class HrLeave(models.Model):
         return res
 
     # THÊM 'state' VÀO DEPENDS ĐỂ SỐ LIỆU CẬP NHẬT NGAY KHI DUYỆT
-    @api.depends('employee_id', 'holiday_status_id', 'date_from', 'state')
+    @api.depends('employee_id', 'holiday_status_id', 'date_from', 'date_to', 'state')
     def _compute_leave_stats(self):
         for rec in self:
+            # 1. Khởi tạo giá trị mặc định
             rec.leaves_taken_count = 0.0
             rec.remaining_leaves_count = 0.0
 
-            # Chỉ chạy khi đã chọn Nhân viên và Loại nghỉ
-            if rec.employee_id and rec.holiday_status_id:
+            # 2. Lấy dữ liệu thực (tránh lỗi NewId khi đang tạo mới)
+            employee = rec.employee_id._origin if rec.employee_id._origin else rec.employee_id
+            leave_type = rec.holiday_status_id._origin if rec.holiday_status_id._origin else rec.holiday_status_id
+
+            if employee and leave_type:
                 try:
-                    # 1. Xác định ngày để kiểm tra số dư (Ngày bắt đầu nghỉ hoặc Hôm nay)
-                    check_date = rec.date_from.date() if rec.date_from else fields.Date.context_today(rec)
+                    # Xác định ngày kiểm tra (Ngày bắt đầu nghỉ hoặc Hôm nay)
+                    check_date = rec.date_from.date() if rec.date_from else fields.Date.today()
 
-                    # 2. Tạo một bản ghi Loại nghỉ "ảo" với Context của nhân viên đó
-                    # Đây là cách Odoo tính số liệu cho Header "còn X trong tổng số Y"
-                    leave_type_with_ctx = rec.holiday_status_id.sudo().with_context(
-                        employee_id=rec.employee_id.id,
-                        date=check_date
-                    )
+                    # SỬ DỤNG HÀM BASE: get_allocation_data
+                    # Đây là hàm Odoo dùng ở dòng 895 trong code base bạn gửi để check_validity
+                    leave_data = leave_type.get_allocation_data(employee, check_date)
 
-                    # 3. Lấy giá trị trực tiếp từ trường compute của Odoo
-                    # virtual_remaining_leaves: Số ngày/giờ còn lại (đã trừ các đơn chờ duyệt)
-                    # leaves_taken: Số ngày/giờ đã nghỉ
-                    remaining = leave_type_with_ctx.virtual_remaining_leaves
-                    taken = leave_type_with_ctx.leaves_taken
+                    # leave_data trả về dict: {employee_obj: [(leave_type_name, stats_dict)]}
+                    if employee in leave_data and leave_data[employee]:
+                        stats = leave_data[employee][0][1]  # Lấy stats_dict
 
-                    # 4. Gán giá trị
-                    rec.remaining_leaves_count = remaining
-                    rec.leaves_taken_count = taken
+                        # virtual_remaining_leaves: Số dư còn lại (theo đơn vị ngày hoặc giờ của loại nghỉ)
+                        # leaves_taken: Số đã nghỉ
+                        remaining = stats.get('virtual_remaining_leaves', 0.0)
+                        taken = stats.get('leaves_taken', 0.0)
 
-                    # --- DEBUG LOG (Kiểm tra trong Log Server nếu vẫn sai) ---
-                    # _logger.info(f"User: {rec.employee_id.name} | Type: {rec.holiday_status_id.name} | Remaining: {remaining}")
+                        # Lấy số giờ tiêu chuẩn/ngày từ calendar (Dòng 13 code base)
+                        # Odoo dùng HOURS_PER_DAY hoặc resource_calendar_id.hours_per_day
+                        hours_per_day = employee.resource_calendar_id.hours_per_day or 8.0
+
+                        if leave_type.request_unit == 'hour':
+                            # Nếu loại nghỉ tính theo giờ, quy đổi ra ngày để hiển thị theo yêu cầu của bạn
+                            rec.remaining_leaves_count = remaining / hours_per_day
+                            rec.leaves_taken_count = taken / hours_per_day
+                        else:
+                            # Nếu loại nghỉ tính theo ngày, giữ nguyên số liệu
+                            rec.remaining_leaves_count = remaining
+                            rec.leaves_taken_count = taken
 
                 except Exception as e:
-                    _logger.error("Lỗi tính số dư phép (ID %s): %s", rec.id, str(e))
-                    rec.remaining_leaves_count = 0.0
+                    _logger.error("Lỗi compute stats theo logic base: %s", str(e))
 
     @api.depends('employee_id')
     def _compute_my_history(self):
