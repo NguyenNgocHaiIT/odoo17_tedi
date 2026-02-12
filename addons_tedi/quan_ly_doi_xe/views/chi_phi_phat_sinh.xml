@@ -109,7 +109,6 @@
         <field name="name">Chi phí phát sinh</field>
         <field name="res_model">hr.expense</field>
         <field name="view_mode">tree,form</field>
-        <field name="domain">[('product_code','=','AIRLINES')]</field>
         <field name="view_ids" eval="[
             (5, 0, 0),
             (0, 0, {'view_mode': 'tree', 'view_id': ref('view_hr_expense_airlines_tree')}),

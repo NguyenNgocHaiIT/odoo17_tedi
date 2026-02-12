@@ -1,7 +1,9 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 import logging
+
 _logger = logging.getLogger(__name__)
+
 
 class HrExpense(models.Model):
     _inherit = "hr.expense"
@@ -42,22 +44,7 @@ class HrExpense(models.Model):
         return product
 
     # ==========================
-    # EMAIL TEMPLATES
-    # ==========================
-    def _get_email_template_submit(self):
-        """Template email khi submit"""
-        return self.env.ref('hr_expense.email_template_expense_submit', raise_if_not_found=False)
-
-    def _get_email_template_approve(self):
-        """Template email khi approve"""
-        return self.env.ref('hr_expense.email_template_expense_approve', raise_if_not_found=False)
-
-    def _get_email_template_refuse(self):
-        """Template email khi refuse"""
-        return self.env.ref('hr_expense.email_template_expense_refuse', raise_if_not_found=False)
-
-    # ==========================
-    # ACTIONS
+    # ACTIONS - EMAIL ĐƠN GIẢN
     # ==========================
     def action_submit(self):
         self.ensure_one()
@@ -69,37 +56,36 @@ class HrExpense(models.Model):
             # Lấy tất cả người dùng trong nhóm
             managers = group.users
 
-            # Gửi email cho từng manager
-            for manager in managers:
-                if manager.email:
-                    try:
-                        # Tạo email template động
-                        mail_template = self.env['mail.template'].create({
-                            'name': f'Expense Submit Notification - {self.name}',
-                            'subject': f'Đề xuất chi phí {self.name} đã được gửi duyệt',
-                            'body_html': f"""
-                            <div>
-                                <p>Xin chào {manager.name},</p>
-                                <p>Đề xuất chi phí <strong>{self.name}</strong> đã được gửi để duyệt.</p>
-                                <p><strong>Thông tin chi tiết:</strong></p>
-                                <ul>
-                                    <li>Người tạo: {self.employee_id.name if self.employee_id else ''}</li>
-                                    <li>Số tiền: {self.total_amount}</li>
-                                    <li>Loại chi phí: {self.product_id.name if self.product_id else ''}</li>
-                                    <li>Mô tả: {self.name}</li>
-                                </ul>
-                                <p>Vui lòng kiểm tra và phê duyệt.</p>
-                                <p>Trân trọng,</p>
-                            </div>
-                            """,
-                            'email_from': self.env.user.email or self.company_id.email,
-                            'email_to': manager.email,
-                        })
+            # Lấy emails của tất cả managers
+            manager_emails = [manager.email for manager in managers if manager.email]
 
-                        mail_template.send_mail(self.id, force_send=True)
+            if manager_emails:
+                try:
+                    # Tạo email đơn giản
+                    mail_values = {
+                        'subject': f'Cần duyệt đề xuất chi phí: {self.name}',
+                        'email_to': ', '.join(manager_emails),
+                        'email_from': self.env.user.email or self.company_id.email or 'noreply@company.com',
+                        'body_html': f"""
+                        <p>Có đề xuất chi phí cần duyệt:</p>
+                        <ul>
+                            <li><b>Tên:</b> {self.name}</li>
+                            <li><b>Người tạo:</b> {self.employee_id.name if self.employee_id else ''}</li>
+                            <li><b>Số tiền:</b> {self.total_amount}</li>
+                            <li><b>Loại chi phí:</b> {self.product_id.name if self.product_id else ''}</li>
+                        </ul>
+                        <p>Vui lòng vào hệ thống để duyệt.</p>
+                        """,
+                    }
 
-                    except Exception as e:
-                        _logger.error(f"Failed to send email to {manager.email}: {str(e)}")
+                    # Tạo và gửi email
+                    mail = self.env['mail.mail'].create(mail_values)
+                    mail.send()
+
+                    _logger.info(f"Email sent to managers for expense {self.name}")
+
+                except Exception as e:
+                    _logger.error(f"Failed to send email: {str(e)}")
 
         return True
 
@@ -107,32 +93,30 @@ class HrExpense(models.Model):
         self.ensure_one()
         self.state = 'approved'
 
-        # Gửi email cho người tạo (employee)
+        # Gửi email cho người tạo
         if self.employee_id.user_id and self.employee_id.user_id.email:
             try:
-                # Tạo email template động
-                mail_template = self.env['mail.template'].create({
-                    'name': f'Expense Approved - {self.name}',
-                    'subject': f'Đề xuất chi phí {self.name} đã được phê duyệt',
-                    'body_html': f"""
-                    <div>
-                        <p>Xin chào {self.employee_id.name},</p>
-                        <p>Đề xuất chi phí <strong>{self.name}</strong> của bạn đã được phê duyệt.</p>
-                        <p><strong>Thông tin chi tiết:</strong></p>
-                        <ul>
-                            <li>Số tiền: {self.total_amount}</li>
-                            <li>Loại chi phí: {self.product_id.name if self.product_id else ''}</li>
-                            <li>Người duyệt: {self.env.user.name}</li>
-                            <li>Ngày duyệt: {fields.Datetime.now()}</li>
-                        </ul>
-                        <p>Trân trọng,</p>
-                    </div>
-                    """,
-                    'email_from': self.env.user.email or self.company_id.email,
+                # Tạo email đơn giản
+                mail_values = {
+                    'subject': f'Đề xuất chi phí đã được duyệt: {self.name}',
                     'email_to': self.employee_id.user_id.email,
-                })
+                    'email_from': self.env.user.email or self.company_id.email or 'noreply@company.com',
+                    'body_html': f"""
+                    <p>Đề xuất chi phí của bạn đã được duyệt:</p>
+                    <ul>
+                        <li><b>Tên:</b> {self.name}</li>
+                        <li><b>Số tiền:</b> {self.total_amount}</li>
+                        <li><b>Người duyệt:</b> {self.env.user.name}</li>
+                        <li><b>Ngày duyệt:</b> {fields.Datetime.now()}</li>
+                    </ul>
+                    """,
+                }
 
-                mail_template.send_mail(self.id, force_send=True)
+                # Tạo và gửi email
+                mail = self.env['mail.mail'].create(mail_values)
+                mail.send()
+
+                _logger.info(f"Approval email sent for expense {self.name}")
 
             except Exception as e:
                 _logger.error(f"Failed to send approval email: {str(e)}")
@@ -143,33 +127,31 @@ class HrExpense(models.Model):
         self.ensure_one()
         self.state = 'refused'
 
-        # Gửi email cho người tạo (employee)
+        # Gửi email cho người tạo
         if self.employee_id.user_id and self.employee_id.user_id.email:
             try:
-                # Tạo email template động
-                mail_template = self.env['mail.template'].create({
-                    'name': f'Expense Refused - {self.name}',
-                    'subject': f'Đề xuất chi phí {self.name} đã bị từ chối',
-                    'body_html': f"""
-                    <div>
-                        <p>Xin chào {self.employee_id.name},</p>
-                        <p>Đề xuất chi phí <strong>{self.name}</strong> của bạn đã bị từ chối.</p>
-                        <p><strong>Thông tin chi tiết:</strong></p>
-                        <ul>
-                            <li>Số tiền: {self.total_amount}</li>
-                            <li>Loại chi phí: {self.product_id.name if self.product_id else ''}</li>
-                            <li>Người từ chối: {self.env.user.name}</li>
-                            <li>Ngày từ chối: {fields.Datetime.now()}</li>
-                        </ul>
-                        <p>Vui lòng kiểm tra lại thông tin và gửi lại đề xuất nếu cần.</p>
-                        <p>Trân trọng,</p>
-                    </div>
-                    """,
-                    'email_from': self.env.user.email or self.company_id.email,
+                # Tạo email đơn giản
+                mail_values = {
+                    'subject': f'Đề xuất chi phí bị từ chối: {self.name}',
                     'email_to': self.employee_id.user_id.email,
-                })
+                    'email_from': self.env.user.email or self.company_id.email or 'noreply@company.com',
+                    'body_html': f"""
+                    <p>Đề xuất chi phí của bạn đã bị từ chối:</p>
+                    <ul>
+                        <li><b>Tên:</b> {self.name}</li>
+                        <li><b>Số tiền:</b> {self.total_amount}</li>
+                        <li><b>Người từ chối:</b> {self.env.user.name}</li>
+                        <li><b>Ngày từ chối:</b> {fields.Datetime.now()}</li>
+                    </ul>
+                    <p>Vui lòng kiểm tra lại.</p>
+                    """,
+                }
 
-                mail_template.send_mail(self.id, force_send=True)
+                # Tạo và gửi email
+                mail = self.env['mail.mail'].create(mail_values)
+                mail.send()
+
+                _logger.info(f"Refusal email sent for expense {self.name}")
 
             except Exception as e:
                 _logger.error(f"Failed to send refusal email: {str(e)}")
