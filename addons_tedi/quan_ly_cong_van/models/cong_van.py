@@ -258,7 +258,7 @@ class PhanPhat(models.TransientModel):
         nguoi_xu_ly_chinh_ids = []
         nguoi_dong_xu_ly_ids = []
 
-        # Xác định người xử lý dựa vào loại phân phát
+        # Xác định người xử lý
         if self.loai_phan_phat in ('don_vi', 'ca_hai'):
             nguoi_xu_ly_chinh_ids += self.nguoi_xu_ly_chinh.ids
             nguoi_dong_xu_ly_ids += self.nguoi_dong_xu_ly.ids
@@ -269,10 +269,8 @@ class PhanPhat(models.TransientModel):
         nguoi_xu_ly_chinh_ids = list(set(nguoi_xu_ly_chinh_ids))
         nguoi_dong_xu_ly_ids = list(set(nguoi_dong_xu_ly_ids))
 
-        # --- 1. Cập nhật Many2many vào văn bản ---
-        update_data = {
-            'tt_vb': 'cho_xu_ly',
-        }
+        # 1. Cập nhật Many2many
+        update_data = {'tt_vb': 'cho_xu_ly'}
 
         if self.loai_phan_phat == 'don_vi':
             update_data.update({
@@ -287,7 +285,7 @@ class PhanPhat(models.TransientModel):
 
         doc.write(update_data)
 
-        # --- 2. Tạo detail2 cho từng người ---
+        # 2. Tạo detail2 CHỈ cho người CHƯA có
         lines_to_create = []
         employees_list = []
 
@@ -310,14 +308,88 @@ class PhanPhat(models.TransientModel):
         if lines_to_create:
             self.env['office.document.detail2'].create(lines_to_create)
 
-        # --- 3. Gửi thông báo và email ---
-        employees_to_notify = self.env['hr.employee'].browse(nguoi_xu_ly_chinh_ids + nguoi_dong_xu_ly_ids)
+        # 3. GỬI EMAIL CHO TẤT CẢ (bao gồm cả người đã có trong detail2)
+        all_employees = self.env['hr.employee'].browse(nguoi_xu_ly_chinh_ids + nguoi_dong_xu_ly_ids)
 
-        web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
-        detail_url = f"{web_url}/web#id={doc.id}&model=office.document&view_type=form"
+        email_list = []
+        name_list = []
 
-        # Gửi popup và chat
-        for employee in employees_to_notify:
+        for employee in all_employees:
+            email = False
+
+            if employee.work_email:
+                email = employee.work_email.strip()
+
+            if not email and employee.user_id:
+                if employee.user_id.email:
+                    email = employee.user_id.email.strip()
+                elif employee.user_id.partner_id.email:
+                    email = employee.user_id.partner_id.email.strip()
+
+            if not email and hasattr(employee, 'private_email') and employee.private_email:
+                email = employee.private_email.strip()
+
+            if email and '@' in email and '.' in email:
+                if email not in email_list:
+                    email_list.append(email)
+                    name_list.append(employee.name)
+                    _logger.info(f"✓ Tìm thấy email cho {employee.name}: {email}")
+            else:
+                _logger.warning(f"✗ Không tìm thấy email cho nhân viên: {employee.name} (ID: {employee.id})")
+
+        # Gửi email nếu có
+        if email_list:
+            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            detail_url = f"{web_url}/web#id={doc.id}&model=office.document&view_type=form"
+
+            email_to = ', '.join(email_list)
+            names_str = ', '.join(name_list)
+            subject = f"CV được phân phát: {doc.trich_yeu[:50]}..." if doc.trich_yeu else "CV được phân phát"
+
+            body_html = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h3 style="color: #875A7B;">📄 PHÂN PHÁT VĂN BẢN</h3>
+                <p>Kính gửi: <b>{names_str}</b>,</p>
+                <p>Bạn vừa được phân công xử lý văn bản:</p>
+                <div style="background: #f5f5f5; padding: 15px; border-left: 4px solid #875A7B; margin: 15px 0;">
+                    <p><b>Trích yếu:</b> {doc.trich_yeu or 'Không có'}</p>
+                    <p><b>Mã văn bản:</b> {doc.so_vb or 'Không có mã'}</p>
+                    <p><b>Ngày phân phát:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                </div>
+                <div style="text-align: center; margin: 25px 0;">
+                    <a href="{detail_url}" 
+                       style="background: #875A7B; color: white; padding: 12px 24px; 
+                              text-decoration: none; border-radius: 5px; font-size: 16px; display: inline-block;">
+                        📌 XEM CHI TIẾT VĂN BẢN
+                    </a>
+                </div>
+                <p style="color: #666; font-size: 13px; margin-top: 25px;">
+                    <em>Đây là email tự động từ Hệ thống quản lý công văn. Vui lòng không trả lời email này.</em>
+                </p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="color: #999; font-size: 12px;">
+                    Trân trọng,<br>
+                    <b>Hệ thống quản lý công văn</b><br>
+                    {self.env.company.name or ''}
+                </p>
+            </div>
+            """
+
+            mail = self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'email_to': email_to,
+                'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
+                'body_html': body_html,
+                'reply_to': self.env.user.email or self.env.company.email,
+            })
+            mail.send()
+
+            _logger.info(f"✅ ĐÃ GỬI EMAIL PHÂN PHÁT:")
+            _logger.info(f"   - Đến: {email_to}")
+            _logger.info(f"   - Số người nhận: {len(email_list)}")
+
+        # 4. Gửi popup notification
+        for employee in all_employees:
             user = employee.user_id
             if not user or not user.partner_id:
                 continue
@@ -337,126 +409,13 @@ class PhanPhat(models.TransientModel):
             except Exception as e:
                 _logger.warning(f"Lỗi gửi notification: {str(e)}")
 
-        # --- GỬI EMAIL - SỬA LẠI PHẦN NÀY ---
-        try:
-            email_list = []
-            name_list = []
-
-            for employee in employees_to_notify:
-                # Lấy email từ employee
-                email = False
-
-                # Ưu tiên 1: work_email từ employee
-                if employee.work_email:
-                    email = employee.work_email.strip()
-
-                # Ưu tiên 2: email từ user
-                if not email and employee.user_id:
-                    if employee.user_id.email:
-                        email = employee.user_id.email.strip()
-                    elif employee.user_id.partner_id.email:
-                        email = employee.user_id.partner_id.email.strip()
-
-                # Ưu tiên 3: private_email
-                if not email and hasattr(employee, 'private_email') and employee.private_email:
-                    email = employee.private_email.strip()
-
-                # Kiểm tra email hợp lệ
-                if email and '@' in email and '.' in email:
-                    if email not in email_list:  # Tránh trùng
-                        email_list.append(email)
-                        name_list.append(employee.name)
-                        _logger.info(f"✓ Tìm thấy email cho {employee.name}: {email}")
-                else:
-                    _logger.warning(f"✗ Không tìm thấy email cho nhân viên: {employee.name} (ID: {employee.id})")
-
-            # Gửi email nếu có ít nhất 1 email
-            if email_list:
-                email_to = ', '.join(email_list)
-                names_str = ', '.join(name_list)
-
-                subject = f"Văn bản được phân phát: {doc.trich_yeu[:50]}..." if doc.trich_yeu else "Văn bản được phân phát"
-
-                body_html = f"""
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h3 style="color: #875A7B;">📄 PHÂN PHÁT VĂN BẢN</h3>
-
-                    <p>Kính gửi: <b>{names_str}</b>,</p>
-
-                    <p>Bạn vừa được phân công xử lý văn bản:</p>
-
-                    <div style="background: #f5f5f5; padding: 15px; border-left: 4px solid #875A7B; margin: 15px 0;">
-                        <p><b>Trích yếu:</b> {doc.trich_yeu or 'Không có'}</p>
-                        <p><b>Mã văn bản:</b> {doc.so_vb or 'Không có mã'}</p>
-                        <p><b>Ngày phân phát:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
-                    </div>
-
-                    <div style="text-align: center; margin: 25px 0;">
-                        <a href="{detail_url}" 
-                           style="background: #875A7B; color: white; padding: 12px 24px; 
-                                  text-decoration: none; border-radius: 5px; font-size: 16px; display: inline-block;">
-                            📌 XEM CHI TIẾT VĂN BẢN
-                        </a>
-                    </div>
-
-                    <p style="color: #666; font-size: 13px; margin-top: 25px;">
-                        <em>Đây là email tự động từ Hệ thống quản lý công văn. Vui lòng không trả lời email này.</em>
-                    </p>
-
-                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-
-                    <p style="color: #999; font-size: 12px;">
-                        Trân trọng,<br>
-                        <b>Hệ thống quản lý công văn</b><br>
-                        {self.env.company.name or ''}
-                    </p>
-                </div>
-                """
-
-                # Tạo và gửi email
-                mail = self.env['mail.mail'].sudo().create({
-                    'subject': subject,
-                    'email_to': email_to,
-                    'email_from': self.env.user.email or self.env.company.email or 'no-reply@company.com',
-                    'body_html': body_html,
-                    'reply_to': self.env.user.email or self.env.company.email,
-                })
-
-                # Gửi ngay
-                mail.send()
-
-                _logger.info(f"✅ ĐÃ GỬI EMAIL PHÂN PHÁT:")
-                _logger.info(f"   - Đến: {email_to}")
-                _logger.info(f"   - Số người nhận: {len(email_list)}/{len(employees_to_notify)}")
-
-            else:
-                _logger.warning(
-                    f"❌ KHÔNG GỬI ĐƯỢC EMAIL: Không tìm thấy email hợp lệ nào trong {len(employees_to_notify)} nhân viên")
-
-                # Hiển thị cảnh báo cho người dùng
-                return {
-                    'type': 'ir.actions.client',
-                    'tag': 'display_notification',
-                    'params': {
-                        'title': 'Cảnh báo',
-                        'message': f'Đã phân phát văn bản nhưng KHÔNG gửi được email vì {len(employees_to_notify)} nhân viên không có địa chỉ email!',
-                        'type': 'warning',
-                        'sticky': True,
-                    }
-                }
-
-        except Exception as e:
-            _logger.error(f"❌ LỖI GỬI EMAIL: {str(e)}")
-            import traceback
-            _logger.error(traceback.format_exc())
-
-        # --- Thông báo thành công ---
+        # Thông báo thành công
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': 'Thành công',
-                'message': f'Đã phân phát văn bản và gửi email đến {len(email_list) if "email_list" in locals() else 0} người.',
+                'message': f'Đã phân phát văn bản và gửi email đến {len(email_list)} người.',
                 'type': 'success',
                 'sticky': False,
                 'next': {'type': 'ir.actions.act_window_close'},
@@ -538,7 +497,7 @@ class ButPhe(models.TransientModel):
                 email_to = ', '.join(van_thu_emails)
 
                 # Tạo email
-                subject = f"Văn bản đã bút phê: {doc.trich_yeu[:30]}..." if doc.trich_yeu else "Văn bản đã bút phê"
+                subject = f"CV đã bút phê: {doc.trich_yeu[:30]}..." if doc.trich_yeu else "CV đã bút phê"
 
                 body = f"""
                         Văn bản đã được bút phê:
@@ -557,6 +516,7 @@ class ButPhe(models.TransientModel):
                 self.env['mail.mail'].sudo().create({
                     'subject': subject,
                     'email_to': email_to,
+                    'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                     'body_html': body.replace('\n', '<br>'),
                 }).send()
 
@@ -1344,9 +1304,9 @@ class OfficeDocument(models.Model):
 
                 # Tạo mail với nhiều người nhận
                 mail_vals = {
-                    'subject': f"[CẦN XỬ LÝ] Văn bản {self.trich_yeu[:50]}{'...' if len(self.trich_yeu) > 50 else ''}",
+                    'subject': f"CV cần xử lý {self.trich_yeu[:50]}{'...' if len(self.trich_yeu) > 50 else ''}",
                     'email_to': email_to,  # Tất cả email trong một field
-                    'email_from': self.env.user.email or self.env.company.email or 'no-reply@company.com',
+                    'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                     'body_html': body_html,
                     'reply_to': self.env.user.email or self.env.company.email,
                 }
@@ -1431,9 +1391,9 @@ class OfficeDocument(models.Model):
             """
 
             self.env['mail.mail'].sudo().create({
-                'subject': f"[Cần xử lý] {self.trich_yeu[:50]}...",
+                'subject': f"CV cần xử lý {self.trich_yeu[:50]}...",
                 'email_to': email_to,
-                'email_from': self.env.user.email or 'no-reply@company.com',
+                'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                 'body_html': body_html,
             }).send()
 
@@ -1504,7 +1464,7 @@ class OfficeDocument(models.Model):
                 return
 
             # 2. NỘI DUNG EMAIL ĐƠN GIẢN
-            subject = f"Văn bản đã được duyệt: {self.trich_yeu[:50] if self.trich_yeu else 'Văn bản'}"
+            subject = f"CV được duyệt: {self.trich_yeu[:50] if self.trich_yeu else 'Văn bản'}"
 
             body = f"""
                     Văn bản đã được duyệt:
@@ -1522,6 +1482,7 @@ class OfficeDocument(models.Model):
             email_to = ', '.join(recipients)
             self.env['mail.mail'].sudo().create({
                 'subject': subject,
+                'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                 'email_to': email_to,
                 'body_html': body.replace('\n', '<br>'),
             }).send()
@@ -1549,7 +1510,7 @@ class OfficeDocument(models.Model):
                     # Gửi email cho trưởng đơn vị
                     email_to = truong_don_vi.user_id.email
 
-                    subject = f"Công văn đi đã được duyệt: {self.trich_yeu[:30]}..." if self.trich_yeu else "Công văn đi đã được duyệt"
+                    subject = f"CV được duyệt: {self.trich_yeu[:30]}..." if self.trich_yeu else "Công văn đi đã được duyệt"
 
                     body = f"""
                             Công văn đi đã được duyệt và chuyển cho văn thư xử lý:
@@ -1566,6 +1527,7 @@ class OfficeDocument(models.Model):
                     # Gửi email
                     self.env['mail.mail'].sudo().create({
                         'subject': subject,
+                        'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                         'email_to': email_to,
                         'body_html': body.replace('\n', '<br>'),
                     }).send()
@@ -1606,7 +1568,7 @@ class OfficeDocument(models.Model):
             # Xác định loại văn bản
             doc_type_display = dict(self._fields['document_type'].selection).get(self.document_type, 'Văn bản')
 
-            subject = f"[{doc_type_display} đã được duyệt] {self.trich_yeu[:50]}..."
+            subject = f"CV {doc_type_display} đã được duyệt {self.trich_yeu[:50]}..."
             body_html = f"""
             <p>Xin chào {creator.name},</p>
 
@@ -1636,7 +1598,7 @@ class OfficeDocument(models.Model):
             self.env['mail.mail'].sudo().create({
                 'subject': subject,
                 'email_to': creator.email,
-                'email_from': approver.email or 'no-reply@company.com',
+                'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                 'body_html': body_html,
             }).send()
 
@@ -1696,7 +1658,7 @@ class OfficeDocument(models.Model):
             # Xác định hành động tiếp theo
             next_action = "xử lý tiếp"  # Mặc định
 
-            subject = f"[Văn bản đã duyệt] {self.trich_yeu[:50]}..."
+            subject = f"CV đã duyệt: {self.trich_yeu[:50]}..."
             body_html = f"""
             <p>Kính gửi Anh/Chị Văn thư,</p>
 
@@ -1723,7 +1685,7 @@ class OfficeDocument(models.Model):
                 self.env['mail.mail'].sudo().create({
                     'subject': subject,
                     'email_to': email_to,
-                    'email_from': self.env.user.email or 'no-reply@company.com',
+                    'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                     'body_html': body_html,
                 }).send()
 
@@ -2131,9 +2093,9 @@ class OfficeDocument(models.Model):
             """
 
             self.env['mail.mail'].sudo().create({
-                'subject': f"[Cần duyệt] {self.trich_yeu[:50]}...",
+                'subject': f"CV cần duyệt: {self.trich_yeu[:50]}...",
                 'email_to': email,
-                'email_from': self.env.user.email or 'no-reply@company.com',
+                'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                 'body_html': body_html,
             }).send()
 
@@ -2271,9 +2233,9 @@ class OfficeDocument(models.Model):
         """
 
         self.env['mail.mail'].sudo().create({
-            'subject': f"[Cần duyệt] {self.trich_yeu[:50]}...",
+            'subject': f"CV cần duyệt: {self.trich_yeu[:50]}...",
             'email_to': email_to,
-            'email_from': self.env.user.email or 'no-reply@company.com',
+            'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
             'body_html': body_html,
         }).send()
 
@@ -2342,7 +2304,7 @@ class OfficeDocument(models.Model):
             if not creator or not creator.email:
                 return
 
-            subject = f"[Văn bản đã bị từ chối]: {self.trich_yeu[:50]}..."
+            subject = f"CV bị từ chối: {self.trich_yeu[:50]}..."
 
             body_html = f"""
             <p>Văn bản của bạn <b>"{self.trich_yeu}"</b> đã bị từ chối.</p>
@@ -2352,7 +2314,7 @@ class OfficeDocument(models.Model):
             self.env['mail.mail'].sudo().create({
                 'subject': subject,
                 'email_to': creator.email,
-                'email_from': self.env.user.email or 'no-reply@company.com',
+                'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                 'body_html': body_html,
             }).send()
 
@@ -2776,9 +2738,9 @@ class OfficeDocument(models.Model):
                     <p>Trân trọng,<br/>Hệ thống quản lý công văn</p>
                 """
                 self.env['mail.mail'].sudo().create({
-                    'subject': f"[Văn bản cần duyệt] {self.trich_yeu}",
+                    'subject': f"CV cần duyệt {self.trich_yeu}",
                     'email_to': email,
-                    'email_from': self.env.user.email or 'no-reply@company.com',
+                    'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                     'body_html': body_html,
                 }).send()
         except Exception as e:
@@ -3144,7 +3106,7 @@ class ChuyenLanhDaoWizard(models.TransientModel):
         try:
             email = lanh_dao_moi.work_email or (lanh_dao_moi.user_id.email if lanh_dao_moi.user_id else None)
             if email:
-                subject = f"[Chuyển xử lý] {doc.trich_yeu}"
+                subject = f"Chuyển xử lý: {doc.trich_yeu}"
                 body_html = f"""
                 <p>Xin chào {lanh_dao_moi.name},</p>
                 <p>Bạn vừa được chuyển xử lý văn bản: <b>{doc.trich_yeu}</b>.</p>
@@ -3159,7 +3121,7 @@ class ChuyenLanhDaoWizard(models.TransientModel):
                 self.env['mail.mail'].sudo().create({
                     'subject': subject,
                     'email_to': email,
-                    'email_from': self.env.user.email or 'no-reply@company.com',
+                    'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                     'body_html': body_html,
                 }).send()
         except Exception as e:
@@ -3296,7 +3258,7 @@ class RejectDocumentWizard(models.TransientModel):
             web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
             detail_url = f"{web_url}/web#id={doc.id}&model=office.document&view_type=form"
 
-            subject = f"[Văn bản bị từ chối] {doc.trich_yeu[:50]}..."
+            subject = f"CV bị từ chối: {doc.trich_yeu[:50]}..."
             body_html = f"""
             <p>Xin chào {creator.name},</p>
 
@@ -3323,7 +3285,7 @@ class RejectDocumentWizard(models.TransientModel):
             self.env['mail.mail'].sudo().create({
                 'subject': subject,
                 'email_to': creator.email,
-                'email_from': self.env.user.email or 'no-reply@company.com',
+                'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                 'body_html': body_html,
             }).send()
 
@@ -3431,7 +3393,7 @@ class OfficeDocumentLanhDaoRejectWizard(models.TransientModel):
         # 1. Gửi cho người tạo
         if creator and creator.email:
             try:
-                subject_creator = f"[Văn bản bị lãnh đạo từ chối] {doc.trich_yeu[:50]}..."
+                subject_creator = f"CV bị từ chối: {doc.trich_yeu[:50]}..."
                 body_html_creator = f"""
                 <div style="font-family: Arial, sans-serif; line-height: 1.6;">
                     <p>Xin chào {creator.name},</p>
@@ -3476,7 +3438,7 @@ class OfficeDocumentLanhDaoRejectWizard(models.TransientModel):
                 self.env['mail.mail'].sudo().create({
                     'subject': subject_creator,
                     'email_to': creator.email,
-                    'email_from': self.env.user.email or 'no-reply@company.com',
+                    'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                     'body_html': body_html_creator,
                 }).send()
 
@@ -3501,7 +3463,7 @@ class OfficeDocumentLanhDaoRejectWizard(models.TransientModel):
             try:
                 email_tdv = truong_don_vi.work_email or truong_don_vi.user_id.email
 
-                subject_tdv = f"[Văn bản cần duyệt lại] {doc.trich_yeu[:50]}..."
+                subject_tdv = f"CV cần xem lại: {doc.trich_yeu[:50]}..."
                 body_html_tdv = f"""
                 <div style="font-family: Arial, sans-serif; line-height: 1.6;">
                     <p>Xin chào {truong_don_vi.name},</p>
@@ -3543,7 +3505,7 @@ class OfficeDocumentLanhDaoRejectWizard(models.TransientModel):
                 self.env['mail.mail'].sudo().create({
                     'subject': subject_tdv,
                     'email_to': email_tdv,
-                    'email_from': self.env.user.email or 'no-reply@company.com',
+                    'email_from': f'{"TEDI ERP"} <{self.env.company.email or "noreply@tedierp.com"}>',
                     'body_html': body_html_tdv,
                 }).send()
 
