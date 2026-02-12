@@ -30,14 +30,18 @@
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
         </record>
 
-        <!-- Rule 1: Quyền READ - Xem văn bản cùng phòng ban HOẶC do mình tạo -->
+        <!-- Rule 1: Quyền READ - Văn thư đơn vị: Xem văn bản của phòng ban mình
+         Bao gồm: văn bản do mình tạo, văn bản của phòng ban mình,
+         và văn bản được phân phát cho nhân viên cùng phòng ban -->
         <record id="office_document_rule_van_thu_don_vi_read" model="ir.rule">
-            <field name="name">Office Document - Văn thư đơn vị: Xem cùng phòng ban</field>
+            <field name="name">Office Document - Văn thư đơn vị: Xem văn bản của phòng ban</field>
             <field name="model_id" ref="model_office_document"/>
             <field name="domain_force">
-                ['|',
+                ['|', '|', '|',
                     ('create_uid', '=', user.id),
-                    ('create_uid.employee_ids.department_id', 'in', user.employee_ids.mapped('department_id').ids)
+                    ('create_uid.employee_ids.department_id', 'in', user.employee_ids.department_id.ids),
+                    ('dv_xu_ly_chinh', 'in', user.employee_ids.department_id.ids),
+                    ('detail2.nguoi_nhap_y_kien.department_id', 'in', user.employee_ids.department_id.ids)
                 ]
             </field>
             <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_don_vi'))]"/>
