@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_web_push_template_tree" model="ir.ui.view">
+        <field name="name">web.push.template.tree</field>
+        <field name="model">web.push.template</field>
+        <field name="arch" type="xml">
+            <tree string="Mẫu thông báo">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="body"/>
+            </tree>
+        </field>
+    </record>
+
+<record id="view_web_push_template_form" model="ir.ui.view">
+    <field name="name">web.push.template.form</field>
+    <field name="model">web.push.template</field>
+    <field name="arch" type="xml">
+        <form string="Mẫu thông báo">
+            <header>
+                <button name="action_open_send_wizard" string="Gửi thông báo này" type="object" class="oe_highlight"/>
+            </header>
+            <sheet>
+                <group>
+                    <field name="name" placeholder="Ví dụ: Nhắc hẹn họp"/>
+                    <field name="title" placeholder="Tiêu đề hiển thị"/>
+                    <field name="body" placeholder="Nội dung chi tiết..."/>
+                </group>
+            </sheet>
+        </form>
+    </field>
+</record>
+
+    <record id="action_web_push_template" model="ir.actions.act_window">
+        <field name="name">Mẫu thông báo</field>
+        <field name="res_model">web.push.template</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_web_push_template"
+              name="Mẫu thông báo"
+              parent="menu_web_push_root"
+              action="action_web_push_template"
+              sequence="20"/>
+
+    <record id="action_server_send_push_users" model="ir.actions.server">
+        <field name="name">Gửi thông báo Push</field>
+        <field name="model_id" ref="base.model_res_users"/>
+        <field name="binding_model_id" ref="base.model_res_users"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+action = record.env['ir.actions.act_window']._for_xml_id('web_push_notification.action_view_send_push_wizard')
+action['context'] = {'default_user_ids': record.env.context.get('active_ids')}
+        </field>
+    </record>
+</odoo>

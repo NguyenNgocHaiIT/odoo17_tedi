@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_push_inherit" model="ir.ui.view">
+        <field name="name">res.users.form.push.inherit</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_test_push"
+                        string="🔥 Test Gửi Thông Báo"
+                        type="object"
+                        class="btn-primary"/>
+            </xpath>
+
+            <xpath expr="//page[@name='preferences']" position="inside">
+                <group string="Cấu hình Web Push">
+                    <field name="fcm_token"
+                           string="Mã Token hiện tại"
+                           readonly="1"
+                           placeholder="Chưa có token được đăng ký..."/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

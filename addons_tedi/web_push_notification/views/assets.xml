@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="assets_backend_firebase" name="Firebase Assets" inherit_id="web.assets_backend">
+            <xpath expr="." position="inside">
+                <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+                <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-messaging.js"></script>
+            </xpath>
+        </template>
+    </data>
+</odoo>

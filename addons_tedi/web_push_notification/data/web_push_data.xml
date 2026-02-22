@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="default_web_push_config" model="web.push.config">
+            <field name="fcm_project_id">New Project</field>
+        </record>
+    </data>
+</odoo>
