@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_web_push_config_admin,web.push.config.admin,model_web_push_config,base.group_system,1,1,1,1
+access_web_push_config_user,web.push.config.user,model_web_push_config,base.group_user,1,1,1,1
+access_web_push_template_user,web.push.template.user,model_web_push_template,base.group_user,1,1,1,1
+access_send_push_wizard,access_send_push_wizard,model_send_push_wizard,base.group_user,1,1,1,1
