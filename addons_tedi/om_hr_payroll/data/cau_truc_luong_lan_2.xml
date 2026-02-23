@@ -141,15 +141,14 @@ else:
         </record>
 
         <record id="PC_AC_rule" model="hr.salary.rule">
-            <field name="name">Phụ cấp ăn ca</field>
-            <field name="sequence" eval="11"/>
-            <field name="code">PCAC</field>
-            <field name="category_id" ref="om_hr_payroll.ALW"/>
-            <field name="amount_select">percentage</field>
-            <field name="quantity">1</field>
-            <field name="amount_percentage_base">inputs.PCAC.amount</field>
-            <field name="amount_percentage">100</field>
-        </record>
+    <field name="name">Phụ cấp</field>
+    <field name="sequence" eval="11"/>
+    <field name="code">PC</field>
+    <field name="category_id" ref="om_hr_payroll.ALW"/>
+    <field name="amount_select">code</field>
+    <field name="amount_python_compute">result = sum(line.amount for line in payslip.input_line_ids if line.code == 'PC')</field>
+</record>
+
 
         <record id="thanh_toan_lan_2_hang_thang_structure" model="hr.payroll.structure">
             <field name="code">TT.02</field>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_web_push_config_form" model="ir.ui.view">
+        <field name="name">web.push.config.form</field>
+        <field name="model">web.push.config</field>
+        <field name="arch" type="xml">
+            <form string="Cấu hình Firebase">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Thiết lập kết nối Firebase</h1>
+                    </div>
+                    <group>
+                        <group string="Frontend SDK &amp; VAPID">
+                            <field name="fcm_api_key" password="True"/>
+                            <field name="fcm_vapid_key" placeholder="Chuỗi Public Key từ Firebase..."/>
+                            <field name="fcm_project_id"/>
+                            <field name="fcm_auth_domain"/>
+                            <field name="fcm_messaging_sender_id"/>
+                            <field name="fcm_app_id"/>
+                        </group>
+                        <group string="Backend V1">
+                            <field name="fcm_json_filename" invisible="1"/>
+                            <field name="fcm_json_file" filename="fcm_json_filename"/>
+                        </group>
+                        <group string="Giao diện thông báo">
+                            <field name="notification_icon" widget="image" class="oe_avatar" options='{"size": [90, 90]}'/>
+                            <field name="notification_badge" widget="image" class="oe_avatar" options='{"size": [90, 90]}'/>
+                            <help>Icon nên là hình vuông (192x192px). Badge nên là hình trắng đen (với nền trong suốt) cho Android.</help>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_web_push_config" model="ir.actions.act_window">
+        <field name="name">Cấu hình Web Push</field>
+        <field name="res_model">web.push.config</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="res_id" eval="1"/>
+    </record>
+
+    <menuitem id="menu_web_push_root" name="Web Push" parent="base.menu_administration" sequence="90"/>
+    <menuitem id="menu_web_push_settings" name="Cấu hình" parent="menu_web_push_root" action="action_web_push_config" sequence="10"/>
+</odoo>

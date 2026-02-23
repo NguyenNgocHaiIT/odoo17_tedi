@@ -201,14 +201,14 @@ class HrEmployeePrivate(models.Model):
 
     # --- Tự động gộp địa chỉ hiển thị (Bỏ District) ---
     @api.onchange('street_detail', 'ward_id', 'province_id')
-    def _onchange_full_address(self):
-        parts = [
-            self.street_detail,
-            self.ward_id.name,
-            # Bỏ self.district_id.name
-            self.province_id.name
-        ]
-        self.household_address = ", ".join([p for p in parts if p])
+    # def _onchange_full_address(self):
+    #     parts = [
+    #         self.street_detail,
+    #         self.ward_id.name,
+    #         # Bỏ self.district_id.name
+    #         self.province_id.name
+    #     ]
+    #     self.household_address = ", ".join([p for p in parts if p])
 
 
     @api.onchange('name')

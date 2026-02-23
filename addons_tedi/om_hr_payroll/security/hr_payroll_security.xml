@@ -14,6 +14,10 @@
                    eval="[(4, ref('hr.group_hr_user')), (4, ref('hr_contract.group_hr_contract_manager'))]"/>
         </record>
 
+        <record id="group_approve_quarterly_payroll_settlement" model="res.groups">
+            <field name="name">Duyệt bảng quyết toán lương quý</field>
+        </record>
+
         <record id="group_hr_payroll_manager" model="res.groups">
             <field name="name">Manager</field>
             <field name="category_id" ref="base.module_category_payroll_localization"/>

@@ -22,11 +22,11 @@
             <field name="res_model">hr.employee.allowance</field>
         </record>
 
-        <menuitem
-                id="hr_employee_allowance_menu_action"
-                action="hr_employee_allowance_action"
-                parent="menu_hr_payroll_root"
-                sequence="10"/>
+<!--        <menuitem-->
+<!--                id="hr_employee_allowance_menu_action"-->
+<!--                action="hr_employee_allowance_action"-->
+<!--                parent="menu_hr_payroll_root"-->
+<!--                sequence="10" groups="base.group_no_one"/>-->
 
 
 

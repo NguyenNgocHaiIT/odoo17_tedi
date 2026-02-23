@@ -131,7 +131,7 @@
                                     <field name="birthday" string="Sinh ngày" readonly="not active"/>
                                     <field name="country_id" string="Quốc tịch" readonly="not active"/>
                                     <field name="folk_id" readonly="not active"/>
-                                    <field name="household_address" invisible="1"/>
+
                                     <label for="street_detail" string="Địa chỉ thường trú"/>
                                     <div class="o_address_format">
                                         <field name="street_detail" placeholder="Số nhà, đường..." class="o_address_street" invisible="1" readonly="not active"/>
@@ -139,6 +139,7 @@
                                         <field name="ward_id" placeholder="Xã / Phường" class="o_address_zip" options="{'no_create': True, 'no_open': True}" readonly="not active"/>
                                         <field name="household_address" invisible="1"/>
                                     </div>
+                                    <field name="household_address"/>
                                     <field name="bank_account_id"
                                            context="{
                                                'default_partner_id': work_contact_id,

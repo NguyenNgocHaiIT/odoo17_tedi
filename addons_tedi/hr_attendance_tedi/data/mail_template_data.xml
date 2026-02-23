@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="email_template_leave_create_notification" model="mail.template">
+            <field name="name">Thông báo: Đơn nghỉ phép MỚI (Gửi Quản lý)</field>
+            <field name="model_id" ref="hr_holidays.model_hr_leave"/>
+            <field name="subject">Đơn nghỉ phép mới từ {{ object.employee_id.name }}</field>
+            <field name="email_from">{{ object.employee_id.work_email or user.email_formatted }}</field>
+            <field name="email_to">{{ object.manager_id.work_email }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px; font-size: 13px;">
+                    <p>Chào <strong><t t-out="object.manager_id.name"/></strong>,</p>
+                    <p>Bạn nhận được một yêu cầu nghỉ phép mới cần phê duyệt:</p>
+                    <ul>
+                        <li><strong>Nhân viên:</strong> <t t-out="object.employee_id.name"/></li>
+                        <li><strong>Loại nghỉ:</strong> <t t-out="object.holiday_status_id.name"/></li>
+                        <li><strong>Thời gian:</strong> <t t-out="object.date_from"/> đến <t t-out="object.date_to"/></li>
+                        <li><strong>Lý do:</strong> <t t-out="object.report_title or 'Không có'"/></li>
+                    </ul>
+                    <p>Vui lòng đăng nhập hệ thống để xử lý.</p>
+                </div>
+            </field>
+        </record>
+
+        <record id="email_template_leave_approve_notification" model="mail.template">
+            <field name="name">Thông báo: Đơn nghỉ phép đã được DUYỆT</field>
+            <field name="model_id" ref="hr_holidays.model_hr_leave"/>
+            <field name="subject">Đơn nghỉ phép của bạn đã được CHẤP NHẬN</field>
+            <field name="email_from">{{ object.manager_id.work_email or user.email_formatted }}</field>
+            <field name="email_to">{{ object.employee_id.work_email }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px; font-size: 13px;">
+                    <p>Chào <strong><t t-out="object.employee_id.name"/></strong>,</p>
+                    <p>Đơn nghỉ phép của bạn đã được <strong>CHẤP NHẬN</strong>.</p>
+                    <p>Chúc bạn có thời gian nghỉ ngơi vui vẻ!</p>
+                </div>
+            </field>
+        </record>
+        <record id="email_template_leave_refuse_notification" model="mail.template">
+            <field name="name">Thông báo: Đơn nghỉ phép bị Từ chối</field>
+            <field name="model_id" ref="hr_holidays.model_hr_leave"/>
+            <field name="subject">Đơn nghỉ phép của bạn đã bị TỪ CHỐI</field>
+            <field name="email_from">{{ (object.manager_id.work_email or user.email_formatted) }}</field>
+            <field name="email_to">{{ object.employee_id.work_email }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p style="margin: 0px; padding: 0px; font-size: 13px;">
+                        Xin chào <t t-out="object.employee_id.name or ''">Nhân viên</t>,
+                        <br/><br/>
+                        Đơn xin nghỉ phép của bạn đã bị <strong>TỪ CHỐI</strong>.
+                        <br/><br/>
+                        <strong>Chi tiết đơn:</strong>
+                        <ul>
+                            <li><strong>Loại nghỉ:</strong> <t t-out="object.holiday_status_id.name or ''">Nghỉ phép</t></li>
+                            <li><strong>Thời gian:</strong> Từ <t t-out="object.request_date_from">...</t> đến <t t-out="object.request_date_to">...</t></li>
+                            <li><strong>Số ngày:</strong> <t t-out="object.number_of_days">0</t> ngày</li>
+                            <li><strong>Người từ chối:</strong> <t t-out="object.manager_id.name or user.name">Quản lý</t></li>
+                        </ul>
+                        <br/>
+                        Vui lòng liên hệ quản lý trực tiếp nếu bạn có thắc mắc.
+                        <br/><br/>
+                        Trân trọng,
+                        <br/>
+                        Hệ thống HR.
+                    </p>
+                </div>
+            </field>
+        </record>
+
+
+        <record id="email_template_allocation_validate" model="mail.template">
+            <field name="name">Thông báo: Được cấp phát phép</field>
+            <field name="model_id" ref="hr_holidays.model_hr_leave_allocation"/>
+            <field name="subject">Thông báo cấp phát phép: {{ object.holiday_status_id.name }}</field>
+            <field name="email_to">{{ object.employee_id.work_email }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Chào <t t-out="object.employee_id.name"/>,</p>
+                    <p>Bạn vừa được cấp phát <strong><t t-out="object.number_of_days"/> ngày</strong> thuộc loại <strong><t t-out="object.holiday_status_id.name"/></strong>.</p>
+                    <p>Trạng thái: Đã phê duyệt.</p>
+                    <p>Trân trọng!</p>
+                </div>
+            </field>
+        </record>
+
+        <record id="email_template_allocation_refuse" model="mail.template">
+            <field name="name">Thông báo: Hủy cấp phát phép</field>
+            <field name="model_id" ref="hr_holidays.model_hr_leave_allocation"/>
+            <field name="subject">Thông báo hủy/điều chỉnh phân bổ phép: {{ object.holiday_status_id.name }}</field>
+            <field name="email_to">{{ object.employee_id.work_email }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Chào <t t-out="object.employee_id.name"/>,</p>
+                    <p>Đơn phân bổ phép loại <strong><t t-out="object.holiday_status_id.name"/></strong> của bạn đã bị hủy hoặc chuyển về trạng thái chờ xử lý để điều chỉnh.</p>
+                    <p>Vui lòng liên hệ phòng nhân sự để biết thêm chi tiết.</p>
+                    <p>Trân trọng!</p>
+                </div>
+            </field>
+        </record>
+    </data>
+</odoo>

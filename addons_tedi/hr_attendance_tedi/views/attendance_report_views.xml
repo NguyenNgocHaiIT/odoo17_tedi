@@ -17,18 +17,18 @@
                 </xpath>
 
                 <xpath expr="//button[@name='action_approve']" position="attributes">
-                    <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
-                    <attribute name="invisible">not (can_approve_by_unit_manager or is_officer) or state != 'confirm'</attribute>
+                    <attribute name="groups">base.group_user</attribute>
+                    <attribute name="invisible">not can_approve_by_unit_manager or state != 'confirm'</attribute>
                 </xpath>
 
                 <xpath expr="//button[@name='action_refuse']" position="attributes">
-                    <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
-                    <attribute name="invisible">not (can_approve_by_unit_manager or is_officer) or state not in ['confirm', 'validate', 'validate1']</attribute>
+                    <attribute name="groups">base.group_user</attribute>
+                    <attribute name="invisible">not can_approve_by_unit_manager or state not in ['confirm', 'validate', 'validate1']</attribute>
                 </xpath>
 
                 <xpath expr="//button[@name='action_validate']" position="attributes">
-                    <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
-                    <attribute name="invisible">not (can_approve_by_unit_manager or is_officer) or state != 'validate1'</attribute>
+                    <attribute name="groups">base.group_user</attribute>
+                    <attribute name="invisible">not can_approve_by_unit_manager or state != 'validate1'</attribute>
                 </xpath>
 
                 <xpath expr="//group[@name='col_left']/field[1]" position="before">
@@ -46,22 +46,28 @@
                     <field name="manager_id" string="Người phê duyệt" readonly="1" force_save="1"/>
                 </xpath>
 
+                <xpath expr="//field[@name='request_hour_from']" position="attributes">
+                    <attribute name="required">0</attribute>
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+
+                <xpath expr="//field[@name='request_hour_to']" position="attributes">
+                    <attribute name="required">0</attribute>
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+
                 <xpath expr="//div[hasclass('o_row')][.//field[@name='request_date_from']][1]" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>
-
                 <xpath expr="//div[hasclass('o_row')][.//field[@name='request_date_from']][2]" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>
-
                 <xpath expr="//label[@for='request_date_from'][1]" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>
-
                 <xpath expr="//label[@for='request_date_from'][2]" position="attributes">
                     <attribute name="invisible">1</attribute>
                 </xpath>
-
                 <xpath expr="//field[@name='request_date_from']" position="attributes">
                      <attribute name="invisible">1</attribute>
                 </xpath>
@@ -107,21 +113,18 @@
                 </xpath>
 
                 <xpath expr="//div[hasclass('o_row')][.//field[@name='request_unit_half']]" position="attributes"><attribute name="invisible">1</attribute></xpath>
-                <xpath expr="//div[hasclass('o_row')][.//field[@name='request_hour_from']]" position="attributes"><attribute name="invisible">1</attribute></xpath>
+
                 <xpath expr="//label[@for='number_of_days_display']" position="attributes"><attribute name="invisible">1</attribute></xpath>
                 <xpath expr="//div[@name='duration_display']" position="attributes"><attribute name="invisible">1</attribute></xpath>
 
                 <xpath expr="//group[@name='col_left']/field[@name='holiday_status_id']" position="attributes"><attribute name="invisible">1</attribute></xpath>
-
-                <xpath expr="//group[@name='col_left']/field[@name='name']" position="attributes">
-                    <attribute name="invisible">1</attribute>
-                </xpath>
+                <xpath expr="//group[@name='col_left']/field[@name='name']" position="attributes"><attribute name="invisible">1</attribute></xpath>
 
                 <xpath expr="//sheet" position="inside">
                     <notebook>
                         <page string="Lịch sử nghỉ phép gần đây">
                             <field name="my_history_ids" readonly="1">
-                                <tree create="0" delete="0" edit="0" decoration-muted="state == 'cancel'">
+                                <tree create="0" delete="0" edit="0" decoration-muted="state == 'cancel'" default_order="date_from desc">
                                     <field name="holiday_status_id"/>
                                     <field name="date_from"/>
                                     <field name="date_to"/>
@@ -175,15 +178,14 @@
             <field name="model">hr.leave</field>
             <field name="inherit_id" ref="hr_holidays.hr_leave_view_tree"/>
             <field name="arch" type="xml">
-
                 <xpath expr="//button[@name='action_approve']" position="attributes">
-                     <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
+                    <attribute name="groups">base.group_user</attribute>
                 </xpath>
                 <xpath expr="//button[@name='action_validate']" position="attributes">
-                     <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
+                     <attribute name="groups">base.group_user</attribute>
                 </xpath>
                  <xpath expr="//button[@name='action_refuse']" position="attributes">
-                     <attribute name="groups">hr_holidays.group_hr_holidays_user,hr_attendance_tedi.group_time_off_unit_manager</attribute>
+                     <attribute name="groups">base.group_user</attribute>
                 </xpath>
                  <xpath expr="//field[@name='employee_id']" position="after">
                     <field name="employee_code" optional="show"/>
@@ -198,22 +200,20 @@
              <field name="name">Đơn nghỉ phép (Bộ phận của tôi)</field>
              <field name="res_model">hr.leave</field>
              <field name="view_mode">tree,form,calendar,kanban</field>
-
              <field name="domain">[('employee_id.department_id.member_ids.user_id', '=', uid)]</field>
-
              <field name="context">{'group_by': 'employee_id', 'create': False}</field>
-             <field name="help" type="html">
-                 <p class="o_view_nocontent_smiling_face">
-                     Không tìm thấy đơn nghỉ phép nào trong bộ phận của bạn.
-                 </p>
-             </field>
          </record>
 
-         <menuitem id="menu_time_off_my_department"
-                   name="Đơn thuộc bộ phận"
-                   parent="menu_tedi_request_root"
-                   action="action_time_off_my_department"
-                   groups="hr_attendance_tedi.group_time_off_unit_manager"
-                   sequence="15"/>
+     <record id="action_tedi_manager_approve" model="ir.actions.act_window">
+        <field name="name">Quản lý Đơn nghỉ</field>
+        <field name="res_model">hr.leave</field>
+        <field name="view_mode">tree,kanban,form,calendar,activity</field>
+        <field name="search_view_id" ref="hr_holidays.hr_leave_view_search_manager"/>
+        <field name="domain">[('state','!=','draft'), ('employee_id.user_id', '!=', uid)]</field>
+        <field name="context">{
+            'search_default_approve': 1,
+            'create': False  }</field>
+    </record>
+
     </data>
 </odoo>

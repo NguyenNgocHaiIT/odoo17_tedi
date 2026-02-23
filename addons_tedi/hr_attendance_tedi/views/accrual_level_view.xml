@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <record id="hr_leave_accrual_level_view_form_custom" model="ir.ui.view">
+            <field name="name">hr.leave.accrual.level.view.form.custom</field>
+            <field name="model">hr.leave.accrual.level</field>
+            <field name="inherit_id" ref="hr_holidays.hr_accrual_level_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//sheet" position="replace">
+                    <sheet>
+                        <group>
+                            <group name="accrual_rules" string="Quy tắc Tích lũy">
+                                <label for="added_value" string="Nhân viên nhận"/>
+                                <div class="o_row d-flex align-items-center gap-1">
+                                    <field name="added_value" widget="FloatWithoutTrailingZeros" class="text-center fw-bold" style="width: 4rem !important;"/>
+                                    <field name="added_value_type" nolabel="1" class="fw-bold" style="width: 5rem !important;"/>
+                                    <span class="text-muted">mỗi</span>
+                                    <field name="frequency" nolabel="1" class="fw-bold" style="width: 6rem !important;"/>
+                                </div>
+
+                                <label for="week_day" string="Vào thứ" invisible="frequency != 'weekly'"/>
+                                <field name="week_day" invisible="frequency != 'weekly'"/>
+
+                                <label for="first_day_display" string="Vào ngày" invisible="frequency != 'monthly'"/>
+                                <div class="o_row d-flex align-items-center gap-1" invisible="frequency != 'monthly'">
+                                    <field name="first_day_display" style="width: 3rem !important; text-align: center;"/>
+                                    <span>của tháng</span>
+                                </div>
+
+                                <label for="first_day_display" string="Vào ngày" invisible="frequency != 'bimonthly'"/>
+                                <div class="o_row d-flex align-items-center gap-1" invisible="frequency != 'bimonthly'">
+                                    <field name="first_day_display" style="width: 3rem !important; text-align: center;"/>
+                                    <span>và ngày</span>
+                                    <field name="second_day_display" style="width: 3rem !important; text-align: center;"/>
+                                    <span>của tháng</span>
+                                </div>
+
+                                <label for="first_month_day_display" string="Vào ngày" invisible="frequency != 'biyearly'"/>
+                                <div class="o_row d-flex align-items-center gap-1" invisible="frequency != 'biyearly'">
+                                    <field name="first_month_day_display" style="width: 3rem !important; text-align: center;"/>
+                                    <span>tháng</span>
+                                    <field name="first_month" style="width: 7rem !important;"/>
+                                </div>
+                                <label for="second_month_day_display" string="Và ngày" invisible="frequency != 'biyearly'"/>
+                                <div class="o_row d-flex align-items-center gap-1" invisible="frequency != 'biyearly'">
+                                    <field name="second_month_day_display" style="width: 3rem !important; text-align: center;"/>
+                                    <span>tháng</span>
+                                    <field name="second_month" style="width: 7rem !important;"/>
+                                </div>
+
+                                <label for="yearly_day_display" string="Vào ngày" invisible="frequency != 'yearly'"/>
+                                <div class="o_row d-flex align-items-center gap-1" invisible="frequency != 'yearly'">
+                                    <field name="yearly_day_display" style="width: 3rem !important; text-align: center;"/>
+                                    <span>tháng</span>
+                                    <field name="yearly_month" style="width: 7rem !important;"/>
+                                </div>
+                            </group>
+
+                            <group name="limits" string="Giới hạn &amp; Hiệu lực">
+                                <field name="cap_accrued_time" string="Giới hạn tối đa"/>
+
+                                <label for="maximum_leave" string="Số lượng tối đa" invisible="not cap_accrued_time"/>
+                                <div class="o_row d-flex align-items-center gap-1" invisible="not cap_accrued_time">
+                                    <field name="maximum_leave" widget="FloatWithoutTrailingZeros" style="width: 4rem !important; text-align: center;"/>
+                                    <field name="added_value_type" readonly="1" force_save="1" nolabel="1"/>
+                                </div>
+
+                                <label for="start_count" string="Bắt đầu sau"/>
+                                <div class="o_row d-flex align-items-center gap-1">
+                                    <field name="start_count" widget="FloatWithoutTrailingZeros" style="width: 3rem !important; text-align: center;"/>
+                                    <field name="start_type" nolabel="1" style="width: 6rem !important;"/>
+                                    <span class="text-muted text-nowrap">từ khi phân bổ</span>
+                                </div>
+                            </group>
+                        </group>
+
+                        <group name="year_end_rules" string="Xử lý cuối năm (Carry Over)">
+                            <field name="action_with_unused_accruals" widget="radio" options="{'horizontal': false}"/>
+
+                            <label for="postpone_max_days" string="Chuyển tối đa" invisible="action_with_unused_accruals != 'maximum'"/>
+                            <div class="o_row d-flex align-items-center gap-1" invisible="action_with_unused_accruals != 'maximum'">
+                                <field name="postpone_max_days" widget="FloatWithoutTrailingZeros" style="width: 4rem !important; text-align: center;"/>
+                                <field name="added_value_type" readonly="1" force_save="1" nolabel="1"/>
+                            </div>
+                        </group>
+                    </sheet>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,35 @@
+name: Deploy Odoo 17 (systemctl)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        cat << 'EOF' > ~/.ssh/id_ed25519
+        ${{ secrets.SSH_PRIVATE_KEY }}
+        EOF
+        chmod 600 ~/.ssh/id_ed25519
+        ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+    - name: Test SSH
+      run: |
+        ssh -o BatchMode=yes \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "echo SSH_OK"
+
+    - name: Deploy
+      run: |
+        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+          cd /opt/tedi/odoo17_tedi
+          git pull origin main
+          systemctl restart tedi
+        EOF

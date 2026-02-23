@@ -2,7 +2,7 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 import  logging
-
+from datetime import date
 _logger = logging.getLogger(__name__)
 
 
@@ -51,31 +51,27 @@ def to_roman(n):
     return roman_num
 
 
+
+
+
 class EvaluationReport(models.Model):
     _name = "evaluation.report"
-    _description = "EvaluationReport"
+    _description = "Báo cáo tổng hợp KPI"
+    _inherit = ['mail.thread', 'mail.activity.mixin']
 
-    name = fields.Char(string="Tên báo cáo", required=True)
+    name = fields.Char(string="Tên báo cáo", required=True, tracking=True)
     create_date = fields.Date(string="Ngày tạo", default=fields.Date.context_today)
+
     department_id = fields.Many2one(
         'hr.department',
         string='Phòng ban',
         required=True,
-        # Lấy phòng ban của nhân viên gắn với user hiện tại
         default=lambda self: self.env.user.employee_id.department_id
     )
-    evaluate_kpi = fields.One2many('evaluation.kpi', 'evaluate_kpi_id', string="Danh sách phiếu đánh giá",
-                                   readonly=True)
 
-    # 1. Trường Tháng đánh giá (Dùng để tính toán)
     quarter = fields.Selection([
-        ('1', 'Quý 1'),
-        ('2', 'Quý 2'),
-        ('3', 'Quý 3'),
-        ('4', 'Quý 4')
+        ('1', 'Quý 1'), ('2', 'Quý 2'), ('3', 'Quý 3'), ('4', 'Quý 4')
     ], string='Chọn Quý', required=True, default='1')
-
-    execution_date = fields.Date(string="Tháng đánh giá")
 
     year = fields.Integer(
         string='Năm',
@@ -85,152 +81,95 @@ class EvaluationReport(models.Model):
 
     period = fields.Char(string="Chu kỳ", compute="_compute_period", store=True)
 
+    # --- BỎ TRẠNG THÁI IN_PROGRESS ---
     state = fields.Selection([
         ('draft', 'Nháp'),
-        ('in_progress', 'Đang đánh giá'),
+        ('to_approve', 'Chờ duyệt'),
         ('done', 'Hoàn thành'),
         ('cancel', 'Đã hủy')
     ], string="Trạng thái", default='draft', required=True, tracking=True)
 
-    # --- 2. QUẢN LÝ DANH SÁCH ---
-    # Danh sách dự kiến (Hiện khi Nháp)
-    report_line_ids = fields.One2many('evaluation.report.line', 'report_id', string="Danh sách nhân viên dự kiến")
-
-    # Danh sách chính thức (Hiện khi Đang đánh giá / Hoàn thành)
-    # Lưu ý: readonly=True để không add trực tiếp ở đây mà phải qua quy trình
-
+    evaluate_kpi_ids = fields.One2many(
+        'evaluation.kpi',
+        'evaluate_kpi_id',
+        string="Danh sách phiếu đánh giá"
+    )
 
     @api.depends('quarter', 'year')
     def _compute_period(self):
         for rec in self:
-            if rec.quarter and rec.year:
-                rec.period = f"Quý {rec.quarter}/ {rec.year}"
-            else:
-                rec.period = ""
+            rec.period = f"Quý {rec.quarter}/ {rec.year}" if rec.quarter and rec.year else ""
 
-    # 2. Trường Chu kỳ (Tự động tính nhưng cho phép sửa)
-    # period = fields.Char(string="Chu kỳ", required=True)
+    # --- TỰ ĐỘNG GÁN PHIẾU KHI TẠO/LƯU ---
+    @api.model
+    def create(self, vals):
+        res = super(EvaluationReport, self).create(vals)
+        # Tự động quét phiếu ngay khi tạo
+        res._assign_related_kpis()
+        return res
 
-    def action_open_generate_wizard(self):
+    def write(self, vals):
+        res = super(EvaluationReport, self).write(vals)
+        # Nếu sửa thông tin lọc thì quét lại phiếu
+        if any(f in vals for f in ['department_id', 'quarter', 'year']):
+            self._assign_related_kpis()
+        return res
+
+    def _assign_related_kpis(self):
+        """Hàm quét phiếu KPI và gán vào báo cáo"""
+        for rec in self:
+            kpis = self.env['evaluation.kpi'].search([
+                ('department_id', '=', rec.department_id.id),
+                ('quarter', '=', rec.quarter),
+                ('year', '=', rec.year),
+                ('evaluate_kpi_id', 'in', [False, rec.id])
+            ])
+            if kpis:
+                # Cập nhật danh sách phiếu (ghi đè)
+                rec.evaluate_kpi_ids = [(6, 0, kpis.ids)]
+
+    @api.onchange('department_id', 'quarter', 'year')
+    def _onchange_fetch_kpis(self):
+        """Hiển thị trước danh sách phiếu trên giao diện khi đang chọn"""
+        if self.department_id and self.quarter and self.year:
+            kpis = self.env['evaluation.kpi'].search([
+                ('department_id', '=', self.department_id.id),
+                ('quarter', '=', self.quarter),
+                ('year', '=', self.year),
+                ('evaluate_kpi_id', 'in', [False, self._origin.id])
+            ])
+            self.evaluate_kpi_ids = kpis
+
+    # --- LUỒNG XỬ LÝ ---
+    def action_submit_for_approval(self):
+        """Từ Nháp -> Chờ duyệt"""
         self.ensure_one()
-        if not self.department_id:
-            raise UserError(_("Vui lòng chọn phòng ban trước khi tạo phiếu!"))
+        if not self.evaluate_kpi_ids:
+            raise UserError(_("Không có phiếu KPI nào để trình duyệt."))
 
-        return {
-            'name': 'Tạo phiếu đánh giá KPI',
-            'type': 'ir.actions.act_window',
-            'res_model': 'evaluation.kpi.generate.wizard',
-            'view_mode': 'form',
-            'target': 'new',  # Mở dạng popup (modal)
-            'context': {
-                'default_report_id': self.id,
-                'default_department_id': self.department_id.id
-            }
-        }
+        # Kiểm tra xem các phiếu con đã xong chưa
+        unfinished = self.evaluate_kpi_ids.filtered(lambda x: x.state != 'done')
+        if unfinished:
+            raise UserError(_("Vẫn còn %s phiếu chưa hoàn thành. Vui lòng đốc thúc nhân viên.") % len(unfinished))
 
-    def action_start_evaluation(self):
-        """Chuyển sang trạng thái Đang đánh giá và sinh phiếu KPI"""
+        self.write({'state': 'to_approve'})
+
+    def action_approve_report(self):
+        """TGĐ Duyệt -> Hoàn thành"""
         self.ensure_one()
-        if not self.report_line_ids:
-            raise UserError(_("Vui lòng chọn danh sách nhân viên trước khi bắt đầu!"))
-
-        KPIModel = self.env['evaluation.kpi']
-
-        for line in self.report_line_ids:
-            # Kiểm tra xem phiếu đã tồn tại chưa để tránh trùng lặp
-            existing = KPIModel.search([
-                ('evaluate_kpi_id', '=', self.id),
-                ('employee_id', '=', line.employee_id.id)
-            ], limit=1)
-
-            if not existing:
-                # Tạo phiếu KPI thật
-                new_kpi = KPIModel.create({
-                    'name': 'New',
-                    'evaluate_kpi_id': self.id,
-                    'employee_id': line.employee_id.id,
-                    'quarter': self.quarter,
-                    'year': self.year,
-                    'state': 'draft',  # Phiếu KPI con bắt đầu ở nháp
-                })
-                # Trigger lấy tiêu chí
-                new_kpi._onchange_employee_id()
-
-        self.write({'state': 'in_progress'})
-
-    def action_done_evaluation(self):
-        """Kết thúc đợt đánh giá"""
-        self.ensure_one()
-        # Có thể thêm logic kiểm tra xem tất cả KPI con đã xong chưa
-        # un-comment nếu muốn bắt buộc xong hết mới được close
-        # if any(kpi.state != 'done' for kpi in self.evaluate_kpi):
-        #     raise UserError(_("Tất cả phiếu đánh giá phải hoàn thành trước khi đóng báo cáo!"))
-
         self.write({'state': 'done'})
+
+    def action_refuse_report(self):
+        """TGĐ Từ chối -> Quay về Nháp để sửa"""
+        self.ensure_one()
+        self.write({'state': 'draft'})
 
     def action_cancel(self):
         self.write({'state': 'cancel'})
 
     def action_reset_draft(self):
-        """Quay về nháp - Cẩn thận: Có thể cần xóa KPI cũ hoặc giữ lại tùy nghiệp vụ"""
-        self.ensure_one()
-        if self.evaluate_kpi:
-            raise UserError(_("Đã có phiếu đánh giá được tạo. Không thể quay về nháp. Hãy Hủy thay thế."))
         self.write({'state': 'draft'})
 
-    def action_generate_kpis(self):
-        """
-        Hàm tạo tự động phiếu KPI cho tất cả nhân viên trong phòng ban được chọn
-        """
-        self.ensure_one()
-        if not self.department_id:
-            raise UserError(_("Vui lòng chọn phòng ban trước khi tạo phiếu!"))
-
-        employees = self.env['hr.employee'].sudo().search([
-            ('department_id', '=', self.department_id.id),
-            ('active', '=', True)
-        ])
-
-        if not employees:
-            raise UserError(_("Không tìm thấy nhân viên nào trong phòng ban này."))
-
-        KPIModel = self.env['evaluation.kpi']
-        count = 0
-
-        for emp in employees:
-            # 2. Kiểm tra trùng dựa trên QUÝ và NĂM
-            existing_kpi = KPIModel.search([
-                ('evaluate_kpi_id', '=', self.id),
-                ('employee_id', '=', emp.id),
-                ('quarter', '=', self.quarter), # Check trùng quý
-                ('year', '=', self.year)        # Check trùng năm
-            ], limit=1)
-
-            if existing_kpi:
-                continue
-
-            # 3. Tạo phiếu KPI (Truyền Quarter và Year xuống)
-            new_kpi = KPIModel.sudo().create({
-                'name': 'New',
-                'evaluate_kpi_id': self.id,
-                'employee_id': emp.id,
-                'quarter': self.quarter,  # <--- Mới
-                'year': self.year,        # <--- Mới
-                'state': 'draft',
-            })
-
-            new_kpi.sudo()._onchange_employee_id()
-            count += 1
-
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'reload',
-            'effect': {
-                'fadeout': 'slow',
-                'message': _(f'Đã tạo thành công {count} phiếu đánh giá cho {self.period}!'),
-                'type': 'rainbow_man',
-            }
-        }
 
 class EvaluationReportLine(models.Model):
     _name = 'evaluation.report.line'
@@ -623,43 +562,104 @@ class EvaluationKPI(models.Model):
     # --- TÍNH TOÁN KẾT QUẢ TỰ ĐỘNG ---
     total_score
 
-    # --- WORKFLOW & NÚT BẤM ---
-    def action_send(self):
-        self.ensure_one()
-        # Logic nhảy bước
-        if self.is_manager_review_required:
-            self.write({'state': 'wait_manager'})
-        elif self.is_council_review_required:
-            self.write({'state': 'wait_council'})
-        elif self.is_director_review_required:
-            self.write({'state': 'wait_director'})
+    @api.model
+    def cron_auto_generate_quarterly_kpi(self):
+        """
+        Cron chạy định kỳ đầu tháng.
+        Tự động tạo phiếu cho Quý trước vào ngày đầu Quý sau.
+        """
+        today = date.today()
+        # Chỉ chạy vào ngày 1 của các tháng 1, 4, 7, 10
+        if today.day != 1 or today.month not in [1, 4, 7, 10]:
+            return
+
+        # Tính toán kỳ đánh giá (Quý vừa trôi qua)
+        curr_month = today.month
+        eval_year = today.year
+        if curr_month == 1:
+            eval_quarter = '4'
+            eval_year -= 1
+        elif curr_month == 4:
+            eval_quarter = '1'
+        elif curr_month == 7:
+            eval_quarter = '2'
         else:
-            # Trường hợp đặc biệt: Không ai đánh giá ngoài nhân viên -> Done luôn
-            # Nhân viên là người cuối cùng
-            self._finish_and_display_result()
+            eval_quarter = '3'
+
+        employees = self.env['hr.employee'].search([('active', '=', True)])
+        count = 0
+        for emp in employees:
+            # Tránh tạo trùng
+            exists = self.search_count([
+                ('employee_id', '=', emp.id),
+                ('quarter', '=', eval_quarter),
+                ('year', '=', eval_year)
+            ])
+            if exists: continue
+
+            kpi = self.create({
+                'employee_id': emp.id,
+                'quarter': eval_quarter,
+                'year': eval_year,
+                'state': 'draft'
+            })
+            # Gửi mail cho nhân viên
+            kpi._send_workflow_email(emp, "MỜI TỰ ĐÁNH GIÁ KPI")
+            count += 1
+        return count
+
+    def action_send(self):
+        """Nhân viên gửi -> Cấp quản lý kế tiếp"""
+        self.ensure_one()
+        if self.is_manager_review_required and self.employee_id.parent_id:
+            self.write({'state': 'wait_manager'})
+            self._send_workflow_email(self.employee_id.parent_id, "CẦN PHÊ DUYỆT KPI (CẤP QUẢN LÝ)")
+        else:
+            self.action_manager_evaluation()  # Nhảy bước nếu không cần
 
     def action_manager_evaluation(self):
-        """QLTT đánh giá xong"""
+        """Quản lý gửi -> Hội đồng/Trưởng đơn vị"""
         self.ensure_one()
-        if self.is_council_review_required:
-            # Vẫn còn bước TĐV -> Chỉ chuyển trạng thái, chưa hiện kết quả tự động
+        if self.is_council_review_required and self.department_id.manager_id:
             self.write({'state': 'wait_council'})
-        elif self.is_director_review_required:
-            # Vẫn còn bước TGĐ -> Chỉ chuyển trạng thái
-            self.write({'state': 'wait_director'})
+            self._send_workflow_email(self.department_id.manager_id, "CẦN PHÊ DUYỆT KPI (CẤP TRƯỞNG ĐƠN VỊ)")
         else:
-            # Không còn ai sau QLTT -> QLTT là người cuối cùng -> Done & Hiện kết quả
-            self._finish_and_display_result()
+            self.action_council_evaluation()
 
     def action_council_evaluation(self):
-        """TĐV đánh giá xong"""
+        """Hội đồng gửi -> Tổng giám đốc"""
         self.ensure_one()
         if self.is_director_review_required:
-            # Vẫn còn bước TGĐ -> Chỉ chuyển trạng thái
             self.write({'state': 'wait_director'})
+            # Lấy user có quyền TGĐ
+            director_group = self.env.ref('om_hr_payroll.group_kpi_director_new')
+            director = director_group.users[:1].employee_id
+            if director:
+                self._send_workflow_email(director, "CẦN PHÊ DUYỆT KPI (CẤP TỔNG GIÁM ĐỐC)")
         else:
-            # Không còn ai sau TĐV -> TĐV là người cuối cùng -> Done & Hiện kết quả
             self._finish_and_display_result()
+
+    def _send_workflow_email(self, receiver_emp, subject_title):
+        if not receiver_emp or not receiver_emp.work_email: return
+
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        action_url = f"{base_url}/web#id={self.id}&model=evaluation.kpi&view_type=form"
+
+        body = f"""
+                <div style="font-family: Arial, sans-serif;">
+                    <p>Kính gửi <b>{receiver_emp.name}</b>,</p>
+                    <p>Hệ thống thông báo phiếu KPI của <b>{self.employee_id.name}</b> đang chờ bạn xử lý.</p>
+                    <p><b>Kỳ đánh giá:</b> {self.period}</p>
+                    <div style="margin: 20px 0;">
+                        <a href="{action_url}" style="background-color: #875A7B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">TRUY CẬP PHIẾU</a>
+                    </div>
+                </div>
+            """
+        self.env['mail.mail'].sudo().create({
+            'subject': f"[{subject_title}] - {self.employee_id.name}",
+            'email_to': receiver_emp.work_email,
+            'body_html': body,
+        }).send()
 
     def action_director_evaluation(self):
         """TGĐ đánh giá xong"""

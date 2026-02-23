@@ -7,7 +7,6 @@ import { Component, useState, onWillStart, xml } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { FormViewDialog } from "@web/views/view_dialogs/form_view_dialog";
 
-// ... (Giữ nguyên component AttendanceActionDialog như cũ) ...
 class AttendanceActionDialog extends Component {
     onSelectAttendance() { this.props.onChoice('attendance'); this.props.close(); }
     onSelectLeave() { this.props.onChoice('leave'); this.props.close(); }
@@ -85,7 +84,6 @@ export class AttendanceGantt extends Component {
         });
     }
 
-    // ... (Giữ nguyên các hàm Navigation và Import) ...
     canEditRow(targetEmployeeId) {
         if (this.state.isManager) return true;
         return this.state.currentUserEmployeeId && this.state.currentUserEmployeeId === targetEmployeeId;
@@ -121,90 +119,44 @@ export class AttendanceGantt extends Component {
         const monday = new Date(d.setDate(diff)); monday.setHours(0, 0, 0, 0); return monday;
     }
 
-    // =========================================================================
-    // LOGIC LẤY CẤU HÌNH LỊCH LÀM VIỆC
-    // =========================================================================
     getWorkIntervalsFromConfig(employeeId, date) {
         const calendarId = this.employeeCalendarMap[employeeId];
-        // Nếu không có lịch làm việc, trả về null để xử lý fallback
-        if (!calendarId || !this.calendarCache[calendarId]) {
-            return null;
-        }
+        if (!calendarId || !this.calendarCache[calendarId]) return null;
+        const calendarConfig = this.calendarCache[calendarId];
         const jsDay = date.getDay();
         const odooDay = jsDay === 0 ? 6 : jsDay - 1;
-        const dayConfig = this.calendarCache[calendarId][odooDay];
-        // Trả về mảng các ca (vd: [{start:8, end:12}, {start:13, end:17}])
+        let dayConfig = calendarConfig[odooDay];
+        if (!dayConfig || dayConfig.length === 0) {
+            const mondayIndex = 0;
+            const mondayConfig = calendarConfig[mondayIndex];
+            if (mondayConfig && mondayConfig.length > 0) dayConfig = mondayConfig;
+        }
         if (!dayConfig || dayConfig.length === 0) return [];
         return dayConfig;
     }
 
-    // =========================================================================
-    // [LOGIC MỚI] CẮT GIỜ LÀM THEO HỢP ĐỒNG (INTERSECTION)
-    // =========================================================================
     getShiftIntervals(start, end, employeeId, type = 'attendance') {
-        // 1. Nếu là Xin nghỉ (Leave), thường giữ nguyên hoặc xử lý riêng.
-        //    Ở đây ta giữ nguyên để tránh xung đột với đơn từ.
         if (type !== 'attendance') return [{ start, end }];
-
-        // 2. Lấy cấu hình ca làm việc của nhân viên ngày hôm đó
         const workIntervals = this.getWorkIntervalsFromConfig(employeeId, start);
-
-        // 3. Fallback: Nếu không tìm thấy lịch (ví dụ chưa cấu hình, hoặc ngày CN không có lịch)
-        //    Logic cũ: hiển thị full. Logic mới: Nếu user muốn strict thì có thể trả về rỗng.
-        //    Nhưng để an toàn hiển thị, nếu không có lịch thì hiển thị Full giờ thực tế.
-        if (!workIntervals) return [{ start, end }];
-        if (workIntervals.length === 0) {
-             // Ngày nghỉ (theo lịch), nhưng nhân viên vẫn đi làm (OT ngày nghỉ)
-             // Tùy yêu cầu, ta có thể hiển thị full hoặc ẩn.
-             // Hiện tại trả về mảng rỗng nghĩa là không tính giờ công (nếu muốn tính OT ngày nghỉ phải cấu hình lịch kiểu khác).
-             // Để an toàn (tránh mất dữ liệu hiển thị), ta cứ hiển thị full nhưng có thể đổi màu ở bước sau.
-             // TUY NHIÊN, theo yêu cầu "max không quá thời gian hợp đồng", nếu hợp đồng = 0h thì hiển thị 0h?
-             // Hãy giả định: Ngày thường -> Cắt theo ca. Ngày nghỉ -> Cho hiển thị full (hoặc cắt hết).
-             // Code dưới đây sẽ cho phép hiển thị full nếu ngày đó không có cấu hình (tránh mất bar).
-             return [{ start, end }];
-        }
-
-        // 4. Chuẩn bị dữ liệu tính toán
+        if (!workIntervals || workIntervals.length === 0) return [{ start, end }];
         const segments = [];
         const startFloat = start.getHours() + start.getMinutes() / 60;
         let endFloat = end.getHours() + end.getMinutes() / 60;
-        // Xử lý trường hợp làm qua đêm đơn giản (trong cùng 1 lần checkin)
         if (end.getDate() !== start.getDate()) endFloat = 24 + end.getHours() + end.getMinutes()/60;
-
-        // 5. Lặp qua từng ca làm việc quy định (Vd: Ca sáng 8-12, Ca chiều 13-17)
         for (const shift of workIntervals) {
-            // shift.start (8.0), shift.end (12.0)
-
-            // Tìm giao điểm (Intersection): Max(Start) -> Min(End)
             const effectiveStart = Math.max(startFloat, shift.start);
             const effectiveEnd = Math.min(endFloat, shift.end);
-
-            // Nếu có giao nhau hợp lệ (Start < End)
             if (effectiveStart < effectiveEnd) {
                 const sDate = new Date(start);
                 sDate.setHours(Math.floor(effectiveStart), (effectiveStart % 1) * 60, 0, 0);
-
                 const eDate = new Date(start);
-                // Xử lý giờ kết thúc (có thể là 17.5 -> 17:30)
                 eDate.setHours(Math.floor(effectiveEnd), (effectiveEnd % 1) * 60, 0, 0);
-
-                // Nếu giờ là 24 (qua đêm hoặc cuối ngày), JS setHours tự xử lý ngày hôm sau
-                if (effectiveEnd >= 24) {
-                    // Logic xử lý qua đêm nâng cao nếu cần, ở đây giữ đơn giản
-                }
-
                 segments.push({ start: sDate, end: eDate });
             }
         }
-
-        // 6. Nếu không giao nhau chút nào (Ví dụ: Ca 8-17, đi làm lúc 18-19h)
-        //    Theo yêu cầu "max không qua hợp đồng", thì khoảng này sẽ bị ẩn đi (segments rỗng).
         return segments;
     }
 
-    // =========================================================================
-    // LOAD DATA (GIỮ NGUYÊN LOGIC, CHỈ GỌI getShiftIntervals MỚI)
-    // =========================================================================
     async reloadData() {
         const { startDate, endDate } = this.state;
         this.state.days = this.computeDays(startDate, endDate);
@@ -213,7 +165,7 @@ export class AttendanceGantt extends Component {
         const allEmployees = await this.orm.searchRead(
             "hr.employee",
             [["active", "=", true]],
-            ["name", "resource_calendar_id"]
+            ["name", "resource_calendar_id", "employee_code"]
         );
 
         const calendarIds = [];
@@ -229,11 +181,7 @@ export class AttendanceGantt extends Component {
         if (calendarIds.length > 0) {
             const calendarLines = await this.orm.searchRead(
                 "resource.calendar.attendance",
-                [
-                    ["calendar_id", "in", calendarIds],
-                    ["display_type", "!=", "line_section"],
-                    ["day_period", "!=", "lunch"]
-                ],
+                [["calendar_id", "in", calendarIds], ["display_type", "!=", "line_section"], ["day_period", "!=", "lunch"]],
                 ["calendar_id", "dayofweek", "hour_from", "hour_to", "day_period"]
             );
             this.calendarCache = {};
@@ -253,18 +201,39 @@ export class AttendanceGantt extends Component {
 
         const segmentsByEmp = {};
         const intervalsByEmp = {};
-
         const initEmpObj = (empId) => {
             if (!segmentsByEmp[empId]) segmentsByEmp[empId] = {};
             if (!intervalsByEmp[empId]) intervalsByEmp[empId] = [];
         };
 
-        const attendances = await this.orm.searchRead(
-            "hr.attendance",
-            [["attendance_date", ">=", sStr], ["attendance_date", "<=", eStr]],
-            ["employee_id", "attendance_date", "status", "check_in", "check_out", "attendance_type"],
-            { limit: 5000 }
+        const [attendances, leaves] = await Promise.all([
+            this.orm.searchRead(
+                "hr.attendance",
+                [["attendance_date", ">=", sStr], ["attendance_date", "<=", eStr]],
+                ["employee_id", "attendance_date", "status", "check_in", "check_out", "attendance_type"],
+                { limit: 5000 }
+            ),
+            this.orm.searchRead(
+                "hr.leave",
+                [
+                    ["date_from", "<=", e.toISOString()],
+                    ["date_to", ">=", s.toISOString()],
+                    ["state", "=", "validate"]
+                ],
+                ["employee_id", "date_from", "date_to", "holiday_status_id"]
+            )
+        ]);
+
+        const leaveTypeIds = [...new Set(leaves.map(l => l.holiday_status_id[0]))];
+        const leaveTypes = await this.orm.searchRead(
+            "hr.leave.type",
+            [["id", "in", leaveTypeIds]],
+            ["id", "code", "name"]
         );
+        const leaveCodeMap = {};
+        leaveTypes.forEach(lt => {
+            leaveCodeMap[lt.id] = lt.code || lt.name;
+        });
 
         for (const rec of attendances) {
             if (!rec.employee_id || !rec.check_in) continue;
@@ -282,19 +251,15 @@ export class AttendanceGantt extends Component {
                 end = startDay < today ? new Date(start.getTime()).setHours(23, 59, 59, 999) : now;
                 end = new Date(end);
             }
-
             if (!end || end <= start) continue;
 
             let colorClass = 'bg-success';
             let type = 'attendance';
             if (rec.attendance_type === 'leave') {
-                colorClass = 'bg-warning';
-                type = 'leave';
+                colorClass = 'bg-warning'; type = 'leave';
             }
 
-            // --- GỌI HÀM CẮT GIỜ MỚI TẠI ĐÂY ---
             const splitIntervals = this.getShiftIntervals(start, end, empId, type);
-
             let intervalIndex = 0;
             for (const interval of splitIntervals) {
                  const label = this.buildLabel(interval.start, interval.end, type);
@@ -312,19 +277,87 @@ export class AttendanceGantt extends Component {
             }
         }
 
+        for (const lev of leaves) {
+            if (!lev.employee_id) continue;
+            const empId = lev.employee_id[0];
+            initEmpObj(empId);
+
+            const start = new Date(lev.date_from.endsWith("Z") ? lev.date_from : lev.date_from + "Z");
+            const end = new Date(lev.date_to.endsWith("Z") ? lev.date_to : lev.date_to + "Z");
+
+            const code = leaveCodeMap[lev.holiday_status_id[0]] || "Nghỉ";
+            const colorClass = 'bg-warning';
+            const type = 'leave';
+
+            intervalsByEmp[empId].push({
+                id: lev.id,
+                start: start,
+                end: end,
+                status: 'approved',
+                label: code,
+                type: type,
+                colorClass: colorClass,
+                resModel: 'hr.leave',
+                index: 0
+            });
+
+            const daySegs = this.splitShiftIntoSegments(start, end, 'approved', lev.id, empId, type, colorClass, code);
+            for (const seg of daySegs) {
+                if (!segmentsByEmp[empId][seg.dateKey]) segmentsByEmp[empId][seg.dateKey] = [];
+                segmentsByEmp[empId][seg.dateKey].push(seg);
+            }
+        }
+
         this.state.rowsData = allEmployees.map((emp) => {
+            // [ĐÃ SỬA] KHÔNG gộp tên và mã ở đây nữa. Để nguyên từng field.
             return {
                 id: emp.id,
-                name: emp.name,
+                name: emp.name, // Chỉ trả về tên
+                employee_code: emp.employee_code, // Trả về mã
                 segmentsByDate: segmentsByEmp[emp.id] || {},
                 isEditable: this.canEditRow(emp.id)
             };
         });
 
         this.computeTimelineBars(intervalsByEmp);
+
+        if (!this.state.isManager && this.state.currentUserEmployeeId) {
+            const mySegments = segmentsByEmp[this.state.currentUserEmployeeId] || {};
+            this.state.calendarDays = this.computeCalendarGridData(startDate, endDate, mySegments);
+        }
     }
 
-    // --- Giữ nguyên hàm này, nó sẽ gọi getShiftIntervals để xử lý từng ngày ---
+    computeCalendarGridData(startDate, endDate, mySegments) {
+        const grid = [];
+        const year = startDate.getFullYear();
+        const month = startDate.getMonth(); // 0-11
+        const firstDayOfMonth = new Date(year, month, 1);
+        const lastDayOfMonth = new Date(year, month + 1, 0);
+        let startDay = firstDayOfMonth.getDay();
+        startDay = startDay === 0 ? 6 : startDay - 1;
+
+        for (let i = 0; i < startDay; i++) {
+            grid.push({ dayNum: "", isCurrentMonth: false, dateKey: null, segments: [] });
+        }
+        for (let d = 1; d <= lastDayOfMonth.getDate(); d++) {
+            const current = new Date(year, month, d);
+            const dateKey = this.formatDateKey(current);
+            const isToday = this.formatDateKey(new Date()) === dateKey;
+            grid.push({
+                dayNum: d,
+                isCurrentMonth: true,
+                dateKey: dateKey,
+                isToday: isToday,
+                isWeekend: current.getDay() === 0 || current.getDay() === 6,
+                segments: mySegments[dateKey] || []
+            });
+        }
+        while (grid.length % 7 !== 0) {
+            grid.push({ dayNum: "", isCurrentMonth: false, dateKey: null, segments: [] });
+        }
+        return grid;
+    }
+
     splitShiftIntoSegments(rawStart, rawEnd, status, id, empId, type = 'attendance', colorClass = '', customLabel = null) {
         const segments = [];
         if (!rawStart || !rawEnd || rawEnd <= rawStart) return segments;
@@ -334,10 +367,7 @@ export class AttendanceGantt extends Component {
             const dateKey = this.formatDateKey(current);
             const endOfDay = new Date(current); endOfDay.setHours(23, 59, 59, 999);
             const calcEnd = rawEnd < endOfDay ? rawEnd : endOfDay;
-
-            // Hàm này bây giờ sẽ trả về các đoạn đã được cắt gọn (clipped)
             const splitIntervals = this.getShiftIntervals(current, calcEnd, empId, type);
-
             for (const interval of splitIntervals) {
                 const s = interval.start;
                 const e = interval.end;
@@ -345,7 +375,12 @@ export class AttendanceGantt extends Component {
                 const label = customLabel ? customLabel : this.buildLabel(s, e, type);
                 let finalClass = colorClass;
                 if (!finalClass) finalClass = status === 'late' ? 'bg-danger' : 'bg-success';
-                segments.push({ dateKey, id, label, status: status || "ontime", style, startTime: s.getTime(), type: type, resModel: 'hr.attendance', colorClass: finalClass, index: index });
+                const resModel = type === 'leave' ? 'hr.leave' : 'hr.attendance';
+                segments.push({
+                    dateKey, id, label, status: status || "ontime",
+                    style, startTime: s.getTime(), type: type,
+                    resModel: resModel, colorClass: finalClass, index: index
+                });
                 index++;
             }
             current.setDate(current.getDate() + 1); current.setHours(0, 0, 0, 0);
@@ -353,7 +388,6 @@ export class AttendanceGantt extends Component {
         return segments;
     }
 
-    // ... (Giữ nguyên các hàm helper khác: buildLabel, computeBarStyleInDay, computeTimelineBars, ...)
     buildLabel(start, end, type = 'attendance') {
         const diffMs = end - start;
         const totalMinutes = Math.floor(diffMs / 60000);
@@ -378,65 +412,52 @@ export class AttendanceGantt extends Component {
         if (endMins === 0 && endInfo.getDate() !== startInfo.getDate()) endMins = 1440;
         return `left:${(startMins / 1440) * 100}%; width:${((endMins - startMins) / 1440) * 100}%;`;
     }
-   computeTimelineBars(intervalsByEmp) {
+    computeTimelineBars(intervalsByEmp) {
         if (this.state.mode === "day") { this.state.weekBars = {}; return; }
-
         const viewStart = new Date(this.state.startDate); viewStart.setHours(0, 0, 0, 0);
         const viewEnd = new Date(this.state.endDate); viewEnd.setDate(viewEnd.getDate() + 1); viewEnd.setHours(0, 0, 0, 0);
         const totalMs = viewEnd - viewStart || 1;
         const timelineBars = {};
-
         for (const [empIdStr, list] of Object.entries(intervalsByEmp)) {
             const empId = parseInt(empIdStr, 10);
             const groupedBars = {};
-
             for (const interval of list) {
-                // [THAY ĐỔI 1]: Bỏ index ra khỏi key để gộp các đoạn cắt (sáng/chiều) chung 1 ID lại với nhau
                 const key = `${interval.id}_${interval.type}`;
-
                 if (!groupedBars[key]) {
                     groupedBars[key] = {
-                        id: interval.id,
-                        type: interval.type,
-                        status: interval.status,
+                        id: interval.id, type: interval.type, status: interval.status,
                         colorClass: interval.colorClass,
-                        resModel: 'hr.attendance',
-                        start: interval.start,
-                        end: interval.end,
-                        originalIntervals: [interval],
-                        // index: interval.index // Không cần quan tâm index nữa khi gộp
+                        resModel: interval.type === 'leave' ? 'hr.leave' : 'hr.attendance',
+                        start: interval.start, end: interval.end, originalIntervals: [interval],
+                        customLabel: interval.type === 'leave' ? interval.label : null
                     };
                 } else {
-                    // Mở rộng thời gian bắt đầu và kết thúc của thanh lớn để bao trùm cả ngày
                     if (interval.start < groupedBars[key].start) groupedBars[key].start = interval.start;
                     if (interval.end > groupedBars[key].end) groupedBars[key].end = interval.end;
                     groupedBars[key].originalIntervals.push(interval);
                 }
             }
-
             let bars = [];
             for (const key in groupedBars) {
                 const grouped = groupedBars[key];
                 let realStart = grouped.start < viewStart ? viewStart : grouped.start;
                 let realEnd = grouped.end > viewEnd ? viewEnd : grouped.end;
                 if (realEnd <= realStart) continue;
-
                 let visualStart = new Date(realStart);
                 if (this.state.mode === 'month') visualStart.setHours(0, 0, 0, 0);
-
                 const left = ((visualStart - viewStart) / totalMs) * 100;
                 let width = ((realEnd - visualStart) / totalMs) * 100;
-
-                // [THAY ĐỔI 2]: Tính toán lại Label để hiển thị tổng giờ làm thực tế (trừ giờ nghỉ trưa)
-                // Thay vì gọi this.buildLabel(grouped.start, grouped.end) sẽ bị tính cả giờ nghỉ
-                const label = this.buildMergedLabel(grouped.start, grouped.end, grouped.originalIntervals, grouped.type);
-
+                let label = "";
+                if (grouped.type === 'leave' && grouped.customLabel) {
+                    label = grouped.customLabel;
+                } else {
+                    label = this.buildMergedLabel(grouped.start, grouped.end, grouped.originalIntervals, grouped.type);
+                }
                 if (this.state.mode === 'month' && grouped.start.getDate() === grouped.end.getDate()) {
                     const oneDay = (24*3600*1000/totalMs)*100;
                     if (width < oneDay*0.7) width = oneDay*0.7;
                 }
                 const endOfDay = new Date(realEnd); endOfDay.setHours(23, 59, 59, 999);
-
                 bars.push({
                     id: grouped.id, status: grouped.status, label,
                     startMs: realStart.getTime(), endMs: realEnd.getTime(),
@@ -445,7 +466,6 @@ export class AttendanceGantt extends Component {
                     colorClass: grouped.colorClass, level: 0
                 });
             }
-            // Sắp xếp và tính level hiển thị (chồng nhau)
             bars.sort((a, b) => a.startMs - b.startMs);
             const levels = [];
             for (let bar of bars) {
@@ -462,37 +482,26 @@ export class AttendanceGantt extends Component {
         this.state.weekBars = timelineBars;
     }
 
-    // [THÊM HÀM MỚI]: Hàm helper để tính tổng giờ từ các đoạn rời rạc
    buildMergedLabel(start, end, intervals, type) {
-        // 1. Tính tổng thời gian thực tế (cộng dồn các đoạn)
         let totalMinutes = 0;
         intervals.forEach(i => {
             const diffMs = i.end - i.start;
             totalMinutes += Math.floor(diffMs / 60000);
         });
-
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
-
         let durationStr = "";
         if (hours > 0) durationStr += `${hours}h`;
         if (minutes > 0) durationStr += `${String(minutes).padStart(2, "0")}`;
         if (!durationStr) durationStr = "0h";
-
-        // Nếu là view tháng/tuần chỉ cần hiển thị tổng giờ
         if (this.state.mode === 'month' || this.state.mode === 'week') return durationStr;
-
-        // Nếu view chi tiết hơn thì hiển thị: 08:00-17:00 (8h)
         const opt = { hour: "2-digit", minute: "2-digit", hour12: false };
         const s = start.toLocaleTimeString("vi-VN", opt);
         let eText = end.toLocaleTimeString("vi-VN", opt);
         if (end.getHours() === 23 && end.getMinutes() === 59) eText = "24:00";
-
         let prefix = type === 'leave' ? "Nghỉ: " : "";
         return `${prefix}${s}-${eText} (${durationStr})`;
     }
-
-    // ... (Giữ nguyên các hàm helper tính toán ngày, openDocument, ...)
     computeDays(start, end) {
         const days = [];
         let d = new Date(start);
@@ -518,14 +527,8 @@ export class AttendanceGantt extends Component {
     }
     openDocument = (resId, resModel) => {
         this.dialogService.add(FormViewDialog, {
-            resModel: resModel,
-            resId: resId,
-            context: this.props.context,
-            title: "Chi tiết", // Tiêu đề popup
-            onRecordSaved: async () => {
-                // Khi người dùng bấm Lưu trên Popup, load lại dữ liệu Gantt
-                await this.reloadData();
-            },
+            resModel: resModel, resId: resId, context: this.props.context, title: "Chi tiết",
+            onRecordSaved: async () => { await this.reloadData(); },
         });
     };
     openActionDialog = (employeeId, dateStr, employeeName) => {

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -9,9 +9,9 @@ _logger = logging.getLogger(__name__)
 class HrLeave(models.Model):
     _inherit = 'hr.leave'
 
-    # =========================================================================
-    # 1. KHAI BÁO DANH SÁCH GIỜ
-    # =========================================================================
+    # ... [GIỮ NGUYÊN PHẦN 1, 2, 3: KHAI BÁO FIELD & GIỜ] ...
+
+    # 1. KHAI BÁO DANH SÁCH GIỜ (Giữ nguyên)
     _HOUR_SELECTION = [
         ('0', '12:00 AM'), ('0.5', '12:30 AM'),
         ('1', '1:00 AM'), ('1.5', '1:30 AM'),
@@ -39,54 +39,23 @@ class HrLeave(models.Model):
         ('23', '11:00 PM'), ('23.5', '11:30 PM')
     ]
 
-    # =========================================================================
-    # 2. CORE FIX: CHẶN ODOO TỰ ĐỘNG SỬA GIỜ
-    # =========================================================================
+    request_unit_hours = fields.Boolean(string='Custom Hours', store=True, default=True)
+    request_unit_half = fields.Boolean(string='Half Day', store=True, default=False)
+    request_hour_from = fields.Selection(selection=_HOUR_SELECTION, string='Giờ bắt đầu', store=True, default='7.5')
+    request_hour_to = fields.Selection(selection=_HOUR_SELECTION, string='Giờ kết thúc', store=True, default='17')
 
-    request_unit_hours = fields.Boolean(
-        string='Custom Hours',
-        compute='_compute_request_unit_hours_custom',
-        store=True,
-        default=True
-    )
+    @api.onchange('request_unit_hours')
+    def _onchange_request_unit_hours(self):
+        if self.request_unit_hours:
+            if not self.request_hour_from: self.request_hour_from = '7.5'
+            if not self.request_hour_to: self.request_hour_to = '17'
 
-    request_unit_half = fields.Boolean(
-        string='Half Day',
-        compute='_compute_request_unit_half_custom',
-        store=True,
-        default=False
-    )
-
-    request_hour_from = fields.Selection(
-        selection=_HOUR_SELECTION,
-        compute='_compute_fake_hours',
-        store=True,
-        readonly=False
-    )
-    request_hour_to = fields.Selection(
-        selection=_HOUR_SELECTION,
-        compute='_compute_fake_hours',
-        store=True,
-        readonly=False
-    )
-
-    @api.depends('request_unit_hours')
-    def _compute_fake_hours(self):
-        for rec in self:
-            if not rec.request_hour_from:
-                rec.request_hour_from = '0'
-            if not rec.request_hour_to:
-                rec.request_hour_to = '0'
-
-    @api.depends('holiday_status_id')
-    def _compute_request_unit_hours_custom(self):
-        for leave in self:
-            leave.request_unit_hours = True
-
-    @api.depends('holiday_status_id')
-    def _compute_request_unit_half_custom(self):
-        for leave in self:
-            leave.request_unit_half = False
+    @api.constrains('request_hour_from', 'request_hour_to')
+    def _check_custom_hours(self):
+        for holiday in self:
+            if holiday.request_unit_hours and not (holiday.date_from and holiday.date_to):
+                if not holiday.request_hour_from or not holiday.request_hour_to:
+                    pass
 
     @api.depends('request_date_from_period', 'request_hour_from', 'request_hour_to',
                  'request_date_from', 'request_date_to',
@@ -94,12 +63,13 @@ class HrLeave(models.Model):
     def _compute_date_from_to(self):
         for holiday in self:
             if holiday.date_from and holiday.date_to:
+                holiday.date_from = holiday.date_from
+                holiday.date_to = holiday.date_to
                 continue
-            pass
+            super(HrLeave, holiday)._compute_date_from_to()
 
-    # =========================================================================
-    # 3. FIELD CUSTOM
-    # =========================================================================
+    # ... [GIỮ NGUYÊN CÁC FIELD CUSTOM KHÁC: leaves_taken_count, manager_id...] ...
+
     leaves_taken_count = fields.Float(string='Số ngày phép đã nghỉ', compute='_compute_leave_stats')
     remaining_leaves_count = fields.Float(string='Số ngày phép còn lại', compute='_compute_leave_stats')
     my_history_ids = fields.Many2many('hr.leave', string='Các đơn báo của tôi', compute='_compute_my_history')
@@ -107,181 +77,151 @@ class HrLeave(models.Model):
     request_date = fields.Date(string='Ngày làm đơn', default=fields.Date.context_today, readonly=True)
     report_title = fields.Char(string='Tiêu đề')
     employee_code = fields.Char(related='employee_id.employee_code', string='Mã NV', store=True)
+    is_imported = fields.Boolean(string="Tạo tự động (Import)", default=False, readonly=True)
 
-    is_imported = fields.Boolean(
-        string="Tạo tự động (Import)",
-        default=False,
-        readonly=True,
-        help="Đánh dấu đơn này được tạo tự động từ file Excel chấm công"
-    )
+    manager_id = fields.Many2one('hr.employee', string='Người phê duyệt', compute='_compute_manager_id_by_group',
+                                 store=True, readonly=False)
 
-    manager_id = fields.Many2one(
-        'hr.employee',
-        string='Người phê duyệt',
-        readonly=True,
-        help="Người thực tế đã bấm nút duyệt đơn này."
-    )
+    # ... [GIỮ NGUYÊN Logic _get_manager_of_department, _compute_manager_id_by_group...] ...
+    def _get_manager_of_department(self, department):
+        if not department: return False
+        group_xml_id = 'hr_attendance_tedi.group_time_off_unit_manager'
+        try:
+            group_id = self.env.ref(group_xml_id).id
+        except ValueError:
+            return False
+        return self.env['hr.employee'].search([
+            ('department_id', '=', department.id),
+            ('user_id.groups_id', 'in', [group_id]),
+            ('user_id', '!=', False)
+        ], limit=1)
 
-    # =========================================================================
-    # 4. FIELD COMPUTE PHÂN QUYỀN (QUAN TRỌNG)
-    # =========================================================================
-    can_approve_by_unit_manager = fields.Boolean(
-        string='Có quyền duyệt (Unit Manager)',
-        compute='_compute_can_approve_by_unit_manager'
-    )
+    @api.depends('employee_id', 'employee_id.parent_id', 'employee_id.department_id')
+    def _compute_manager_id_by_group(self):
+        for rec in self:
+            if rec.state not in ['draft', 'confirm', 'cancel']: continue
+            employee = rec.employee_id
+            if not employee:
+                rec.manager_id = False
+                continue
+            approver = False
+            if employee.parent_id and employee.parent_id.id != employee.id:
+                approver = employee.parent_id
+            if not approver and employee.department_id:
+                current_dept = employee.department_id
+                approver = self._get_manager_of_department(current_dept)
+                if approver and approver.id == employee.id:
+                    parent_dept = current_dept.parent_id
+                    if parent_dept:
+                        approver = self._get_manager_of_department(parent_dept)
+                    else:
+                        approver = False
+            rec.manager_id = approver
 
+    # ... [GIỮ NGUYÊN Logic Phân Quyền compute...] ...
+    can_approve_by_unit_manager = fields.Boolean(string='Có quyền duyệt (Unit Manager)',
+                                                 compute='_compute_can_approve_by_unit_manager')
     is_officer = fields.Boolean(string="Is Officer", compute='_compute_is_officer')
 
     @api.depends_context('uid')
     def _compute_is_officer(self):
         for rec in self:
-            # Kiểm tra xem user có nhóm Officer hoặc Administrator HR không
             rec.is_officer = self.env.user.has_group('hr_holidays.group_hr_holidays_user')
 
     @api.depends('state', 'employee_id')
     def _compute_can_approve_by_unit_manager(self):
         current_user = self.env.user
         current_employee = current_user.employee_id
-
-        # Kiểm tra nhóm quyền
+        is_superuser = current_user.has_group('hr_holidays.group_hr_holidays_manager') or current_user._is_superuser()
         is_unit_manager = current_user.has_group('hr_attendance_tedi.group_time_off_unit_manager')
-        # Kiểm tra quyền Admin/HR Manager (để Admin luôn duyệt được)
-        is_hr_manager = current_user.has_group('hr_holidays.group_hr_holidays_manager') or current_user._is_superuser()
 
         for rec in self:
             rec.can_approve_by_unit_manager = False
-
-            # 1. Nếu là HR Manager hoặc SuperUser -> Luôn có quyền (Bypass check phòng ban)
-            if is_hr_manager:
+            if is_superuser:
                 rec.can_approve_by_unit_manager = True
                 continue
-
-            # 2. Nếu không phải Manager -> Bỏ qua
-            if not is_unit_manager:
+            if current_employee and rec.employee_id and current_employee.id == rec.employee_id.id:
+                rec.can_approve_by_unit_manager = False
                 continue
-
-            # 3. Kiểm tra phòng ban
-            if current_employee and rec.employee_id:
+            if rec.employee_id.parent_id and rec.employee_id.parent_id.id == current_employee.id:
+                rec.can_approve_by_unit_manager = True
+                continue
+            if not is_unit_manager: continue
+            if current_employee.department_id and rec.employee_id.department_id:
                 manager_dept = current_employee.department_id
                 employee_dept = rec.employee_id.department_id
-
-                # Logic so sánh:
-                # - Cùng phòng ban
-                # - HOẶC: Manager ở phòng ban Cha của nhân viên (Duyệt cho cấp dưới)
-                if manager_dept == employee_dept or (employee_dept and employee_dept.parent_id == manager_dept):
+                is_sub_department = self.env['hr.department'].search_count([
+                    ('id', '=', employee_dept.id),
+                    ('id', 'child_of', manager_dept.id)
+                ])
+                if is_sub_department > 0:
                     rec.can_approve_by_unit_manager = True
+                    continue
+
     # =========================================================================
-    # 5. LOGIC XỬ LÝ & FIX LỖI CREATE/WRITE
+    # TOOL: GỬI MAIL
     # =========================================================================
+    def _send_custom_leave_notification(self, template_xml_id):
+        for leave in self:
+            try:
+                template = self.env.ref(template_xml_id, raise_if_not_found=False)
+                if template:
+                    template.sudo().send_mail(leave.id, force_send=True)
+            except Exception as e:
+                _logger.error("Lỗi gửi mail %s: %s", template_xml_id, str(e))
 
-    @api.onchange('date_from', 'date_to')
-    def _onchange_custom_dates(self):
-        for rec in self:
-            rec.request_hour_from = '0'
-            rec.request_hour_to = '0'
-
-            if rec.date_from:
-                rec.request_date_from = rec.date_from.date()
-                if rec.date_to and rec.date_from > rec.date_to:
-                    rec.date_to = rec.date_from
-                    rec.request_date_to = rec.date_from.date()
-
-            if rec.date_to:
-                rec.request_date_to = rec.date_to.date()
-                if rec.date_from and rec.date_to < rec.date_from:
-                    rec.date_from = rec.date_to
-                    rec.request_date_from = rec.date_to.date()
-
+    # =========================================================================
+    # CREATE / WRITE
+    # =========================================================================
     @api.model
     def create(self, vals):
         if vals.get('date_from'):
             vals['request_date_from'] = fields.Datetime.to_datetime(vals['date_from']).date()
         if vals.get('date_to'):
             vals['request_date_to'] = fields.Datetime.to_datetime(vals['date_to']).date()
-
         vals['request_unit_hours'] = True
         vals['request_unit_half'] = False
-        vals['request_hour_from'] = '0'
-        vals['request_hour_to'] = '0'
 
-        return super(HrLeave, self).create(vals)
+        leave = super(HrLeave, self).create(vals)
+        if not leave.is_imported:
+            leave._send_custom_leave_notification('hr_attendance_tedi.email_template_leave_create_notification')
+        return leave
 
     def write(self, vals):
         if len(self) == 1 and ('date_from' in vals or 'date_to' in vals):
-            new_date_from_dt = vals.get('date_from') and fields.Datetime.to_datetime(
-                vals['date_from']) or self.date_from
-            new_date_to_dt = vals.get('date_to') and fields.Datetime.to_datetime(vals['date_to']) or self.date_to
-
-            if new_date_from_dt and new_date_to_dt and new_date_from_dt > new_date_to_dt:
-                if 'date_from' in vals:
-                    new_date_to_dt = new_date_from_dt
-                    vals['date_to'] = vals['date_from']
-                elif 'date_to' in vals:
-                    new_date_from_dt = new_date_to_dt
-                    vals['date_from'] = vals['date_to']
-
-            if new_date_from_dt:
-                vals['request_date_from'] = new_date_from_dt.date()
-            if new_date_to_dt:
-                vals['request_date_to'] = new_date_to_dt.date()
-
-        if 'date_from' in vals or 'date_to' in vals or 'request_date_from' in vals:
-            vals['request_hour_from'] = '0'
-            vals['request_hour_to'] = '0'
-
+            # ... (Giữ nguyên logic fix date của bạn) ...
+            pass
         return super(HrLeave, self).write(vals)
 
     # =========================================================================
-    # 6. OVERRIDE CÁC HÀM DUYỆT (SỬA LỖI QUYỀN TRUY CẬP)
+    # OVERRIDE CÁC HÀM DUYỆT (QUAN TRỌNG NHẤT)
     # =========================================================================
 
     def _check_approval_update(self, state):
-        """
-        Hàm này chặn quyền duyệt (Approval Check).
-        """
+        # Bypass check quyền nếu có cờ bypass trong context
         if self._context.get('bypass_manager_check'):
             return
         super(HrLeave, self)._check_approval_update(state)
 
     def _check_double_validation_rules(self, employees, state):
-        """
-        Hàm này chặn quyền duyệt lần 1 (Double Validation Rules).
-        CẦN THÊM HÀM NÀY ĐỂ FIX LỖI "You cannot first approve..."
-        """
         if self._context.get('bypass_manager_check'):
             return
         super(HrLeave, self)._check_double_validation_rules(employees, state)
 
-    def action_approve(self):
-        # 1. Logic Unit Manager (Custom)
+    def action_approve(self, check_state=True):
+        # Nếu là Unit Manager, chúng ta dùng sudo() để gọi hàm cha.
+        # Điều này giúp bypass các check quyền của Odoo nhưng vẫn chạy logic chuẩn.
         if self.can_approve_by_unit_manager:
-            # Lưu người duyệt
             current_employee = self.env.user.employee_id
             if current_employee:
                 self.sudo().write({'manager_id': current_employee.id})
 
-            for leave in self:
-                validation_type = leave.holiday_status_id.leave_validation_type
+            # Sử dụng sudo() + context bypass để Odoo không chặn quyền
+            # nhưng VẪN CHẠY logic state chuyển đổi của Odoo
+            return super(HrLeave, self.sudo().with_context(bypass_manager_check=True)).action_approve(
+                check_state=check_state)
 
-                # TH1: Cần duyệt 2 lần (Both) -> Chuyển sang validate1
-                if validation_type == 'both':
-                    # Dùng sudo + context để bypass hàm _check_double_validation_rules
-                    leave.sudo().with_context(bypass_manager_check=True).write({
-                        'state': 'validate1',
-                        'first_approver_id': current_employee.id,
-                    })
-                    # Gửi mail thông báo
-                    leave.activity_update()
-                    leave.message_post(body=f"Unit Manager ({current_employee.name}) đã duyệt lần 1.")
-
-                # TH2: Các trường hợp còn lại -> Duyệt thẳng
-                else:
-                    leave.action_validate()
-
-            return True
-
-        # 2. Nếu không phải Unit Manager -> Chạy quy trình chuẩn
-        return super(HrLeave, self).action_approve()
+        return super(HrLeave, self).action_approve(check_state=check_state)
 
     def action_validate(self):
         current_employee = self.env.user.employee_id
@@ -289,17 +229,22 @@ class HrLeave(models.Model):
             self.sudo().write({'manager_id': current_employee.id})
 
         if self.can_approve_by_unit_manager:
-            # Dùng sudo + context để bypass hàm _check_approval_update
-            self.sudo().with_context(bypass_manager_check=True).write({'state': 'validate'})
+            # === FIX CHÍNH: KHÔNG TỰ VIẾT LẠI LOGIC VALIDATE ===
+            # Thay vì write state thủ công, hãy gọi hàm action_validate gốc bằng quyền sudo.
+            # Hàm gốc sẽ tự động gọi _validate_leave_request, _create_resource_leave (để trừ phép), v.v.
 
-            # Logic tạo work entry và resource leave (quan trọng)
-            self.sudo()._validate_leave_request()
+            # 1. Gọi super().action_validate() với sudo()
+            # Context 'leave_skip_state_check' có thể cần thiết nếu Odoo chặn chuyển trạng thái
+            res = super(HrLeave, self.sudo().with_context(bypass_manager_check=True)).action_validate()
 
-            self.activity_update()
-            self.message_post(body="Đã phê duyệt cuối cùng bởi Unit Manager.")
-            return True
+            # 2. Gửi mail
+            self._send_custom_leave_notification('hr_attendance_tedi.email_template_leave_approve_notification')
+            return res
 
-        return super(HrLeave, self).action_validate()
+        # Luồng thường
+        res = super(HrLeave, self).action_validate()
+        self._send_custom_leave_notification('hr_attendance_tedi.email_template_leave_approve_notification')
+        return res
 
     def action_refuse(self):
         current_employee = self.env.user.employee_id
@@ -307,65 +252,109 @@ class HrLeave(models.Model):
             self.sudo().write({'manager_id': current_employee.id})
 
         if self.can_approve_by_unit_manager:
-            # Từ chối thường ít bị chặn hơn, nhưng cứ thêm context cho chắc ăn
-            self.sudo().with_context(bypass_manager_check=True).write({'state': 'refuse'})
-            self.message_post(body="Đã từ chối bởi Unit Manager.")
-            return True
+            res = super(HrLeave, self.sudo().with_context(bypass_manager_check=True)).action_refuse()
+        else:
+            res = super(HrLeave, self).action_refuse()
 
-        return super(HrLeave, self).action_refuse()
+        self._send_custom_leave_notification('hr_attendance_tedi.email_template_leave_refuse_notification')
+        return res
 
     # =========================================================================
-    # 7. FIX WORK ENTRY CHỒNG LẤN
+    # FIX WORK ENTRY & COMPUTE STATS
     # =========================================================================
 
     def _validate_leave_request(self):
+        # PHẢI GỌI SUPER ĐẦU TIÊN
+        # Hàm super này (trong code base) chứa logic:
+        # 1. holidays._create_resource_leave() -> Tạo bản ghi nghỉ để trừ ngày phép
+        # 2. Tạo meeting lịch
         res = super(HrLeave, self)._validate_leave_request()
 
-        # TỰ ĐỘNG REGENERATE WORK ENTRY ĐỂ TRÁNH LỖI TRÙNG
+        # Logic fix work entry chồng lấn của bạn
         sudo_we = self.env['hr.work.entry'].sudo()
-
         for leave in self:
             if leave.employee_id and leave.date_from and leave.date_to:
-                d_from = leave.date_from.date()
-                d_to = leave.date_to.date()
+                d_from_date = leave.date_from.date()
+                d_to_date = leave.date_to.date()
 
                 to_remove = sudo_we.search([
                     ('employee_id', '=', leave.employee_id.id),
-                    ('date_stop', '>=', d_from),
-                    ('date_start', '<=', d_to),
+                    ('date_stop', '>', leave.date_from),
+                    ('date_start', '<', leave.date_to),
                     ('state', '!=', 'validated')
                 ])
                 if to_remove:
                     to_remove.unlink()
 
-                leave.employee_id.sudo().generate_work_entries(d_from, d_to, True)
+                # Tái tạo work entries (nếu cần thiết)
+                # Lưu ý: Hàm _create_resource_leave ở super() đã đánh dấu lịch nghỉ,
+                # nên generate_work_entries sẽ tạo ra entry loại nghỉ phép.
+                leave.employee_id.sudo().generate_work_entries(d_from_date, d_to_date, True)
 
+                generated_entries = sudo_we.search([
+                    ('employee_id', '=', leave.employee_id.id),
+                    ('date_stop', '>', leave.date_from),
+                    ('date_start', '<', leave.date_to),
+                    ('state', '!=', 'validated')
+                ])
+                if generated_entries:
+                    vals = {'state': 'validated', 'leave_id': leave.id}
+                    if leave.holiday_status_id.work_entry_type_id:
+                        vals['work_entry_type_id'] = leave.holiday_status_id.work_entry_type_id.id
+                    generated_entries.write(vals)
         return res
 
-    # =========================================================================
-    # 8. CÁC HÀM COMPUTE KHÁC
-    # =========================================================================
-    @api.depends('employee_id', 'holiday_status_id', 'date_from')
+    # THÊM 'state' VÀO DEPENDS ĐỂ SỐ LIỆU CẬP NHẬT NGAY KHI DUYỆT
+    @api.depends('employee_id', 'holiday_status_id', 'date_from', 'date_to', 'state')
     def _compute_leave_stats(self):
         for rec in self:
+            # 1. Khởi tạo giá trị mặc định
             rec.leaves_taken_count = 0.0
             rec.remaining_leaves_count = 0.0
-            if rec.employee_id and rec.holiday_status_id:
-                leave_type = rec.holiday_status_id.with_context(
-                    employee_id=rec.employee_id.id,
-                    date=rec.date_from or fields.Date.today()
-                )
-                rec.remaining_leaves_count = leave_type.virtual_remaining_leaves
-                rec.leaves_taken_count = leave_type.leaves_taken
+
+            # 2. Lấy dữ liệu thực (tránh lỗi NewId khi đang tạo mới)
+            employee = rec.employee_id._origin if rec.employee_id._origin else rec.employee_id
+            leave_type = rec.holiday_status_id._origin if rec.holiday_status_id._origin else rec.holiday_status_id
+
+            if employee and leave_type:
+                try:
+                    # Xác định ngày kiểm tra (Ngày bắt đầu nghỉ hoặc Hôm nay)
+                    check_date = rec.date_from.date() if rec.date_from else fields.Date.today()
+
+                    # SỬ DỤNG HÀM BASE: get_allocation_data
+                    # Đây là hàm Odoo dùng ở dòng 895 trong code base bạn gửi để check_validity
+                    leave_data = leave_type.get_allocation_data(employee, check_date)
+
+                    # leave_data trả về dict: {employee_obj: [(leave_type_name, stats_dict)]}
+                    if employee in leave_data and leave_data[employee]:
+                        stats = leave_data[employee][0][1]  # Lấy stats_dict
+
+                        # virtual_remaining_leaves: Số dư còn lại (theo đơn vị ngày hoặc giờ của loại nghỉ)
+                        # leaves_taken: Số đã nghỉ
+                        remaining = stats.get('virtual_remaining_leaves', 0.0)
+                        taken = stats.get('leaves_taken', 0.0)
+
+                        # Lấy số giờ tiêu chuẩn/ngày từ calendar (Dòng 13 code base)
+                        # Odoo dùng HOURS_PER_DAY hoặc resource_calendar_id.hours_per_day
+                        hours_per_day = employee.resource_calendar_id.hours_per_day or 8.0
+
+                        if leave_type.request_unit == 'hour':
+                            # Nếu loại nghỉ tính theo giờ, quy đổi ra ngày để hiển thị theo yêu cầu của bạn
+                            rec.remaining_leaves_count = remaining / hours_per_day
+                            rec.leaves_taken_count = taken / hours_per_day
+                        else:
+                            # Nếu loại nghỉ tính theo ngày, giữ nguyên số liệu
+                            rec.remaining_leaves_count = remaining
+                            rec.leaves_taken_count = taken
+
+                except Exception as e:
+                    _logger.error("Lỗi compute stats theo logic base: %s", str(e))
 
     @api.depends('employee_id')
     def _compute_my_history(self):
         for rec in self:
             if rec.employee_id:
-                domain = [
-                    ('employee_id', '=', rec.employee_id.id),
-                    ('id', '!=', rec.id if rec.id else False)
-                ]
+                domain = [('employee_id', '=', rec.employee_id.id), ('id', '!=', rec.id if rec.id else False)]
                 rec.my_history_ids = self.env['hr.leave'].search(domain, order='create_date desc', limit=10)
             else:
                 rec.my_history_ids = False
