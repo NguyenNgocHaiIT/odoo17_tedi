@@ -192,9 +192,7 @@ class PhanPhat(models.TransientModel):
         if not employee:
             return False
         departments_managed = self.env['hr.department'].search([
-            '|',
             ('manager_id', '=', employee.id),
-            ('manager_ids', 'in', employee.id),
         ])
         return bool(departments_managed)
 
@@ -1914,9 +1912,7 @@ class OfficeDocument(models.Model):
 
             # Kiểm tra có phải trưởng đơn vị không (manager của bất kỳ phòng ban nào)
             departments_as_manager = self.env['hr.department'].search([
-                '|',
                 ('manager_id', '=', current_employee.id),
-                ('manager_ids', 'in', current_employee.id),
             ])
 
             if departments_as_manager:
