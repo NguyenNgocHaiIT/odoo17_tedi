@@ -110,7 +110,7 @@
                                 <field name="employee_ids" widget="many2many_tags"
                                        string="Người tham gia"
                                        readonly="1"/>
-                                <field name="total_participants" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
+                                <field name="so_nguoi_tham_gia" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
                             </group>
                         </group>
                     </sheet>
