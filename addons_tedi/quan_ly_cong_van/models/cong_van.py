@@ -481,7 +481,7 @@ class ButPhe(models.TransientModel):
             email_list = _get_employee_emails(van_thu_employees)
             if email_list:
                 detail_url = doc.get_form_url()
-                subject = f"Văn bản đã bút phê: {doc.trich_yeu[:30]}..." if doc.trich_yeu else "Văn bản đã bút phê"
+                subject = f"Văn bản đã bút phê: {doc.trich_yeu[:50]}..." if doc.trich_yeu else "Văn bản đã bút phê"
                 body_lines = [
                     f"<b>Số văn bản:</b> {doc.so_vb or 'Chưa có số'}",
                     f"<b>Trích yếu:</b> {doc.trich_yeu or 'Không có'}",
@@ -491,31 +491,33 @@ class ButPhe(models.TransientModel):
                     f"<b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}",
                 ]
                 body_html = _build_email_html(
-                    title='VĂN BẢN ĐÃ BÚT PHÊ – CẦN PHÂN PHÁT',
+                    title='VĂN BẢN ĐÃ ĐƯỢC BÚT PHÊ',  # Đồng bộ format với các chức năng khác
                     greeting='Kính gửi Anh/Chị Văn thư,<br/>Văn bản sau đã được bút phê, vui lòng xử lý phân phát.',
                     body_lines=body_lines,
                     detail_url=detail_url,
-                    btn_label='XEM VĂN BẢN',
+                    btn_label='XEM CHI TIẾT VĂN BẢN',  # Đồng bộ với các chức năng khác
                     btn_color='#875A7B',
                     company_name=self.env.company.name or '',
                 )
                 _send_mail(self.env, subject, email_list, body_html)
 
-            # Thông báo popup cho văn thư
-            partners = group.users.mapped('partner_id').ids
-            if partners:
-                doc.message_post(
-                    body=f"""
-                        <p><b>Văn bản đã được bút phê:</b> {doc.trich_yeu or ''}</p>
-                        <p><b>Người bút phê:</b> {employee.name if employee else self.env.user.name}</p>
-                        <p><b>Ý kiến:</b> {self.y_kien_xu_ly or 'Không có ý kiến'}</p>
-                        <p><b>Quan trọng:</b> {'Có' if self.quan_trong else 'Không'}</p>
-                        <p><b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
-                    """,
-                    subject=f"Văn bản đã được bút phê: {doc.trich_yeu[:50]}..." if doc.trich_yeu else "Văn bản đã được bút phê",
-                    partner_ids=partners,
-                    body_is_html=True,
-                )
+                # CHỈ gửi thông báo popup, KHÔNG gửi email qua message_post
+                partners = group.users.mapped('partner_id').ids
+                if partners:
+                    for partner_id in partners:
+                        try:
+                            self.env['bus.bus']._sendone(
+                                partner_id,
+                                'simple_notification',
+                                {
+                                    'title': 'Văn bản đã bút phê',
+                                    'message': f"Văn bản '{doc.trich_yeu[:50]}...' đã được bút phê, cần phân phát.",
+                                    'sticky': True,
+                                    'type': 'info',
+                                }
+                            )
+                        except Exception as e:
+                            _logger.warning(f"Gửi notification thất bại: {str(e)}")
 
         if self.tai_lieu_kem:
             self.env['ir.attachment'].create({
