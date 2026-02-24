@@ -79,6 +79,9 @@
                     </header>
 
                     <sheet>
+<!--                        <field name="can_approve_meeting" />-->
+<!--                        <field name="is_current_user_creator" />-->
+
                         <widget name="web_ribbon" title="Đã duyệt phòng" bg_color="bg-success" invisible="room_sign != 'have_sign'"/>
                         <widget name="web_ribbon" title="Chờ duyệt phòng" bg_color="bg-warning" invisible="room_sign != 'pending'"/>
 
