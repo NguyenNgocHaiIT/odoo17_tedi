@@ -7,7 +7,7 @@
 	'sequence': '1',
 	'summary': '',
     'icon': '/quan_ly_cong_van/static/description/icon.png',
-	'depends': [ 'base', 'mail', 'hr', 'project', 'web', 'partner_extend', 'hr_expense'],
+	'depends': [ 'base', 'mail', 'hr', 'project', 'web', 'partner_extend', 'hr_expense', 'web_push_notification'],
 	'data': [
 		'security/office_document_security.xml',
 		'security/ir.model.access.csv',
