@@ -70,8 +70,8 @@ class Calendar(models.Model):
     )
 
     # --- Fields phân quyền ---
-    can_approve_meeting = fields.Boolean(compute="_compute_permissions")
-    can_approve_room = fields.Boolean(compute="_compute_permissions")
+    can_approve_meeting = fields.Boolean(compute="_compute_permissions",store = False)
+    can_approve_room = fields.Boolean(compute="_compute_permissions", store = False)
 
     is_current_user_creator = fields.Boolean(
         compute='_compute_is_current_user_creator',
@@ -97,13 +97,18 @@ class Calendar(models.Model):
     @api.depends_context('uid')
     def _compute_is_current_user_creator(self):
         current_user = self.env.user
+        is_admin = current_user.has_group('base.group_system')
+
         for rec in self:
-            # Xử lý trường hợp đang tạo mới (chưa có ID)
-            if not rec.id:
-                # Khi đang tạo mới, mặc định cho phép chỉnh sửa
+            # 1. Nếu là Admin HOẶC đang tạo bản ghi mới -> Cho phép luôn
+            if is_admin or not rec.id:
                 rec.is_current_user_creator = True
+
+            # 2. Nếu không phải Admin, kiểm tra xem có phải người tạo không
             elif rec.create_uid:
-                rec.is_current_user_creator = rec.create_uid.id == current_user.id
+                rec.is_current_user_creator = (rec.create_uid.id == current_user.id)
+
+            # 3. Các trường hợp còn lại
             else:
                 rec.is_current_user_creator = False
 
