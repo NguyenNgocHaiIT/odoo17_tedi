@@ -33,7 +33,7 @@
                         <button name="action_approve"
                                 string="Duyệt phiếu"
                                 type="object"
-                                icon="fa-check text-success" invisible="state == 'approve'" groups="om_hr_payroll.group_hr_payroll_user,om_hr_payroll.group_hr_payroll_manager"/>
+                                icon="fa-check text-success" invisible="state == 'approve'" groups="om_hr_payroll.group_approve_quarterly_payroll_settlement"/>
                         <button name="action_draft"
                                 string="Mở lại phiếu"
                                 type="object"
@@ -67,7 +67,7 @@
                         <group/>
                         </group>
                         <field name="line_ids" readonly="state != 'draft'">
-                            <tree editable="bottom" class="excel_style_list_view">
+                            <tree editable="bottom" class="excel_style_list_view" create="false">
                                 <field name="employee_id" readonly="1"/>
                                 <field name="lv_tt"/>
                                 <field name="le_tet"/>

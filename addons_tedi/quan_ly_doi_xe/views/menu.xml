@@ -31,11 +31,19 @@
                   sequence="15"
                   groups="base.group_user"/>
 
+                <!--Menu chi phí phát sinh-->
+        <menuitem
+                id="menu_extra_cost"
+                name="Chi phí phát sinh"
+                parent="fleet.menu_root"
+                action="action_hr_expense_airlines"
+                sequence="20"/>
+
         <menuitem name="Cấu hình xe"
                   parent="fleet.fleet_configuration"
                   id="fleet_models_configuration_custom"
                   sequence="10"
-                  groups="fleet.fleet_group_user"/>
+                  groups="fleet.fleet_group_manager"/>
 
         <menuitem action="fleet.fleet_vehicle_action"
                   name="Danh mục xe"

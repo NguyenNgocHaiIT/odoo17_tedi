@@ -19,10 +19,10 @@
 
         "data/web_push_data.xml",
 
-
+        "views/res_config_settings_views.xml",
         'views/res_users_view.xml',
         "views/web_push_template_view.xml",
-        "views/res_config_settings_views.xml",
+
 
 
     ],

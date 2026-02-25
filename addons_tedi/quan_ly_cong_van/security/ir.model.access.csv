@@ -29,3 +29,4 @@ access_office_document_rejection_van_thu,access.office.document.rejection.van_th
 access_office_document_rejection_don_vi,access.office.document.rejection.don_vi,model_office_document_rejection,quan_ly_cong_van.group_don_vi_xu_ly,1,1,1,0
 access_office_document_rejection_lanh_dao,access.office.document.rejection.lanh_dao,model_office_document_rejection,quan_ly_cong_van.group_lanh_dao,1,1,1,0
 access_office_document_reject_wizard_user,access.office.document.reject.wizard.user,model_office_document_reject_wizard,base.group_user,1,1,1,1
+access_office_document_lanh_dao_reject_wizard_user,access.office.document.lanh.dao.reject.wizard.user,model_office_document_lanh_dao_reject_wizard,base.group_user,1,1,1,1

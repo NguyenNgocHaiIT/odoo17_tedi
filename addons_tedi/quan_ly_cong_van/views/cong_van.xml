@@ -78,7 +78,7 @@
                                        invisible="document_type != 'incoming'"
                                        readonly="not (is_van_thu or not_is_van_thu)"
                                        widget="many2one_clickable"/>
-                                <field name="tt_vb" readonly="1"/>
+                                <field name="tt_vb" readonly="1" decoration-warning="True"/>
                                 <field name="so_den_tong_hop" string="Số công văn" readonly="1"/>
                                 <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                                 <field name="don_vi_ban_hanh"
@@ -122,14 +122,19 @@
                                 <field name="dv_dong_xu_ly" widget="many2many_tags" readonly="1"/>
                             </group>
                             <group colspan="7">
+                                <field name="attachment_ids" widget="many2many_binary" required="1" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                <field name="attachment_id"
+                                       string="Tài liệu xem trước"
+                                       options="{'no_create': True, 'no_open': True}"/>
                                 <field name="attachment_datas"
-                                       required="1"
-                                       widget="pdf_viewer"
+                                       string=""
                                        filename="attachment_filename"
-                                       readonly="not (is_van_thu or not_is_van_thu)"
+                                       readonly="1"
+                                       widget="pdf_viewer_reload"
+                                       key="pdf_viewer_key"
                                        style="width: 100%; height: 100%;"/>
                                 <field name="attachment_filename" invisible="1"/>
-                                <field name="attachment_id" invisible="1"/>
+                                <field name="pdf_viewer_key" invisible="1"/>
                             </group>
                         </group>
                         <label for="trich_yeu" string="Trích yếu"/>
@@ -281,7 +286,7 @@
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
                         <button name="approve" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
-                        <button name="khong_dat" string="Từ chối" type="object"
+                        <button name="tu_choi_cua_lanh_dao" string="Từ chối" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
                         <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
                                 type="object"
@@ -332,7 +337,7 @@
                                        widget="many2one_clickable"/>
                                 <field name="document_type" invisible="1"/>
                                 <field name="so_di_tong_hop" readonly="1"/>
-                                <field name="tt_vb" readonly="1"/>
+                                <field name="tt_vb" readonly="1" decoration-warning="True"/>
                                 <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="don_vi_ban_hanh"
                                        invisible="not (document_type in ('incoming_internal','outgoing_internal','resolution','outgoing'))"
@@ -374,13 +379,20 @@
                                 <!--                                <field name="so_di_tong_hop_so_den_theo_so"/>-->
                             </group>
                             <group colspan="7">
+                                <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                <field name="attachment_id"
+                                       string="Tài liệu xem trước"
+                                       options="{'no_create': True, 'no_open': True}"/>
                                 <field name="attachment_datas"
-                                       widget="pdf_viewer"
+                                       string=""
                                        filename="attachment_filename"
-                                       readonly="not (is_van_thu or not_is_van_thu)"
+                                       readonly="1"
+                                       widget="pdf_viewer_reload"
+                                       key="pdf_viewer_key"
                                        style="width: 100%; height: 100%;"/>
                                 <field name="attachment_filename" invisible="1"/>
-                                <field name="attachment_id" invisible="1"/>
+                                <field name="pdf_viewer_key" invisible="1"/>
+
                             </group>
                         </group>
 
@@ -521,7 +533,7 @@
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
                         <button name="approve" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
-                        <button name="khong_dat" string="Từ chối" type="object"
+                        <button name="tu_choi_cua_lanh_dao" string="Từ chối" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
                         <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
                                 type="object"
@@ -563,7 +575,7 @@
                         <field name="trich_yeu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                         <group col="12">
                             <group colspan="5">
-                                <field name="tt_vb" readonly="1"/>
+                                <field name="tt_vb" readonly="1" decoration-warning="True"/>
                                 <field name="so_di_tong_hop" string="Số quyết định"
                                        required="document_type == 'resolution'"
                                        invisible="document_type != 'resolution'"
@@ -611,13 +623,19 @@
                                 <!--                                <field name="so_di_tong_hop_so_den_theo_so"/>-->
                             </group>
                             <group colspan="7">
+                                <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                <field name="attachment_id"
+                                       string="Tài liệu xem trước"
+                                       options="{'no_create': True, 'no_open': True}"/>
                                 <field name="attachment_datas"
-                                       widget="pdf_viewer"
+                                       string=""
                                        filename="attachment_filename"
-                                       readonly="not (is_van_thu or not_is_van_thu)"
+                                       readonly="1"
+                                       widget="pdf_viewer_reload"
+                                       key="pdf_viewer_key"
                                        style="width: 100%; height: 100%;"/>
                                 <field name="attachment_filename" invisible="1"/>
-                                <field name="attachment_id" invisible="1"/>
+                                <field name="pdf_viewer_key" invisible="1"/>
                             </group>
                         </group>
 
@@ -884,6 +902,31 @@
         <record id="view_reject_document_wizard_form" model="ir.ui.view">
             <field name="name">office.document.reject.wizard.form</field>
             <field name="model">office.document.reject.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Từ chối văn bản">
+                    <sheet>
+                        <field name="office_document_id" invisible="1"/>
+
+                        <field name="rejection_reason"
+                               placeholder="Nhập lý do từ chối văn bản..."
+                               required="1"/>
+                    </sheet>
+
+                    <footer>
+                        <button string="Xác nhận"
+                                type="object"
+                                name="action_confirm_reject"
+                                class="btn-danger"/>
+                        <button string="Hủy"
+                                special="cancel"
+                                class="btn-secondary"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        <record id="view_lanh_dao_reject_document_wizard_form" model="ir.ui.view">
+            <field name="name">office.document.lanh.dao.reject.wizard.form</field>
+            <field name="model">office.document.lanh.dao.reject.wizard</field>
             <field name="arch" type="xml">
                 <form string="Từ chối văn bản">
                     <sheet>

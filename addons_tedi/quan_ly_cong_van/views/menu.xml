@@ -112,14 +112,6 @@
                 action="action_open_office_internal_document_task"
                 sequence="5"/>-->
 
-        <!--Menu chi phí phát sinh-->
-        <menuitem
-                id="menu_extra_cost"
-                name="Chi phí phát sinh"
-                parent="office_document_menu_root"
-                action="action_hr_expense_airlines"
-                sequence="40"/>
-
 
         <!--Menu cấu hình-->
         <menuitem

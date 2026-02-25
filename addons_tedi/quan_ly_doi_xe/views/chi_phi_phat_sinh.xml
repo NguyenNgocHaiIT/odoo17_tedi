@@ -23,14 +23,14 @@
                             string="Duyệt"
                             type="object"
                             class="btn-success"
-                            groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                            groups="base.group_system, fleet.fleet_group_manager"
                             invisible="state != 'submitted'"/>
 
                     <button name="action_refuse_expense"
                             string="Từ chối"
                             type="object"
                             class="btn-danger"
-                            groups="base.group_system, quan_ly_cong_van.group_van_thu"
+                            groups="base.group_system, fleet.fleet_group_manager"
                             invisible="state != 'submitted'"/>
 
                     <field name="state"
@@ -109,7 +109,6 @@
         <field name="name">Chi phí phát sinh</field>
         <field name="res_model">hr.expense</field>
         <field name="view_mode">tree,form</field>
-        <field name="domain">[('product_code','=','AIRLINES')]</field>
         <field name="view_ids" eval="[
             (5, 0, 0),
             (0, 0, {'view_mode': 'tree', 'view_id': ref('view_hr_expense_airlines_tree')}),
