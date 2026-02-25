@@ -27,6 +27,7 @@
             'quan_ly_cong_van/static/src/js/back_to_tree.js',
             'quan_ly_cong_van/static/src/js/pdf_viewer_reload.js',
             'quan_ly_cong_van/static/src/xml/pdf_viewer_reload.xml',
+            'quan_ly_cong_van/static/src/css/pdf_viewer_reload.css',
         ],
     },
 

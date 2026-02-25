@@ -178,6 +178,17 @@ class PhanPhat(models.TransientModel):
         string='Người đồng xử lý',
         domain=lambda self: self._get_employee_domain()
     )
+    y_kien_xu_ly = fields.Text(string='Ý kiến xử lý')
+
+    is_truong_don_vi = fields.Boolean(
+        compute='_compute_is_truong_don_vi',
+        store=False,
+        default=lambda self: self._is_truong_don_vi())
+
+    @api.depends()
+    def _compute_is_truong_don_vi(self):
+        for rec in self:
+            rec.is_truong_don_vi = rec._is_truong_don_vi()
 
     # ----- KIỂM TRA QUYỀN VĂN THƯ -----
     def _is_van_thu(self):
@@ -186,6 +197,7 @@ class PhanPhat(models.TransientModel):
             return True
         return False
 
+    @api.depends()
     def _is_truong_don_vi(self):
         """Kiểm tra user hiện tại có phải là trưởng đơn vị (manager) không"""
         employee = self.env.user.employee_id
@@ -224,7 +236,15 @@ class PhanPhat(models.TransientModel):
     def _get_employee_domain(self):
         """Nếu là văn thư thì xem tất cả nhân viên, nếu không thì chỉ xem nhân viên trong đơn vị của mình và cấp dưới"""
         if self._is_van_thu():
-            return []  # Văn thư xem tất cả nhân viên
+            all_depts = self.env['hr.department'].search([])
+            manager_ids = set()
+            for dept in all_depts:
+                if dept.manager_id:
+                    manager_ids.add(dept.manager_id.id)
+                manager_ids.update(dept.manager_ids.ids)
+            if not manager_ids:
+                return [('id', '=', False)]
+            return [('id', 'in', list(manager_ids))]
         employee = self.env.user.employee_id
         if not employee or not employee.department_id:
             return [('id', '=', False)]
@@ -319,6 +339,15 @@ class PhanPhat(models.TransientModel):
 
     # ----- PHƯƠNG THỨC CHÍNH -----
     def phan_phat(self):
+        _logger.info("=" * 50)
+        _logger.info(f"User: {self.env.user.name} (ID: {self.env.user.id})")
+        employee = self.env.user.employee_id
+        _logger.info(f"Employee: {employee.name if employee else 'None'} (ID: {employee.id if employee else 'None'})")
+        if employee:
+            departments_managed = self.env['hr.department'].search([('manager_id', '=', employee.id)])
+            _logger.info(f"Departments managed: {departments_managed.mapped('name')}")
+        _logger.info(f"is_truong_don_vi: {self._is_truong_don_vi()}")
+        _logger.info("=" * 50)
         doc_id = self.env.context.get('active_id')
         if not doc_id:
             return
@@ -375,6 +404,19 @@ class PhanPhat(models.TransientModel):
         if lines_to_create:
             self.env['office.document.detail2'].create(lines_to_create)
 
+        # ===== THÊM MỚI: Ghi ý kiến xử lý vào detail3 nếu có và là trưởng đơn vị =====
+        # Sử dụng method _is_truong_don_vi() để kiểm tra
+        if self._is_truong_don_vi() and self.y_kien_xu_ly:
+            current_employee = self.env.user.employee_id  # Lấy employee từ user hiện tại
+            if current_employee:
+                self.env['office.document.detail3'].create({
+                    'office_document_id': doc.id,
+                    'nguoi_nhap_y_kien': current_employee.id,
+                    'nhom_phong_ban': current_employee.department_id.name or 'Không xác định',
+                    'noi_dung_chi_dao': self.y_kien_xu_ly,
+                    'thoi_diem_chi_dao': fields.Datetime.now(),
+                })
+
         # Gửi email – chỉ dùng work_email của employee
         all_employees = self.env['hr.employee'].browse(nguoi_xu_ly_chinh_ids + nguoi_dong_xu_ly_ids)
         email_list = _get_employee_emails(all_employees)
@@ -389,6 +431,10 @@ class PhanPhat(models.TransientModel):
                 f"<b>Mã văn bản:</b> {doc.so_vb or 'Không có mã'}",
                 f"<b>Ngày phân phát:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}",
             ]
+            # Thêm ý kiến xử lý vào email nếu có (chỉ khi là trưởng đơn vị)
+            if self._is_truong_don_vi() and self.y_kien_xu_ly:
+                body_lines.append(f"<b>Ý kiến xử lý (từ trưởng đơn vị):</b> {self.y_kien_xu_ly}")
+
             body_html = _build_email_html(
                 title='PHÂN PHÁT VĂN BẢN',
                 greeting=f"Kính gửi: <b>{names_str}</b>,<br/>Bạn vừa được phân công xử lý văn bản.",
@@ -441,6 +487,30 @@ class ButPhe(models.TransientModel):
     quan_trong = fields.Boolean('Quan trọng')
     da_giai_quyet = fields.Boolean('Đã giải quyết')
     thong_bao_cho_van_thu = fields.Boolean('Thông báo cho văn thư', default=True)
+    do_khan = fields.Selection([
+        ('thuong', 'Thường'),
+        ('khan', 'Khẩn'),
+        ('hoa_toc', 'Hỏa tốc')
+    ], string='Độ khẩn', default='thuong')
+
+    do_mat = fields.Boolean(string="Độ mật", default=False)
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+
+        # Lấy văn bản hiện tại từ context
+        doc_id = self.env.context.get('active_id')
+        if doc_id:
+            doc = self.env['office.document'].browse(doc_id)
+            if doc.exists():
+                # Gán giá trị từ văn bản vào wizard
+                if 'do_khan' in fields_list:
+                    res['do_khan'] = doc.do_khan
+                if 'do_mat' in fields_list:
+                    res['do_mat'] = doc.do_mat
+
+        return res
 
     def but_phe(self):
         doc_id = self.env.context.get('active_id')
@@ -459,7 +529,13 @@ class ButPhe(models.TransientModel):
                 'params': {'title': 'Lỗi', 'message': 'Văn bản không tồn tại.', 'type': 'warning', 'sticky': False}
             }
 
-        doc.write({'but_phe': self.y_kien_xu_ly, 'tt_vb': 'cho_phan_phat'})
+        update_vals = {
+            'but_phe': self.y_kien_xu_ly,
+            'tt_vb': 'cho_phan_phat',
+            'do_khan': self.do_khan,
+            'do_mat': self.do_mat,
+        }
+        doc.write(update_vals)
 
         employee = self.env['hr.employee'].search([('user_id', '=', self.env.user.id)], limit=1)
         nhom_phong_ban = employee.department_id.name if employee and employee.department_id else 'Không xác định'
@@ -646,8 +722,8 @@ class OfficeDocument(models.Model):
     do_khan = fields.Selection([
         ('thuong', 'Thường'),
         ('khan', 'Khẩn'),
-        ('mat', 'Mật'),
         ('hoa_toc', 'Hỏa tốc')], string='Độ khẩn', default='thuong')
+    do_mat = fields.Boolean(string="Độ mật", default=False)
     vb_nhan = fields.Char('Văn bản nhận')
     tt_vb = fields.Selection([
         ('draft', 'Nháp'),
@@ -1680,12 +1756,22 @@ class OfficeDocument(models.Model):
                         f"- Đơn vị ban hành: {rec.don_vi_ban_hanh_ngoai.name}"
                     )
 
-    can_create_don_vi = fields.Boolean(compute='_compute_can_create_don_vi', store=False)
+    can_create_don_vi = fields.Boolean(
+        compute='_compute_can_create_don_vi',
+        store=False,
+        default=lambda self: self.env.user.has_group('quan_ly_cong_van.group_van_thu') or self.env.user.has_group('base.group_system'))
 
+    @api.depends_context('uid')
     def _compute_can_create_don_vi(self):
+        # Kiểm tra quyền của user HIỆN TẠI, không phải của record
         user = self.env.user
+        is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
+        is_admin = user.has_group('base.group_system')
+        can_create = is_van_thu or is_admin
+
         for rec in self:
-            rec.can_create_don_vi = user.has_group('quan_ly_cong_van.group_van_thu') or user.has_group('base.group_system')
+            rec.can_create_don_vi = can_create
+
 
     def co_cong_van_dieu_chinh(self):
         self.ensure_one()
