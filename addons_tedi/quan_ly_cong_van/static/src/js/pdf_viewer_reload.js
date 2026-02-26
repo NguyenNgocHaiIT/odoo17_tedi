@@ -27,16 +27,24 @@ export class PdfViewerReload extends Component {
         this._onMouseMove = this._onMouseMove.bind(this);
         this._onMouseUp = this._onMouseUp.bind(this);
         this._onFullscreenChange = this._onFullscreenChange.bind(this);
+        this._onIframeLoad = this._onIframeLoad.bind(this);
+        this._iframeKeyHandler = null;
+        this._iframeWin = null;
 
         onMounted(() => {
             this.loadPdf();
             document.addEventListener("fullscreenchange", this._onFullscreenChange);
+            const iframe = this.iframeRef.el;
+            if (iframe) iframe.addEventListener("load", this._onIframeLoad);
         });
 
         onWillUnmount(() => {
             document.removeEventListener("mousemove", this._onMouseMove);
             document.removeEventListener("mouseup", this._onMouseUp);
             document.removeEventListener("fullscreenchange", this._onFullscreenChange);
+            const iframe = this.iframeRef.el;
+            if (iframe) iframe.removeEventListener("load", this._onIframeLoad);
+            this._removeIframeKeyListener();
         });
 
         useEffect(() => {
@@ -47,6 +55,33 @@ export class PdfViewerReload extends Component {
                 this.loadPdf();
             }
         }, () => [this.props.record.data.attachment_id?.[0]]);
+    }
+
+    _removeIframeKeyListener() {
+        if (this._iframeKeyHandler && this._iframeWin) {
+            try { this._iframeWin.removeEventListener("keydown", this._iframeKeyHandler); } catch(e) {}
+        }
+        this._iframeKeyHandler = null;
+        this._iframeWin = null;
+    }
+
+    _onIframeLoad() {
+        this._removeIframeKeyListener();
+        try {
+            const iframe = this.iframeRef.el;
+            const iframeWin = iframe?.contentWindow;
+            if (!iframeWin) return;
+            this._iframeWin = iframeWin;
+            this._iframeKeyHandler = (ev) => {
+                if (ev.key === "Escape" && document.fullscreenElement) {
+                    ev.preventDefault();
+                    document.exitFullscreen?.();
+                }
+            };
+            iframeWin.addEventListener("keydown", this._iframeKeyHandler);
+        } catch(e) {
+            // cross-origin iframe, không thể gắn listener — bỏ qua
+        }
     }
 
     _onFullscreenChange() {
