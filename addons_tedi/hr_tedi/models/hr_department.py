@@ -1,5 +1,5 @@
-from odoo import  models , fields, api
-
+from odoo import  models , fields, api,_
+from odoo.exceptions import ValidationError
 class HrDepartment(models.Model):
     _inherit = 'hr.department'
 
@@ -40,3 +40,20 @@ class HrDepartment(models.Model):
             # Nếu người quản lý này chưa có trong list thì thêm vào
             if self.manager_id not in self.manager_ids:
                 self.manager_ids = [(4, self.manager_id.id)]
+
+    # @api.constrains('manager_ids', 'manager_id')
+    # def _check_manager_department(self):
+    #     for dept in self:
+    #         # 1. Kiểm tra những người nằm trong Ban quản lý (manager_ids)
+    #         for manager in dept.manager_ids:
+    #             if manager.department_id != dept:
+    #                 raise ValidationError(
+    #                     _("Nhân viên %s đang thuộc ban quản lý của %s, nên bắt buộc phải trực thuộc phòng ban này!") % (
+    #                         manager.name, dept.name)
+    #                 )
+    #
+    #         # 2. Kiểm tra người Quản lý chính (manager_id)
+    #         if dept.manager_id and dept.manager_id.department_id != dept:
+    #             raise ValidationError(
+    #                 _("Trưởng phòng %s bắt buộc phải trực thuộc %s!") % (dept.manager_id.name, dept.name)
+    #             )

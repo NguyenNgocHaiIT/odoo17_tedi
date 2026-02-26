@@ -20,9 +20,7 @@ class SendPushWizard(models.TransientModel):
             self.body = self.template_id.body
 
     def action_send(self):
-        # Xác định danh sách người nhận dựa trên lựa chọn
         if self.send_all:
-            # Tìm tất cả user đang hoạt động (có thể filter thêm user có token FCM)
             recipients = self.env['res.users'].search([('active', '=', True)])
         else:
             recipients = self.user_ids
@@ -33,3 +31,4 @@ class SendPushWizard(models.TransientModel):
         # Gọi hàm gửi đã có
         recipients.send_push_notification(self.title, self.body)
         return {'type': 'ir.actions.act_window_close'}
+

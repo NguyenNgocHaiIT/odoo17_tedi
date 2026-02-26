@@ -1,0 +1,23 @@
+<odoo>
+    <data noupdate="1">
+        <record id="action_fix_manager_department_data" model="ir.actions.server">
+            <field name="name">Fix Dữ liệu: Cập nhật Phòng ban cho Quản lý</field>
+            <field name="model_id" ref="hr.model_hr_department"/>
+            <field name="state">code</field>
+            <field name="code">
+departments = env['hr.department'].search([])
+for dept in departments:
+    # 1. Cập nhật cho Trưởng phòng chính (manager_id)
+    if dept.manager_id and dept.manager_id.department_id != dept:
+        log(f"Cập nhật Trưởng phòng {dept.manager_id.name} vào phòng {dept.name}")
+        dept.manager_id.write({'department_id': dept.id})
+
+    # 2. Cập nhật cho danh sách Ban quản lý (manager_ids)
+    for manager in dept.manager_ids:
+        if manager.department_id != dept:
+            log(f"Cập nhật Quản lý {manager.name} vào phòng {dept.name}")
+            manager.write({'department_id': dept.id})
+            </field>
+        </record>
+    </data>
+</odoo>
