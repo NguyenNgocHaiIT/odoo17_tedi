@@ -7,11 +7,11 @@
             <field name="model">office.document</field>
             <field name="arch" type="xml">
                 <tree default_order="create_date desc">
-                    <field name="ngay_den" class="o_ellipsis"/>
                     <field name="so_den_tong_hop" class="o_ellipsis"/>
                     <field name="so_hieu" class="o_ellipsis"/>
                     <field name="trich_yeu" class="o_ellipsis"/>
                     <field name="but_phe" class="o_ellipsis"/>
+                    <field name="project_id" class="o_ellipsis"/>
                     <field name="dv_xu_ly_chinh" class="o_ellipsis"/>
                     <field name="tt_vb" widget="badge"
                            decoration-success="tt_vb in ('phat_hanh', 'cho_xu_ly')"
@@ -36,7 +36,7 @@
                         <button name="approve" string="Duyệt" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb != 'cho_duyet'"/>
-                        <button name="khong_dat" string="Từ chối" type="object"
+                        <button name="khong_dat" string="Yêu cầu chỉnh sửa" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb != 'cho_duyet'"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
@@ -55,10 +55,6 @@
                                 type="object"
                                 string="Chuyển lãnh đạo"
                                 invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_den"/>
-                        <button name="action_open_rejection_history"
-                                type="object"
-                                class="oe_stat_button"
-                                icon="fa-history"/>
                     </header>
                     <sheet>
                         <field name="can_create_don_vi" invisible="1"/>
@@ -112,6 +108,7 @@
                                 <field name="ngay_ban_hanh" readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="ngay_hieu_luc" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                                 <field name="do_khan" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                <field name="do_mat" readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <!--                                <field name="ngay_ky"/>-->
                                 <!--                                <field name="chuc_vu"/>-->
                                 <!--                                <field name="do_quan_trong"/>-->
@@ -120,6 +117,7 @@
                                 <field name="but_phe" readonly="1"/>
                                 <field name="dv_xu_ly_chinh" readonly="1"/>
                                 <field name="dv_dong_xu_ly" widget="many2many_tags" readonly="1"/>
+                                <field name="project_id" readonly="not (is_van_thu or not_is_van_thu)"/>
                             </group>
                             <group colspan="7">
                                 <field name="attachment_ids" widget="many2many_binary" required="1" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
@@ -167,9 +165,10 @@
                                 <group></group>
                                 <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
                                 <field name="detail1" readonly="1">
-                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
+                                    <tree editable="false" no_open="1" options="{'no_create': True, 'no_open': True}">
                                         <field name="nguoi_nhap_y_kien"/>
                                         <field name="nhom_phong_ban"/>
+                                        <field name="tai_lieu_kem" widget="many2many_binary"/>
                                         <field name="noi_dung_chi_dao"/>
                                         <field name="thoi_diem_chi_dao"/>
                                     </tree>
@@ -187,12 +186,12 @@
                                 </field>
 
                             </page>
-                            <page string="Phân phát">
+                            <page string="Lịch sử phân phát">
                                 <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
                                 <field name="detail2"
                                        options="{'no_open': True, 'no_create': True, 'no_edit': True, 'no_delete': True}">
                                     <tree class="excel_style_list_view"
-                                          create="false" edit="false" delete="false">
+                                          no_open="1" create="false" edit="false" delete="false">
                                         <!--<field name="allow_assign" column_invisible="1"/>-->
 
                                         <field name="nguoi_nhap_y_kien" string="Họ tên"/>
@@ -217,6 +216,16 @@
                                                 icon="fa-trash"
                                                 class="oe_stat_button"
                                                 groups="quan_ly_cong_van.group_van_thu"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Lịch sử yêu cầu chỉnh sửa" name="rejection_history">
+                                <label for="rejection_ids" string="LỊCH SỬ YÊU CẦU CHỈNH SỬA"/>
+                                <field name="rejection_ids" options="{'no_open': True, 'no_create': True, 'no_edit': True, 'no_delete': True}">
+                                    <tree create="false" edit="false" delete="false">
+                                        <field name="create_date" string="Ngày"/>
+                                        <field name="create_uid" string="Người yêu cầu"/>
+                                        <field name="rejection_reason" string="Lý do"/>
                                     </tree>
                                 </field>
                             </page>
@@ -260,6 +269,7 @@
                     <field name="so_hieu" class="o_ellipsis" column_invisible="1"/>
                     <field name="trich_yeu" class="o_ellipsis"/>
                     <field name="but_phe" class="o_ellipsis"/>
+                    <field name="project_id" class="o_ellipsis"/>
                     <field name="don_vi_ban_hanh" class="o_ellipsis"/>
                     <field name="tt_vb" widget="badge"
                            decoration-success="tt_vb in ('phat_hanh', 'cho_xu_ly')"
@@ -279,14 +289,14 @@
                         <button name="trinh_truong_don_vi" string="Trình trưởng đơn vị" type="object"
                                 invisible="tt_vb != 'draft'"/>
                         <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
-                                invisible="tt_vb != 'truong_don_vi_duyet' or not is_truong_don_vi"/>
+                                invisible="tt_vb != 'truong_don_vi_duyet' or not is_truong_va_pho_don_vi"/>
                         <button name="approve_don_vi" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
-                        <button name="khong_dat" string="Từ chối" type="object"
+                        <button name="khong_dat" string="Yêu cầu chỉnh sửa" type="object"
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
                         <button name="approve" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
-                        <button name="tu_choi_cua_lanh_dao" string="Từ chối" type="object"
+                        <button name="tu_choi_cua_lanh_dao" string="Yêu cầu chỉnh sửa" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
                         <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
                                 type="object"
@@ -307,10 +317,6 @@
                                 invisible="tt_vb in ('draft, cho_duyet','huy')"
                                 confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
 
-                        <button name="action_open_rejection_history"
-                                type="object"
-                                class="oe_stat_button"
-                                icon="fa-history"/>
                     </header>
                     <sheet>
                         <field name="is_van_thu" invisible="1"/>
@@ -320,6 +326,7 @@
                         <field name="show_skip_button" invisible="1"/>
                         <field name="co_the_but_phe_cong_van_di" invisible="1"/>
                         <field name="show_phan_phat_button" invisible="1"/>
+                        <field name="is_truong_va_pho_don_vi" invisible="1"/>
 
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu" readonly="tt_vb != 'draft'" required="1"/>
@@ -354,6 +361,7 @@
                                 <!--                                <field name="ngay_ky"/>-->
                                 <!--                                <field name="nguoi_ky"/>-->
                                 <field name="do_khan" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                <field name="do_mat" readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="phan_loai_van_ban" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
                                 <!--                                <field name="nguoi_soan_thao"/>-->
                                 <!--                                <field name="dv_theo_doi_chinh"/>-->
@@ -367,7 +375,12 @@
                                        readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="dia_diem_chuyen_ngoai" invisible="not chuyen_ngoai"
                                        readonly="not (is_van_thu or not_is_van_thu)"/>
+                                <field name="project_id" readonly="not (is_van_thu or not_is_van_thu)"/>
                                 <field name="can_duyet" invisible="1"/>
+                                <field name="nguoi_tao_duoc_xem"
+                                       readonly="not co_the_sua_nguoi_tao_duoc_xem"
+                                       invisible="not co_the_sua_nguoi_tao_duoc_xem"/>
+                                <field name="co_the_sua_nguoi_tao_duoc_xem" invisible="1"/>
                                 <!--                                <field name="so_di_theo_so"/>-->
                                 <!--                                <field name="so_vb"/>-->
                                 <!--                                <field name="ngay_hieu_luc"/>-->
@@ -418,9 +431,10 @@
                                 <group></group>
                                 <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
                                 <field name="detail1" readonly="1">
-                                    <tree editable="false" options="{'no_create': True, 'no_open': True}">
+                                    <tree editable="false" no_open="1" options="{'no_create': True, 'no_open': True}">
                                         <field name="nguoi_nhap_y_kien"/>
                                         <field name="nhom_phong_ban"/>
+                                        <field name="tai_lieu_kem" widget="many2many_binary"/>
                                         <field name="noi_dung_chi_dao"/>
                                         <field name="thoi_diem_chi_dao"/>
                                     </tree>
@@ -438,11 +452,11 @@
                                 </field>
 
                             </page>
-                            <page string="Phân phát">
+                            <page string="Lịch sử phân phát">
                                 <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
                                 <field name="detail2" options="{'no_create': True, 'no_edit': True, 'no_delete': True}">
                                     <tree class="excel_style_list_view"
-                                          create="false" edit="false" delete="false">
+                                          no_open="1" create="false" edit="false" delete="false">
 
                                         <!--<field name="allow_assign" column_invisible="1"/>
                                         <field name="is_section" column_invisible="1"/>-->
@@ -465,6 +479,16 @@
                                                 icon="fa-trash"
                                                 class="oe_stat_button"
                                                 groups="quan_ly_cong_van.group_van_thu"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Lịch sử yêu cầu chỉnh sửa" name="rejection_history">
+                                <label for="rejection_ids" string="LỊCH SỬ YÊU CẦU CHỈNH SỬA"/>
+                                <field name="rejection_ids" options="{'no_open': True, 'no_create': True, 'no_edit': True, 'no_delete': True}">
+                                    <tree create="false" edit="false" delete="false">
+                                        <field name="create_date" string="Ngày"/>
+                                        <field name="create_uid" string="Người yêu cầu"/>
+                                        <field name="rejection_reason" string="Lý do"/>
                                     </tree>
                                 </field>
                             </page>
@@ -529,11 +553,11 @@
                                 invisible="tt_vb != 'truong_don_vi_duyet' or not is_truong_don_vi"/>
                         <button name="approve_don_vi" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
-                        <button name="khong_dat" string="Từ chối" type="object"
+                        <button name="khong_dat" string="Yêu cầu chỉnh sửa" type="object"
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
                         <button name="approve" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
-                        <button name="tu_choi_cua_lanh_dao" string="Từ chối" type="object"
+                        <button name="tu_choi_cua_lanh_dao" string="Yêu cầu chỉnh sửa" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
                         <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
                                 type="object"
@@ -554,10 +578,6 @@
                                 invisible="tt_vb in ('draft, cho_duyet','huy')"
                                 confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
 
-                        <button name="action_open_rejection_history"
-                                type="object"
-                                class="oe_stat_button"
-                                icon="fa-history"/>
 
                     </header>
                     <sheet>
@@ -597,6 +617,7 @@
                                 <!--                                <field name="ngay_ky"/>-->
                                 <!--                                <field name="nguoi_ky"/>-->
                                 <field name="do_khan" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                <field name="do_mat" readonly="not (is_van_thu or not_is_van_thu)"/>
 
                                 <!--                                <field name="nguoi_soan_thao"/>-->
                                 <!--                                <field name="dv_theo_doi_chinh"/>-->
@@ -661,9 +682,10 @@
                                 <group></group>
                                 <label for="detail1" string="Ý KIẾN CHỈ ĐẠO VÀ XỬ LÝ"/>
                                 <field name="detail1" readonly="1">
-                                    <tree>
+                                    <tree editable="false" no_open="1" options="{'no_create': True, 'no_open': True}">
                                         <field name="nguoi_nhap_y_kien"/>
                                         <field name="nhom_phong_ban"/>
+                                        <field name="tai_lieu_kem" widget="many2many_binary"/>
                                         <field name="noi_dung_chi_dao"/>
                                         <field name="thoi_diem_chi_dao"/>
                                     </tree>
@@ -681,15 +703,26 @@
                                 </field>
 
                             </page>
-                            <page string="Phân phát">
+                            <page string="Lịch sử phân phát">
                                 <label for="detail2" string="CHI TIẾT PHÂN PHÁT"/>
                                 <field name="detail2" readonly="1">
-                                    <tree readonly="1" class="excel_style_list_view">
+                                    <tree readonly="1" class="excel_style_list_view"
+                                          no_open="1" create="false" edit="false" delete="false">
                                         <field name="nguoi_nhap_y_kien" string="Họ tên"/>
                                         <field name="noi_dung_chi_dao" string="Nội dung"/>
                                         <field name="nhom_phong_ban" string="Phòng ban"/>
                                         <field name="thoi_diem_chi_dao" string="Thời gian phân phát"/>
                                         <field name="view_time" string="Thời gian đọc văn bản"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Lịch sử yêu cầu chỉnh sửa" name="rejection_history">
+                                <label for="rejection_ids" string="LỊCH SỬ YÊU CẦU CHỈNH SỬA"/>
+                                <field name="rejection_ids" options="{'no_open': True, 'no_create': True, 'no_edit': True, 'no_delete': True}">
+                                    <tree create="false" edit="false" delete="false">
+                                        <field name="create_date" string="Ngày"/>
+                                        <field name="create_uid" string="Người yêu cầu"/>
+                                        <field name="rejection_reason" string="Lý do"/>
                                     </tree>
                                 </field>
                             </page>
@@ -745,6 +778,8 @@
                         <group>
                             <group>
                                 <field name="loai_phan_phat" widget="radio"/>
+                                <field name="y_kien_xu_ly" invisible="not is_truong_don_vi"/>
+                                <field name="is_truong_don_vi" invisible="1"/>
                             </group>
                             <group/>
                         </group>
@@ -800,8 +835,8 @@
                     <sheet>
                         <group>
                             <field name="y_kien_xu_ly"/>
-                            <field name="tai_lieu_kem" widget="binary"/>
-
+                            <field name="tai_lieu_kem" widget="many2many_binary"/>
+                            <field name="do_khan"/>
                         </group>
                         <div class="row">
                             <div class="col-3"/>
@@ -812,10 +847,15 @@
                             </div>
                             <div class="col-3">
                                 <group>
-                                    <field name="da_giai_quyet"/>
+                                    <field name="do_mat"/>
                                 </group>
                             </div>
                             <!--<div class="col-3">
+                                <group>
+                                    <field name="da_giai_quyet"/>
+                                </group>
+                            </div>
+                            <div class="col-3">
                                 <group>
                                     <field name="thong_bao_cho_van_thu"/>
                                 </group>
@@ -903,12 +943,12 @@
             <field name="name">office.document.reject.wizard.form</field>
             <field name="model">office.document.reject.wizard</field>
             <field name="arch" type="xml">
-                <form string="Từ chối văn bản">
+                <form string="Yêu cầu chỉnh sửa văn bản">
                     <sheet>
                         <field name="office_document_id" invisible="1"/>
 
                         <field name="rejection_reason"
-                               placeholder="Nhập lý do từ chối văn bản..."
+                               placeholder="Nhập thông tin cần chỉnh sửa của văn bản..."
                                required="1"/>
                     </sheet>
 
@@ -928,12 +968,12 @@
             <field name="name">office.document.lanh.dao.reject.wizard.form</field>
             <field name="model">office.document.lanh.dao.reject.wizard</field>
             <field name="arch" type="xml">
-                <form string="Từ chối văn bản">
+                <form string="Yêu cầu chỉnh sửa văn bản">
                     <sheet>
                         <field name="office_document_id" invisible="1"/>
 
                         <field name="rejection_reason"
-                               placeholder="Nhập lý do từ chối văn bản..."
+                               placeholder="Nhập thông tin cần chỉnh sửa của văn bản..."
                                required="1"/>
                     </sheet>
 
@@ -950,25 +990,25 @@
             </field>
         </record>
 
-        <!-- ========== 2. TREE VIEW LỊCH SỬ TỪ CHỐI ========== -->
+        <!-- ========== 2. TREE VIEW LỊCH SỬ Yêu cầu chỉnh sửa ========== -->
         <record id="view_office_document_rejection_tree" model="ir.ui.view">
             <field name="name">office.document.rejection.tree</field>
             <field name="model">office.document.rejection</field>
             <field name="arch" type="xml">
-                <tree string="Lịch sử từ chối" create="0" edit="0" delete="0">
+                <tree string="Lịch sử yêu cầu chỉnh sửa" create="0" edit="0" delete="0">
                     <field name="rejection_date" string="Thời gian"/>
-                    <field name="rejected_by" string="Người từ chối"/>
-                    <field name="rejection_reason" string="Lý do từ chối"/>
+                    <field name="rejected_by" string="Người yêu cầu"/>
+                    <field name="rejection_reason" string="Lý do"/>
                 </tree>
             </field>
         </record>
 
-        <!-- ========== 3. FORM VIEW LỊCH SỬ TỪ CHỐI ========== -->
+        <!-- ========== 3. FORM VIEW LỊCH SỬ YÊU CẦU CHỈNH SỬA ========== -->
         <record id="view_office_document_rejection_form" model="ir.ui.view">
             <field name="name">office.document.rejection.form</field>
             <field name="model">office.document.rejection</field>
             <field name="arch" type="xml">
-                <form string="Chi tiết từ chối" create="0" edit="0" delete="0">
+                <form string="Yêu cầu chỉnh sửa" create="0" edit="0" delete="0">
                     <sheet>
                         <group>
                             <group>
@@ -980,7 +1020,7 @@
                             </group>
                         </group>
 
-                        <group string="Lý do từ chối">
+                        <group string="Thông tin cần chỉnh sửa">
                             <field name="rejection_reason"
                                    readonly="1"/>
                         </group>

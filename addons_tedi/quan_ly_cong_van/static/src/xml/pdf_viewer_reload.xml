@@ -1,16 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="quan_ly_cong_van.PdfViewerReload" owl="1">
-        <div class="o_field_pdf_viewer_reload" style="width: 100%; height: 100%;">
-            <iframe t-if="hasContent"
-                    t-ref="iframe"
-                    t-att-key="state.timestamp"
-                    style="width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 4px;"
-                    type="application/pdf"/>
-            <div t-else="" class="alert alert-info text-center mt-3">
+        <div class="o_field_pdf_viewer_reload"
+             t-ref="container"
+             style="width: 100%; position: relative;">
+
+            <!-- PDF Container -->
+            <div t-if="hasContent"
+                 class="pdf-container"
+                 t-attf-style="width: 100%; height: {{state.height}}px; border: 1px solid #ddd; border-radius: 4px 4px 0 0; overflow: hidden; position: relative;">
+
+                <iframe t-ref="iframe"
+                        style="width: 100%; height: 100%; border: none;"
+                        type="application/pdf"/>
+
+                <!-- Nút fullscreen góc trên phải trong PDF -->
+                <button type="button"
+                        class="btn btn-sm btn-secondary pdf-fullscreen-btn"
+                        t-on-click="toggleFullscreen"
+                        t-att-title="state.isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'">
+                    <i t-if="!state.isFullscreen" class="fa fa-expand"/>
+                    <i t-else="" class="fa fa-compress"/>
+                </button>
+            </div>
+
+            <!-- Resize handle -->
+            <div t-if="hasContent"
+                 class="pdf-resize-handle"
+                 t-on-mousedown="onResizeStart">
+                <span class="pdf-resize-dots">⋯</span>
+            </div>
+
+            <!-- Empty state -->
+            <div t-if="!hasContent" class="alert alert-info text-center mt-3">
                 <i class="fa fa-file-pdf-o fa-3x mb-3" style="display: block;"/>
                 <p class="mb-0">Chưa có tài liệu để xem trước</p>
             </div>
+
         </div>
     </t>
 </templates>
