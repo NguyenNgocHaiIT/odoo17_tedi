@@ -5,6 +5,7 @@ from werkzeug.urls import url_encode
 from odoo.exceptions import UserError
 import base64
 import logging
+from odoo.exceptions import  ValidationError
 _logger = logging.getLogger(__name__)
 
 class ResEthnic(models.Model):
@@ -377,6 +378,24 @@ class HrEmployeePrivate(models.Model):
         if 'active' in vals:
             _logger.info(f"DEBUG: Đang ghi field 'active' của nhân viên {self.ids} thành: {vals['active']}")
         return super(HrEmployeePrivate, self).write(vals)
+
+    # @api.constrains('department_id')
+    # def _check_managed_department(self):
+    #     for emp in self:
+    #         # Tìm xem nhân viên này đang có tên trong ban quản lý của bất kỳ phòng ban nào không
+    #         managed_depts = self.env['hr.department'].search([
+    #             '|',
+    #             ('manager_id', '=', emp.id),
+    #             ('manager_ids', 'in', emp.id)
+    #         ])
+    #
+    #         for dept in managed_depts:
+    #             # Nếu phòng ban nhân viên đang thuộc về khác với phòng ban họ đang quản lý -> Báo lỗi
+    #             if emp.department_id != dept:
+    #                 raise ValidationError(
+    #                     _("Nhân viên %s đang là quản lý của %s. Bạn cần gỡ quyền quản lý của nhân viên này trước khi chuyển sang phòng ban khác!") % (
+    #                         emp.name, dept.name)
+    #                 )
 
 
 
