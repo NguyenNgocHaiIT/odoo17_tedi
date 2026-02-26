@@ -483,7 +483,6 @@ class ButPhe(models.TransientModel):
     _name = 'office.document.but.phe'
 
     y_kien_xu_ly = fields.Char('Ý kiến xử lý')
-    tai_lieu_kem = fields.Binary('Tài liệu kèm')
     quan_trong = fields.Boolean('Quan trọng')
     da_giai_quyet = fields.Boolean('Đã giải quyết')
     thong_bao_cho_van_thu = fields.Boolean('Thông báo cho văn thư', default=True)
@@ -492,7 +491,11 @@ class ButPhe(models.TransientModel):
         ('khan', 'Khẩn'),
         ('hoa_toc', 'Hỏa tốc')
     ], string='Độ khẩn', default='thuong')
-
+    tai_lieu_kem = fields.Many2many(
+        'ir.attachment', 'office_document_but_phe_attachment_rel',
+        'but_phe_id', 'attachment_id',
+        string='Tài liệu đính kèm'
+    )
     do_mat = fields.Boolean(string="Độ mật", default=False)
 
     @api.model
@@ -540,12 +543,13 @@ class ButPhe(models.TransientModel):
         employee = self.env['hr.employee'].search([('user_id', '=', self.env.user.id)], limit=1)
         nhom_phong_ban = employee.department_id.name if employee and employee.department_id else 'Không xác định'
 
-        self.env['office.document.detail1'].create({
+        detail1 = self.env['office.document.detail1'].create({
             'office_document_id': doc.id,
             'nguoi_nhap_y_kien': employee.id if employee else False,
             'nhom_phong_ban': nhom_phong_ban,
             'noi_dung_chi_dao': self.y_kien_xu_ly or 'Không có ý kiến',
             'thoi_diem_chi_dao': fields.Datetime.now(),
+            'tai_lieu_kem': [(6, 0, self.tai_lieu_kem.ids)] if self.tai_lieu_kem else [],
         })
 
         # Gửi email cho VĂN THƯ – chỉ dùng work_email
@@ -595,14 +599,6 @@ class ButPhe(models.TransientModel):
                         except Exception as e:
                             _logger.warning(f"Gửi notification thất bại: {str(e)}")
 
-        if self.tai_lieu_kem:
-            self.env['ir.attachment'].create({
-                'name': 'Tài liệu bút phê',
-                'type': 'binary',
-                'datas': self.tai_lieu_kem,
-                'res_model': 'office.document',
-                'res_id': doc.id,
-            })
 
         return {'type': 'ir.actions.act_window_close'}
 
@@ -618,6 +614,12 @@ class OfficeDocumentDetail1(models.Model):
     noi_dung_chi_dao = fields.Char('Nội dung chỉ đạo')
     thoi_diem_chi_dao = fields.Datetime('Thời điểm chỉ đạo')
     office_document_id = fields.Many2one('office.document')
+    tai_lieu_kem = fields.Many2many(
+        'ir.attachment',
+        'office_document_detail1_attachment_rel',
+        'detail1_id', 'attachment_id',
+        string='Tài liệu đính kèm'
+    )
 
     @api.depends('nguoi_nhap_y_kien')
     def _compute_nhom_phong_ban(self):
@@ -933,6 +935,7 @@ class OfficeDocument(models.Model):
     is_truong_don_vi = fields.Boolean(compute='_compute_is_truong_don_vi', store=False)
     don_vi_ban_hanh_tedi = fields.Char(string="Đơn vị ban hành")
 
+
     # =====================================================================
     # TRƯỞNG PHÒNG BAN CHA LỚN NHẤT (duyệt công văn đi)
     # =====================================================================
@@ -970,11 +973,11 @@ class OfficeDocument(models.Model):
         user = self.env.user
         for rec in self:
             rec.is_truong_don_vi = False
-            if not rec.truong_don_vi_duyet:
+            if not rec.lanh_dao_duyet_cao_nhat:
                 continue
             current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
             if current_employee:
-                rec.is_truong_don_vi = (current_employee.id == rec.truong_don_vi_duyet.id)
+                rec.is_truong_don_vi = (current_employee.id == rec.lanh_dao_duyet_cao_nhat.id)
 
     def name_get(self):
         result = []
@@ -1511,6 +1514,12 @@ class OfficeDocument(models.Model):
         res['han_ket_thuc'] = start_date + timedelta(days=7)
         document_type = self._context.get('default_document_type')
 
+        if document_type in ['outgoing', 'outgoing_internal']:
+            user = self.env.user
+            employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+            if employee and employee.department_id:
+                res['don_vi_ban_hanh'] = employee.department_id.id
+
         if document_type == 'resolution':
             category = self.env['office.document.category'].search([('code', '=', 'QĐ')], limit=1)
             if not category:
@@ -1673,12 +1682,12 @@ class OfficeDocument(models.Model):
                 )
         return True
 
-    rejection_ids = fields.One2many('office.document.rejection', 'office_document_id', string='Lịch sử từ chối')
+    rejection_ids = fields.One2many('office.document.rejection', 'office_document_id', string='Lịch sử yêu cầu chỉnh sửa')
 
     def action_open_rejection_history(self):
         self.ensure_one()
         return {
-            'name': 'Lịch sử từ chối', 'type': 'ir.actions.act_window',
+            'name': 'Lịch sử yêu cầu chỉnh sửa', 'type': 'ir.actions.act_window',
             'res_model': 'office.document.rejection', 'view_mode': 'tree,form',
             'domain': [('office_document_id', '=', self.id)],
             'context': {'default_office_document_id': self.id, 'create': False},
@@ -1688,7 +1697,7 @@ class OfficeDocument(models.Model):
     def khong_dat(self):
         self.ensure_one()
         return {
-            'name': 'Từ chối văn bản', 'type': 'ir.actions.act_window',
+            'name': 'Yêu cầu chỉnh sửa văn bản', 'type': 'ir.actions.act_window',
             'res_model': 'office.document.reject.wizard', 'view_mode': 'form',
             'view_id': self.env.ref('quan_ly_cong_van.view_reject_document_wizard_form').id,
             'target': 'new',
@@ -1987,6 +1996,7 @@ class OfficeDocument(models.Model):
     def _compute_show_phan_phat_button(self):
         user = self.env.user
         is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
+        is_van_thu_don_vi = user.has_group('quan_ly_cong_van.group_van_thu_don_vi')
 
         for rec in self:
             if is_van_thu:
@@ -2066,12 +2076,61 @@ class OfficeDocument(models.Model):
     def tu_choi_cua_lanh_dao(self):
         self.ensure_one()
         return {
-            'name': 'Từ chối văn bản (Lãnh đạo)', 'type': 'ir.actions.act_window', 'view_mode': 'form',
+            'name': 'Yêu cầu chỉnh sửa văn bản (Lãnh đạo)', 'type': 'ir.actions.act_window', 'view_mode': 'form',
             'view_id': self.env.ref('quan_ly_cong_van.view_lanh_dao_reject_document_wizard_form').id,
             'res_model': 'office.document.lanh.dao.reject.wizard', 'target': 'new',
             'context': {'default_office_document_id': self.id, 'default_current_user_id': self.env.user.id}
         }
 
+    nguoi_tao_duoc_xem = fields.Boolean(
+        string='Người tạo được xem',
+        default=True,
+        help='Cho phép người tạo văn bản được xem văn bản này'
+    )
+
+    # Thêm field compute để kiểm tra quyền sửa trường này
+    co_the_sua_nguoi_tao_duoc_xem = fields.Boolean(
+        string='Có thể sửa "Người tạo được xem"',
+        compute='_compute_co_the_sua_nguoi_tao_duoc_xem',
+        store=False
+    )
+
+    @api.depends_context('uid')
+    def _compute_co_the_sua_nguoi_tao_duoc_xem(self):
+        """Chỉ Văn thư hoặc Lãnh đạo mới có quyền sửa trường 'Người tạo được xem'"""
+        user = self.env.user
+        is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
+        is_lanh_dao = user.has_group('quan_ly_cong_van.group_lanh_dao')
+
+        for rec in self:
+            rec.co_the_sua_nguoi_tao_duoc_xem = is_van_thu or is_lanh_dao
+
+    project_id = fields.Many2one('project.project', string='Dự án' )
+
+    is_truong_va_pho_don_vi = fields.Boolean(compute='_compute_is_truong_va_pho_don_vi', store=False)
+
+    def _compute_is_truong_va_pho_don_vi(self):
+        user = self.env.user
+        current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+        for rec in self:
+            rec.is_truong_va_pho_don_vi = False
+            if not current_employee:
+                continue
+            if not rec.id:
+                creator_employee = current_employee
+            elif rec.create_uid:
+                creator_employee = self.env['hr.employee'].search([('user_id', '=', rec.create_uid.id)], limit=1)
+            else:
+                continue
+            if not creator_employee or not creator_employee.department_id:
+                continue
+            # Leo lên phòng ban gốc (root) giống _compute_lanh_dao_duyet_cao_nhat
+            dept = creator_employee.department_id
+            while dept.parent_id:
+                dept = dept.parent_id
+            is_manager_id = (dept.manager_id and dept.manager_id.id == current_employee.id)
+            is_in_manager_ids = (current_employee.id in dept.manager_ids.ids)
+            rec.is_truong_va_pho_don_vi = is_manager_id or is_in_manager_ids
 
 class ChuyenLanhDaoWizard(models.TransientModel):
     _name = 'office.document.chuyen.lanh.dao'
@@ -2157,23 +2216,23 @@ class HrEmployee(models.Model):
 
 class OfficeDocumentRejection(models.Model):
     _name = 'office.document.rejection'
-    _description = 'Lịch sử từ chối văn bản'
+    _description = 'Lịch sử yêu cầu chỉnh sửa văn bản'
     _order = 'rejection_date desc'
 
     office_document_id = fields.Many2one('office.document', string='Văn bản', required=True, ondelete='cascade')
-    rejection_reason = fields.Text(string='Lý do từ chối', required=True)
-    rejected_by = fields.Many2one('res.users', string='Người từ chối', required=True, default=lambda self: self.env.user)
-    rejection_date = fields.Datetime(string='Thời gian từ chối', required=True, default=fields.Datetime.now)
+    rejection_reason = fields.Text(string='Thông tin cần chỉnh sửa', required=True)
+    rejected_by = fields.Many2one('res.users', string='Người yêu cầu', required=True, default=lambda self: self.env.user)
+    rejection_date = fields.Datetime(string='Thời gian yêu cầu', required=True, default=fields.Datetime.now)
 
 
 class RejectDocumentWizard(models.TransientModel):
     _name = 'office.document.reject.wizard'
-    _description = 'Nhập lý do từ chối văn bản'
+    _description = 'Nhập thông tin cần chỉnh sửa của văn bản'
 
     office_document_id = fields.Many2one('office.document', string='Văn bản', required=True, readonly=True)
     rejection_reason = fields.Text(
-        string='Lý do từ chối', required=True,
-        placeholder='Vui lòng nhập lý do từ chối văn bản...'
+        string='Thông tin cần chỉnh sửa', required=True,
+        placeholder='Vui lòng nhập thông tin cần chỉnh sửa của văn bản...'
     )
 
     def action_confirm_reject(self):
@@ -2205,15 +2264,15 @@ class RejectDocumentWizard(models.TransientModel):
             return
 
         detail_url = doc.get_form_url()
-        subject = f"Văn bản bị từ chối: {doc.trich_yeu[:50]}..." if doc.trich_yeu else "Văn bản bị từ chối"
+        subject = f"Văn bản bị yêu cầu chỉnh sửa: {doc.trich_yeu[:50]}..." if doc.trich_yeu else "Văn bản bị yêu cầu chỉnh sửa"
         body_lines = [
-            f"<b>Người từ chối:</b> {self.env.user.name}",
+            f"<b>Người yêu cầu chỉnh sửa:</b> {self.env.user.name}",
             f"<b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}",
-            f"<b>Lý do từ chối:</b><br/>{self.rejection_reason}",
+            f"<b>Lý do yêu cầu chỉnh sửa:</b><br/>{self.rejection_reason}",
         ]
         body_html = _build_email_html(
-            title='VĂN BẢN BỊ TỪ CHỐI',
-            greeting=f'Xin chào {creator.name},<br/>Văn bản <b>"{doc.trich_yeu}"</b> của bạn đã bị từ chối.',
+            title='VĂN BẢN CẦN CHỈNH SỬA',
+            greeting=f'Xin chào {creator.name},<br/>Văn bản <b>"{doc.trich_yeu}"</b> của bạn đã bị yêu cầu chỉnh sửa.',
             body_lines=body_lines,
             detail_url=detail_url,
             btn_label='XEM VÀ CHỈNH SỬA VĂN BẢN',
@@ -2227,10 +2286,10 @@ class RejectDocumentWizard(models.TransientModel):
                 self.env['bus.bus']._sendone(
                     creator.partner_id,
                     'simple_notification',
-                    {'title': 'Văn bản bị từ chối', 'message': f'Văn bản "{doc.trich_yeu[:50]}..." đã bị từ chối.', 'sticky': False, 'type': 'warning'}
+                    {'title': 'Văn bản bị yêu cầu chỉnh sửa', 'message': f'Văn bản "{doc.trich_yeu[:50]}..." đã bị yêu cầu chỉnh sửa.', 'sticky': False, 'type': 'warning'}
                 )
             except Exception as e:
-                _logger.error(f"Lỗi gửi thông báo từ chối: {str(e)}")
+                _logger.error(f"Lỗi gửi thông báo yêu cầu chỉnh sửa: {str(e)}")
 
     def action_cancel(self):
         return {'type': 'ir.actions.act_window_close'}
@@ -2238,13 +2297,13 @@ class RejectDocumentWizard(models.TransientModel):
 
 class OfficeDocumentLanhDaoRejectWizard(models.TransientModel):
     _name = 'office.document.lanh.dao.reject.wizard'
-    _description = 'Lãnh đạo từ chối văn bản'
+    _description = 'Lãnh đạo yêu cầu chỉnh sửa'
 
     office_document_id = fields.Many2one('office.document', string='Văn bản', required=True, readonly=True)
-    current_user_id = fields.Many2one('res.users', string='Người từ chối', default=lambda self: self.env.user, readonly=True)
+    current_user_id = fields.Many2one('res.users', string='Người yêu cầu', default=lambda self: self.env.user, readonly=True)
     rejection_reason = fields.Text(
-        string='Lý do từ chối', required=True,
-        placeholder='Vui lòng nhập lý do từ chối văn bản...'
+        string='Thông tin cần chỉnh sửa', required=True,
+        placeholder='Vui lòng nhập thông tin cần chỉnh sửa của văn bản...'
     )
 
     @api.model
@@ -2284,17 +2343,17 @@ class OfficeDocumentLanhDaoRejectWizard(models.TransientModel):
             creator_emp = self.env['hr.employee'].search([('user_id', '=', creator.id)], limit=1)
             email_list = _get_employee_emails(creator_emp) if creator_emp else []
             if email_list:
-                subject = f"Văn bản bị lãnh đạo từ chối: {doc.trich_yeu[:50]}..."
+                subject = f"Văn bản bị lãnh đạo yêu cầu chỉnh sửa: {doc.trich_yeu[:50]}..."
                 body_lines = [
-                    f"<b>Người từ chối:</b> {self.current_user_id.name} (Lãnh đạo xử lý)",
+                    f"<b>Người yêu cầu chỉnh sửa:</b> {self.current_user_id.name} (Lãnh đạo xử lý)",
                     f"<b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}",
                     f"<b>Lý do:</b><br/>{self.rejection_reason}",
                     f"<b>Trạng thái mới:</b> Chờ trưởng đơn vị duyệt",
                     f"<b>Trưởng đơn vị:</b> {truong_don_vi.name if truong_don_vi else 'Chưa xác định'}",
                 ]
                 body_html = _build_email_html(
-                    title='VĂN BẢN BỊ LÃNH ĐẠO TỪ CHỐI',
-                    greeting=f'Xin chào {creator.name},<br/>Văn bản <b>"{doc.trich_yeu}"</b> bị lãnh đạo từ chối và chuyển về chờ trưởng đơn vị duyệt.',
+                    title='VĂN BẢN CẦN CHỈNH SỬA',
+                    greeting=f'Xin chào {creator.name},<br/>Văn bản <b>"{doc.trich_yeu}"</b> bị lãnh đạo yêu cầu chỉnh sửa và chuyển về chờ trưởng đơn vị duyệt.',
                     body_lines=body_lines,
                     detail_url=detail_url,
                     btn_label='XEM LẠI VĂN BẢN',
@@ -2308,7 +2367,7 @@ class OfficeDocumentLanhDaoRejectWizard(models.TransientModel):
                         self.env['bus.bus']._sendone(
                             creator.partner_id,
                             'simple_notification',
-                            {'title': 'Văn bản bị lãnh đạo từ chối', 'message': f'Văn bản "{doc.trich_yeu[:50]}..." bị lãnh đạo từ chối.', 'sticky': False, 'type': 'warning'}
+                            {'title': 'Văn bản bị lãnh đạo yêu cầu chỉnh sửa', 'message': f'Văn bản "{doc.trich_yeu[:50]}..." bị lãnh đạo yêu cầu chỉnh sửa.', 'sticky': False, 'type': 'warning'}
                         )
                     except Exception as e:
                         _logger.error(f"Lỗi gửi thông báo: {str(e)}")
@@ -2321,14 +2380,14 @@ class OfficeDocumentLanhDaoRejectWizard(models.TransientModel):
                 body_lines_tdv = [
                     f"<b>Số văn bản:</b> {doc.so_vb or 'Chưa có'}",
                     f"<b>Người tạo:</b> {creator.name if creator else 'Không xác định'}",
-                    f"<b>Lãnh đạo từ chối:</b> {self.current_user_id.name}",
-                    f"<b>Thời gian từ chối:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}",
-                    f"<b>Lý do từ chối:</b><br/>{self.rejection_reason}",
+                    f"<b>Lãnh đạo yêu cầu chỉnh sửa:</b> {self.current_user_id.name}",
+                    f"<b>Thời gian yêu cầu chỉnh sửa:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}",
+                    f"<b>Lý do yêu cầu chỉnh sửa:</b><br/>{self.rejection_reason}",
                     f"<b>Yêu cầu:</b> Vui lòng xem xét và xử lý văn bản.",
                 ]
                 body_html_tdv = _build_email_html(
                     title='VĂN BẢN CẦN DUYỆT LẠI',
-                    greeting=f'Xin chào {truong_don_vi.name},<br/>Văn bản <b>"{doc.trich_yeu}"</b> bị lãnh đạo từ chối, cần bạn xem xét lại.',
+                    greeting=f'Xin chào {truong_don_vi.name},<br/>Văn bản <b>"{doc.trich_yeu}"</b> bị lãnh đạo yêu cầu chỉnh sửa, cần bạn xem xét lại.',
                     body_lines=body_lines_tdv,
                     detail_url=detail_url,
                     btn_label='XEM VÀ XỬ LÝ VĂN BẢN',

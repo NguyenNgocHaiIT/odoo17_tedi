@@ -38,7 +38,7 @@
             <field name="model_id" ref="model_office_document"/>
             <field name="domain_force">
                 ['|', '|', '|',
-                ('create_uid', '=', user.id),
+                '&amp;', ('create_uid', '=', user.id), ('nguoi_tao_duoc_xem', '=', True),
                 ('create_uid.employee_ids.department_id', 'in', user.employee_ids.department_id.ids),
                 ('dv_xu_ly_chinh', 'in', user.employee_ids.department_id.ids),
                 ('detail2.nguoi_nhap_y_kien.department_id', 'in', user.employee_ids.department_id.ids)
@@ -57,7 +57,7 @@
             <field name="model_id" ref="model_office_document"/>
             <field name="domain_force">
                 ['|',
-                ('create_uid', '=', user.id),
+                '&amp;', ('create_uid', '=', user.id), ('nguoi_tao_duoc_xem', '=', True),
                 ('tt_vb', '=', 'draft')
                 ]
             </field>
@@ -86,7 +86,7 @@
             <field name="model_id" ref="model_office_document"/>
             <field name="domain_force">
                 ['|',
-                ('create_uid', '=', user.id),
+                '&amp;', ('create_uid', '=', user.id), ('nguoi_tao_duoc_xem', '=', True),
                 ('tt_vb', '=', 'draft')
                 ]
             </field>
@@ -117,7 +117,7 @@
             <field name="model_id" ref="model_office_document"/>
             <field name="domain_force">
                 ['|','|',
-                ('create_uid','=',user.id),
+                '&amp;', ('create_uid','=',user.id), ('nguoi_tao_duoc_xem','=',True),
                 ('detail2.nguoi_nhap_y_kien.user_id','=',user.id),
                 '&amp;',
                 ('tt_vb', '!=', 'draft'),
@@ -136,7 +136,7 @@
             <field name="model_id" ref="model_office_document"/>
             <field name="domain_force">
                 ['|','|',
-                ('create_uid','=',user.id),
+                '&amp;', ('create_uid','=',user.id), ('nguoi_tao_duoc_xem','=',True),
                 ('detail2.nguoi_nhap_y_kien.user_id','=',user.id),
                 '&amp;',
                 ('tt_vb', '!=', 'draft'),
@@ -154,7 +154,7 @@
             <field name="model_id" ref="model_office_document"/>
             <field name="domain_force">
                 ['|','|',
-                ('create_uid','=',user.id),
+                '&amp;', ('create_uid','=',user.id), ('nguoi_tao_duoc_xem','=',True),
                 ('detail2.nguoi_nhap_y_kien.user_id','=',user.id),
                 '&amp;',
                 ('tt_vb', '!=', 'draft'),
@@ -199,5 +199,16 @@
             <field name="perm_unlink" eval="False"/>
         </record>
 
+        <record id="group_truong_don_vi" model="res.groups">
+            <field name="name">Trưởng đơn vị</field>
+            <field name="category_id" ref="base.module_category_administration"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <record id="group_pho_don_vi" model="res.groups">
+            <field name="name">Phó đơn vị</field>
+            <field name="category_id" ref="base.module_category_administration"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
     </data>
 </odoo>
