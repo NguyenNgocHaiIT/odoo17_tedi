@@ -5,7 +5,7 @@ access_hr_tedi_vehicle_registration_user,access.hr.tedi.vehicle.registration.use
 access_fleet_service_line_user,fleet.service.line.user,model_fleet_service_line,base.group_user,1,1,1,1
 access_hr_employee_base_user,access.hr.employee.base.user,hr.model_hr_employee,,1,1,1,1
 
-access_fleet_vehicle_user_custom_tedi,fleet_vehicle_access_right_custom_tedi,fleet.model_fleet_vehicle,fleet.fleet_group_user,1,1,0,0
+access_fleet_vehicle_user_custom_tedi,fleet_vehicle_access_right_custom_tedi,fleet.model_fleet_vehicle,fleet.fleet_group_user,1,1,1,0
 
 access_fleet_vehicle_odometer_custom_tedi,fleet_vehicle_odometer_custom_tedi,fleet.model_fleet_vehicle_odometer,fleet.fleet_group_user,1,1,1,1
 

@@ -178,7 +178,7 @@ class HrTediVehicleRegistration(models.Model):
     start_date = fields.Datetime(string="Thời gian bắt đầu", required=True, tracking=True)
     end_date = fields.Datetime(string="Thời gian kết thúc", required=True, tracking=True)
     trip_type = fields.Selection([('noi_thanh', 'Nội thành'), ('ngoai_thanh', 'Ngoại thành')], string="Loại công tác",
-                                 required=True)
+                                 required=True, default='noi_thanh')
     destination = fields.Char(string="Địa điểm cụ thể", required=True, tracking=True)
     work_content = fields.Text(string="Nội dung công việc", required=True)
     num_passengers = fields.Integer(string="Số người đi kèm", default=1)
@@ -806,7 +806,7 @@ class HrTediVehicleRegistration(models.Model):
                 subject = f"[ĐÃ DUYỆT] Phiếu xe {self.code}"
                 status_text = "ĐÃ ĐƯỢC DUYỆT"
                 status_color = "#28a745"
-                message = "Yêu cầu của bạn đã được duyệt và đang chờ quản lý đội xe duyệt."
+                message = "Yêu cầu của bạn đã được duyệt và đang chờ xếp xe."
                 button_text = "Xem phiếu đã duyệt"
 
                 body_html = f"""
