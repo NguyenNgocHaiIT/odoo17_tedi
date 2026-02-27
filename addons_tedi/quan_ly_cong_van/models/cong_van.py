@@ -561,6 +561,12 @@ class ButPhe(models.TransientModel):
             'tai_lieu_kem': [(6, 0, self.tai_lieu_kem.ids)] if self.tai_lieu_kem else [],
         })
 
+        if self.tai_lieu_kem:
+            self.tai_lieu_kem.sudo().write({
+                'res_model': 'office.document.detail1',
+                'res_id': detail1.id,
+            })
+
         # Gửi email cho VĂN THƯ – chỉ dùng work_email
         group = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
         if group and group.users:
@@ -2594,7 +2600,7 @@ class DuyetVanBanDiWizard(models.TransientModel):
         employee = self.env.user.employee_id
         nhom_phong_ban = employee.department_id.name if employee and employee.department_id else 'Không xác định'
 
-        self.env['office.document.detail1'].create({
+        detail1 = self.env['office.document.detail1'].create({
             'office_document_id': doc.id,
             'nguoi_nhap_y_kien': employee.id if employee else False,
             'nhom_phong_ban': nhom_phong_ban,
@@ -2602,6 +2608,12 @@ class DuyetVanBanDiWizard(models.TransientModel):
             'thoi_diem_chi_dao': fields.Datetime.now(),
             'tai_lieu_kem': [(6, 0, self.tai_lieu_kem.ids)] if self.tai_lieu_kem else [],
         })
+
+        if self.tai_lieu_kem:
+            self.tai_lieu_kem.sudo().write({
+                'res_model': 'office.document.detail1',
+                'res_id': detail1.id,
+            })
 
         # Gửi email thông báo cho văn thư
         self._send_but_phe_notification(doc, employee)
