@@ -6,18 +6,21 @@
             <field name="name">office_document_ingoing_tree</field>
             <field name="model">office.document</field>
             <field name="arch" type="xml">
-                <tree default_order="create_date desc">
+                <tree default_order="create_date desc" decoration-bf="chua_doc == True">
                     <field name="so_den_tong_hop" class="o_ellipsis"/>
-                    <field name="so_hieu" class="o_ellipsis"/>
                     <field name="trich_yeu" class="o_ellipsis"/>
-                    <field name="but_phe" class="o_ellipsis"/>
                     <field name="project_id" class="o_ellipsis"/>
+                    <field name="don_vi_ban_hanh" class="o_ellipsis"/>
                     <field name="dv_xu_ly_chinh" class="o_ellipsis"/>
+                    <field name="do_khan" class="o_ellipsis"/>
+                    <field name="do_mat" class="o_ellipsis"/>
                     <field name="tt_vb" widget="badge"
                            decoration-success="tt_vb in ('phat_hanh', 'cho_xu_ly')"
                            decoration-warning="tt_vb in ('cho_duyet', 'da_duyet')"
                            decoration-info="tt_vb in ('cho_phan_phat', 'huy')"
                            decoration-danger="tt_vb in ('cho_but_phe')"/>
+
+                    <field name="chua_doc" column_invisible="1"/>
                 </tree>
             </field>
         </record>
@@ -30,27 +33,52 @@
                     <header>
                         <button name="xac_nhan" string="Xác nhận" type="object"
                                 invisible="tt_vb != 'draft'"/>
+
                         <button name="trinh_lanh_dao_cong_van_den" string="Trình lãnh đạo" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb != 'da_duyet'"/>
+                                invisible="tt_vb != 'da_duyet' or document_type == 'incoming_internal'"/>
+                        <button name="trinh_lanh_dao_cong_van_den" string="Trình lãnh đạo" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu_don_vi"
+                                invisible="tt_vb != 'da_duyet' or document_type != 'incoming_internal'"/>
+
                         <button name="approve" string="Duyệt" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb != 'cho_duyet'"/>
+                                invisible="tt_vb != 'cho_duyet' or document_type == 'incoming_internal'"/>
+                        <button name="approve" string="Duyệt" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu_don_vi"
+                                invisible="tt_vb != 'cho_duyet' or document_type != 'incoming_internal'"/>
+
                         <button name="khong_dat" string="Yêu cầu chỉnh sửa" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb != 'cho_duyet'"/>
+                                invisible="tt_vb != 'cho_duyet' or document_type == 'incoming_internal'"/>
+                        <button name="khong_dat" string="Yêu cầu chỉnh sửa" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu_don_vi"
+                                invisible="tt_vb != 'cho_duyet' or document_type != 'incoming_internal'"/>
+
                         <button name="but_phe_action" string="Bút phê" type="object"
                                 invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_den"/>
+
                         <button name="phan_phat" string="Phân phát" type="object"
                                 invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh')) or not show_phan_phat_button"/>
+
                         <button name="huy" string="Hủy" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb == 'huy'"
+                                invisible="tt_vb == 'huy' or document_type == 'incoming_internal'"
                                 confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
+                        <button name="huy" string="Hủy" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu_don_vi"
+                                invisible="tt_vb == 'huy' or document_type != 'incoming_internal'"
+                                confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
+
                         <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb in ('draft, cho_duyet','huy')"
+                                invisible="tt_vb in ('draft, cho_duyet','huy') or document_type == 'incoming_internal'"
                                 confirm="Bạn có chắc muốn chuyển văn bản về trạng thái chỉnh sửa?"/>
+                        <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu_don_vi"
+                                invisible="tt_vb in ('draft, cho_duyet','huy') or document_type != 'incoming_internal'"
+                                confirm="Bạn có chắc muốn chuyển văn bản về trạng thái chỉnh sửa?"/>
+
                         <button name="action_chuyen_lanh_dao"
                                 type="object"
                                 string="Chuyển lãnh đạo"
@@ -62,36 +90,37 @@
                         <field name="not_is_van_thu" invisible="1"/>
                         <field name="co_the_but_phe_cong_van_den" invisible="1"/>
                         <field name="show_phan_phat_button" invisible="1"/>
+                        <field name="is_van_thu_don_vi" invisible="1"/>
                         <group col="12">
                             <group colspan="5">
-                                <field name="is_cong_van_bo_sung" string="Là công văn bổ sung" invisible="not (is_van_thu or not_is_van_thu)"/>
-                                <field name="ngay_tao_bo_sung" string="Ngày bổ sung" required="is_cong_van_bo_sung" invisible="not is_cong_van_bo_sung or not (is_van_thu or not_is_van_thu)"/>
+                                <field name="is_cong_van_bo_sung" string="Là công văn bổ sung" invisible="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
+                                <field name="ngay_tao_bo_sung" string="Ngày bổ sung" required="is_cong_van_bo_sung" invisible="not is_cong_van_bo_sung or not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                                 <field name="outgoing_internal_id" string="Công văn nội bộ đi liên quan"
                                        invisible="document_type != 'incoming_internal'"
-                                       readonly="not (is_van_thu or not_is_van_thu)"
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"
                                        widget="many2one_clickable"/>
                                 <field name="outgoing_id" string="Công văn đi liên quan"
                                        invisible="document_type != 'incoming'"
-                                       readonly="not (is_van_thu or not_is_van_thu)"
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"
                                        widget="many2one_clickable"/>
                                 <field name="tt_vb" readonly="1" decoration-warning="True"/>
                                 <field name="so_den_tong_hop" string="Số công văn" readonly="1"/>
-                                <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
                                 <field name="don_vi_ban_hanh"
                                        invisible="not (document_type in ('incoming_internal','outgoing_internal','resolution','outgoing'))"
-                                       readonly="not (is_van_thu or not_is_van_thu)" required="1"
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
                                 <field name="don_vi_ban_hanh_tedi"
                                        invisible="not (document_type == 'incoming' and id and not don_vi_ban_hanh_ngoai)"
-                                       readonly="not (is_van_thu or not_is_van_thu)"/>
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                                 <field name="don_vi_ban_hanh_ngoai"
                                        invisible="not (document_type in ('incoming')) or don_vi_ban_hanh_tedi"
-                                       readonly="not (is_van_thu or not_is_van_thu)" required="1"
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
                                 <field name="lanh_dao_xu_ly" string="Lãnh đạo phụ trách" widget="many2many_tags"
-                                       readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
                                 <field name="document_type" invisible="1"/>
-                                <field name="phan_loai_van_ban" readonly="not (is_van_thu or not_is_van_thu)"
+                                <field name="phan_loai_van_ban" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"
                                        required="1"/>
 
 
@@ -104,11 +133,11 @@
 
                                 <!--                                <field name="so_den_theo_so"/>-->
                                 <!--                                <field name="so_vb"/>-->
-                                <field name="ngay_den" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
-                                <field name="ngay_ban_hanh" readonly="not (is_van_thu or not_is_van_thu)"/>
-                                <field name="ngay_hieu_luc" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
-                                <field name="do_khan" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
-                                <field name="do_mat" readonly="not (is_van_thu or not_is_van_thu)"/>
+                                <field name="ngay_den" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
+                                <field name="ngay_ban_hanh" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
+                                <field name="ngay_hieu_luc" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
+                                <field name="do_khan" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
+                                <field name="do_mat" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                                 <!--                                <field name="ngay_ky"/>-->
                                 <!--                                <field name="chuc_vu"/>-->
                                 <!--                                <field name="do_quan_trong"/>-->
@@ -117,10 +146,10 @@
                                 <field name="but_phe" readonly="1"/>
                                 <field name="dv_xu_ly_chinh" readonly="1"/>
                                 <field name="dv_dong_xu_ly" widget="many2many_tags" readonly="1"/>
-                                <field name="project_id" readonly="not (is_van_thu or not_is_van_thu)"/>
+                                <field name="project_id" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                             </group>
                             <group colspan="7">
-                                <field name="attachment_ids" widget="many2many_binary" required="1" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                <field name="attachment_ids" widget="many2many_binary" required="1" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
                                 <field name="attachment_id"
                                        string="Tài liệu xem trước"
                                        options="{'no_create': True, 'no_open': True}"/>
@@ -136,7 +165,7 @@
                             </group>
                         </group>
                         <label for="trich_yeu" string="Trích yếu"/>
-                        <field name="trich_yeu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                        <field name="trich_yeu" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
 
                         <notebook>
                             <page string="Hồ sơ công việc">
@@ -149,15 +178,15 @@
                                     <group></group>
                                     <group class="o_form_label_fixed">
                                         <!-- <field name="nguoi_theo_doi"/> -->
-                                        <field name="ngay_bat_dau" readonly="not (is_van_thu or not_is_van_thu)"/>
+                                        <field name="ngay_bat_dau" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                                     </group>
                                     <group class="o_form_label_fixed">
                                         <!-- <field name="noi_luu_tru"/> -->
-                                        <field name="han_ket_thuc" readonly="not (is_van_thu or not_is_van_thu)"/>
+                                        <field name="han_ket_thuc" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                                     </group>
                                     <!-- <field name="ho_so_cong_viec"/> -->
                                     <group colspan="2" class="o_form_label_fixed">
-                                        <field name="note" readonly="not (is_van_thu or not_is_van_thu)"/>
+                                        <field name="note" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                                     </group>
                                 </group>
                             </page>
@@ -263,19 +292,21 @@
             <field name="name">office_document_outgoing_tree</field>
             <field name="model">office.document</field>
             <field name="arch" type="xml">
-                <tree default_order="create_date desc">
+                <tree default_order="create_date desc" decoration-bf="chua_doc == True">
                     <field name="ngay_ban_hanh" class="o_ellipsis"/>
                     <field name="so_di_tong_hop" class="o_ellipsis"/>
-                    <field name="so_hieu" class="o_ellipsis" column_invisible="1"/>
                     <field name="trich_yeu" class="o_ellipsis"/>
-                    <field name="but_phe" class="o_ellipsis"/>
                     <field name="project_id" class="o_ellipsis"/>
                     <field name="don_vi_ban_hanh" class="o_ellipsis"/>
+                    <field name="do_khan" class="o_ellipsis"/>
+                    <field name="do_mat" class="o_ellipsis"/>
                     <field name="tt_vb" widget="badge"
                            decoration-success="tt_vb in ('phat_hanh', 'cho_xu_ly')"
                            decoration-warning="tt_vb in ('cho_duyet', 'da_duyet')"
                            decoration-info="tt_vb in ('cho_phan_phat', 'huy')"
                            decoration-danger="tt_vb in ('cho_but_phe')"/>
+
+                    <field name="chua_doc" column_invisible="1"/>
                 </tree>
             </field>
         </record>
@@ -288,33 +319,53 @@
                     <header>
                         <button name="trinh_truong_don_vi" string="Trình trưởng đơn vị" type="object"
                                 invisible="tt_vb != 'draft'"/>
+
                         <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
                                 invisible="tt_vb != 'truong_don_vi_duyet' or not is_truong_va_pho_don_vi"/>
+
                         <button name="approve_don_vi" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
+
                         <button name="khong_dat" string="Yêu cầu chỉnh sửa" type="object"
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
-                        <button name="approve" string="Duyệt" type="object"
+
+                        <button name="approve_cong_van_di" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
+
                         <button name="tu_choi_cua_lanh_dao" string="Yêu cầu chỉnh sửa" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
+
                         <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
                                 type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb != 'da_duyet'"/>
+                                invisible="tt_vb != 'da_duyet' or document_type == 'outgoing_internal'"/>
+                        <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
+                                type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu_don_vi"
+                                invisible="tt_vb != 'da_duyet' or document_type != 'outgoing_internal'"/>
+
                         <button name="but_phe_action" string="Bút phê" type="object"
                                 invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_di"/>
-                        <button name="skip" string="Bỏ qua" type="object"
-                                invisible="not show_skip_button"/>
+
                         <button name="phan_phat" string="Phân phát" type="object"
                                 invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh')) or not show_phan_phat_button"/>
+
                         <button name="huy" string="Hủy" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb == 'huy'"
+                                invisible="tt_vb == 'huy' or document_type == 'outgoing_internal'"
                                 confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
+                        <button name="huy" string="Hủy" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu_don_vi"
+                                invisible="tt_vb == 'huy' or document_type != 'outgoing_internal'"
+                                confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
+
                         <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb in ('draft, cho_duyet','huy')"
+                                invisible="tt_vb in ('draft, cho_duyet','huy') or document_type == 'outgoing_internal'"
+                                confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
+                        <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
+                                groups="base.group_system, quan_ly_cong_van.group_van_thu_don_vi"
+                                invisible="tt_vb in ('draft, cho_duyet','huy') or document_type != 'outgoing_internal'"
                                 confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
 
                     </header>
@@ -327,6 +378,7 @@
                         <field name="co_the_but_phe_cong_van_di" invisible="1"/>
                         <field name="show_phan_phat_button" invisible="1"/>
                         <field name="is_truong_va_pho_don_vi" invisible="1"/>
+                        <field name="is_van_thu_don_vi" invisible="1"/>
 
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu" readonly="tt_vb != 'draft'" required="1"/>
@@ -336,46 +388,46 @@
                                 <field name="ngay_tao_bo_sung" string="Ngày bổ sung" required="is_cong_van_bo_sung" invisible="not is_cong_van_bo_sung or tt_vb != 'draft'"/>
                                 <field name="incoming_internal_id" string="Công văn nội bộ đến liên quan"
                                        invisible="document_type != 'outgoing_internal'"
-                                       readonly="not (is_van_thu or not_is_van_thu)"
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"
                                        widget="many2one_clickable"/>
                                 <field name="incoming_id" string="Công văn đến liên quan"
                                        invisible="document_type != 'outgoing'"
-                                       readonly="not (is_van_thu or not_is_van_thu)"
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"
                                        widget="many2one_clickable"/>
                                 <field name="document_type" invisible="1"/>
                                 <field name="so_di_tong_hop" readonly="1"/>
                                 <field name="tt_vb" readonly="1" decoration-warning="True"/>
-                                <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu)"/>
+                                <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                                 <field name="don_vi_ban_hanh"
                                        invisible="not (document_type in ('incoming_internal','outgoing_internal','resolution','outgoing'))"
-                                       readonly="not (is_van_thu or not_is_van_thu)" required="1"
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
                                 <field name="don_vi_ban_hanh_ngoai"
                                        invisible="not (document_type in ('incoming'))"
-                                       readonly="not (is_van_thu or not_is_van_thu)" required="1"
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
-                                <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách" readonly="not (is_van_thu or not_is_van_thu)"
+                                <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"
                                        required="1"/>
                                 <!--                                <field name="don_vi_soan_thao"/>-->
 
                                 <!--                                <field name="ngay_ky"/>-->
                                 <!--                                <field name="nguoi_ky"/>-->
-                                <field name="do_khan" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
-                                <field name="do_mat" readonly="not (is_van_thu or not_is_van_thu)"/>
-                                <field name="phan_loai_van_ban" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                <field name="do_khan" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
+                                <field name="do_mat" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
+                                <field name="phan_loai_van_ban" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
                                 <!--                                <field name="nguoi_soan_thao"/>-->
                                 <!--                                <field name="dv_theo_doi_chinh"/>-->
                                 <!--                                <field name="phoi_hop_xu_ly"/>-->
-                                <field name="ngay_ban_hanh" readonly="not (is_van_thu or not_is_van_thu)"/>
-                                <field name="ngay_xuat" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                <field name="ngay_ban_hanh" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
+                                <field name="ngay_xuat" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
 
-                                <field name="chuyen_ngoai" string="Chuyển ngoài" readonly="not (is_van_thu or not_is_van_thu)"
+                                <field name="chuyen_ngoai" string="Chuyển ngoài" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"
                                        required="1"/>
                                 <field name="ngay_chuyen_ngoai" invisible="not chuyen_ngoai"
-                                       readonly="not (is_van_thu or not_is_van_thu)"/>
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                                 <field name="dia_diem_chuyen_ngoai" invisible="not chuyen_ngoai"
-                                       readonly="not (is_van_thu or not_is_van_thu)"/>
-                                <field name="project_id" readonly="not (is_van_thu or not_is_van_thu)"/>
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
+                                <field name="project_id" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                                 <field name="can_duyet" invisible="1"/>
                                 <field name="nguoi_tao_duoc_xem"
                                        readonly="not co_the_sua_nguoi_tao_duoc_xem"
@@ -392,7 +444,7 @@
                                 <!--                                <field name="so_di_tong_hop_so_den_theo_so"/>-->
                             </group>
                             <group colspan="7">
-                                <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
+                                <field name="attachment_ids" widget="many2many_binary" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi or tt_vb in ('draft','cho_truong_don_vi_duyet','truong_don_vi_duyet','cho_duyet'))"/>
                                 <field name="attachment_id"
                                        string="Tài liệu xem trước"
                                        options="{'no_create': True, 'no_open': True}"/>
@@ -525,18 +577,20 @@
             <field name="name">office_document_resolution_tree</field>
             <field name="model">office.document</field>
             <field name="arch" type="xml">
-                <tree default_order="create_date desc">
+                <tree default_order="create_date desc" decoration-bf="chua_doc == True">
                     <field name="ngay_ban_hanh" class="o_ellipsis"/>
                     <field name="so_di_tong_hop" class="o_ellipsis"/>
-                    <field name="so_hieu" class="o_ellipsis"/>
                     <field name="trich_yeu" class="o_ellipsis"/>
-                    <field name="but_phe" class="o_ellipsis"/>
                     <field name="don_vi_ban_hanh" class="o_ellipsis"/>
+                    <field name="do_khan" class="o_ellipsis"/>
+                    <field name="do_mat" class="o_ellipsis"/>
                     <field name="tt_vb" widget="badge"
                            decoration-success="tt_vb in ('phat_hanh', 'cho_xu_ly')"
                            decoration-warning="tt_vb in ('cho_duyet', 'da_duyet')"
                            decoration-info="tt_vb in ('cho_phan_phat', 'huy')"
                            decoration-danger="tt_vb in ('cho_but_phe')"/>
+
+                    <field name="chua_doc"  column_invisible="1"/>
                 </tree>
             </field>
         </record>
@@ -555,7 +609,7 @@
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
                         <button name="khong_dat" string="Yêu cầu chỉnh sửa" type="object"
                                 invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
-                        <button name="approve" string="Duyệt" type="object"
+                        <button name="approve_cong_van_di" string="Duyệt" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
                         <button name="tu_choi_cua_lanh_dao" string="Yêu cầu chỉnh sửa" type="object"
                                 invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
@@ -565,8 +619,6 @@
                                 invisible="tt_vb != 'da_duyet'"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
                                 invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_di"/>
-                        <button name="skip" string="Bỏ qua" type="object"
-                                invisible="not show_skip_button"/>
                         <button name="phan_phat" string="Phân phát" type="object"
                                 invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh')) or not show_phan_phat_button"/>
                         <button name="huy" string="Hủy" type="object"
@@ -590,49 +642,50 @@
                         <field name="document_type" invisible="1"/>
                         <field name="show_phan_phat_button" invisible="1"/>
                         <field name="is_truong_don_vi" invisible="1"/>
+                        <field name="is_van_thu_don_vi" invisible="1"/>
 
                         <label for="trich_yeu" string="Trích yếu"/>
-                        <field name="trich_yeu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                        <field name="trich_yeu" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
                         <group col="12">
                             <group colspan="5">
                                 <field name="tt_vb" readonly="1" decoration-warning="True"/>
                                 <field name="so_di_tong_hop" string="Số quyết định"
                                        required="document_type == 'resolution'"
                                        invisible="document_type != 'resolution'"
-                                       readonly="not (is_van_thu or not_is_van_thu)"/>
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                                 <field name="so_di_tong_hop" string="Số văn bản"
                                        required="document_type == 'director'"
                                        invisible="document_type != 'director'"
-                                       readonly="not (is_van_thu or not_is_van_thu)"/>
-                                <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
-                                <field name="phan_loai_van_ban" readonly="not (is_van_thu or not_is_van_thu)"
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
+                                <field name="so_hieu" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
+                                <field name="phan_loai_van_ban" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"
                                        invisible="document_type != 'director'"
                                        required="1"/>
-                                <field name="don_vi_ban_hanh" readonly="not (is_van_thu or not_is_van_thu)" required="1"
+                                <field name="don_vi_ban_hanh" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"
                                        context="{'no_create': not can_create_don_vi}"/>
-                                <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách" readonly="not (is_van_thu or not_is_van_thu)"
+                                <field name="lanh_dao_theo_doi" string="Lãnh đạo phụ trách" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"
                                        required="1"/>
                                 <!--                                <field name="don_vi_soan_thao"/>-->
 
                                 <!--                                <field name="ngay_ky"/>-->
                                 <!--                                <field name="nguoi_ky"/>-->
-                                <field name="do_khan" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
-                                <field name="do_mat" readonly="not (is_van_thu or not_is_van_thu)"/>
+                                <field name="do_khan" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
+                                <field name="do_mat" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
 
                                 <!--                                <field name="nguoi_soan_thao"/>-->
                                 <!--                                <field name="dv_theo_doi_chinh"/>-->
                                 <!--                                <field name="phoi_hop_xu_ly"/>-->
-                                <field name="ngay_ban_hanh" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
-                                <field name="ngay_xuat" readonly="not (is_van_thu or not_is_van_thu)" required="1"/>
+                                <field name="ngay_ban_hanh" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
+                                <field name="ngay_xuat" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
 
-                                <field name="chuyen_ngoai" string="Chuyển ngoài" readonly="not (is_van_thu or not_is_van_thu)"
+                                <field name="chuyen_ngoai" string="Chuyển ngoài" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"
                                        required="1"/>
                                 <field name="dia_diem_chuyen_ngoai" invisible="not chuyen_ngoai"
-                                       readonly="not (is_van_thu or not_is_van_thu)"/>
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                                 <field name="ngay_chuyen_ngoai" invisible="not chuyen_ngoai"
-                                       readonly="not (is_van_thu or not_is_van_thu)"/>
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                                 <field name="can_duyet" groups="base.group_system, quan_ly_cong_van.group_lanh_dao"
-                                       readonly="not (is_van_thu or not_is_van_thu)"/>
+                                       readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
                                 <!--                                <field name="so_di_theo_so"/>-->
                                 <!--                                <field name="so_vb"/>-->
                                 <!--                                <field name="ngay_hieu_luc"/>-->
@@ -864,7 +917,7 @@
                     </sheet>
                     <footer>
                         <button name="but_phe" string="Ghi ý kiến" type="object"/>
-                        <button name="cancel" string="Hủy bỏ" type="object" class="btn-danger"/>
+                        <button name="skip" string="Bỏ qua bút phê" type="object" class="btn-danger"/>
                     </footer>
                 </form>
             </field>
@@ -1027,6 +1080,61 @@
                     </sheet>
                 </form>
             </field>
+        </record>
+
+        <!-- Wizard duyệt văn bản đi -->
+        <record id="duyet_van_ban_di_wizard_form" model="ir.ui.view">
+            <field name="name">duyet.van.ban.di.wizard.form</field>
+            <field name="model">duyet.van.ban.di.wizard</field>
+            <field name="arch" type="xml">
+                <form>
+                    <!--                    <header>-->
+                    <!--                        <button name="phan_phat" string="Ghi ý kiến" type="object"/>-->
+                    <!--                        <button name="phan_phat" string="Hủy bỏ" type="object" class="btn-danger"/>-->
+                    <!--                    </header>-->
+                    <sheet>
+                        <group>
+                            <field name="y_kien_xu_ly"/>
+                            <field name="tai_lieu_kem" widget="many2many_binary"/>
+                            <field name="do_khan"/>
+                        </group>
+                        <div class="row">
+                            <div class="col-3"/>
+                            <div class="col-3">
+                                <group>
+                                    <field name="quan_trong"/>
+                                </group>
+                            </div>
+                            <div class="col-3">
+                                <group>
+                                    <field name="do_mat"/>
+                                </group>
+                            </div>
+                            <!--<div class="col-3">
+                                <group>
+                                    <field name="da_giai_quyet"/>
+                                </group>
+                            </div>
+                            <div class="col-3">
+                                <group>
+                                    <field name="thong_bao_cho_van_thu"/>
+                                </group>
+                            </div>-->
+                        </div>
+                    </sheet>
+                    <footer>
+                        <button name="action_duyet" string="Duyệt và bút phê" type="object"/>
+                        <button name="skip" string="Duyệt và bỏ qua bút phê" type="object" class="btn-danger"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_duyet_van_ban_di_wizard" model="ir.actions.act_window">
+            <field name="name">Duyệt văn bản đi</field>
+            <field name="res_model">duyet.van.ban.di.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
         </record>
     </data>
 </odoo>
