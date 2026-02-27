@@ -282,7 +282,7 @@ class TrainingPlanParticipation(models.Model):
 
     training_location = fields.Char(
         string="Địa điểm đào tạo",
-        related='training_plan_detail_id.training_location',
+        # related='training_plan_detail_id.training_location',
         # readonly=True
     )
 

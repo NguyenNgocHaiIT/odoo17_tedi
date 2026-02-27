@@ -8,6 +8,7 @@
     'depends': ['hr', 'base','web','hr_skills','hr_contract','hr_holidays'],  # thêm 'base' cho chắc chắn khi có model/attachment
     'data': [
         "security/ir.model.access.csv",
+        "data/server_action.xml",
         "views/employee_education_views.xml",
         "views/employee_certificate_views.xml",
         "views/employee_trip_views.xml",
