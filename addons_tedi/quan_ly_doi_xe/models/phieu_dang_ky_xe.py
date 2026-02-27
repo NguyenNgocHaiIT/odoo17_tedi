@@ -141,6 +141,40 @@ class HrTediVehicleRegistration(models.Model):
         for rec in self:
             rec.can_edit_requester = is_manager
 
+    is_manager_department = fields.Boolean(
+        compute='_compute_is_manager_department',
+        default=False,
+        store=False
+    )
+
+    @api.depends_context('uid_department')
+    def _compute_is_manager_department(self):
+        user = self.env.user
+
+        employee = self.env['hr.employee'].search(
+            [('user_id', '=', user.id)],
+            limit=1
+        )
+
+        for rec in self:
+            rec.is_manager_department = False  # mặc định False
+
+            if not employee or not employee.department_id:
+                continue
+
+            # Leo lên phòng ban root
+            dept = employee.department_id
+            while dept.parent_id:
+                dept = dept.parent_id
+
+            managers = dept.manager_ids if hasattr(dept, 'manager_ids') else self.env['hr.employee']
+
+            # Nếu employee nằm trong danh sách managers
+            if employee in managers:
+                rec.is_manager_department = True
+
+
+
     start_date = fields.Datetime(string="Thời gian bắt đầu", required=True, tracking=True)
     end_date = fields.Datetime(string="Thời gian kết thúc", required=True, tracking=True)
     trip_type = fields.Selection([('noi_thanh', 'Nội thành'), ('ngoai_thanh', 'Ngoại thành')], string="Loại công tác",
@@ -361,10 +395,137 @@ class HrTediVehicleRegistration(models.Model):
 
     def action_submit(self):
         self.ensure_one()
-        if self.start_date >= self.end_date: raise ValidationError("Thời gian kết thúc phải lớn hơn bắt đầu.")
-        self.state = 'submitted'
-        self._send_notification_to_vehicle_managers('submit')
 
+        if self.start_date >= self.end_date:
+            raise ValidationError("Thời gian kết thúc phải lớn hơn bắt đầu.")
+
+        self.state = 'submitted'
+
+        truong_phong = False
+        pho_phongs = self.env['hr.employee']  # empty recordset
+
+        # Lấy user tạo phiếu
+        user_create = self.create_uid or self.env.user
+        employee = self.env['hr.employee'].search(
+            [('user_id', '=', user_create.id)],
+            limit=1
+        )
+
+        if not employee or not employee.department_id:
+            return
+
+        # Leo lên phòng ban root
+        dept = employee.department_id
+        while dept.parent_id:
+            dept = dept.parent_id
+
+        # Lấy trưởng phòng
+        if dept.manager_id:
+            truong_phong = dept.manager_id
+
+        # Nếu có field manager_ids (phó phòng - custom)
+        if hasattr(dept, 'manager_ids'):
+            pho_phongs = dept.manager_ids
+
+        # =============================
+        # Kiểm tra nếu người submit là lãnh đạo
+        # =============================
+
+        is_truong_phong = truong_phong and employee.id == truong_phong.id
+        is_pho_phong = employee in pho_phongs
+
+        if is_truong_phong or is_pho_phong:
+            self._send_notification_to_vehicle_managers('submit')
+
+        else:
+            self._send_notification_to_vehicle_managers_department(
+                'submit',
+                truong_phong,
+                pho_phongs
+            )
+
+    def _send_notification_to_vehicle_managers_department(self, action_type,truong_phong,pho_phongs):
+        """Gửi thông báo ngắn cho lãnh đạo đơn vị - 1 EMAIL NHIỀU NGƯỜI"""
+        self.ensure_one()
+
+        try:
+            # Lấy lãnh đạo đơn vị
+            if not truong_phong and not pho_phongs:
+                return
+
+            # Thu thập email của tất cả quản lý
+            manager_emails = []
+            manager_names = []
+            # if truong_phong:
+            #     manager_emails.append(truong_phong.email)
+            #     manager_names.append(truong_phong.name)
+            for user in pho_phongs:
+                if user.work_email:
+                    manager_emails.append(user.work_email )
+                    manager_names.append(user.name)
+
+            if not manager_emails:
+                _logger.warning("Không có email nào trong lãnh đạo đơn vị.")
+                return
+
+            # Chuẩn bị nội dung email
+            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            detail_url = f"{web_url}/web#id={self.id}&model=hr_tedi.vehicle.registration"
+
+            approver = self.env.user.name
+            email_to = ', '.join(manager_emails)
+            names_str = ', '.join(manager_names)
+
+            if action_type == 'submit':
+                subject = f'[Cần duyệt] Phiếu xe {self.code}'
+                message = "Có phiếu đăng ký xe mới cần duyệt"
+                button_text = "Xem phiếu cần duyệt"
+                status_color = "#007bff"
+                status_title = "CẦN DUYỆT"
+            else:  # feedback
+                subject = f"[Xác nhận] Phiếu xe {self.code}"
+                message = "Có lịch xe đã hoàn thành và đang chờ xác nhận."
+                button_text = "Xem phiếu cần xác nhận"
+                status_color = "#28a745"
+                status_title = "CHỜ XÁC NHẬN"
+
+            body_html = f"""
+                   <div style="font-family: Arial, sans-serif; padding: 20px;">
+                       <p>Kính gửi: {names_str},</p>
+    
+                       <div style="background:{status_color}15; border-left: 4px solid {status_color}; padding: 15px; margin: 15px 0;">
+                           <h3 style="color:{status_color}; margin-top:0;">THÔNG BÁO: {status_title}</h3>
+                           <p><b>Mã phiếu:</b> {self.code}</p>
+                           <p><b>Người đề nghị:</b> {self.requester_id.name if self.requester_id else 'Không có'}</p>
+                           <p><b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                           <p><b>Nội dung:</b> {message}</p>
+                           <p><b>Địa điểm:</b> {self.destination or 'Không có'}</p>
+                           <p><b>Nội dung công việc:</b> {self.work_content[:100]}...</p>
+                       </div>
+    
+                       <p style="text-align: center; margin: 20px 0;">
+                           <a href="{detail_url}" style="background:{status_color}; color:white; padding: 10px 20px; text-decoration:none; border-radius:5px;">
+                               {button_text}
+                           </a>
+                       </p>
+    
+                       <p style="color:#666; font-size:14px;">
+                           Trân trọng,<br>
+                           <b>Lãnh đạo đơn vị</b>
+                       </p>
+                   </div>
+                   """
+
+            # Gửi 1 email cho tất cả quản lý
+            self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'email_to': email_to,
+                'email_from': self.env.user.email or 'no-reply@company.com',
+                'body_html': body_html,
+            }).send()
+
+        except Exception as e:
+                _logger.error(f"Lỗi gửi thông báo: {str(e)}")
     def _send_notification_to_vehicle_managers(self, action_type):
         """Gửi thông báo ngắn cho quản lý xe - 1 EMAIL NHIỀU NGƯỜI"""
         self.ensure_one()
@@ -455,6 +616,16 @@ class HrTediVehicleRegistration(models.Model):
         self.ensure_one()
         self.state = 'refused'
         self._send_email_to_creator('refuse')
+
+    def action_manager_approve(self):
+        self.ensure_one()
+        self.state = 'approved'
+        self._send_email_to_creator_by_manager('approve')
+
+    def action_manager_refuse(self):
+        self.ensure_one()
+        self.state = 'refused'
+        self._send_email_to_creator_by_manager('refuse')
 
     def _send_email_to_creator(self, action_type):
         """Gửi email cho người tạo phiếu khi duyệt/từ chối/phân xe"""
@@ -589,6 +760,111 @@ class HrTediVehicleRegistration(models.Model):
                     </p>
                 </div>
                 """
+            else:
+                return
+
+            # Gửi email
+            self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'email_to': creator_email,
+                'email_from': self.env.user.email or 'no-reply@company.com',
+                'body_html': body_html,
+            }).send()
+
+            _logger.info(f"Đã gửi email {action_type} cho người tạo: {creator_email}")
+
+        except Exception as e:
+            _logger.error(f"Lỗi gửi email cho người tạo: {str(e)}")
+
+    def _send_email_to_creator_by_manager(self, action_type):
+        """Gửi email cho người tạo phiếu khi duyệt/từ chối/phân xe"""
+        self.ensure_one()
+
+        try:
+            # Lấy người tạo phiếu (create_uid)
+            creator = self.create_uid
+            if not creator or not creator.email:
+                # Fallback: lấy từ requester_id nếu có
+                creator_email = self.requester_id.work_email or self.requester_id.user_id.email
+                creator_name = self.requester_id.name
+            else:
+                creator_email = creator.email
+                creator_name = creator.name
+
+            if not creator_email:
+                _logger.warning(f"Không có email cho người tạo phiếu: {self.code}")
+                return
+
+            # Chuẩn bị nội dung
+            web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            detail_url = f"{web_url}/web#id={self.id}&model=hr_tedi.vehicle.registration"
+
+            approver = self.env.user.name
+            time_str = self.start_date.strftime('%d/%m/%Y %H:%M') if self.start_date else ''
+
+            if action_type == 'approve':
+                subject = f"[ĐÃ DUYỆT] Phiếu xe {self.code}"
+                status_text = "ĐÃ ĐƯỢC DUYỆT"
+                status_color = "#28a745"
+                message = "Yêu cầu của bạn đã được duyệt và đang chờ quản lý đội xe duyệt."
+                button_text = "Xem phiếu đã duyệt"
+
+                body_html = f"""
+                   <div style="font-family: Arial, sans-serif; padding: 20px;">
+                       <p>Xin chào <b>{creator_name}</b>,</p>
+
+                       <div style="background:{status_color}15; border-left: 4px solid {status_color}; padding: 15px; margin: 15px 0;">
+                           <h3 style="color:{status_color}; margin-top:0;">Phiếu đăng ký xe của bạn {status_text}</h3>
+                           <p><b>Mã phiếu:</b> {self.code}</p>
+                           <p><b>Người xử lý:</b> {approver}</p>
+                           <p><b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                           <p><b>Nội dung:</b> {message}</p>
+                       </div>
+
+                       <p style="text-align: center; margin: 20px 0;">
+                           <a href="{detail_url}" style="background:{status_color}; color:white; padding: 10px 20px; text-decoration:none; border-radius:5px;">
+                               {button_text}
+                           </a>
+                       </p>
+
+                       <p style="color:#666; font-size:14px;">
+                           Trân trọng,<br>
+                           <b>Lãnh đạo đơn vị</b>
+                       </p>
+                   </div>
+                   """
+
+            elif action_type == 'refuse':
+                subject = f"[TỪ CHỐI] Phiếu xe {self.code}"
+                status_text = "ĐÃ BỊ TỪ CHỐI"
+                status_color = "#dc3545"
+                message = "Yêu cầu của bạn không được chấp thuận lãnh đạo đơn vị."
+                button_text = "Xem phiếu bị từ chối"
+
+                body_html = f"""
+                   <div style="font-family: Arial, sans-serif; padding: 20px;">
+                       <p>Xin chào <b>{creator_name}</b>,</p>
+
+                       <div style="background:{status_color}15; border-left: 4px solid {status_color}; padding: 15px; margin: 15px 0;">
+                           <h3 style="color:{status_color}; margin-top:0;">Phiếu đăng ký xe của bạn {status_text}</h3>
+                           <p><b>Mã phiếu:</b> {self.code}</p>
+                           <p><b>Người xử lý:</b> {approver}</p>
+                           <p><b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                           <p><b>Nội dung:</b> {message}</p>
+                       </div>
+
+                       <p style="text-align: center; margin: 20px 0;">
+                           <a href="{detail_url}" style="background:{status_color}; color:white; padding: 10px 20px; text-decoration:none; border-radius:5px;">
+                               {button_text}
+                           </a>
+                       </p>
+
+                       <p style="color:#666; font-size:14px;">
+                           Trân trọng,<br>
+                           <b>Lãnh đạo đơn vị</b>
+                       </p>
+                   </div>
+                   """
             else:
                 return
 

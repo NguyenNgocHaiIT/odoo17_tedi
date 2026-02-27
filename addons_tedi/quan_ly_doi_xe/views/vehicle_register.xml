@@ -70,6 +70,8 @@
                 <form string="Phiếu đăng ký xe">
                     <header>
                         <button name="action_submit" string="Gửi duyệt" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                        <button name="action_manager_approve" string="Duyệt yêu cầu" type="object" class="oe_highlight"  invisible="state != 'submitted' or not is_manager_department"/>
+                        <button name="action_manager_refuse" string="Từ chối" type="object"  invisible="state != 'submitted' or not is_manager_department"/>
                         <button name="action_fleet_approve" string="Duyệt yêu cầu" type="object" class="oe_highlight" groups="fleet.fleet_group_manager" invisible="state != 'submitted'"/>
                         <button name="action_fleet_refuse" string="Từ chối" type="object" groups="fleet.fleet_group_manager" invisible="state != 'submitted'"/>
                         <button name="action_office_assign" string="Phân phối xe" type="object" class="oe_highlight" groups="fleet.fleet_group_manager" invisible="state != 'approved'"/>
@@ -106,7 +108,7 @@
                         <group>
                             <group>
                                 <field name="can_edit_requester" invisible="1"/>
-
+                                <field name="is_manager_department" invisible="1"/>
                                 <field name="requester_id" string="Người đề nghị" invisible="not can_edit_requester" readonly="state != 'draft'" required="1"/>
                                 <field name="requester_id" string="Người đề nghị" readonly="1" force_save="1" invisible="can_edit_requester"/>
 
@@ -184,11 +186,11 @@
         <record id="action_hr_tedi_vehicle_registration2" model="ir.actions.act_window">
             <field name="name">Lịch xe</field>
             <field name="res_model">hr_tedi.vehicle.registration</field>
-            <field name="view_mode">calendar,tree,form</field>
+            <field name="view_mode">tree,calendar,form</field>
             <field name="view_ids" eval="[
                 (5, 0, 0),
-                (0, 0, {'view_mode': 'calendar', 'view_id': ref('view_hr_tedi_vehicle_registration_calendar')}),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_hr_tedi_vehicle_registration_tree')}),
+                (0, 0, {'view_mode': 'calendar', 'view_id': ref('view_hr_tedi_vehicle_registration_calendar')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('view_hr_tedi_vehicle_registration_form')})
             ]"/>
             <field name="context">{'search_default_week': 1}</field> <field name="help" type="html">
