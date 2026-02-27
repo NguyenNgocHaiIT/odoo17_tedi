@@ -1,6 +1,7 @@
 from datetime import timedelta
 from operator import index
 
+from docutils.nodes import document
 from pygments.lexer import default
 
 from odoo import models, fields, api
@@ -234,14 +235,31 @@ class PhanPhat(models.TransientModel):
 
     # ----- DOMAIN CHO EMPLOYEE - SỬA LẠI CHO VĂN THƯ -----
     def _get_employee_domain(self):
-        """Nếu là văn thư thì xem tất cả nhân viên, nếu không thì chỉ xem nhân viên trong đơn vị của mình và cấp dưới"""
         if self._is_van_thu():
+            # Lấy tất cả các phòng ban
             all_depts = self.env['hr.department'].search([])
             manager_ids = set()
+
+            # Lấy tất cả trưởng/phó đơn vị từ các phòng ban
             for dept in all_depts:
                 if dept.manager_id:
                     manager_ids.add(dept.manager_id.id)
                 manager_ids.update(dept.manager_ids.ids)
+
+            # Lấy tất cả nhân viên thuộc các group quản lý
+            group_names = [
+                'quan_ly_cong_van.group_van_thu_don_vi',
+                'quan_ly_cong_van.group_truong_don_vi',
+                'quan_ly_cong_van.group_pho_don_vi'
+            ]
+
+            for group_name in group_names:
+                group = self.env.ref(group_name, raise_if_not_found=False)
+                if group:
+                    users_in_group = group.users
+                    employee_ids = users_in_group.mapped('employee_ids.id')
+                    manager_ids.update(employee_ids)
+
             if not manager_ids:
                 return [('id', '=', False)]
             return [('id', 'in', list(manager_ids))]
@@ -339,15 +357,6 @@ class PhanPhat(models.TransientModel):
 
     # ----- PHƯƠNG THỨC CHÍNH -----
     def phan_phat(self):
-        _logger.info("=" * 50)
-        _logger.info(f"User: {self.env.user.name} (ID: {self.env.user.id})")
-        employee = self.env.user.employee_id
-        _logger.info(f"Employee: {employee.name if employee else 'None'} (ID: {employee.id if employee else 'None'})")
-        if employee:
-            departments_managed = self.env['hr.department'].search([('manager_id', '=', employee.id)])
-            _logger.info(f"Departments managed: {departments_managed.mapped('name')}")
-        _logger.info(f"is_truong_don_vi: {self._is_truong_don_vi()}")
-        _logger.info("=" * 50)
         doc_id = self.env.context.get('active_id')
         if not doc_id:
             return
@@ -602,8 +611,63 @@ class ButPhe(models.TransientModel):
 
         return {'type': 'ir.actions.act_window_close'}
 
-    def cancel(self):
-        return {'type': 'ir.actions.act_window_close'}
+    def skip(self):
+        """Bỏ qua bút phê, chuyển thẳng sang chờ phân phát"""
+        self.ensure_one()
+
+        doc = self.office_document_id
+
+        # Xử lý duyệt và bút phê
+        doc.write({
+            'but_phe': self.y_kien_xu_ly,
+            'tt_vb': 'cho_phan_phat',  # Sau bút phê là chờ phân phát
+            'do_khan': self.do_khan,
+            'do_mat': self.do_mat,
+        })
+
+        # Gửi thông báo cho văn thư
+        self._send_skip_notification()
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Thành công',
+                'message': 'Đã bỏ qua bút phê và chuyển sang chờ phân phát.',
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def _send_skip_notification(self):
+        """Gửi thông báo khi bỏ qua bút phê"""
+        group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
+        if group_van_thu and group_van_thu.users:
+            van_thu_employees = self.env['hr.employee'].search([
+                ('user_id', 'in', group_van_thu.users.ids)
+            ])
+            email_list = _get_employee_emails(van_thu_employees)
+
+            if email_list:
+                detail_url = self.get_form_url()
+                subject = f"Văn bản đã được duyệt (bỏ qua bút phê): {self.trich_yeu[:50]}..." if self.trich_yeu else "Văn bản đã được duyệt"
+                body_lines = [
+                    f"<b>Số văn bản:</b> {self.so_vb or 'Chưa có số'}",
+                    f"<b>Trích yếu:</b> {self.trich_yeu or 'Không có'}",
+                    f"<b>Người duyệt:</b> {self.env.user.name}",
+                    f"<b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}",
+                    f"<b>Ghi chú:</b> Đã duyệt và bỏ qua bút phê, chuyển sang chờ phân phát.",
+                ]
+                body_html = _build_email_html(
+                    title='VĂN BẢN ĐÃ ĐƯỢC DUYỆT',
+                    greeting='Kính gửi Anh/Chị Văn thư,<br/>Văn bản sau đã được duyệt (bỏ qua bút phê), vui lòng xử lý phân phát.',
+                    body_lines=body_lines,
+                    detail_url=detail_url,
+                    btn_label='XEM CHI TIẾT VĂN BẢN',
+                    btn_color='#4CAF50',
+                    company_name=self.env.company.name or '',
+                )
+                _send_mail(self.env, subject, email_list, body_html)
 
 
 class OfficeDocumentDetail1(models.Model):
@@ -1193,6 +1257,24 @@ class OfficeDocument(models.Model):
             self._send_approval_notification_to_creator()
         return True
 
+    def approve_cong_van_di(self):
+        """Mở popup duyệt văn bản đi"""
+        self.ensure_one()
+
+        # Mở wizard duyệt
+        return {
+            'name': 'Duyệt văn bản',
+            'type': 'ir.actions.act_window',
+            'view_mode': 'form',
+            'res_model': 'duyet.van.ban.di.wizard',
+            'target': 'new',
+            'context': {
+                'default_office_document_id': self.id,
+                'default_do_khan': self.do_khan,
+                'default_do_mat': self.do_mat,
+            }
+        }
+
     def approve_don_vi(self):
         self.ensure_one()
         self.tt_vb = 'truong_don_vi_duyet'
@@ -1706,15 +1788,23 @@ class OfficeDocument(models.Model):
 
     is_van_thu = fields.Boolean(compute='_compute_edit_permission', store=False)
     not_is_van_thu = fields.Boolean(compute='_compute_edit_permission', store=False)
+    is_van_thu_don_vi = fields.Boolean(compute='_compute_edit_permission', store=False)
 
     @api.depends('tt_vb')
     def _compute_edit_permission(self):
         user = self.env.user
         is_van_thu_user = user.has_group('quan_ly_cong_van.group_van_thu')
+        is_van_thu_don_vi_user = user.has_group('quan_ly_cong_van.group_van_thu_don_vi')
         for rec in self:
             rec.is_van_thu = (
                 is_van_thu_user and
-                rec.tt_vb in ('draft', 'cho_truong_don_vi_duyet', 'truong_don_vi_duyet', 'cho_duyet', 'da_duyet')
+                rec.tt_vb in ('draft', 'cho_truong_don_vi_duyet', 'truong_don_vi_duyet', 'cho_duyet', 'da_duyet') and
+                rec.document_type not in ('incoming_internal', 'outgoing_internal')
+            )
+            rec.is_van_thu_don_vi = (
+                is_van_thu_don_vi_user and
+                rec.tt_vb in ('draft', 'cho_truong_don_vi_duyet', 'truong_don_vi_duyet', 'cho_duyet', 'da_duyet') and
+                rec.document_type in ('incoming_internal', 'outgoing_internal')
             )
             rec.not_is_van_thu = (not is_van_thu_user and rec.tt_vb == 'draft')
 
@@ -1729,11 +1819,8 @@ class OfficeDocument(models.Model):
         user = self.env.user
         is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
         for record in self:
-            if record.tt_vb == 'da_duyet':
-                if is_van_thu:
-                    record.show_skip_button = True
-                else:
-                    record.show_skip_button = record.co_the_but_phe_cong_van_di
+            if record.tt_vb == 'cho_but_phe':
+                record.show_skip_button = record.co_the_but_phe_cong_van_di
             else:
                 record.show_skip_button = False
 
@@ -1997,9 +2084,14 @@ class OfficeDocument(models.Model):
         user = self.env.user
         is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
         is_van_thu_don_vi = user.has_group('quan_ly_cong_van.group_van_thu_don_vi')
+        document_type = self.document_type
 
         for rec in self:
-            if is_van_thu:
+            if is_van_thu and document_type != 'incoming_internal':
+                rec.show_phan_phat_button = True
+                continue
+
+            if is_van_thu_don_vi and document_type:
                 rec.show_phan_phat_button = True
                 continue
 
@@ -2010,10 +2102,12 @@ class OfficeDocument(models.Model):
 
             # Kiểm tra có phải trưởng đơn vị không (manager của bất kỳ phòng ban nào)
             departments_as_manager = self.env['hr.department'].search([
+                '|',
                 ('manager_id', '=', current_employee.id),
+                ('manager_ids', 'in', current_employee.id)
             ])
 
-            if departments_as_manager:
+            if departments_as_manager or is_van_thu_don_vi:
                 rec.show_phan_phat_button = True
             else:
                 user_detail = rec.detail2.filtered(lambda d: d.nguoi_nhap_y_kien.id == current_employee.id)
@@ -2131,6 +2225,46 @@ class OfficeDocument(models.Model):
             is_manager_id = (dept.manager_id and dept.manager_id.id == current_employee.id)
             is_in_manager_ids = (current_employee.id in dept.manager_ids.ids)
             rec.is_truong_va_pho_don_vi = is_manager_id or is_in_manager_ids
+
+    chua_doc = fields.Boolean(
+        string='Chưa đọc',
+        compute='_compute_chua_doc',
+        store=True,
+        search='_search_chua_doc'
+    )
+
+    @api.depends('detail2', 'detail2.view_time', 'detail2.nguoi_nhap_y_kien')
+    def _compute_chua_doc(self):
+        current_user = self.env.user
+        current_employee = self.env['hr.employee'].search([('user_id', '=', current_user.id)], limit=1)
+
+        for record in self:
+            if not current_employee:
+                record.chua_doc = False
+                continue
+            chua_doc_records = record.detail2.filtered(
+                lambda d: d.nguoi_nhap_y_kien.id == current_employee.id and not d.view_time
+            )
+            record.chua_doc = bool(chua_doc_records)
+
+    def _search_chua_doc(self, operator, value):
+        """Hỗ trợ tìm kiếm theo trường chua_doc"""
+        current_user = self.env.user
+        current_employee = self.env['hr.employee'].search([('user_id', '=', current_user.id)], limit=1)
+
+        if not current_employee:
+            return [('id', '=', False)]
+
+        # Tìm các document có detail2 của user hiện tại và chưa có view_time
+        documents = self.search([
+            ('detail2.nguoi_nhap_y_kien', '=', current_employee.id),
+            ('detail2.view_time', '=', False)
+        ])
+
+        if value:
+            return [('id', 'in', documents.ids)]
+        else:
+            return [('id', 'not in', documents.ids)]
 
 class ChuyenLanhDaoWizard(models.TransientModel):
     _name = 'office.document.chuyen.lanh.dao'
@@ -2408,3 +2542,157 @@ class OfficeDocumentLanhDaoRejectWizard(models.TransientModel):
 
     def action_cancel(self):
         return {'type': 'ir.actions.act_window_close'}
+
+
+class DuyetVanBanDiWizard(models.TransientModel):
+    _name = 'duyet.van.ban.di.wizard'
+    _description = 'Duyệt văn bản đi'
+
+    office_document_id = fields.Many2one('office.document', string='Văn bản', required=True, readonly=True)
+
+    # Fields cho bút phê
+    y_kien_xu_ly = fields.Char('Ý kiến xử lý')
+    quan_trong = fields.Boolean('Quan trọng')
+    tai_lieu_kem = fields.Many2many(
+        'ir.attachment', 'duyet_van_ban_di_attachment_rel',
+        'wizard_id', 'attachment_id',
+        string='Tài liệu đính kèm'
+    )
+    do_khan = fields.Selection([
+        ('thuong', 'Thường'),
+        ('khan', 'Khẩn'),
+        ('hoa_toc', 'Hỏa tốc')
+    ], string='Độ khẩn', default='thuong')
+    do_mat = fields.Boolean(string="Độ mật", default=False)
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        doc_id = self.env.context.get('active_id')
+        if doc_id:
+            doc = self.env['office.document'].browse(doc_id)
+            if doc.exists():
+                if 'do_khan' in fields_list:
+                    res['do_khan'] = doc.do_khan
+                if 'do_mat' in fields_list:
+                    res['do_mat'] = doc.do_mat
+        return res
+
+    def action_duyet(self):
+        self.ensure_one()
+        doc = self.office_document_id
+
+        # Xử lý duyệt và bút phê
+        doc.write({
+            'but_phe': self.y_kien_xu_ly,
+            'tt_vb': 'cho_phan_phat',  # Sau bút phê là chờ phân phát
+            'do_khan': self.do_khan,
+            'do_mat': self.do_mat,
+        })
+
+        # Tạo detail1 cho bút phê
+        employee = self.env.user.employee_id
+        nhom_phong_ban = employee.department_id.name if employee and employee.department_id else 'Không xác định'
+
+        self.env['office.document.detail1'].create({
+            'office_document_id': doc.id,
+            'nguoi_nhap_y_kien': employee.id if employee else False,
+            'nhom_phong_ban': nhom_phong_ban,
+            'noi_dung_chi_dao': self.y_kien_xu_ly or 'Duyệt văn bản',
+            'thoi_diem_chi_dao': fields.Datetime.now(),
+            'tai_lieu_kem': [(6, 0, self.tai_lieu_kem.ids)] if self.tai_lieu_kem else [],
+        })
+
+        # Gửi email thông báo cho văn thư
+        self._send_but_phe_notification(doc, employee)
+
+
+        return {'type': 'ir.actions.act_window_close'}
+
+    def _send_but_phe_notification(self, doc, employee):
+        """Gửi thông báo khi duyệt và bút phê"""
+        group = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
+        if group and group.users:
+            van_thu_employees = self.env['hr.employee'].search([
+                ('user_id', 'in', group.users.ids)
+            ])
+            email_list = _get_employee_emails(van_thu_employees)
+
+            if email_list:
+                detail_url = doc.get_form_url()
+                subject = f"Văn bản đã được duyệt và bút phê: {doc.trich_yeu[:50]}..." if doc.trich_yeu else "Văn bản đã được duyệt và bút phê"
+                body_lines = [
+                    f"<b>Số văn bản:</b> {doc.so_vb or 'Chưa có số'}",
+                    f"<b>Trích yếu:</b> {doc.trich_yeu or 'Không có'}",
+                    f"<b>Người duyệt/bút phê:</b> {employee.name if employee else self.env.user.name}",
+                    f"<b>Ý kiến:</b> {self.y_kien_xu_ly or 'Không có ý kiến'}",
+                    f"<b>Quan trọng:</b> {'Có' if self.quan_trong else 'Không'}",
+                    f"<b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}",
+                ]
+                body_html = _build_email_html(
+                    title='VĂN BẢN ĐÃ ĐƯỢC DUYỆT VÀ BÚT PHÊ',
+                    greeting='Kính gửi Anh/Chị Văn thư,<br/>Văn bản sau đã được duyệt và bút phê, vui lòng xử lý phân phát.',
+                    body_lines=body_lines,
+                    detail_url=detail_url,
+                    btn_label='XEM CHI TIẾT VĂN BẢN',
+                    btn_color='#875A7B',
+                    company_name=self.env.company.name or '',
+                )
+                _send_mail(self.env, subject, email_list, body_html)
+
+    def skip(self):
+        """Bỏ qua bút phê, chuyển thẳng sang chờ phân phát"""
+        self.ensure_one()
+
+        doc = self.office_document_id
+
+        # Xử lý duyệt và bút phê
+        doc.write({
+            'tt_vb': 'cho_phan_phat',
+            'do_khan': self.do_khan,
+            'do_mat': self.do_mat,
+        })
+
+        # Gửi thông báo cho văn thư
+        self._send_skip_notification()
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Thành công',
+                'message': 'Đã bỏ qua bút phê và chuyển sang chờ phân phát.',
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def _send_skip_notification(self):
+        """Gửi thông báo khi bỏ qua bút phê"""
+        group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
+        if group_van_thu and group_van_thu.users:
+            van_thu_employees = self.env['hr.employee'].search([
+                ('user_id', 'in', group_van_thu.users.ids)
+            ])
+            email_list = _get_employee_emails(van_thu_employees)
+
+            if email_list:
+                detail_url = self.get_form_url()
+                subject = f"Văn bản đã được duyệt (bỏ qua bút phê): {self.trich_yeu[:50]}..." if self.trich_yeu else "Văn bản đã được duyệt"
+                body_lines = [
+                    f"<b>Số văn bản:</b> {self.so_vb or 'Chưa có số'}",
+                    f"<b>Trích yếu:</b> {self.trich_yeu or 'Không có'}",
+                    f"<b>Người duyệt:</b> {self.env.user.name}",
+                    f"<b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}",
+                    f"<b>Ghi chú:</b> Đã duyệt và bỏ qua bút phê, chuyển sang chờ phân phát.",
+                ]
+                body_html = _build_email_html(
+                    title='VĂN BẢN ĐÃ ĐƯỢC DUYỆT',
+                    greeting='Kính gửi Anh/Chị Văn thư,<br/>Văn bản sau đã được duyệt (bỏ qua bút phê), vui lòng xử lý phân phát.',
+                    body_lines=body_lines,
+                    detail_url=detail_url,
+                    btn_label='XEM CHI TIẾT VĂN BẢN',
+                    btn_color='#4CAF50',
+                    company_name=self.env.company.name or '',
+                )
+                _send_mail(self.env, subject, email_list, body_html)
