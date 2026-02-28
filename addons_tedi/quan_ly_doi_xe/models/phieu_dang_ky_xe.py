@@ -142,35 +142,33 @@ class HrTediVehicleRegistration(models.Model):
             rec.can_edit_requester = is_manager
 
     is_manager_department = fields.Boolean(
-        compute='_compute_is_manager_department',
-        default=False,
+        string="Is Manager Department",
+        compute="_compute_is_manager_department",
         store=False
     )
 
-    @api.depends_context('uid_department')
+    @api.depends('requester_id')
     def _compute_is_manager_department(self):
-        user = self.env.user
-
-        employee = self.env['hr.employee'].search(
-            [('user_id', '=', user.id)],
-            limit=1
-        )
-
         for rec in self:
-            rec.is_manager_department = False  # mặc định False
+            rec.is_manager_department = False
+
+            employee = rec.requester_id
+            current_employee = self.env.user.employee_id
+            if not current_employee:
+                continue
 
             if not employee or not employee.department_id:
                 continue
 
-            # Leo lên phòng ban root
+            # Leo lên phòng ban gốc (root department)
             dept = employee.department_id
             while dept.parent_id:
                 dept = dept.parent_id
 
+            # Lấy danh sách manager
             managers = dept.manager_ids if hasattr(dept, 'manager_ids') else self.env['hr.employee']
 
-            # Nếu employee nằm trong danh sách managers
-            if employee in managers:
+            if current_employee in managers:
                 rec.is_manager_department = True
 
 
@@ -386,7 +384,11 @@ class HrTediVehicleRegistration(models.Model):
             emp = self.env['hr.employee'].browse(vals['tedi_driver_employee_id'])
             partner = self._get_partner_from_employee(emp)
             if partner: vals['driver_id'] = partner.id
-        return super(HrTediVehicleRegistration, self).create(vals)
+        record = super(HrTediVehicleRegistration, self).create(vals)
+        if record.is_manager_department:
+            record.state = 'approved'
+        return record
+
 
 
     # ========================================================
@@ -435,7 +437,7 @@ class HrTediVehicleRegistration(models.Model):
         is_pho_phong = employee in pho_phongs
 
         if is_truong_phong or is_pho_phong:
-            self._send_notification_to_vehicle_managers('submit')
+           return
 
         else:
             self._send_notification_to_vehicle_managers_department(

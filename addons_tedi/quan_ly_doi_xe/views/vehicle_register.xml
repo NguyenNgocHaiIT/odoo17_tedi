@@ -69,8 +69,8 @@
             <field name="arch" type="xml">
                 <form string="Phiếu đăng ký xe">
                     <header>
-                        <button name="action_submit" string="Gửi duyệt" type="object" class="oe_highlight" invisible="state != 'draft'"/>
-                        <button name="action_manager_approve" string="Duyệt yêu cầu" type="object" class="oe_highlight"  invisible="state != 'submitted' or not is_manager_department"/>
+                        <button name="action_submit" string="Gửi duyệt" type="object" class="oe_highlight" invisible="state != 'draft' or is_manager_department"/>
+                        <button name="action_manager_approve" string="Duyệt yêu cầu" type="object" class="oe_highlight"  invisible="state != 'submitted'  or not is_manager_department"/>
                         <button name="action_manager_refuse" string="Từ chối" type="object"  invisible="state != 'submitted' or not is_manager_department"/>
                         <button name="action_office_assign" string="Phân phối xe" type="object" class="oe_highlight" groups="fleet.fleet_group_manager" invisible="state != 'approved'"/>
 
