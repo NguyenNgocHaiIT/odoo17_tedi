@@ -16,3 +16,4 @@ access_fleet_vehicle_model_brand_user_custom_tedi,fleet.vehicle.model.brand.user
 access_thanh_toan_xe_report_wizard_user,access_thanh_toan_xe_report_wizard_user,model_thanh_toan_xe_report_wizard,base.group_user,1,1,1,1
 
 access_fleet_vehicle_base_user_read,fleet.vehicle.base.user.read,fleet.model_fleet_vehicle,base.group_user,1,0,0,0
+access_business_trip_registration,access.business.trip.registration,model_business_trip_registration,base.group_user,1,1,1,1

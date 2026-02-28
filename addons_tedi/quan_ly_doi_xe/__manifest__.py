@@ -18,6 +18,7 @@
 
         'views/vehicle_view.xml',
         'views/vehicle_register.xml',
+        'views/dang_ky_cong_tac.xml',
         'views/vehicle_fix.xml',
         'views/vehicle_odometer.xml',
         'views/bao_cao_wizard.xml',
