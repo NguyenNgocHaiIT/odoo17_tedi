@@ -244,7 +244,7 @@
                                                 type="object"
                                                 icon="fa-trash"
                                                 class="oe_stat_button"
-                                                groups="quan_ly_cong_van.group_van_thu, quan_ly_cong_van.group_van_thu_hdqt, quan_ly_cong_van.group_van_thu_dang_uy, quan_ly_cong_van.group_van_thu_cong_doan, quan_ly_cong_van.group_van_thu_doan_tn"/>
+                                                groups="quan_ly_cong_van.group_van_thu"/>
                                     </tree>
                                 </field>
                             </page>
@@ -530,7 +530,7 @@
                                                 type="object"
                                                 icon="fa-trash"
                                                 class="oe_stat_button"
-                                                groups="quan_ly_cong_van.group_van_thu, quan_ly_cong_van.group_van_thu_hdqt, quan_ly_cong_van.group_van_thu_dang_uy, quan_ly_cong_van.group_van_thu_cong_doan, quan_ly_cong_van.group_van_thu_doan_tn"/>
+                                                groups="quan_ly_cong_van.group_van_thu"/>
                                     </tree>
                                 </field>
                             </page>
@@ -601,151 +601,35 @@
             <field name="arch" type="xml">
                 <form delete="false" duplicate="false">
                     <header>
-                        <!-- ===== Nhóm nút cho document_type='resolution' – group_van_thu ===== -->
                         <button name="trinh_truong_don_vi" string="Trình trưởng đơn vị" type="object"
-                                invisible="tt_vb != 'draft' or document_type != 'resolution'"/>
+                                invisible="tt_vb != 'draft'"/>
                         <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
-                                invisible="tt_vb != 'truong_don_vi_duyet' or not is_truong_va_pho_don_vi or document_type != 'resolution'"/>
+                                invisible="tt_vb != 'truong_don_vi_duyet' or not is_truong_don_vi"/>
                         <button name="approve_don_vi" string="Duyệt" type="object"
-                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi or document_type != 'resolution'"/>
+                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
                         <button name="khong_dat" string="Yêu cầu chỉnh sửa" type="object"
-                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi or document_type != 'resolution'"/>
+                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi"/>
                         <button name="approve_cong_van_di" string="Duyệt" type="object"
-                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di or document_type != 'resolution'"/>
+                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
                         <button name="tu_choi_cua_lanh_dao" string="Yêu cầu chỉnh sửa" type="object"
-                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di or document_type != 'resolution'"/>
+                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di"/>
                         <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
                                 type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb != 'da_duyet' or document_type != 'resolution'"/>
+                                invisible="tt_vb != 'da_duyet'"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
-                                invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_di or document_type != 'resolution'"/>
+                                invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_di"/>
                         <button name="phan_phat" string="Phân phát" type="object"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh')) or not show_phan_phat_button or document_type != 'resolution'"/>
+                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh')) or not show_phan_phat_button"/>
                         <button name="huy" string="Hủy" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb == 'huy' or document_type != 'resolution'"
+                                invisible="tt_vb == 'huy'"
                                 confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
                         <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
-                                invisible="tt_vb in ('draft', 'cho_duyet', 'huy') or document_type != 'resolution'"
+                                invisible="tt_vb in ('draft, cho_duyet','huy')"
                                 confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
-                        <!-- ===== Nhóm nút cho document_type='director' – group_van_thu_hdqt ===== -->
-                        <button name="trinh_truong_don_vi" string="Trình trưởng đơn vị" type="object"
-                                invisible="tt_vb != 'draft' or document_type != 'director'"/>
-                        <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
-                                invisible="tt_vb != 'truong_don_vi_duyet' or not is_truong_va_pho_don_vi or document_type != 'director'"/>
-                        <button name="approve_don_vi" string="Duyệt" type="object"
-                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi or document_type != 'director'"/>
-                        <button name="khong_dat" string="Yêu cầu chỉnh sửa" type="object"
-                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi or document_type != 'director'"/>
-                        <button name="approve_cong_van_di" string="Duyệt" type="object"
-                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di or document_type != 'director'"/>
-                        <button name="tu_choi_cua_lanh_dao" string="Yêu cầu chỉnh sửa" type="object"
-                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di or document_type != 'director'"/>
-                        <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
-                                type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu_hdqt"
-                                invisible="tt_vb != 'da_duyet' or document_type != 'director'"/>
-                        <button name="but_phe_action" string="Bút phê" type="object"
-                                invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_di or document_type != 'director'"/>
-                        <button name="phan_phat" string="Phân phát" type="object"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh')) or not show_phan_phat_button or document_type != 'director'"/>
-                        <button name="huy" string="Hủy" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu_hdqt"
-                                invisible="tt_vb == 'huy' or document_type != 'director'"
-                                confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
-                        <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu_hdqt"
-                                invisible="tt_vb in ('draft', 'cho_duyet', 'huy') or document_type != 'director'"
-                                confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
-                        <!-- ===== Nhóm nút cho document_type='committee' – group_van_thu_dang_uy ===== -->
-                        <button name="trinh_truong_don_vi" string="Trình trưởng đơn vị" type="object"
-                                invisible="tt_vb != 'draft' or document_type != 'committee'"/>
-                        <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
-                                invisible="tt_vb != 'truong_don_vi_duyet' or not is_truong_va_pho_don_vi or document_type != 'committee'"/>
-                        <button name="approve_don_vi" string="Duyệt" type="object"
-                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi or document_type != 'committee'"/>
-                        <button name="khong_dat" string="Yêu cầu chỉnh sửa" type="object"
-                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi or document_type != 'committee'"/>
-                        <button name="approve_cong_van_di" string="Duyệt" type="object"
-                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di or document_type != 'committee'"/>
-                        <button name="tu_choi_cua_lanh_dao" string="Yêu cầu chỉnh sửa" type="object"
-                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di or document_type != 'committee'"/>
-                        <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
-                                type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu_dang_uy"
-                                invisible="tt_vb != 'da_duyet' or document_type != 'committee'"/>
-                        <button name="but_phe_action" string="Bút phê" type="object"
-                                invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_di or document_type != 'committee'"/>
-                        <button name="phan_phat" string="Phân phát" type="object"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh')) or not show_phan_phat_button or document_type != 'committee'"/>
-                        <button name="huy" string="Hủy" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu_dang_uy"
-                                invisible="tt_vb == 'huy' or document_type != 'committee'"
-                                confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
-                        <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu_dang_uy"
-                                invisible="tt_vb in ('draft', 'cho_duyet', 'huy') or document_type != 'committee'"
-                                confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
-                        <!-- ===== Nhóm nút cho document_type='trade_union' – group_van_thu_cong_doan ===== -->
-                        <button name="trinh_truong_don_vi" string="Trình trưởng đơn vị" type="object"
-                                invisible="tt_vb != 'draft' or document_type != 'trade_union'"/>
-                        <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
-                                invisible="tt_vb != 'truong_don_vi_duyet' or not is_truong_va_pho_don_vi or document_type != 'trade_union'"/>
-                        <button name="approve_don_vi" string="Duyệt" type="object"
-                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi or document_type != 'trade_union'"/>
-                        <button name="khong_dat" string="Yêu cầu chỉnh sửa" type="object"
-                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi or document_type != 'trade_union'"/>
-                        <button name="approve_cong_van_di" string="Duyệt" type="object"
-                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di or document_type != 'trade_union'"/>
-                        <button name="tu_choi_cua_lanh_dao" string="Yêu cầu chỉnh sửa" type="object"
-                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di or document_type != 'trade_union'"/>
-                        <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
-                                type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu_cong_doan"
-                                invisible="tt_vb != 'da_duyet' or document_type != 'trade_union'"/>
-                        <button name="but_phe_action" string="Bút phê" type="object"
-                                invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_di or document_type != 'trade_union'"/>
-                        <button name="phan_phat" string="Phân phát" type="object"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh')) or not show_phan_phat_button or document_type != 'trade_union'"/>
-                        <button name="huy" string="Hủy" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu_cong_doan"
-                                invisible="tt_vb == 'huy' or document_type != 'trade_union'"
-                                confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
-                        <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu_cong_doan"
-                                invisible="tt_vb in ('draft', 'cho_duyet', 'huy') or document_type != 'trade_union'"
-                                confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
-                        <!-- ===== Nhóm nút cho document_type='youth_union' – group_van_thu_doan_tn ===== -->
-                        <button name="trinh_truong_don_vi" string="Trình trưởng đơn vị" type="object"
-                                invisible="tt_vb != 'draft' or document_type != 'youth_union'"/>
-                        <button name="trinh_lanh_dao_cong_van_di" string="Trình lãnh đạo" type="object"
-                                invisible="tt_vb != 'truong_don_vi_duyet' or not is_truong_va_pho_don_vi or document_type != 'youth_union'"/>
-                        <button name="approve_don_vi" string="Duyệt" type="object"
-                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi or document_type != 'youth_union'"/>
-                        <button name="khong_dat" string="Yêu cầu chỉnh sửa" type="object"
-                                invisible="tt_vb != 'cho_truong_don_vi_duyet' or not is_truong_don_vi or document_type != 'youth_union'"/>
-                        <button name="approve_cong_van_di" string="Duyệt" type="object"
-                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di or document_type != 'youth_union'"/>
-                        <button name="tu_choi_cua_lanh_dao" string="Yêu cầu chỉnh sửa" type="object"
-                                invisible="tt_vb != 'cho_duyet' or not co_the_but_phe_cong_van_di or document_type != 'youth_union'"/>
-                        <button name="trinh_lanh_dao_cong_van_di_but_phe" string="Trình lãnh đạo để bút phê"
-                                type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu_doan_tn"
-                                invisible="tt_vb != 'da_duyet' or document_type != 'youth_union'"/>
-                        <button name="but_phe_action" string="Bút phê" type="object"
-                                invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_di or document_type != 'youth_union'"/>
-                        <button name="phan_phat" string="Phân phát" type="object"
-                                invisible="not (tt_vb in ('cho_phan_phat', 'cho_xu_ly', 'phat_hanh')) or not show_phan_phat_button or document_type != 'youth_union'"/>
-                        <button name="huy" string="Hủy" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu_doan_tn"
-                                invisible="tt_vb == 'huy' or document_type != 'youth_union'"
-                                confirm="Bạn có chắc muốn hủy công văn này? Công văn bị hủy sẽ không thao tác được nữa"/>
-                        <button name="co_cong_van_dieu_chinh" string="Chỉnh sửa công văn" type="object"
-                                groups="base.group_system, quan_ly_cong_van.group_van_thu_doan_tn"
-                                invisible="tt_vb in ('draft', 'cho_duyet', 'huy') or document_type != 'youth_union'"
-                                confirm="Bạn có chắc muốn chuyển công văn về trạng thái chỉnh sửa?"/>
+
 
                     </header>
                     <sheet>
@@ -759,8 +643,6 @@
                         <field name="show_phan_phat_button" invisible="1"/>
                         <field name="is_truong_don_vi" invisible="1"/>
                         <field name="is_van_thu_don_vi" invisible="1"/>
-                        <field name="is_truong_va_pho_don_vi" invisible="1"/>
-                        <field name="document_type" invisible="1"/>
 
                         <label for="trich_yeu" string="Trích yếu"/>
                         <field name="trich_yeu" readonly="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)" required="1"/>
@@ -931,39 +813,6 @@
             <field name="view_mode">tree,form</field>
             <field name="domain">[('document_type','=','director')]</field>
             <field name="context">{'default_document_type': 'director'}</field>
-            <field name="view_ids" eval="[(5, 0, 0),
-                (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_resolution_tree')}),
-                (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_resolution_form')})]"/>
-        </record>
-
-        <record id="action_open_office_document_committee" model="ir.actions.act_window">
-            <field name="name">Văn bản đảng ủy</field>
-            <field name="res_model">office.document</field>
-            <field name="view_mode">tree,form</field>
-            <field name="domain">[('document_type','=','committee')]</field>
-            <field name="context">{'default_document_type': 'committee'}</field>
-            <field name="view_ids" eval="[(5, 0, 0),
-                (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_resolution_tree')}),
-                (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_resolution_form')})]"/>
-        </record>
-
-        <record id="action_open_office_document_trade_union" model="ir.actions.act_window">
-            <field name="name">Văn bản công đoàn</field>
-            <field name="res_model">office.document</field>
-            <field name="view_mode">tree,form</field>
-            <field name="domain">[('document_type','=','trade_union')]</field>
-            <field name="context">{'default_document_type': 'trade_union'}</field>
-            <field name="view_ids" eval="[(5, 0, 0),
-                (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_resolution_tree')}),
-                (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_resolution_form')})]"/>
-        </record>
-
-        <record id="action_open_office_document_youth_union" model="ir.actions.act_window">
-            <field name="name">Văn bản đoàn thanh niên</field>
-            <field name="res_model">office.document</field>
-            <field name="view_mode">tree,form</field>
-            <field name="domain">[('document_type','=','youth_union')]</field>
-            <field name="context">{'default_document_type': 'youth_union'}</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('office_document_resolution_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('office_document_resolution_form')})]"/>
