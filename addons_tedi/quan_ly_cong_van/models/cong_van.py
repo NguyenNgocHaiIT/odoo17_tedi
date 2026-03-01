@@ -111,6 +111,60 @@ def _get_employee_emails(employees):
     return emails
 
 
+def _get_van_thu_cho_doc(env, doc):
+    """
+    Trả về recordset hr.employee của văn thư phù hợp với loại văn bản:
+    - incoming_internal / outgoing_internal:
+        → Văn thư đơn vị (group_van_thu_don_vi) cùng phòng ban với người tạo văn bản.
+    - director / committee / trade_union / youth_union:
+        → Văn thư chuyên biệt tương ứng (group_van_thu_hdqt / dang_uy / cong_doan / doan_tn).
+    - Các loại còn lại (incoming, outgoing, resolution):
+        → Văn thư tổng quát (group_van_thu).
+    """
+    doc_type = doc.document_type if doc else ''
+
+    # Loại nội bộ → văn thư đơn vị cùng phòng ban người tạo
+    if doc_type in ('incoming_internal', 'outgoing_internal'):
+        group = env.ref('quan_ly_cong_van.group_van_thu_don_vi', raise_if_not_found=False)
+        if not group:
+            return env['hr.employee']
+        creator = doc.create_uid
+        creator_dept_ids = []
+        if creator:
+            creator_emp = env['hr.employee'].search([('user_id', '=', creator.id)], limit=1)
+            if creator_emp and creator_emp.department_id:
+                creator_dept_ids = [creator_emp.department_id.id]
+        if creator_dept_ids:
+            # Văn thư đơn vị trong cùng phòng ban với người tạo
+            return env['hr.employee'].search([
+                ('user_id', 'in', group.users.ids),
+                ('department_id', 'in', creator_dept_ids),
+            ])
+        else:
+            # Không xác định được phòng ban → trả tất cả văn thư đơn vị
+            return env['hr.employee'].search([('user_id', 'in', group.users.ids)])
+
+    # Loại chuyên biệt → văn thư chuyên biệt tương ứng
+    _CHUYEN_BIET_GROUP = {
+        'director':    'quan_ly_cong_van.group_van_thu_hdqt',
+        'committee':   'quan_ly_cong_van.group_van_thu_dang_uy',
+        'trade_union': 'quan_ly_cong_van.group_van_thu_cong_doan',
+        'youth_union': 'quan_ly_cong_van.group_van_thu_doan_tn',
+    }
+    if doc_type in _CHUYEN_BIET_GROUP:
+        group_xml = _CHUYEN_BIET_GROUP[doc_type]
+        group = env.ref(group_xml, raise_if_not_found=False)
+        if not group:
+            return env['hr.employee']
+        return env['hr.employee'].search([('user_id', 'in', group.users.ids)])
+
+    # Còn lại (incoming, outgoing, resolution) → văn thư tổng quát
+    group = env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
+    if not group:
+        return env['hr.employee']
+    return env['hr.employee'].search([('user_id', 'in', group.users.ids)])
+
+
 # =====================================================================
 
 
@@ -595,12 +649,9 @@ class ButPhe(models.TransientModel):
                 'res_id': detail1.id,
             })
 
-        # Gửi email cho VĂN THƯ – chỉ dùng work_email
-        group = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-        if group and group.users:
-            van_thu_employees = self.env['hr.employee'].search([
-                ('user_id', 'in', group.users.ids)
-            ])
+        # Gửi email cho VĂN THƯ phù hợp với loại văn bản
+        van_thu_employees = _get_van_thu_cho_doc(self.env, doc)
+        if van_thu_employees:
             email_list = _get_employee_emails(van_thu_employees)
             if email_list:
                 detail_url = doc.get_form_url()
@@ -625,7 +676,7 @@ class ButPhe(models.TransientModel):
                 _send_mail(self.env, subject, email_list, body_html)
 
                 # CHỈ gửi thông báo popup, KHÔNG gửi email qua message_post
-                partners = group.users.mapped('partner_id').ids
+                partners = van_thu_employees.mapped('user_id.partner_id').ids
                 if partners:
                     for partner_id in partners:
                         try:
@@ -675,11 +726,10 @@ class ButPhe(models.TransientModel):
 
     def _send_skip_notification(self):
         """Gửi thông báo khi bỏ qua bút phê"""
-        group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-        if group_van_thu and group_van_thu.users:
-            van_thu_employees = self.env['hr.employee'].search([
-                ('user_id', 'in', group_van_thu.users.ids)
-            ])
+        doc_id = self.env.context.get('active_id')
+        doc = self.env['office.document'].browse(doc_id) if doc_id else None
+        van_thu_employees = _get_van_thu_cho_doc(self.env, doc) if doc else self.env['hr.employee']
+        if van_thu_employees:
             email_list = _get_employee_emails(van_thu_employees)
 
             if email_list:
@@ -1353,11 +1403,9 @@ class OfficeDocument(models.Model):
                 if dept and dept.manager_id:
                     recipient_employees |= dept.manager_id
 
-            # Văn thư
-            group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-            if group_van_thu:
-                van_thu_employees = self.env['hr.employee'].search([('user_id', 'in', group_van_thu.users.ids)])
-                recipient_employees |= van_thu_employees
+            # Văn thư phù hợp với loại văn bản
+            van_thu_employees = _get_van_thu_cho_doc(self.env, self)
+            recipient_employees |= van_thu_employees
 
             email_list = _get_employee_emails(recipient_employees)
             if not email_list:
@@ -1793,11 +1841,10 @@ class OfficeDocument(models.Model):
 
     def _send_email_to_van_thu(self):
         self.ensure_one()
-        group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-        if not group_van_thu:
+        van_thu_employees = _get_van_thu_cho_doc(self.env, self)
+        if not van_thu_employees:
             return
 
-        van_thu_employees = self.env['hr.employee'].search([('user_id', 'in', group_van_thu.users.ids)])
         email_list = _get_employee_emails(van_thu_employees)
         if not email_list:
             return
@@ -1819,11 +1866,10 @@ class OfficeDocument(models.Model):
         )
         _send_mail(self.env, subject, email_list, body_html)
 
-        van_thu_users = group_van_thu.users
-        for user in van_thu_users:
-            if user.partner_id and user != self.env.user:
+        for vt_user in van_thu_employees.mapped('user_id'):
+            if vt_user.partner_id and vt_user != self.env.user:
                 self.env['bus.bus']._sendone(
-                    user.partner_id,
+                    vt_user.partner_id,
                     'simple_notification',
                     {'title': 'Văn bản cần duyệt', 'message': f"Văn bản '{self.trich_yeu[:30]}...' cần duyệt", 'type': 'warning'}
                 )
@@ -2731,11 +2777,8 @@ class DuyetVanBanDiWizard(models.TransientModel):
 
     def _send_but_phe_notification(self, doc, employee):
         """Gửi thông báo khi duyệt và bút phê"""
-        group = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-        if group and group.users:
-            van_thu_employees = self.env['hr.employee'].search([
-                ('user_id', 'in', group.users.ids)
-            ])
+        van_thu_employees = _get_van_thu_cho_doc(self.env, doc)
+        if van_thu_employees:
             email_list = _get_employee_emails(van_thu_employees)
 
             if email_list:
@@ -2789,11 +2832,9 @@ class DuyetVanBanDiWizard(models.TransientModel):
 
     def _send_skip_notification(self):
         """Gửi thông báo khi bỏ qua bút phê"""
-        group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-        if group_van_thu and group_van_thu.users:
-            van_thu_employees = self.env['hr.employee'].search([
-                ('user_id', 'in', group_van_thu.users.ids)
-            ])
+        doc = self.office_document_id
+        van_thu_employees = _get_van_thu_cho_doc(self.env, doc)
+        if van_thu_employees:
             email_list = _get_employee_emails(van_thu_employees)
 
             if email_list:
