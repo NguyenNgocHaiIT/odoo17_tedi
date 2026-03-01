@@ -2689,7 +2689,8 @@ class DuyetVanBanDiWizard(models.TransientModel):
             email_list = _get_employee_emails(van_thu_employees)
 
             if email_list:
-                detail_url = self.get_form_url()
+                doc = self.office_document_id
+                detail_url = doc.get_form_url()
                 subject = f"Văn bản đã được duyệt (bỏ qua bút phê): {self.trich_yeu[:50]}..." if self.trich_yeu else "Văn bản đã được duyệt"
                 body_lines = [
                     f"<b>Số văn bản:</b> {self.so_vb or 'Chưa có số'}",
