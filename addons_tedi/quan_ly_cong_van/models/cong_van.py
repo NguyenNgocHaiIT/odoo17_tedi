@@ -1895,6 +1895,15 @@ class OfficeDocument(models.Model):
         self.ensure_one()
         self.tt_vb = 'cho_phan_phat'
 
+        user = self.env.user
+        is_thua_lenh = user.has_group('quan_ly_cong_van.group_thua_lenh')
+        if is_thua_lenh:
+            # Trả về action để chuyển về trang trước
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'history_back',
+            }
+
     @api.depends('tt_vb', 'co_the_but_phe_cong_van_di')
     def _compute_show_skip_button(self):
         user = self.env.user

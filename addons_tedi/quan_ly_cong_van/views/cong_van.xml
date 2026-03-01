@@ -54,7 +54,9 @@
                         <button name="khong_dat" string="Yêu cầu chỉnh sửa" type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu_don_vi"
                                 invisible="tt_vb != 'cho_duyet' or document_type != 'incoming_internal'"/>
-
+                        <button name="skip"
+                                string="Bỏ qua bút phê" type="object"
+                                invisible="tt_vb != 'cho_but_phe' or not show_skip_button"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
                                 invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_den"/>
 
@@ -91,6 +93,7 @@
                         <field name="co_the_but_phe_cong_van_den" invisible="1"/>
                         <field name="show_phan_phat_button" invisible="1"/>
                         <field name="is_van_thu_don_vi" invisible="1"/>
+                        <field name="show_skip_button" invisible="1"/>
                         <group col="12">
                             <group colspan="5">
                                 <field name="is_cong_van_bo_sung" string="Là công văn bổ sung" invisible="not (is_van_thu or not_is_van_thu or is_van_thu_don_vi)"/>
@@ -343,6 +346,9 @@
                                 type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu_don_vi"
                                 invisible="tt_vb != 'da_duyet' or document_type != 'outgoing_internal'"/>
+                        <button name="skip"
+                                string="Bỏ qua bút phê" type="object"
+                                invisible="tt_vb != 'cho_but_phe' or not show_skip_button"/>
 
                         <button name="but_phe_action" string="Bút phê" type="object"
                                 invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_di"/>
@@ -618,6 +624,9 @@
                                 type="object"
                                 groups="base.group_system, quan_ly_cong_van.group_van_thu"
                                 invisible="tt_vb != 'da_duyet' or document_type != 'resolution'"/>
+                        <button name="skip"
+                                string="Bỏ qua bút phê" type="object"
+                                invisible="tt_vb != 'cho_but_phe' or not show_skip_button"/>
                         <button name="but_phe_action" string="Bút phê" type="object"
                                 invisible="not (tt_vb in ('cho_but_phe','cho_phan_phat','cho_xu_ly','phat_hanh')) or not co_the_but_phe_cong_van_di or document_type != 'resolution'"/>
                         <button name="phan_phat" string="Phân phát" type="object"
