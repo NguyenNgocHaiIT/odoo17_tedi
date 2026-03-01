@@ -1,0 +1,39 @@
+# Vietnamese translations
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#. module: fleet
+#: model:ir.actions.act_window,name:fleet.fleet_vehicle_model_brand_action
+msgid "Manufacturers"
+msgstr "Hãng xe"
+
+#. module: fleet
+#: model:ir.actions.act_window,name:fleet.fleet_vehicle_model_action
+msgid "Models"
+msgstr "Mẫu xe"
+
+#. module: fleet
+#: model:ir.actions.act_window,name:fleet.fleet_vehicle_model_category_action
+msgid "Categories"
+msgstr "Nhóm xe"
+
+#. module: fleet
+#: model:ir.actions.act_window,name:fleet.fleet_vehicle_action
+msgid "Vehicles"
+msgstr "Danh mục xe"
+
+#. module: fleet
+#: model:ir.actions.act_window,name:fleet.fleet_vehicle_log_services_action
+msgid "Services"
+msgstr "Sửa chữa"
+
+#. module: fleet
+#: model:ir.actions.act_window,name:fleet.fleet_vehicle_log_contract_action
+msgid "Contracts"
+msgstr "Hợp đồng"
+
+#. module: fleet
+#: model:ir.actions.act_window,name:fleet.fleet_costs_reporting_action
+msgid "Cost Analysis"
+msgstr "Phân tích chi phí"

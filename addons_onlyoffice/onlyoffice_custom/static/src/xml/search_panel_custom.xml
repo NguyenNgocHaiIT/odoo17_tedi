@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Template cho category với nút thêm -->
+    <t t-name="custom_documents.SearchPanel.Category">
+        <!-- Kế thừa từ template gốc -->
+        <t t-call="documents.SearchPanel.Category">
+            <!-- Thêm nút vào mỗi tiêu đề folder -->
+            <xpath expr="//button[hasclass('o_toggle_fold')]" position="after">
+                <!-- Nút đơn giản không chức năng -->
+                <button class="btn btn-sm btn-outline-secondary ms-2 simple-button"
+                        t-att-disabled="true"
+                        t-attf-title="Nút ví dụ cho {{ value.display_name }}">
+                    <span class="fa fa-star"/>
+                </button>
+            </xpath>
+        </t>
+    </t>
+
+    <!-- Hoặc thêm nút dưới tiêu đề -->
+    <t t-name="custom_documents.SearchPanel.Category.UnderTitle">
+        <t t-call="documents.SearchPanel.Category">
+            <xpath expr="//div[hasclass('o_search_panel_label')]" position="after">
+                <!-- Nút trên dòng riêng -->
+                <div class="simple-button-container ms-3 mt-1">
+                    <button class="btn btn-sm btn-outline-secondary"
+                            t-att-disabled="true">
+                        <span class="fa fa-heart me-1"/> Ví dụ
+                    </button>
+                </div>
+            </xpath>
+        </t>
+    </t>
+
+</templates>
