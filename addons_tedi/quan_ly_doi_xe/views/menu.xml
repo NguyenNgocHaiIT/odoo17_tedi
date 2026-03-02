@@ -17,11 +17,18 @@
                   sequence="10"
                   groups="base.group_user"/>
 
+        <menuitem id="menu_business_trip_registration"
+                  name="Lịch công tác"
+                  parent="fleet.menu_root"
+                  action="action_business_trip_registration"
+                  sequence="11"
+                  groups="base.group_user"/>
+
         <menuitem id="menu_fleet_vehicle_repair_custom"
                   name="Sửa chữa xe"
                   parent="fleet.menu_root"
                   action="fleet.fleet_vehicle_log_services_action"
-                  sequence="11"
+                  sequence="12"
                   groups="base.group_user"/>
 
         <menuitem id="menu_fleet_vehicle_odometer_monthly_report"
