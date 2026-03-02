@@ -55,6 +55,31 @@ class Calendar(models.Model):
     )
 
     chu_tri = fields.Many2one("hr.employee", string="Người chủ trì")
+
+    def _default_lanh_dao_don_vi(self):
+        employee = self.env.user.employee_id
+        if not employee or not employee.department_id:
+            return []
+
+        # Leo lên phòng ban gốc
+        dept = employee.department_id
+        while dept.parent_id:
+            dept = dept.parent_id
+
+        # Lấy danh sách manager
+        managers = dept.manager_ids if hasattr(dept, 'manager_ids') else self.env['hr.employee']
+
+        return managers.ids
+
+    lanh_dao_don_vi = fields.Many2many(
+        "hr.employee",
+        'calendar_lanh_dao_don_vi_rel',
+        'calendar_event_id',
+        'employee_id',
+        string="Lãnh đạo đơn vị",
+        default=_default_lanh_dao_don_vi
+    )
+
     # Thêm domain cho field room
     room = fields.Many2one(
         'room.room',
@@ -104,6 +129,7 @@ class Calendar(models.Model):
         compute="_compute_can_complete_meeting",
         store=False
     )
+
 
     @api.depends_context('uid')
     @api.depends('create_uid', 'state')

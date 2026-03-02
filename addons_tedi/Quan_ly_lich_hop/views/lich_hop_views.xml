@@ -107,9 +107,10 @@
                             </group>
 
                             <group>
-                                <field name="chu_tri" string="Người chủ trì" readonly="not is_current_user_creator or (state not in ('draft','pending'))" required="1"/>
                                 <field name="lanh_dao" string="Lãnh đạo" widget="many2many_tags" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
+                                <field name="chu_tri" string="Người chủ trì" readonly="not is_current_user_creator or (state not in ('draft','pending'))" required="1"/>
                                 <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
+                                 <field name="lanh_dao_don_vi" string="Lãnh đạo đơn vị" widget="many2many_tags"/>
                                 <field name="employee_ids" widget="many2many_tags"
                                        string="Người tham gia"
                                        readonly="1"/>
