@@ -4,7 +4,7 @@
         <!-- Menu gốc: Quản lý công văn -->
         <menuitem
                 id="office_document_menu_root"
-                name="Quản lý công văn"
+                name="Công văn"
                 sequence="0"
                 web_icon="quan_ly_cong_van,static/description/icon.png"/>
 
