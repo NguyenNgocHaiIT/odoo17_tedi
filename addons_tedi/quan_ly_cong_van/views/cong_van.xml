@@ -1051,19 +1051,8 @@
                             <field name="y_kien_xu_ly"/>
                             <field name="tai_lieu_kem" widget="many2many_binary"/>
                             <field name="do_khan"/>
+                            <field name="do_mat"/>
                         </group>
-                        <div class="row">
-                            <div class="col-3"/>
-                            <div class="col-3">
-                                <group>
-                                    <field name="quan_trong"/>
-                                </group>
-                            </div>
-                            <div class="col-3">
-                                <group>
-                                    <field name="do_mat"/>
-                                </group>
-                            </div>
                             <!--<div class="col-3">
                                 <group>
                                     <field name="da_giai_quyet"/>
@@ -1074,7 +1063,6 @@
                                     <field name="thong_bao_cho_van_thu"/>
                                 </group>
                             </div>-->
-                        </div>
                     </sheet>
                     <footer>
                         <button name="but_phe" string="Ghi ý kiến" type="object"/>
@@ -1258,19 +1246,8 @@
                             <field name="y_kien_xu_ly"/>
                             <field name="tai_lieu_kem" widget="many2many_binary"/>
                             <field name="do_khan"/>
+                            <field name="do_mat"/>
                         </group>
-                        <div class="row">
-                            <div class="col-3"/>
-                            <div class="col-3">
-                                <group>
-                                    <field name="quan_trong"/>
-                                </group>
-                            </div>
-                            <div class="col-3">
-                                <group>
-                                    <field name="do_mat"/>
-                                </group>
-                            </div>
                             <!--<div class="col-3">
                                 <group>
                                     <field name="da_giai_quyet"/>
@@ -1281,7 +1258,6 @@
                                     <field name="thong_bao_cho_van_thu"/>
                                 </group>
                             </div>-->
-                        </div>
                     </sheet>
                     <footer>
                         <button name="action_duyet" string="Duyệt và bút phê" type="object"/>
