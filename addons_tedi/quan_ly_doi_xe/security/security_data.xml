@@ -42,7 +42,19 @@
             <field name="domain_force">[(1, '=', 1)]</field> <!-- Có thể xem tất cả -->
             <field name="groups" eval="[(4, ref('base.group_user'))]"/>
             <field name="perm_read">1</field>
-            <field name="perm_write">0</field> <!-- Mặc định không thể sửa phiếu người khác -->
+            <field name="perm_write">1</field> <!-- Mặc định không thể sửa phiếu người khác -->
+            <field name="perm_create">1</field>
+            <field name="perm_unlink">0</field> <!-- Mặc định không thể xóa phiếu người khác -->
+        </record>
+
+        <!-- Rule 1: Người dùng bình thường chỉ có thể thêm/sửa/xóa phiếu mình tạo -->
+        <record id="business_trip_registration_user_rule" model="ir.rule">
+            <field name="name">business trip registration - User Rule</field>
+            <field name="model_id" ref="model_business_trip_registration"/>
+            <field name="domain_force">[(1, '=', 1)]</field> <!-- Có thể xem tất cả -->
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="perm_read">1</field>
+            <field name="perm_write">1</field> <!-- Mặc định không thể sửa phiếu người khác -->
             <field name="perm_create">1</field>
             <field name="perm_unlink">0</field> <!-- Mặc định không thể xóa phiếu người khác -->
         </record>

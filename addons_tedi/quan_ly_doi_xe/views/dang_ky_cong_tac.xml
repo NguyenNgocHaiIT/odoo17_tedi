@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+
+        <record id="view_business_trip_registration_tree" model="ir.ui.view">
+             <field name="name">business.trip.registration.tree</field>
+             <field name="model">business.trip.registration</field>
+             <field name="arch" type="xml">
+                <tree string="Phiếu đăng ký công tác"
+                      default_order="create_date desc"
+                      decoration-muted="state in ['draft', 'cancel']"
+                      decoration-warning="state == 'submitted'"
+                      decoration-danger="state in ['refused']"
+                      decoration-success="state == 'approved'">
+
+                    <field name="code"/>
+                    <field name="create_date" string="Ngày tạo" optional="show"/>
+                    <field name="requester_id"/>
+                    <field name="start_date"/>
+                    <field name="phuong_tien"/>
+                    <field name="state" widget="badge"
+                           decoration-muted="state in ['draft', 'cancel']"
+                           decoration-warning="state == 'submitted'"
+                           decoration-danger="state in ['refused']"
+                           decoration-success="state == 'approved'"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_business_trip_registration_form" model="ir.ui.view">
+            <field name="name">business.trip.registration.form</field>
+            <field name="model">business.trip.registration</field>
+            <field name="arch" type="xml">
+                <form string="Phiếu đăng ký công tác">
+                    <header>
+                        <button name="action_submit" string="Gửi duyệt" type="object" class="oe_highlight" invisible="state != 'draft' or is_manager_department"/>
+                        <button name="action_manager_approve" string="Duyệt yêu cầu" type="object" class="oe_highlight"  invisible="state != 'submitted'  or not is_manager_department"/>
+                        <button name="action_manager_refuse" string="Từ chối" type="object"  invisible="state != 'submitted'  or not is_manager_department"/>
+
+                        <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,assigned,waiting_return,done"/>
+                    </header>
+
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="code" readonly="1" class="me-2"/>
+                                <field name="state" widget="badge"
+                                       decoration-info="state == 'draft'"
+                                       decoration-warning="state == 'submitted'"
+                                       decoration-success="state == 'approved'"
+                                       decoration-danger="state in ['refused']"
+                                       class="ms-2"/>
+                            </h1>
+                        </div>
+
+                        <group>
+                            <group>
+
+                                <field name="is_manager_department" invisible="1"/>
+                                <field name="requester_id" string="Người đề nghị" readonly="1" force_save="1" />
+                                <field name="trip_type" readonly="1"/>
+                                <field name="num_passengers" readonly="state != 'draft'"/>
+                                <field name="attachment_ids" widget="many2many_binary" />
+                                <field name="work_content" placeholder="Mô tả..." readonly="state != 'draft'"/>
+                            </group>
+                            <group>
+                                <label for="start_date" string="Thời gian"/>
+                                <div class="o_row">
+                                    <field name="start_date" widget="daterange" options="{'related_end_date': 'end_date'}" readonly="state != 'draft'"/>
+                                    <i class="fa fa-long-arrow-right mx-2" title="-"/>
+                                    <field name="end_date"
+                                               widget="daterange"
+                                               options="{'related_start_date': 'start_date'}"
+                                               readonly="(state in ['no_car','done']) or (state != 'draft')"
+                                               force_save="1"/>
+                                </div>
+                                <field name="destination" readonly="state != 'draft'"/>
+                                <field name="phuong_tien" readonly="state != 'draft'"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_business_trip_registration_calendar" model="ir.ui.view">
+            <field name="name">business.trip.registration.calendar</field>
+            <field name="model">business.trip.registration</field>
+            <field name="arch" type="xml">
+                <calendar string="Lịch công tác"
+                          date_start="start_date"
+                          date_stop="end_date"
+                          mode="week"
+                          scales="day,week,month"
+                          color="requester_id"
+                          event_open_popup="true"
+                          quick_create="false">
+
+                    <field name="requester_id" widget="many2one_avatar_user"/>
+                    <field name="state"/>
+                </calendar>
+            </field>
+        </record>
+
+        <record id="action_business_trip_registration" model="ir.actions.act_window">
+            <field name="name">Lịch công tác</field>
+            <field name="res_model">business.trip.registration</field>
+            <field name="view_mode">tree,calendar,form</field>
+            <field name="view_ids" eval="[
+                (5, 0, 0),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_business_trip_registration_tree')}),
+                (0, 0, {'view_mode': 'calendar', 'view_id': ref('view_business_trip_registration_calendar')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_business_trip_registration_form')})
+            ]"/>
+            <field name="context">{'search_default_week': 1}</field> <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">Chưa có lịch đăng ký công tác nào.</p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

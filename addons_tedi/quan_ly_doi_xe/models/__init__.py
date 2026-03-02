@@ -3,3 +3,4 @@ from . import phieu_dang_ky_xe
 from . import sua_chua_xe
 from . import bao_cao_quang_duong
 from . import chi_phi_phat_sinh
+from . import phieu_dang_ky_cong_tac
