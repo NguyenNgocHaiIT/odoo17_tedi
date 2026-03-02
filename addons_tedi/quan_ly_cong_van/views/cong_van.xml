@@ -6,7 +6,7 @@
             <field name="name">office_document_ingoing_tree</field>
             <field name="model">office.document</field>
             <field name="arch" type="xml">
-                <tree default_order="create_date desc" decoration-bf="chua_doc == True">
+                <tree default_order="create_date desc" decoration-bf="chua_doc">
                     <field name="so_den_tong_hop" class="o_ellipsis"/>
                     <field name="trich_yeu" class="o_ellipsis"/>
                     <field name="project_id" class="o_ellipsis"/>
@@ -20,7 +20,8 @@
                            decoration-info="tt_vb in ('cho_phan_phat', 'huy')"
                            decoration-danger="tt_vb in ('cho_but_phe')"/>
 
-                    <field name="chua_doc" column_invisible="1"/>
+                    <field name="chua_doc" />
+                    <field name="user_da_xem" widget="many2many_tags"/>
                 </tree>
             </field>
         </record>

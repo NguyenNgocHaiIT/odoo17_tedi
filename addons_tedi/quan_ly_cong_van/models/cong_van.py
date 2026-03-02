@@ -1485,12 +1485,24 @@ class OfficeDocument(models.Model):
 
     def read(self, field_list=None, load='_classic_read'):
         res = super().read(field_list, load)
-        if 'detail2' in (field_list or []):
-            for doc in self:
-                details = doc.detail2.filtered(lambda d: d.nguoi_nhap_y_kien.user_id.id == self.env.user.id)
+
+        current_user = self.env.user
+
+        for doc in self:
+            # Logic cũ: cập nhật view_time cho detail2
+            if 'detail2' in (field_list or []):
+                for doc in self:
+                    # Chỉ thêm vào user_da_xem khi là form view
+                    if current_user not in doc.user_da_xem:
+                        doc.sudo().write({
+                            'user_da_xem': [(4, current_user.id)]
+                        })
+
+                details = doc.detail2.filtered(lambda d: d.nguoi_nhap_y_kien.user_id.id == current_user.id)
                 for detail in details:
                     if not detail.view_time:
                         detail.sudo().write({'view_time': fields.Datetime.now()})
+
         return res
 
     def unlink(self):
@@ -2386,45 +2398,44 @@ class OfficeDocument(models.Model):
             is_in_manager_ids = (current_employee.id in dept.manager_ids.ids)
             rec.is_truong_va_pho_don_vi = is_manager_id or is_in_manager_ids
 
+    # Thêm trường many2many để lưu người dùng đã xem văn bản
+    user_da_xem = fields.Many2many(
+        'res.users',
+        'office_document_user_da_xem_rel',
+        'document_id', 'user_id',
+        string='Người dùng đã xem',
+        help='Danh sách người dùng đã xem văn bản này'
+    )
+
     chua_doc = fields.Boolean(
         string='Chưa đọc',
         compute='_compute_chua_doc',
-        store=True,
+        store=False,
         search='_search_chua_doc'
     )
 
-    @api.depends('detail2', 'detail2.view_time', 'detail2.nguoi_nhap_y_kien')
+    @api.depends('user_da_xem')
     def _compute_chua_doc(self):
         current_user = self.env.user
-        current_employee = self.env['hr.employee'].search([('user_id', '=', current_user.id)], limit=1)
 
         for record in self:
-            if not current_employee:
-                record.chua_doc = False
-                continue
-            chua_doc_records = record.detail2.filtered(
-                lambda d: d.nguoi_nhap_y_kien.id == current_employee.id and not d.view_time
-            )
-            record.chua_doc = bool(chua_doc_records)
+            # Nếu user hiện tại có trong danh sách đã xem thì chua_doc = False
+            # Ngược lại, nếu chưa có thì chua_doc = True
+            record.chua_doc = current_user not in record.user_da_xem
 
     def _search_chua_doc(self, operator, value):
-        """Hỗ trợ tìm kiếm theo trường chua_doc"""
+        """Hỗ trợ tìm kiếm theo trường chua_doc dựa trên user_da_xem"""
         current_user = self.env.user
-        current_employee = self.env['hr.employee'].search([('user_id', '=', current_user.id)], limit=1)
 
-        if not current_employee:
+        if operator not in ['=', '!='] or not isinstance(value, bool):
             return [('id', '=', False)]
 
-        # Tìm các document có detail2 của user hiện tại và chưa có view_time
-        documents = self.search([
-            ('detail2.nguoi_nhap_y_kien', '=', current_employee.id),
-            ('detail2.view_time', '=', False)
-        ])
-
         if value:
-            return [('id', 'in', documents.ids)]
+            # Tìm các document mà user hiện tại KHÔNG có trong user_da_xem
+            return [('user_da_xem', 'not in', [current_user.id])]
         else:
-            return [('id', 'not in', documents.ids)]
+            # Tìm các document mà user hiện tại CÓ trong user_da_xem
+            return [('user_da_xem', 'in', [current_user.id])]
 
 class ChuyenLanhDaoWizard(models.TransientModel):
     _name = 'office.document.chuyen.lanh.dao'
@@ -2840,10 +2851,10 @@ class DuyetVanBanDiWizard(models.TransientModel):
             if email_list:
                 doc = self.office_document_id
                 detail_url = doc.get_form_url()
-                subject = f"Văn bản đã được duyệt (bỏ qua bút phê): {self.trich_yeu[:50]}..." if self.trich_yeu else "Văn bản đã được duyệt"
+                subject = f"Văn bản đã được duyệt (bỏ qua bút phê): {doc.trich_yeu[:50]}..." if doc.trich_yeu else "Văn bản đã được duyệt"
                 body_lines = [
-                    f"<b>Số văn bản:</b> {self.so_vb or 'Chưa có số'}",
-                    f"<b>Trích yếu:</b> {self.trich_yeu or 'Không có'}",
+                    f"<b>Số văn bản:</b> {doc.so_vb or 'Chưa có số'}",
+                    f"<b>Trích yếu:</b> {doc.trich_yeu or 'Không có'}",
                     f"<b>Người duyệt:</b> {self.env.user.name}",
                     f"<b>Thời gian:</b> {fields.Datetime.now().strftime('%d/%m/%Y %H:%M')}",
                     f"<b>Ghi chú:</b> Đã duyệt và bỏ qua bút phê, chuyển sang chờ phân phát.",
