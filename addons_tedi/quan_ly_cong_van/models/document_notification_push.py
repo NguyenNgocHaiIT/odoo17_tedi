@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Tích hợp Web Push Notification vào module Quản lý Công văn.
-
-Cách cài đặt:
-1. Copy file này vào models/ của module quan_ly_cong_van
-2. Thêm vào models/__init__.py:  from . import office_document_push
-3. Thêm vào __manifest__.py 'depends': [..., 'web_push_notification']
 """
 
 from odoo import models, fields, api
