@@ -1533,7 +1533,7 @@ class Calendar(models.Model):
             try:
                 meeting._send_30_minutes_reminder()
             except Exception as e:
-                _logger.error(f"Lỗi gửi thông báo nhắc nhở cho cuộc họp {meeting.id}: {str(e)}")
+                _logger.error(f"Lỗi gửi thông báo nhắc nhở cho cuộc  {meeting.id}: {str(e)}")
 
     def _send_30_minutes_reminder(self):
         """
