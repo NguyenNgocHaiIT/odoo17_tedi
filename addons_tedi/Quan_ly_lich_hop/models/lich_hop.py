@@ -55,6 +55,31 @@ class Calendar(models.Model):
     )
 
     chu_tri = fields.Many2one("hr.employee", string="Người chủ trì")
+
+    def _default_lanh_dao_don_vi(self):
+        employee = self.env.user.employee_id
+        if not employee or not employee.department_id:
+            return []
+
+        # Leo lên phòng ban gốc
+        dept = employee.department_id
+        while dept.parent_id:
+            dept = dept.parent_id
+
+        # Lấy danh sách manager
+        managers = dept.manager_ids if hasattr(dept, 'manager_ids') else self.env['hr.employee']
+
+        return managers.ids
+
+    lanh_dao_don_vi = fields.Many2many(
+        "hr.employee",
+        'calendar_lanh_dao_don_vi_rel',
+        'calendar_event_id',
+        'employee_id',
+        string="Lãnh đạo đơn vị",
+        default=_default_lanh_dao_don_vi
+    )
+
     # Thêm domain cho field room
     room = fields.Many2one(
         'room.room',
@@ -84,6 +109,9 @@ class Calendar(models.Model):
         default=True,
         store=False
     )
+    check_department_status = fields.Boolean(
+        default=False
+    )
     loai_cuoc_hop = fields.Selection([
         ('online', 'Họp online'),
         ('offline', 'Họp offline'),
@@ -104,6 +132,50 @@ class Calendar(models.Model):
         compute="_compute_can_complete_meeting",
         store=False
     )
+    is_chu_tri = fields.Boolean(
+        string="Is người chủ trì",
+        compute="_compute_is_chu_tri",
+        store=False
+    )
+
+    def _compute_is_chu_tri(self):
+        current_user = self.env.user
+        current_employee = current_user.employee_id
+
+        for rec in self:
+            rec.is_chu_tri = False
+            # Check manager của phòng ban gốc
+            if current_employee == rec.chu_tri:
+                rec.is_chu_tri = True
+
+    is_manager_department = fields.Boolean(
+        string="Is Manager Department",
+        compute="_compute_is_manager_department",
+        store=False
+    )
+
+    def _compute_is_manager_department(self):
+        current_user = self.env.user
+        current_employee = current_user.employee_id
+
+        for rec in self:
+            rec.is_manager_department = False
+
+            # Không có employee hoặc không có phòng ban
+            if not current_employee or not current_employee.department_id:
+                continue
+
+            # Lấy phòng ban hiện tại của employee
+            dept = current_employee.department_id
+
+            # Leo lên phòng ban gốc (root department)
+            while dept.parent_id:
+                dept = dept.parent_id
+
+            # Check manager của phòng ban gốc
+            if dept.manager_id and dept.manager_id.id == current_employee.id:
+                rec.is_manager_department = True
+
 
     @api.depends_context('uid')
     @api.depends('create_uid', 'state')
@@ -495,7 +567,7 @@ class Calendar(models.Model):
         if user_employee and user_employee.department_id and user_employee.department_id.manager_id:
             manager_employees |= user_employee.department_id.manager_id
 
-        # GỬI EMAIL NHÓM CHO TẤT CẢ TRƯỞNG ĐƠN VỊ
+        # GỬI EMAIL NHÓM CHO  TRƯỞNG ĐƠN VỊ
         if manager_employees:
             try:
                 # Thu thập email
@@ -577,7 +649,7 @@ class Calendar(models.Model):
                     self.env['mail.mail'].sudo().create({
                         'subject': subject,
                         'email_to': email_to,
-                        'email_from': self.env.user.email or self.env.company.email,
+                        'email_from': user_employee.work_email,
                         'body_html': body_html,
                     }).send()
 
@@ -682,10 +754,134 @@ class Calendar(models.Model):
         # Cập nhật trạng thái
         self.write({'state': 'canceled'})
 
+    def approve_department(self):
+        """Quản lý duyệt: Gửi thông báo và đổi trạng thái"""
+        self.ensure_one()
+        if not self.is_manager_department:
+            raise UserError("Bạn không có quyền duyệt nội dung lịch họp này (Khác phòng ban hoặc thiếu quyền).")
+
+        odoobot = self.env.ref('base.user_root')
+        odoobot_employee = self.env['hr.employee'].search([('user_id', '=', odoobot.id)], limit=1)
+        web_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        self.write({'check_department_status': True})
+        email_nguoi_tao = ''
+        # ✅ THÊM: Người tạo phiếu (nếu có employee record)
+        creator_employee = self.env['hr.employee'].search([('user_id', '=', self.create_uid.id)], limit=1)
+        if creator_employee:
+            email_nguoi_tao = creator_employee.work_email
+        try:
+          email_chu_tri = ''
+          if self.chu_tri:
+            employee_chu_tri = self.env['hr.employee'].search([('id', '=', self.chu_tri.id)], limit=1)
+            if employee_chu_tri:
+                # Tạo danh sách người nhận (tất cả trong 1 email)
+                email_chu_tri = employee_chu_tri.work_email
+                email_to = email_chu_tri
+                names_str = employee_chu_tri.name
+
+                # Thông tin cuộc họp
+                time_str = f"{self.start.strftime('%H:%M %d/%m/%Y')} → {self.stop.strftime('%H:%M %d/%m/%Y')}" if self.start and self.stop else ""
+                event_url = f"{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
+                approver_name = self.env.user.name
+
+                # Tạo HTML email chuyên nghiệp
+                subject = f"[CẦN PHÊ DUYỆT] Lịch họp: {self.name}"
+                event_url = f"{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
+
+                body_html = f"""
+                    <div style="font-family: Arial, sans-serif; padding: 20px;">
+                        <div style="border-left:4px solid #f39c12;padding-left:15px;background:#fff8e1; margin-bottom: 20px;">
+                            <h3 style="color:#d35400; margin-top:0;">⚠️ YÊU CẦU PHÊ DUYỆT LỊCH HỌP</h3>
+                        </div>
+
+                        <p>Kính gửi: {names_str},</p>
+                        <p>Nhân viên <b>{creator_employee.name}</b> vừa gửi yêu cầu phê duyệt lịch họp và đã được trưởng đơn vị duyệt.</p>
+
+                        <p><b>Thông tin cuộc họp cần duyệt:</b></p>
+                        <table style="border-collapse:collapse;width:100%; margin-bottom: 20px;">
+                            <tr style="background:#f8f9fa;">
+                                <td style="border:1px solid #ddd;padding:8px; width:30%;"><b>Chủ đề</b></td>
+                                <td style="border:1px solid #ddd;padding:8px;">{self.name}</td>
+                            </tr>
+                            <tr>
+                                <td style="border:1px solid #ddd;padding:8px;"><b>Thời gian</b></td>
+                                <td style="border:1px solid #ddd;padding:8px;">{time_str}</td>
+                            </tr>
+                            <tr style="background:#f8f9fa;">
+                                <td style="border:1px solid #ddd;padding:8px;"><b>Người chủ trì</b></td>
+                                <td style="border:1px solid #ddd;padding:8px;">{self.chu_tri.name if self.chu_tri else ''}</td>
+                            </tr>
+                            <tr>
+                                <td style="border:1px solid #ddd;padding:8px;"><b>Đơn vị tham gia</b></td>
+                                <td style="border:1px solid #ddd;padding:8px;">
+                                    {', '.join(dept.name for dept in self.don_vi) if self.don_vi else ''}
+                                </td>
+                            </tr>
+                            <tr style="background:#f8f9fa;">
+                                <td style="border:1px solid #ddd;padding:8px;"><b>Người tạo</b></td>
+                                <td style="border:1px solid #ddd;padding:8px;">{creator_employee.name}</td>
+                            </tr>
+                        </table>
+
+                        <div style="background:#e8f4fd; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                            <p><b>📋 Hướng dẫn:</b></p>
+                            <ul>
+                                <li>Vui lòng xem xét và phê duyệt lịch họp này</li>
+                                <li>Có thể từ chối nếu lịch họp không phù hợp</li>
+                                <li>Thời gian xử lý đề xuất: Trong vòng 24 giờ</li>
+                            </ul>
+                        </div>
+
+                        <p style="text-align: center; margin: 20px 0;">
+                            <a href="{event_url}" 
+                               style="background:#3498db;color:white;padding:10px 20px;border-radius:5px;
+                                      text-decoration:none;font-weight:bold;display:inline-block;">
+                                Xem & Phê duyệt ngay
+                            </a>
+                        </p>
+
+                        <p style="color:#7f8c8d;font-size:12px;margin-top:20px;">
+                            <i>Vui lòng phê duyệt hoặc từ chối lịch họp này trong vòng 24 giờ.</i>
+                        </p>
+                    </div>
+                    """
+
+                # Gửi 1 email cho tất cả người liên quan
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject,
+                    'body_html': body_html,
+                    'email_to': email_to,
+                    'email_cc': email_nguoi_tao,
+                    'email_from': self.env.user.email or self.env.company.email,
+                }).send()
+
+                _logger.info(f"✅ Đã gửi email thông báo mời họp đến {len(email_chu_tri)} người liên quan")
+
+        except Exception as e:
+                _logger.error(f"Lỗi gửi email mời họp nhóm: {str(e)}")
+
+            # Gửi popup notification (giữ nguyên)
+
+            # Popup với nội dung khác nhau
+        if self.create_uid.id == creator_employee.id:
+                # Thông báo đặc biệt cho người tạo
+                self.env['bus.bus']._sendone(
+                    creator_employee.user_id.partner_id,
+                    'simple_notification',
+                    {
+                        'title': '✅ Lịch họp đã được duyệt trưởng đơn vị duyệt',
+                        'message': f"Lịch họp '{self.name}' của bạn đã được trưởng đơn vị phê duyệt",
+                        'sticky': True,
+                        'type': 'success',
+                    }
+                )
+
+                return True
+
     def approve(self):
         """Quản lý duyệt: Gửi thông báo và đổi trạng thái"""
         self.ensure_one()
-        if not self.can_approve_meeting:
+        if not self.is_chu_tri:
             raise UserError("Bạn không có quyền duyệt nội dung lịch họp này (Khác phòng ban hoặc thiếu quyền).")
 
         odoobot = self.env.ref('base.user_root')
@@ -694,25 +890,43 @@ class Calendar(models.Model):
 
         # 1. Đánh dấu đã duyệt
         self.write({'state': 'approved'})
+        lichphonghop = self.create_lich_phong_hop()
+
 
         # 2. Lấy danh sách cần thông báo
         all_recipients = self.env['hr.employee']  # ✅ TẠO DANH SÁCH TẤT CẢ NGƯỜI NHẬN
-
-        # Thêm tất cả người tham gia vào danh sách
-        if self.employee_ids:
-            all_recipients |= self.employee_ids
-        if self.lanh_dao:
-            all_recipients |= self.lanh_dao
-
-        # ✅ THÊM: Người tạo phiếu (nếu có employee record)
-        creator_employee = self.env['hr.employee'].search([('user_id', '=', self.create_uid.id)], limit=1)
-        if creator_employee:
-            all_recipients |= creator_employee
-
-        # ✅ THÊM: Trưởng đơn vị tham gia
+        # Thêm tất cả trưởng đơn vị được chọn vào danh sách
         for dept in self.don_vi:
             if dept.manager_id:
                 all_recipients |= dept.manager_id
+
+        group = self.env.ref('Quan_ly_lich_hop.group_meeting_room_manager', raise_if_not_found=False)
+        if not group or not group.users:
+            _logger.warning("Không tìm thấy nhóm Quản lý phòng họp")
+            return
+
+        for user in group.users:
+            if user.id:
+                employee_ql_doi_xe = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+                if employee_ql_doi_xe:
+                    all_recipients |= employee_ql_doi_xe
+
+        cc_email_list = []
+        # ✅ THÊM: Người tạo phiếu (nếu có employee record)
+        creator_employee = self.env['hr.employee'].search([('user_id', '=', self.create_uid.id)], limit=1)
+        if creator_employee:
+            if creator_employee.work_email:
+                cc_email_list.append(creator_employee.work_email)
+        if self.chu_tri:
+            if self.chu_tri.work_email:
+                cc_email_list.append(self.chu_tri.work_email)
+        for employee in self.lanh_dao:
+            if employee.work_email:
+                cc_email_list.append(employee.work_email)
+        cc_email = ''
+        if cc_email_list:
+            # Tạo danh sách người nhận (tất cả trong 1 email)
+            cc_email = ', '.join(cc_email_list)
 
         # Loại bỏ trùng lặp và chỉ lấy những người có email
         all_recipients = all_recipients.filtered(lambda emp: emp.work_email)
@@ -737,7 +951,8 @@ class Calendar(models.Model):
 
                     # Thông tin cuộc họp
                     time_str = f"{self.start.strftime('%H:%M %d/%m/%Y')} → {self.stop.strftime('%H:%M %d/%m/%Y')}" if self.start and self.stop else ""
-                    event_url = f"{web_url}/web#id={self.id}&model=calendar.event&view_type=form"
+                    event_url = f"{web_url}/web#id={self.id}&action=335&model=calendar.event&view_type=form"
+                    phong_hop_event_url = f"{web_url}/web#id={lichphonghop.id}&action=337&model=calendar.event&view_type=form"
                     approver_name = self.env.user.name
 
                     subject = f"[THÔNG BÁO MỜI HỌP] {self.name}"
@@ -791,7 +1006,16 @@ class Calendar(models.Model):
                                    style="background: #3498db; color: white; padding: 15px 30px; 
                                           text-decoration: none; border-radius: 5px; font-weight: bold; 
                                           font-size: 16px; display: inline-block;">
-                                    📅 XEM CHI TIẾT & XÁC NHẬN THAM DỰ
+                                     Xem chi tiết lịch họp
+                                </a>
+                            </div>
+                            
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="{phong_hop_event_url}" 
+                                   style="background: #3498db; color: white; padding: 15px 30px; 
+                                          text-decoration: none; border-radius: 5px; font-weight: bold; 
+                                          font-size: 16px; display: inline-block;">
+                                  Xem lịch phòng họp
                                 </a>
                             </div>
 
@@ -816,6 +1040,7 @@ class Calendar(models.Model):
                         'subject': subject,
                         'body_html': body_html,
                         'email_to': email_to,
+                        'email_cc': cc_email,
                         'email_from': self.env.user.email or self.env.company.email,
                     }).send()
 
@@ -856,6 +1081,7 @@ class Calendar(models.Model):
                 )
 
         return True
+
 
     def action_approve_room(self):
         """Duyệt phòng họp và gửi thông báo cho người tạo"""
@@ -1188,6 +1414,20 @@ class Calendar(models.Model):
             }
         }
 
+    def create_lich_phong_hop(self):
+        self.ensure_one()
+        calendar_event = self.env['calendar.event'].create({
+            'name': self.name,
+            'start_stop': self.start_stop,
+            'chu_tri': self.chu_tri.id if self.chu_tri else False,
+            'so_nguoi_tham_gia': self.so_nguoi_tham_gia,
+            'lanh_dao': [(6, 0, self.lanh_dao.ids)],
+            'don_vi': [(6, 0, self.don_vi.ids)],
+
+        })
+
+        return calendar_event
+
     def on_TV(self): # Mở dashboard TV
         return {
             'type': 'ir.actions.act_url',
@@ -1293,7 +1533,7 @@ class Calendar(models.Model):
             try:
                 meeting._send_30_minutes_reminder()
             except Exception as e:
-                _logger.error(f"Lỗi gửi thông báo nhắc nhở cho cuộc họp {meeting.id}: {str(e)}")
+                _logger.error(f"Lỗi gửi thông báo nhắc nhở cho cuộc  {meeting.id}: {str(e)}")
 
     def _send_30_minutes_reminder(self):
         """

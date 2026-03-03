@@ -50,12 +50,23 @@
                                 class="btn-primary"
                                 invisible="not is_current_user_creator or state != 'draft'"/>
 
+                        <button name="approve_department"
+                                string="Duyệt"
+                                type="object"
+                                class="btn-primary"
+                                invisible="not can_approve_meeting or state != 'pending' or not is_manager_department or check_department_status"/>
+
+
                         <button name="approve"
                                 string="Duyệt"
                                 type="object"
                                 class="btn-primary"
-                                invisible="not can_approve_meeting or state != 'pending'"/>
-
+                                invisible="not is_chu_tri or state != 'pending' or is_manager_department"/>
+<!--                        <button name="approve"-->
+<!--                                string="Duyệt"-->
+<!--                                type="object"-->
+<!--                                class="btn-primary"-->
+<!--                                invisible="not can_approve_meeting or state != 'pending' or is_manager_department"/>-->
 
                         <button name="action_cancel"
                                 string="Huỷ"
@@ -74,7 +85,7 @@
                         <button name="action_add_participants"
                                 string="Thêm người tham gia"
                                 type="object"
-                                invisible="state in ('draft','pending') or not can_add_participants"
+                                invisible="not can_add_participants"
                                 class="btn-primary"/>
                     </header>
 
@@ -96,24 +107,28 @@
                             <group>
                                 <label for="start" string="Thời gian"/>
                                 <div style="display: flex;" >
-                                    <field name="start" class="oe_inline" style="flex:1;" readonly="not is_current_user_creator or (state not in ('draft','pending'))" required="1"/>
+                                    <field name="start" class="oe_inline" style="flex:1;" readonly="(not is_chu_tri and not is_manager_department) or (state not in ('draft','pending'))" required="1"/>
                                     <span class="o_form_label" style="padding: 0 4px;">→</span>
-                                    <field name="stop" class="oe_inline" style="flex:1;" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
+                                    <field name="stop" class="oe_inline" style="flex:1;" readonly="(not is_chu_tri and not is_manager_department) or (state not in ('draft','pending'))"/>
                                 </div>
 
-                                <field name="name" string="Nội dung" readonly="not is_current_user_creator or (state not in ('draft','pending'))" required="1"/>
-                                <field name="loai_cuoc_hop" readonly="not is_current_user_creator or (state not in ('draft','pending'))" required="1" string="Loại cuộc họp"/>
+                                <field name="name" string="Nội dung" readonly="(not is_chu_tri and not is_manager_department) or (state not in ('draft','pending'))" required="1"/>
+                                <field name="loai_cuoc_hop" readonly="(not is_chu_tri and not is_manager_department) or (state not in ('draft','pending'))" required="1" string="Loại cuộc họp"/>
                                 <field name="link_cuoc_hop" invisible="loai_cuoc_hop != 'online'"/>
                             </group>
 
                             <group>
-                                <field name="chu_tri" string="Người chủ trì" readonly="not is_current_user_creator or (state not in ('draft','pending'))" required="1"/>
-                                <field name="lanh_dao" string="Lãnh đạo" widget="many2many_tags" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
-                                <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
+                                <field name="is_manager_department" invisible="1"/>
+                                <field name="check_department_status" invisible="1"/>
+                                <field name="is_chu_tri" invisible="1"/>
+                                <field name="lanh_dao" string="Lãnh đạo" widget="many2many_tags" readonly="(not is_chu_tri and not is_manager_department) or (state not in ('draft','pending'))"/>
+                                <field name="chu_tri" string="Người chủ trì" readonly="(not is_chu_tri and not is_manager_department) or (state not in ('draft','pending'))" required="1"/>
+                                <field name="don_vi" widget="many2many_tags" string="Đơn vị tham gia" readonly="(not is_chu_tri and not is_manager_department) or (state not in ('draft','pending'))"/>
+                                 <field name="lanh_dao_don_vi" string="Lãnh đạo đơn vị"  widget="many2many_tags"/>
                                 <field name="employee_ids" widget="many2many_tags"
                                        string="Người tham gia"
                                        readonly="1"/>
-                                <field name="so_nguoi_tham_gia" readonly="not is_current_user_creator or (state not in ('draft','pending'))"/>
+                                <field name="so_nguoi_tham_gia" readonly="(not is_chu_tri and not is_manager_department) or (state not in ('draft','pending'))"/>
                             </group>
                         </group>
                     </sheet>

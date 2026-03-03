@@ -37,3 +37,9 @@
     flex: 0 0 auto !important;
     white-space: nowrap !important;
 }
+body.o_web_client.top_menu_horizontal .o_main_navbar .o_menu_brand {
+        line-height: 49px !important;
+    }
+body.list_comfortable {
+  --list-table-height: 0 !important;
+}
