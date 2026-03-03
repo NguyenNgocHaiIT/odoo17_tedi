@@ -1543,7 +1543,10 @@ class OfficeDocument(models.Model):
         )
 
         if (user.has_group('quan_ly_cong_van.group_van_thu')
-                and document_type_val in ('incoming', 'incoming_internal')):
+                and document_type_val in ('incoming', 'outgoing')):
+            vals['tt_vb'] = 'da_duyet'
+        elif (user.has_group('quan_ly_cong_van.group_van_thu_don_vi')
+                and document_type_val in ('incoming_internal', 'outgoing_internal')):
             vals['tt_vb'] = 'da_duyet'
         elif is_van_thu_loai_for_type:
             # Văn thư chuyên biệt tạo văn bản đúng loại của mình → thẳng da_duyet
@@ -1553,9 +1556,6 @@ class OfficeDocument(models.Model):
             vals['tt_vb'] = 'draft'
         elif (can_duyet_val is False and document_type_val in ('outgoing', 'outgoing_internal', 'resolution')):
             vals['tt_vb'] = 'da_duyet'
-        elif (user.has_group('quan_ly_cong_van.group_don_vi_xu_ly')
-              and document_type_val in ('incoming', 'incoming_internal')):
-            vals['tt_vb'] = 'draft'
         else:
             vals['tt_vb'] = 'draft'
 
