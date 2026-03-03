@@ -6,7 +6,7 @@
             <field name="name">office_document_ingoing_tree</field>
             <field name="model">office.document</field>
             <field name="arch" type="xml">
-                <tree default_order="create_date desc" decoration-bf="chua_doc == True">
+                <tree default_order="create_date desc" decoration-bf="chua_doc">
                     <field name="so_den_tong_hop" class="o_ellipsis"/>
                     <field name="trich_yeu" class="o_ellipsis"/>
                     <field name="project_id" class="o_ellipsis"/>
@@ -21,6 +21,7 @@
                            decoration-danger="tt_vb in ('cho_but_phe')"/>
 
                     <field name="chua_doc" column_invisible="1"/>
+                    <field name="user_da_xem" widget="many2many_tags" column_invisible="1"/>
                 </tree>
             </field>
         </record>
@@ -1050,19 +1051,8 @@
                             <field name="y_kien_xu_ly"/>
                             <field name="tai_lieu_kem" widget="many2many_binary"/>
                             <field name="do_khan"/>
+                            <field name="do_mat"/>
                         </group>
-                        <div class="row">
-                            <div class="col-3"/>
-                            <div class="col-3">
-                                <group>
-                                    <field name="quan_trong"/>
-                                </group>
-                            </div>
-                            <div class="col-3">
-                                <group>
-                                    <field name="do_mat"/>
-                                </group>
-                            </div>
                             <!--<div class="col-3">
                                 <group>
                                     <field name="da_giai_quyet"/>
@@ -1073,7 +1063,6 @@
                                     <field name="thong_bao_cho_van_thu"/>
                                 </group>
                             </div>-->
-                        </div>
                     </sheet>
                     <footer>
                         <button name="but_phe" string="Ghi ý kiến" type="object"/>
@@ -1257,19 +1246,8 @@
                             <field name="y_kien_xu_ly"/>
                             <field name="tai_lieu_kem" widget="many2many_binary"/>
                             <field name="do_khan"/>
+                            <field name="do_mat"/>
                         </group>
-                        <div class="row">
-                            <div class="col-3"/>
-                            <div class="col-3">
-                                <group>
-                                    <field name="quan_trong"/>
-                                </group>
-                            </div>
-                            <div class="col-3">
-                                <group>
-                                    <field name="do_mat"/>
-                                </group>
-                            </div>
                             <!--<div class="col-3">
                                 <group>
                                     <field name="da_giai_quyet"/>
@@ -1280,7 +1258,6 @@
                                     <field name="thong_bao_cho_van_thu"/>
                                 </group>
                             </div>-->
-                        </div>
                     </sheet>
                     <footer>
                         <button name="action_duyet" string="Duyệt và bút phê" type="object"/>

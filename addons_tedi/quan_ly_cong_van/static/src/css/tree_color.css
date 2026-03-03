@@ -29,3 +29,7 @@ body.o_web_client table.o_list_table.table-hover tbody tr.o_data_row.soft-red-ro
     white-space: nowrap !important;
     overflow: hidden !important;
 }
+
+body.o_web_client .o_content .o_list_renderer.table-responsive .o_list_table tbody tr.fw-bold td {
+    font-weight: 700 !important;
+}
