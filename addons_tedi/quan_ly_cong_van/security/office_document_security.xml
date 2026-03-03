@@ -92,16 +92,39 @@
         </record>
 
 
-        <!-- Văn thư: xem tất cả -->
+        <!-- Văn thư: xem tất cả công văn đến, công văn đi, quyết định (không xem loại chuyên biệt HĐQT/Đảng ủy/CĐ/ĐTN) -->
         <record id="office_document_rule_van_thu" model="ir.rule">
-            <field name="name">Office Document - Văn thư: xem tất cả</field>
+            <field name="name">Office Document - Văn thư: xem công văn đến/đi/quyết định</field>
             <field name="model_id" ref="model_office_document"/>
-            <field name="domain_force">[(1,'=',1)]</field>
+            <field name="domain_force">[('document_type', 'in', ['incoming', 'outgoing', 'resolution'])]</field>
             <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu'))]"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Văn thư: với loại chuyên biệt (HĐQT/Đảng ủy/CĐ/ĐTN) → xem như người dùng bình thường -->
+        <record id="office_document_rule_van_thu_chuyen_biet_read" model="ir.rule">
+            <field name="name">Office Document - Văn thư: xem loại chuyên biệt như người dùng thường</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">
+                ['|','|',
+                '&amp;', ('create_uid','=',user.id), ('nguoi_tao_duoc_xem','=',True),
+                ('detail2.nguoi_nhap_y_kien.user_id','=',user.id),
+                '&amp;',
+                ('tt_vb', '!=', 'draft'),
+                '|','|',
+                ('truong_don_vi_duyet.user_id','=',user.id),
+                ('lanh_dao_xu_ly.user_id', '=', user.id),
+                ('lanh_dao_theo_doi.user_id', '=', user.id)
+                ]
+            </field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
         </record>
 
 
@@ -353,5 +376,256 @@
 
         <!-- Xóa group -->
         <delete model="res.groups" search="[('name','=','Đơn vị xử lý')]"/>
+
+
+        <!-- ========================================================== -->
+        <!-- NHÓM VĂN THƯ THEO LOẠI VĂN BẢN -->
+        <!-- ========================================================== -->
+
+        <!-- Nhóm Văn thư HĐQT -->
+        <record id="group_van_thu_hdqt" model="res.groups">
+            <field name="name">Văn thư HĐQT</field>
+            <field name="category_id" ref="base.module_category_administration"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <!-- Nhóm Văn thư Đảng ủy -->
+        <record id="group_van_thu_dang_uy" model="res.groups">
+            <field name="name">Văn thư Đảng ủy</field>
+            <field name="category_id" ref="base.module_category_administration"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <!-- Nhóm Văn thư Công đoàn -->
+        <record id="group_van_thu_cong_doan" model="res.groups">
+            <field name="name">Văn thư Công đoàn</field>
+            <field name="category_id" ref="base.module_category_administration"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <!-- Nhóm Văn thư Đoàn thanh niên -->
+        <record id="group_van_thu_doan_tn" model="res.groups">
+            <field name="name">Văn thư Đoàn thanh niên</field>
+            <field name="category_id" ref="base.module_category_administration"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+
+        <!-- ============================================================ -->
+        <!-- IR.RULES CHO VĂN THƯ HĐQT (document_type = 'director')      -->
+        <!-- ============================================================ -->
+
+        <record id="office_document_rule_van_thu_hdqt_read" model="ir.rule">
+            <field name="name">Office Document - Văn thư HĐQT: Xem văn bản HĐQT</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'director')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_hdqt'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="office_document_rule_van_thu_hdqt_write" model="ir.rule">
+            <field name="name">Office Document - Văn thư HĐQT: Sửa văn bản HĐQT</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'director')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_hdqt'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="office_document_rule_van_thu_hdqt_create" model="ir.rule">
+            <field name="name">Office Document - Văn thư HĐQT: Tạo văn bản HĐQT</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'director')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_hdqt'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="office_document_rule_van_thu_hdqt_unlink" model="ir.rule">
+            <field name="name">Office Document - Văn thư HĐQT: Xóa văn bản HĐQT</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'director')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_hdqt'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+
+
+        <!-- ============================================================ -->
+        <!-- IR.RULES CHO VĂN THƯ ĐẢNG ỦY (document_type = 'committee')  -->
+        <!-- ============================================================ -->
+
+        <record id="office_document_rule_van_thu_dang_uy_read" model="ir.rule">
+            <field name="name">Office Document - Văn thư Đảng ủy: Xem văn bản Đảng ủy</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'committee')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_dang_uy'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="office_document_rule_van_thu_dang_uy_write" model="ir.rule">
+            <field name="name">Office Document - Văn thư Đảng ủy: Sửa văn bản Đảng ủy</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'committee')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_dang_uy'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="office_document_rule_van_thu_dang_uy_create" model="ir.rule">
+            <field name="name">Office Document - Văn thư Đảng ủy: Tạo văn bản Đảng ủy</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'committee')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_dang_uy'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="office_document_rule_van_thu_dang_uy_unlink" model="ir.rule">
+            <field name="name">Office Document - Văn thư Đảng ủy: Xóa văn bản Đảng ủy</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'committee')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_dang_uy'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+
+
+        <!-- ============================================================ -->
+        <!-- IR.RULES CHO VĂN THƯ CÔNG ĐOÀN (document_type='trade_union')-->
+        <!-- ============================================================ -->
+
+        <record id="office_document_rule_van_thu_cong_doan_read" model="ir.rule">
+            <field name="name">Office Document - Văn thư Công đoàn: Xem văn bản Công đoàn</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'trade_union')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_cong_doan'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="office_document_rule_van_thu_cong_doan_write" model="ir.rule">
+            <field name="name">Office Document - Văn thư Công đoàn: Sửa văn bản Công đoàn</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'trade_union')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_cong_doan'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="office_document_rule_van_thu_cong_doan_create" model="ir.rule">
+            <field name="name">Office Document - Văn thư Công đoàn: Tạo văn bản Công đoàn</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'trade_union')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_cong_doan'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="office_document_rule_van_thu_cong_doan_unlink" model="ir.rule">
+            <field name="name">Office Document - Văn thư Công đoàn: Xóa văn bản Công đoàn</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'trade_union')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_cong_doan'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+
+
+        <!-- ================================================================ -->
+        <!-- IR.RULES CHO VĂN THƯ ĐOÀN TN (document_type = 'youth_union')   -->
+        <!-- ================================================================ -->
+
+        <record id="office_document_rule_van_thu_doan_tn_read" model="ir.rule">
+            <field name="name">Office Document - Văn thư Đoàn TN: Xem văn bản Đoàn thanh niên</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'youth_union')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_doan_tn'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="office_document_rule_van_thu_doan_tn_write" model="ir.rule">
+            <field name="name">Office Document - Văn thư Đoàn TN: Sửa văn bản Đoàn thanh niên</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'youth_union')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_doan_tn'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="office_document_rule_van_thu_doan_tn_create" model="ir.rule">
+            <field name="name">Office Document - Văn thư Đoàn TN: Tạo văn bản Đoàn thanh niên</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'youth_union')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_doan_tn'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="office_document_rule_van_thu_doan_tn_unlink" model="ir.rule">
+            <field name="name">Office Document - Văn thư Đoàn TN: Xóa văn bản Đoàn thanh niên</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('document_type', '=', 'youth_union')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_van_thu_doan_tn'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- NHÓM THỪA LỆNH (KÝ THAY) -->
+        <!-- ========================================================== -->
+        <record id="group_thua_lenh" model="res.groups">
+            <field name="name">Thừa lệnh </field>
+            <field name="category_id" ref="base.module_category_administration"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <!-- Rule cho Thừa lệnh: Xem tất cả công văn ở trạng thái chờ bút phê -->
+        <record id="office_document_rule_thua_lenh_read_cho_but_phe" model="ir.rule">
+            <field name="name">Office Document - Thừa lệnh: Xem công văn chờ bút phê</field>
+            <field name="model_id" ref="model_office_document"/>
+            <field name="domain_force">[('tt_vb', '=', 'cho_but_phe')]</field>
+            <field name="groups" eval="[(4, ref('quan_ly_cong_van.group_thua_lenh'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
     </data>
 </odoo>
