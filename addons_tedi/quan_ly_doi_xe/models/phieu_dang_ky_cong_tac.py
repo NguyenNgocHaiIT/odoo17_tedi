@@ -54,6 +54,7 @@ class HrTediVehicleRegistration(models.Model):
                 dept = dept.parent_id
 
             # Lấy danh sách manager
+
             managers = dept.manager_ids if hasattr(dept, 'manager_ids') else self.env['hr.employee']
 
             if current_employee in managers:

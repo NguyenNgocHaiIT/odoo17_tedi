@@ -68,6 +68,27 @@
                 action="action_open_office_document_directors"
                 sequence="15"/>
 
+        <menuitem
+                id="document_committee_menu"
+                name="Văn bản đảng ủy"
+                parent="office_document_menu_root"
+                action="action_open_office_document_committee"
+                sequence="16"/>
+
+        <menuitem
+                id="document_trade_union_menu"
+                name="Văn bản công đoàn"
+                parent="office_document_menu_root"
+                action="action_open_office_document_trade_union"
+                sequence="17"/>
+
+        <menuitem
+                id="document_youth_union_menu"
+                name="Văn bản đoàn thanh niên"
+                parent="office_document_menu_root"
+                action="action_open_office_document_youth_union"
+                sequence="18"/>
+
         <!--<menuitem
                 id="document_director_menu_item"
                 name="Văn bản HĐQT"

@@ -111,6 +111,60 @@ def _get_employee_emails(employees):
     return emails
 
 
+def _get_van_thu_cho_doc(env, doc):
+    """
+    Trả về recordset hr.employee của văn thư phù hợp với loại văn bản:
+    - incoming_internal / outgoing_internal:
+        → Văn thư đơn vị (group_van_thu_don_vi) cùng phòng ban với người tạo văn bản.
+    - director / committee / trade_union / youth_union:
+        → Văn thư chuyên biệt tương ứng (group_van_thu_hdqt / dang_uy / cong_doan / doan_tn).
+    - Các loại còn lại (incoming, outgoing, resolution):
+        → Văn thư tổng quát (group_van_thu).
+    """
+    doc_type = doc.document_type if doc else ''
+
+    # Loại nội bộ → văn thư đơn vị cùng phòng ban người tạo
+    if doc_type in ('incoming_internal', 'outgoing_internal'):
+        group = env.ref('quan_ly_cong_van.group_van_thu_don_vi', raise_if_not_found=False)
+        if not group:
+            return env['hr.employee']
+        creator = doc.create_uid
+        creator_dept_ids = []
+        if creator:
+            creator_emp = env['hr.employee'].search([('user_id', '=', creator.id)], limit=1)
+            if creator_emp and creator_emp.department_id:
+                creator_dept_ids = [creator_emp.department_id.id]
+        if creator_dept_ids:
+            # Văn thư đơn vị trong cùng phòng ban với người tạo
+            return env['hr.employee'].search([
+                ('user_id', 'in', group.users.ids),
+                ('department_id', 'in', creator_dept_ids),
+            ])
+        else:
+            # Không xác định được phòng ban → trả tất cả văn thư đơn vị
+            return env['hr.employee'].search([('user_id', 'in', group.users.ids)])
+
+    # Loại chuyên biệt → văn thư chuyên biệt tương ứng
+    _CHUYEN_BIET_GROUP = {
+        'director':    'quan_ly_cong_van.group_van_thu_hdqt',
+        'committee':   'quan_ly_cong_van.group_van_thu_dang_uy',
+        'trade_union': 'quan_ly_cong_van.group_van_thu_cong_doan',
+        'youth_union': 'quan_ly_cong_van.group_van_thu_doan_tn',
+    }
+    if doc_type in _CHUYEN_BIET_GROUP:
+        group_xml = _CHUYEN_BIET_GROUP[doc_type]
+        group = env.ref(group_xml, raise_if_not_found=False)
+        if not group:
+            return env['hr.employee']
+        return env['hr.employee'].search([('user_id', 'in', group.users.ids)])
+
+    # Còn lại (incoming, outgoing, resolution) → văn thư tổng quát
+    group = env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
+    if not group:
+        return env['hr.employee']
+    return env['hr.employee'].search([('user_id', 'in', group.users.ids)])
+
+
 # =====================================================================
 
 
@@ -192,9 +246,37 @@ class PhanPhat(models.TransientModel):
             rec.is_truong_don_vi = rec._is_truong_don_vi()
 
     # ----- KIỂM TRA QUYỀN VĂN THƯ -----
+    # Mapping group văn thư chuyên biệt theo document_type
+    _VAN_THU_LOAI_GROUP = {
+        'director':    'quan_ly_cong_van.group_van_thu_hdqt',
+        'committee':   'quan_ly_cong_van.group_van_thu_dang_uy',
+        'trade_union': 'quan_ly_cong_van.group_van_thu_cong_doan',
+        'youth_union': 'quan_ly_cong_van.group_van_thu_doan_tn',
+    }
+
     def _is_van_thu(self):
-        van_thu_group = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-        if van_thu_group and self.env.user.has_group('quan_ly_cong_van.group_van_thu'):
+        """Kiểm tra user có quyền văn thư không.
+        Trả về True nếu là group_van_thu (toàn bộ),
+        hoặc là các group văn thư chuyên biệt khi đúng loại văn bản."""
+        user = self.env.user
+        if user.has_group('quan_ly_cong_van.group_van_thu'):
+            return True
+        # Văn thư chuyên biệt theo loại văn bản
+        doc_type = (self.document_type if self and self._fields.get('document_type') and self.document_type
+                    else self._context.get('default_document_type', ''))
+        group_xml_id = self._VAN_THU_LOAI_GROUP.get(doc_type)
+        if group_xml_id and user.has_group(group_xml_id):
+            return True
+        return False
+
+    def _is_van_thu_loai(self):
+        """Trả về True nếu user là văn thư chuyên biệt (HĐQT/Đảng ủy/Công đoàn/Đoàn TN)
+        và document_type của record khớp với quyền đó.
+        Không tính group_van_thu tổng quát."""
+        user = self.env.user
+        doc_type = self.document_type if self else ''
+        group_xml_id = self._VAN_THU_LOAI_GROUP.get(doc_type)
+        if group_xml_id and user.has_group(group_xml_id):
             return True
         return False
 
@@ -561,12 +643,15 @@ class ButPhe(models.TransientModel):
             'tai_lieu_kem': [(6, 0, self.tai_lieu_kem.ids)] if self.tai_lieu_kem else [],
         })
 
-        # Gửi email cho VĂN THƯ – chỉ dùng work_email
-        group = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-        if group and group.users:
-            van_thu_employees = self.env['hr.employee'].search([
-                ('user_id', 'in', group.users.ids)
-            ])
+        if self.tai_lieu_kem:
+            self.tai_lieu_kem.sudo().write({
+                'res_model': 'office.document.detail1',
+                'res_id': detail1.id,
+            })
+
+        # Gửi email cho VĂN THƯ phù hợp với loại văn bản
+        van_thu_employees = _get_van_thu_cho_doc(self.env, doc)
+        if van_thu_employees:
             email_list = _get_employee_emails(van_thu_employees)
             if email_list:
                 detail_url = doc.get_form_url()
@@ -591,7 +676,7 @@ class ButPhe(models.TransientModel):
                 _send_mail(self.env, subject, email_list, body_html)
 
                 # CHỈ gửi thông báo popup, KHÔNG gửi email qua message_post
-                partners = group.users.mapped('partner_id').ids
+                partners = van_thu_employees.mapped('user_id.partner_id').ids
                 if partners:
                     for partner_id in partners:
                         try:
@@ -641,11 +726,10 @@ class ButPhe(models.TransientModel):
 
     def _send_skip_notification(self):
         """Gửi thông báo khi bỏ qua bút phê"""
-        group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-        if group_van_thu and group_van_thu.users:
-            van_thu_employees = self.env['hr.employee'].search([
-                ('user_id', 'in', group_van_thu.users.ids)
-            ])
+        doc_id = self.env.context.get('active_id')
+        doc = self.env['office.document'].browse(doc_id) if doc_id else None
+        van_thu_employees = _get_van_thu_cho_doc(self.env, doc) if doc else self.env['hr.employee']
+        if van_thu_employees:
             email_list = _get_employee_emails(van_thu_employees)
 
             if email_list:
@@ -769,6 +853,9 @@ class OfficeDocument(models.Model):
         ('incoming_internal', 'Văn bản nội bộ đến'),
         ('outgoing_internal', 'Văn bản nội bộ đi'),
         ('director', 'Văn bản HĐQT'),
+        ('committee', 'Văn bản đảng ủy'),
+        ('trade_union', 'Văn bản công đoàn'),
+        ('youth_union', 'Văn bản đoàn thanh niên'),
     ], string='Loại công văn', required=True)
     loai_van_ban = fields.Selection([
         ('1', 'Thông báo'),
@@ -1103,6 +1190,18 @@ class OfficeDocument(models.Model):
         # Kiểm tra quyền trước khi mở wizard
         user = self.env.user
         is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
+        # Kiểm tra văn thư chuyên biệt đúng loại
+        _VAN_THU_LOAI_MAP = {
+            'quan_ly_cong_van.group_van_thu_hdqt':     'director',
+            'quan_ly_cong_van.group_van_thu_dang_uy':  'committee',
+            'quan_ly_cong_van.group_van_thu_cong_doan': 'trade_union',
+            'quan_ly_cong_van.group_van_thu_doan_tn':  'youth_union',
+        }
+        is_van_thu_loai = any(
+            user.has_group(grp) and self.document_type == doc_type
+            for grp, doc_type in _VAN_THU_LOAI_MAP.items()
+        )
+        is_van_thu = is_van_thu or is_van_thu_loai
 
         if not is_van_thu:
             # Nếu không phải văn thư, kiểm tra quyền trưởng đơn vị
@@ -1304,11 +1403,9 @@ class OfficeDocument(models.Model):
                 if dept and dept.manager_id:
                     recipient_employees |= dept.manager_id
 
-            # Văn thư
-            group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-            if group_van_thu:
-                van_thu_employees = self.env['hr.employee'].search([('user_id', 'in', group_van_thu.users.ids)])
-                recipient_employees |= van_thu_employees
+            # Văn thư phù hợp với loại văn bản
+            van_thu_employees = _get_van_thu_cho_doc(self.env, self)
+            recipient_employees |= van_thu_employees
 
             email_list = _get_employee_emails(recipient_employees)
             if not email_list:
@@ -1421,9 +1518,25 @@ class OfficeDocument(models.Model):
         can_duyet_val = vals.get('can_duyet', self._fields['can_duyet'].default(self))
         document_type_val = vals.get('document_type')
 
+        # Mapping nhóm văn thư chuyên biệt → loại văn bản
+        _VAN_THU_LOAI_MAP = {
+            'quan_ly_cong_van.group_van_thu_hdqt':     'director',
+            'quan_ly_cong_van.group_van_thu_dang_uy':  'committee',
+            'quan_ly_cong_van.group_van_thu_cong_doan': 'trade_union',
+            'quan_ly_cong_van.group_van_thu_doan_tn':  'youth_union',
+        }
+        is_van_thu_loai_for_type = any(
+            user.has_group(grp) and document_type_val == doc_type
+            for grp, doc_type in _VAN_THU_LOAI_MAP.items()
+        )
+
         if (user.has_group('quan_ly_cong_van.group_van_thu')
                 and document_type_val in ('incoming', 'incoming_internal')):
             vals['tt_vb'] = 'da_duyet'
+        elif is_van_thu_loai_for_type:
+            # Văn thư chuyên biệt tạo văn bản đúng loại của mình → thẳng da_duyet
+            vals['tt_vb'] = 'da_duyet'
+            vals['can_duyet'] = False
         elif (can_duyet_val is True and document_type_val in ('outgoing', 'outgoing_internal', 'resolution')):
             vals['tt_vb'] = 'draft'
         elif (can_duyet_val is False and document_type_val in ('outgoing', 'outgoing_internal', 'resolution')):
@@ -1728,11 +1841,10 @@ class OfficeDocument(models.Model):
 
     def _send_email_to_van_thu(self):
         self.ensure_one()
-        group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-        if not group_van_thu:
+        van_thu_employees = _get_van_thu_cho_doc(self.env, self)
+        if not van_thu_employees:
             return
 
-        van_thu_employees = self.env['hr.employee'].search([('user_id', 'in', group_van_thu.users.ids)])
         email_list = _get_employee_emails(van_thu_employees)
         if not email_list:
             return
@@ -1754,11 +1866,10 @@ class OfficeDocument(models.Model):
         )
         _send_mail(self.env, subject, email_list, body_html)
 
-        van_thu_users = group_van_thu.users
-        for user in van_thu_users:
-            if user.partner_id and user != self.env.user:
+        for vt_user in van_thu_employees.mapped('user_id'):
+            if vt_user.partner_id and vt_user != self.env.user:
                 self.env['bus.bus']._sendone(
-                    user.partner_id,
+                    vt_user.partner_id,
                     'simple_notification',
                     {'title': 'Văn bản cần duyệt', 'message': f"Văn bản '{self.trich_yeu[:30]}...' cần duyệt", 'type': 'warning'}
                 )
@@ -1795,16 +1906,32 @@ class OfficeDocument(models.Model):
         user = self.env.user
         is_van_thu_user = user.has_group('quan_ly_cong_van.group_van_thu')
         is_van_thu_don_vi_user = user.has_group('quan_ly_cong_van.group_van_thu_don_vi')
+        # Kiểm tra 4 group văn thư chuyên biệt
+        is_van_thu_hdqt = user.has_group('quan_ly_cong_van.group_van_thu_hdqt')
+        is_van_thu_dang_uy = user.has_group('quan_ly_cong_van.group_van_thu_dang_uy')
+        is_van_thu_cong_doan = user.has_group('quan_ly_cong_van.group_van_thu_cong_doan')
+        is_van_thu_doan_tn = user.has_group('quan_ly_cong_van.group_van_thu_doan_tn')
+        _EDIT_STATES = ('draft', 'cho_truong_don_vi_duyet', 'truong_don_vi_duyet', 'cho_duyet', 'da_duyet')
         for rec in self:
-            rec.is_van_thu = (
-                is_van_thu_user and
-                rec.tt_vb in ('draft', 'cho_truong_don_vi_duyet', 'truong_don_vi_duyet', 'cho_duyet', 'da_duyet') and
-                rec.document_type not in ('incoming_internal', 'outgoing_internal')
+            doc_type = rec.document_type
+            in_edit_state = rec.tt_vb in _EDIT_STATES
+            # Văn thư tổng quát: tất cả loại trừ nội bộ
+            is_vt_tong = (
+                is_van_thu_user and in_edit_state and
+                doc_type not in ('incoming_internal', 'outgoing_internal')
             )
+            # Văn thư chuyên biệt: đúng loại văn bản
+            is_vt_loai = in_edit_state and (
+                (is_van_thu_hdqt and doc_type == 'director') or
+                (is_van_thu_dang_uy and doc_type == 'committee') or
+                (is_van_thu_cong_doan and doc_type == 'trade_union') or
+                (is_van_thu_doan_tn and doc_type == 'youth_union')
+            )
+            rec.is_van_thu = is_vt_tong or is_vt_loai
             rec.is_van_thu_don_vi = (
                 is_van_thu_don_vi_user and
-                rec.tt_vb in ('draft', 'cho_truong_don_vi_duyet', 'truong_don_vi_duyet', 'cho_duyet', 'da_duyet') and
-                rec.document_type in ('incoming_internal', 'outgoing_internal')
+                in_edit_state and
+                doc_type in ('incoming_internal', 'outgoing_internal')
             )
             rec.not_is_van_thu = (not is_van_thu_user and rec.tt_vb == 'draft')
 
@@ -1814,13 +1941,23 @@ class OfficeDocument(models.Model):
         self.ensure_one()
         self.tt_vb = 'cho_phan_phat'
 
+        user = self.env.user
+        is_thua_lenh = user.has_group('quan_ly_cong_van.group_thua_lenh')
+        if is_thua_lenh:
+            # Trả về action để chuyển về trang trước
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'history_back',
+            }
+
     @api.depends('tt_vb', 'co_the_but_phe_cong_van_di')
     def _compute_show_skip_button(self):
         user = self.env.user
         is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
+        is_thua_lenh = user.has_group('quan_ly_cong_van.group_thua_lenh')
         for record in self:
             if record.tt_vb == 'cho_but_phe':
-                record.show_skip_button = record.co_the_but_phe_cong_van_di
+                record.show_skip_button = is_thua_lenh or record.co_the_but_phe_cong_van_di
             else:
                 record.show_skip_button = False
 
@@ -1863,7 +2000,14 @@ class OfficeDocument(models.Model):
         user = self.env.user
         is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
         is_admin = user.has_group('base.group_system')
-        can_create = is_van_thu or is_admin
+        # 4 group văn thư chuyên biệt cũng được tạo đơn vị
+        is_van_thu_loai = (
+            user.has_group('quan_ly_cong_van.group_van_thu_hdqt') or
+            user.has_group('quan_ly_cong_van.group_van_thu_dang_uy') or
+            user.has_group('quan_ly_cong_van.group_van_thu_cong_doan') or
+            user.has_group('quan_ly_cong_van.group_van_thu_doan_tn')
+        )
+        can_create = is_van_thu or is_admin or is_van_thu_loai
 
         for rec in self:
             rec.can_create_don_vi = can_create
@@ -2084,14 +2228,30 @@ class OfficeDocument(models.Model):
         user = self.env.user
         is_van_thu = user.has_group('quan_ly_cong_van.group_van_thu')
         is_van_thu_don_vi = user.has_group('quan_ly_cong_van.group_van_thu_don_vi')
-        document_type = self.document_type
+        # Kiểm tra 4 group văn thư chuyên biệt
+        is_van_thu_hdqt = user.has_group('quan_ly_cong_van.group_van_thu_hdqt')
+        is_van_thu_dang_uy = user.has_group('quan_ly_cong_van.group_van_thu_dang_uy')
+        is_van_thu_cong_doan = user.has_group('quan_ly_cong_van.group_van_thu_cong_doan')
+        is_van_thu_doan_tn = user.has_group('quan_ly_cong_van.group_van_thu_doan_tn')
 
         for rec in self:
+            document_type = rec.document_type
+
             if is_van_thu and document_type != 'incoming_internal':
                 rec.show_phan_phat_button = True
                 continue
 
             if is_van_thu_don_vi and document_type:
+                rec.show_phan_phat_button = True
+                continue
+
+            # Văn thư chuyên biệt: chỉ phân phát đúng loại của mình
+            if (
+                (is_van_thu_hdqt and document_type == 'director') or
+                (is_van_thu_dang_uy and document_type == 'committee') or
+                (is_van_thu_cong_doan and document_type == 'trade_union') or
+                (is_van_thu_doan_tn and document_type == 'youth_union')
+            ):
                 rec.show_phan_phat_button = True
                 continue
 
@@ -2594,7 +2754,7 @@ class DuyetVanBanDiWizard(models.TransientModel):
         employee = self.env.user.employee_id
         nhom_phong_ban = employee.department_id.name if employee and employee.department_id else 'Không xác định'
 
-        self.env['office.document.detail1'].create({
+        detail1 = self.env['office.document.detail1'].create({
             'office_document_id': doc.id,
             'nguoi_nhap_y_kien': employee.id if employee else False,
             'nhom_phong_ban': nhom_phong_ban,
@@ -2602,6 +2762,12 @@ class DuyetVanBanDiWizard(models.TransientModel):
             'thoi_diem_chi_dao': fields.Datetime.now(),
             'tai_lieu_kem': [(6, 0, self.tai_lieu_kem.ids)] if self.tai_lieu_kem else [],
         })
+
+        if self.tai_lieu_kem:
+            self.tai_lieu_kem.sudo().write({
+                'res_model': 'office.document.detail1',
+                'res_id': detail1.id,
+            })
 
         # Gửi email thông báo cho văn thư
         self._send_but_phe_notification(doc, employee)
@@ -2611,11 +2777,8 @@ class DuyetVanBanDiWizard(models.TransientModel):
 
     def _send_but_phe_notification(self, doc, employee):
         """Gửi thông báo khi duyệt và bút phê"""
-        group = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-        if group and group.users:
-            van_thu_employees = self.env['hr.employee'].search([
-                ('user_id', 'in', group.users.ids)
-            ])
+        van_thu_employees = _get_van_thu_cho_doc(self.env, doc)
+        if van_thu_employees:
             email_list = _get_employee_emails(van_thu_employees)
 
             if email_list:
@@ -2669,15 +2832,14 @@ class DuyetVanBanDiWizard(models.TransientModel):
 
     def _send_skip_notification(self):
         """Gửi thông báo khi bỏ qua bút phê"""
-        group_van_thu = self.env.ref('quan_ly_cong_van.group_van_thu', raise_if_not_found=False)
-        if group_van_thu and group_van_thu.users:
-            van_thu_employees = self.env['hr.employee'].search([
-                ('user_id', 'in', group_van_thu.users.ids)
-            ])
+        doc = self.office_document_id
+        van_thu_employees = _get_van_thu_cho_doc(self.env, doc)
+        if van_thu_employees:
             email_list = _get_employee_emails(van_thu_employees)
 
             if email_list:
-                detail_url = self.get_form_url()
+                doc = self.office_document_id
+                detail_url = doc.get_form_url()
                 subject = f"Văn bản đã được duyệt (bỏ qua bút phê): {self.trich_yeu[:50]}..." if self.trich_yeu else "Văn bản đã được duyệt"
                 body_lines = [
                     f"<b>Số văn bản:</b> {self.so_vb or 'Chưa có số'}",
