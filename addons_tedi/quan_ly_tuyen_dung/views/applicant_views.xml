@@ -280,5 +280,64 @@
             </field>
         </record>
 
+ 
+
+        <record id="hr_recruitment.crm_case_categ0_act_job" model="ir.actions.act_window">
+            <field name="view_mode">tree,kanban,form,graph,calendar,pivot</field>
+        </record>
+
+
+
+        
+
+        <record id = "applicant_tree_inherit_view_new" model="ir.ui.view">
+            <field name="name">hr.recruitment.applicant_inherit</field>
+            <field name="model">hr.applicant</field>
+            <field name="inherit_id" ref="hr_recruitment.crm_case_tree_view_job"></field>
+            <field name="arch" type = "xml">
+              <xpath expr="//field[@name='partner_name']" position="after">
+                  <field name="recruitment_plan_id" string = "Đợt tuyển dụng"/>
+              </xpath>
+            </field>
+        </record>
+
+
+        <record id="hr_kanban_view_applicant_no_create" model="ir.ui.view">
+            <field name="name">hr.applicant.kanban.no.create</field>
+            <field name="model">hr.applicant</field>
+            <field name="inherit_id" ref="hr_recruitment.hr_kanban_view_applicant"/> 
+            <field name="mode">primary</field> <field name="arch" type="xml">
+                <xpath expr="//kanban" position="attributes">
+                    <attribute name="create">0</attribute>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="action_hr_job_apps_kanban_view_link" model="ir.actions.act_window.view">
+            <field name="sequence" eval="2"/>
+            <field name="view_mode">kanban</field>
+            <field name="view_id" ref="hr_kanban_view_applicant_no_create"/>
+            <field name="act_window_id" ref="hr_recruitment.action_hr_job_applications"/>
+        </record>
+        
+        <record id="hr_tree_view_applicant_no_create" model="ir.ui.view">
+            <field name="name">hr.applicant.tree.no.create</field>
+            <field name="model">hr.applicant</field>
+            <field name="inherit_id" ref="hr_recruitment.crm_case_tree_view_job"/> 
+            <field name="mode">primary</field>
+            <field name="arch" type="xml">
+                <xpath expr="//tree" position="attributes">
+                    <attribute name="create">0</attribute>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="action_hr_job_apps_tree_view_link" model="ir.actions.act_window.view">
+            <field name="sequence" eval="1"/>
+            <field name="view_mode">tree</field>
+            <field name="view_id" ref="hr_tree_view_applicant_no_create"/>
+            <field name="act_window_id" ref="hr_recruitment.action_hr_job_applications"/>
+        </record>
+
   </data>
 </odoo>

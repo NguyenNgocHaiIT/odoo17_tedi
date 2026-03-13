@@ -4,44 +4,42 @@
   <record id="view_hr_job_form_tedi" model="ir.ui.view">
     <field name="name">hr.job.form.tedi</field>
     <field name="model">hr.job</field>
-    <!-- ✅ Kế thừa form gốc của module hr -->
     <field name="inherit_id" ref="hr.view_hr_job_form"/>
-    <!-- Ưu tiên cao, để chạy sau các view khác (kể cả hr_recruitment) -->
+    
+    <!-- ✅ QUAN TRỌNG: Thêm mode="primary" để form này chạy ĐỘC LẬP, 
+         không ghi đè lên form mặc định của Odoo khi click từ Tree hay nơi khác -->
+    <!-- <field name="mode">primary</field>  -->
+    
     <field name="priority">200</field>
     <field name="arch" type="xml">
 
-      <!-- ✅ Thay nguyên tab chứa no_of_recruitment bằng tab "Tuyển dụng" của bạn -->
       <xpath expr="//field[@name='no_of_recruitment']/ancestor::page[1]" position="replace">
         <page string="Tuyển dụng" name="recruitment_page">
           <group>
             <group>
               <field name="department_id" string="Bộ phận"/>
               <field name="work_location_id" string="Nơi làm việc"/>
-              <!-- Tránh trùng label với alias khác -->
               <field name="email_alias" string="Bí danh email"/>
               <field name="contract_type_id" string="Loại việc làm"/>
+              <field name="dot_tuyen_dung_quy" string="Đợt tuyển dụng"/>
             </group>
             <group>
               <field name="no_of_recruitment" string="Số lượng"/>
-              <!-- domain interviewer_ids cần allowed_user_ids (ẩn) -->
               <field name="allowed_user_ids" invisible="1"/>
               <field name="user_id" string="Người tuyển dụng" widget="many2one_avatar_user"/>
               <field name="interviewer_ids" string="Người phỏng vấn"
                      widget="many2many_tags_avatar"
                      options="{'no_create': True, 'no_create_edit': True}"/>
-              <field name="dot_tuyen_dung" string="Đợt tuyển dụng"/>
+              
             </group>
           </group>
         </page>
-
       </xpath>
 
-      <!-- ✅ Đổi tiêu đề tab mô tả (bắt neo theo field trong tab đó) -->
       <xpath expr="//field[@name='description']/ancestor::page[1]" position="attributes">
         <attribute name="string">Tóm tắt công việc</attribute>
       </xpath>
 
-      <!-- ✅ Ẩn chatter (dùng hasclass theo khuyến nghị) -->
       <xpath expr="//div[hasclass('oe_chatter') or hasclass('o_ChatterContainer')]" position="attributes">
         <attribute name="style">visibility:hidden; min-width:420px;</attribute>
       </xpath>
@@ -64,45 +62,66 @@
     </field>
   </record>
 
-  <!-- Kế thừa kanban: bỏ modal on_create, click mở form full-page -->
+<!-- Kế thừa kanban: TRẢ LẠI CLICK MẶC ĐỊNH & THÊM TÊN/ĐỢT TUYỂN DỤNG -->
   <record id="view_hr_job_kanban_inherit_tedi" model="ir.ui.view">
     <field name="name">hr.job.kanban.inherit.tedi</field>
     <field name="model">hr.job</field>
     <field name="inherit_id" ref="hr_recruitment.view_hr_job_kanban"/>
     <field name="priority">200</field>
     <field name="arch" type="xml">
+      
+      <!-- 1. Xóa thuộc tính on_create để trả lại click mặc định của Odoo -->
       <xpath expr="//kanban" position="attributes">
-        <attribute name="action">%(action_open_job_form_tedi)d</attribute>
         <attribute name="on_create"/>
       </xpath>
+
+     
+      <xpath expr="//templates" position="before">
+          <field name="job_kanban_name"/>
+          <!-- <field name="dot_tuyen_dung_quy"/> -->
+      </xpath>
+
+      <xpath expr="//div[hasclass('o_kanban_card_header_title')]//div[hasclass('o_primary')]" position="replace">
+          <div class="o_primary col-12">
+              <!-- Hiển thị Tên Job kèm Quý -->
+              <span><t t-esc="record.job_kanban_name.value"/></span>
+              
+              <!-- Dùng t-if="record.dot_tuyen_dung.value" chuẩn Odoo 17 -->
+        <!-- <t t-if="record.dot_tuyen_dung_quy.raw_value">
+          <div class="mt-1 text-muted" style="font-size: 13px; font-weight: normal; display: block;">
+              <i class="fa fa-briefcase text-info me-1" title="Đợt tuyển dụng"/>
+              <span class="text-info"><t t-esc="record.dot_tuyen_dung_quy.value"/></span>
+          </div>
+      </t> -->
+          </div>
+      </xpath>
+
+    </field>
+  </record>
+  <!-- CẤU HÌNH MẶC ĐỊNH -->
+  <record id="view_recruitment_constant_tree" model="ir.ui.view">
+    <field name="name">recruitment.constant.tree</field>
+    <field name="model">recruitment.constant</field>
+    <field name="arch" type="xml">
+        <tree string="Cấu hình mặc định" editable="bottom">
+            <field name="code"/>
+            <field name="name"/>
+            <field name="employee_id" widget="many2one_avatar_user"/>
+        </tree>
     </field>
   </record>
 
+  <record id="action_recruitment_constant" model="ir.actions.act_window">
+    <field name="name">Cấu hình mặc định</field>
+    <field name="res_model">recruitment.constant</field>
+    <field name="view_mode">tree</field>
+    <field name="view_id" ref="view_recruitment_constant_tree"/>
+  </record>
 
-
-    <record id="view_recruitment_constant_tree" model="ir.ui.view">
-            <field name="name">recruitment.constant.tree</field>
-            <field name="model">recruitment.constant</field>
-            <field name="arch" type="xml">
-                <tree string="Cấu hình mặc định" editable="bottom">
-                    <field name="code"/>
-                    <field name="name"/>
-                    <field name="employee_id" widget="many2one_avatar_user"/>
-                </tree>
-            </field>
-        </record>
-
-        <record id="action_recruitment_constant" model="ir.actions.act_window">
-            <field name="name">Cấu hình mặc định</field>
-            <field name="res_model">recruitment.constant</field>
-            <field name="view_mode">tree</field>
-            <field name="view_id" ref="view_recruitment_constant_tree"/>
-        </record>
-
-        <menuitem id="menu_recruitment_constant"
-                  name="Cấu hình mặc định"
-                  parent="hr_recruitment.menu_hr_recruitment_config_applications"
-                  action="action_recruitment_constant"
-                  sequence="100"/>
+  <menuitem id="menu_recruitment_constant"
+            name="Cấu hình mặc định"
+            parent="hr_recruitment.menu_hr_recruitment_config_applications"
+            action="action_recruitment_constant"
+            sequence="100"/>
 
 </odoo>
