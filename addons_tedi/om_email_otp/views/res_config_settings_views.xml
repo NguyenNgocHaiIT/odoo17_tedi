@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_otp" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.email.otp</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='general_settings']" position="inside">
+                <block title="Bảo mật Đăng nhập" name="otp_security_block">
+                    <setting id="email_otp_login_setting" help="Bắt buộc xác thực mã OTP gửi về Email sau khi nhập đúng mật khẩu.">
+                        <field name="enable_email_otp_login"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>
