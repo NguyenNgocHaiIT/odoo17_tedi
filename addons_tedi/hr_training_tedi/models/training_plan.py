@@ -2,13 +2,15 @@ from odoo import models, api, fields, exceptions, _
 from odoo.exceptions import AccessError, ValidationError
 
 
-PARTICIPANT         = "hr_training_tedi.group_training_participant"
-UNIT_MANAGER        = "hr_training_tedi.group_training_unit_manager"
-GENERAL_DIRECTOR    = "hr_training_tedi.group_training_general_director"
-BASE                = "base.group_user"
+PARTICIPANT = "hr_training_tedi.group_training_participant"
+UNIT_MANAGER = "hr_training_tedi.group_training_unit_manager"
+GENERAL_DIRECTOR = "hr_training_tedi.group_training_general_director"
+BASE = "base.group_user"
 
-MANAGER = "hr_training_tedi.group_training_manager" # Quản lý nghiệp vụ (tương đương HR Officer bên Tuyển dụng)
+# Quản lý nghiệp vụ (tương đương HR Officer bên Tuyển dụng)
+MANAGER = "hr_training_tedi.group_training_manager"
 BOARD = "hr_training_tedi.group_training_board"
+
 
 class TrainingPlan(models.Model):
     _name = 'training.plan'
@@ -29,7 +31,8 @@ class TrainingPlan(models.Model):
 
     # Thêm field ngày thực hiện để có thể check logic (nếu cần dùng cho KH Quý giống Tuyển dụng)
     # Nếu logic cũ bạn không dùng field này để tính toán thì để hiển thị thôi
-    plan_execute_date = fields.Date(string="Ngày thực hiện", default=fields.Date.today)
+    plan_execute_date = fields.Date(
+        string="Ngày thực hiện", default=fields.Date.today)
 
     # Đợt khảo sát
     survey_id = fields.Many2one(
@@ -56,9 +59,8 @@ class TrainingPlan(models.Model):
     ], string="Trạng thái", default='draft', tracking=True)
 
     # Cờ đánh dấu đã triển khai (để ẩn nút Triển khai)
-    is_applied = fields.Boolean(string="Đã triển khai", default=False, readonly=True)
-
-
+    is_applied = fields.Boolean(
+        string="Đã triển khai", default=False, readonly=True)
 
     # THỐNG KÊ
     student_count = fields.Integer(
@@ -77,17 +79,41 @@ class TrainingPlan(models.Model):
     total_fee = fields.Monetary(
         string='Tổng chi phí kế hoạch',
         currency_field='currency_id',
-        compute='_compute_stats',
+        compute='_compute_total_fee',
         store=True,
+        readonly=False,
+        tracking=True,
     )
+
+    @api.depends('detail_ids.training_total_fee')
+    def _compute_total_fee(self):
+        for plan in self:
+            plan.total_fee = sum(
+                line.training_total_fee for line in plan.detail_ids)
+
+    @api.onchange('total_fee')
+    def _onchange_total_fee_allocate(self):
+        if self.total_fee and self.detail_ids:
+            num_classes = len(self.detail_ids)
+            fee_per_class = self.total_fee / num_classes  # Chia đều cho các lớp
+
+            for line in self.detail_ids:
+                line.training_total_fee = fee_per_class
+                # Gắn luôn chi phí cho từng người
+                if line.student_count > 0:
+                    line.training_fee_per_person = fee_per_class / line.student_count
+                else:
+                    line.training_fee_per_person = 0.0
 
     type = fields.Selection([
         ('year', 'Kế hoạch Năm'),
         ('quarter', 'Kế hoạch Quý'),
     ], string="Loại kế hoạch", default='year', required=True, tracking=True)
 
-    is_user_director = fields.Boolean(compute='_compute_is_user_director', store=False)
-    is_user_board = fields.Boolean(compute='_compute_is_user_board', store=False)
+    is_user_director = fields.Boolean(
+        compute='_compute_is_user_director', store=False)
+    is_user_board = fields.Boolean(
+        compute='_compute_is_user_board', store=False)
 
     def _compute_is_user_director(self):
         for rec in self:
@@ -98,7 +124,8 @@ class TrainingPlan(models.Model):
             rec.is_user_board = self.env.user.has_group(BOARD)
 
     # Field liên kết cha-con (để biết kế hoạch Quý thuộc Kế hoạch Năm nào)
-    parent_id = fields.Many2one('training.plan', string="Thuộc Kế hoạch Năm", readonly=True)
+    parent_id = fields.Many2one(
+        'training.plan', string="Thuộc Kế hoạch Năm", readonly=True)
 
     # =========================================
     #      ====== FUNCTION LOGIC (GIỮ NGUYÊN) ======
@@ -108,11 +135,14 @@ class TrainingPlan(models.Model):
     def _onchange_survey_id(self):
         # ... (Giữ nguyên logic của bạn) ...
         self.detail_ids = [(5, 0, 0)]
-        if not self.survey_id: return
+        if not self.survey_id:
+            return
 
         TrainingNeeds = self.env['trainings.needs']
-        needs = TrainingNeeds.search([('name', '=', self.survey_id.id), ('state', '=', 'approved')])
-        if not needs: return
+        needs = TrainingNeeds.search(
+            [('name', '=', self.survey_id.id), ('state', '=', 'approved')])
+        if not needs:
+            return
 
         course_ids = set()
         for need in needs:
@@ -132,20 +162,26 @@ class TrainingPlan(models.Model):
         TrainingNeeds = self.env['trainings.needs']
 
         for plan in self:
-            if not plan.survey_id: continue
-            needs = TrainingNeeds.search([('name', '=', plan.survey_id.id), ('state', '=', 'approved')])
-            if not needs: continue
+            if not plan.survey_id:
+                continue
+            needs = TrainingNeeds.search(
+                [('name', '=', plan.survey_id.id), ('state', '=', 'approved')])
+            if not needs:
+                continue
 
             course_map = {}
             for need in needs:
                 student = need.user_id or need.create_uid or self.env.user
                 for line in need.line_ids:
-                    if not line.course_id: continue
+                    if not line.course_id:
+                        continue
                     course_id = line.course_id.id
-                    course_map.setdefault(course_id, []).append((student, line))
+                    course_map.setdefault(
+                        course_id, []).append((student, line))
 
             for course_id, items in course_map.items():
-                detail = plan.detail_ids.filtered(lambda d: d.course_id.id == course_id)[:1]
+                detail = plan.detail_ids.filtered(
+                    lambda d: d.course_id.id == course_id)[:1]
 
                 # --- ĐOẠN CẦN SỬA Ở ĐÂY ---
                 if not detail:
@@ -195,15 +231,17 @@ class TrainingPlan(models.Model):
             # GIỮ NGUYÊN LOGIC FILTER THEO QUÝ CỦA BẠN
             lines_in_quarter = self.detail_ids.filtered(
                 lambda l: l.quarter == q_str
-                          and l.state != 'rejected'
-                          and l.expected_qty > 0
+                and l.state != 'rejected'
+                and l.expected_qty > 0
             )
-            if not lines_in_quarter: continue
+            if not lines_in_quarter:
+                continue
 
             plan_name = f"{self.name} - Quý {q_num}"
             existing = self.env['training.plan'].search([('parent_id', '=', self.id), ('name', '=', plan_name)],
                                                         limit=1)
-            if existing: continue
+            if existing:
+                continue
 
             # Tạo Header
             plan_vals = {
@@ -230,7 +268,7 @@ class TrainingPlan(models.Model):
                     'student_count': 0,
                     'expected_qty': line.expected_qty,
                     'execution_date': line.execution_date,  # Mang ngày sang để tính lại quý
-                    'training_time':line.training_time,
+                    'training_time': line.training_time,
                 }
                 detail_lines.append((0, 0, line_vals))
 
@@ -245,19 +283,11 @@ class TrainingPlan(models.Model):
     def write(self, vals):
         return super().write(vals)
 
-    @api.depends('detail_ids.participation_detail_ids.training_fee_per_person')
+    @api.depends('detail_ids.student_count')
     def _compute_stats(self):
-        ParticipationDetail = self.env['training.plan.participation.detail']
         for plan in self:
-            if plan.detail_ids:
-                participants = ParticipationDetail.search([
-                    ('training_plan_detail_id', 'in', plan.detail_ids.ids)
-                ])
-                plan.student_count = len(participants)
-                plan.total_fee = sum((line.training_fee_per_person or 0.0) for line in participants)
-            else:
-                plan.student_count = 0
-                plan.total_fee = 0.0
+            plan.student_count = sum(
+                line.student_count for line in plan.detail_ids)
 
     # =========================================
     #      ====== ACTION STATE (CẬP NHẬT) ======
@@ -270,17 +300,20 @@ class TrainingPlan(models.Model):
 
     def action_notify_quarter(self):  # Dành cho Quý
         for rec in self:
-            if rec.type != 'quarter': raise ValidationError(_("Chỉ dành cho Kế hoạch Quý"))
+            if rec.type != 'quarter':
+                raise ValidationError(_("Chỉ dành cho Kế hoạch Quý"))
             rec.state = 'notify'
 
     def action_submit(self):
         for rec in self:
             # Nếu là Quý: Notify -> Director Approve
             if rec.type == 'quarter':
-                if rec.state != 'notify': raise ValidationError(_("Phải ở trạng thái Xác nhận."))
+                if rec.state != 'notify':
+                    raise ValidationError(_("Phải ở trạng thái Xác nhận."))
             # Nếu là Năm: Draft -> Director Approve
             else:
-                if rec.state != "draft": raise ValidationError(_("Phải ở trạng thái Dự thảo."))
+                if rec.state != "draft":
+                    raise ValidationError(_("Phải ở trạng thái Dự thảo."))
 
             rec.state = "director_approve"
 
@@ -329,7 +362,8 @@ class TrainingPlan(models.Model):
         # Đây là nút mới tách ra, thay vì để trong action_approve cũ
         for rec in self:
             if rec.state != "approved":
-                raise ValidationError(_("Kế hoạch phải được phê duyệt trước khi triển khai."))
+                raise ValidationError(
+                    _("Kế hoạch phải được phê duyệt trước khi triển khai."))
             if rec.is_applied:
                 raise ValidationError(_("Kế hoạch đã được triển khai rồi."))
 
@@ -445,8 +479,9 @@ class TrainingPlanDetail(models.Model):
     training_total_fee = fields.Monetary(
         string="Tổng chi phí",
         currency_field="currency_id",
-        compute='_compute_student_and_total',
+        compute='_compute_training_total_fee',
         store=True,
+        readonly=False,
     )
 
     training_fee_source = fields.Char(string="Nguồn kinh phí")
@@ -475,7 +510,8 @@ class TrainingPlanDetail(models.Model):
         store=True
     )
 
-    execution_date = fields.Date(string="Thời gian thực hiện", required=True, default=fields.Date.today)
+    execution_date = fields.Date(
+        string="Thời gian thực hiện", required=True, default=fields.Date.today)
 
     # --- 2. FIELD QUÝ (Tự động tính từ execution_date) ---
     quarter = fields.Selection([
@@ -498,7 +534,6 @@ class TrainingPlanDetail(models.Model):
                 # VD: Tháng 5 -> (4)//3 + 1 = 1 + 1 = 2
                 q = (rec.execution_date.month - 1) // 3 + 1
                 rec.quarter = str(q)
-
 
     def action_open_reject_wizard(self):
         self.ensure_one()
@@ -577,7 +612,8 @@ class TrainingPlanDetail(models.Model):
                 count = len(detail.participation_detail_ids)
 
             detail.student_count = count
-            detail.training_total_fee = (detail.training_fee_per_person or 0.0) * count
+            detail.training_total_fee = (
+                detail.training_fee_per_person or 0.0) * count
 
     # def _check_participant(self):
     #     if self.env.user.has_group(PARTICIPANT):
@@ -601,11 +637,37 @@ class TrainingPlanDetail(models.Model):
                     part_detail._sync_to_history()
         return res
 
+    @api.depends('participation_detail_ids', 'expected_qty', 'plan_id.type')
+    def _compute_student_count(self):
+        for detail in self:
+            if detail.plan_id.type == 'year':
+                detail.student_count = detail.expected_qty
+            else:
+                detail.student_count = len(detail.participation_detail_ids)
+
+    # --- 2. HÀM TÍNH TỔNG TIỀN LỚP (Bottom-up: Chi phí/người x Số người) ---
+    @api.depends('training_fee_per_person', 'student_count')
+    def _compute_training_total_fee(self):
+        for detail in self:
+            detail.training_total_fee = (
+                detail.training_fee_per_person or 0.0) * detail.student_count
+
+    # --- 3. HÀM CHIA TIỀN TRONG LỚP (Top-Down: Nhập tổng tiền lớp -> ra tiền/người) ---
+    @api.onchange('training_total_fee')
+    def _onchange_training_total_fee(self):
+        for detail in self:
+            if detail.student_count > 0:
+                detail.training_fee_per_person = detail.training_total_fee / detail.student_count
+            else:
+                detail.training_fee_per_person = 0.0
+
+
 class TrainingPlanDetailRejectWizard(models.TransientModel):
     _name = "training.plan.detail.reject.wizard"
     _description = "Wizard Từ chối chi tiết kế hoạch đào tạo"
 
-    detail_id = fields.Many2one('training.plan.detail', string="Dòng chi tiết", required=True)
+    detail_id = fields.Many2one(
+        'training.plan.detail', string="Dòng chi tiết", required=True)
     reason = fields.Text(string="Lý do từ chối", required=True)
 
     def action_confirm_reject(self):
@@ -621,7 +683,8 @@ class TrainingPlanRejectWizard(models.TransientModel):
     _name = 'training.plan.reject.wizard'
     _description = 'Wizard nhập lý do từ chối kế hoạch đào tạo'
 
-    plan_id = fields.Many2one('training.plan', string="Kế hoạch", required=True)
+    plan_id = fields.Many2one(
+        'training.plan', string="Kế hoạch", required=True)
     reject_reason = fields.Text(string="Lý do từ chối", required=True)
 
     def action_confirm_reject(self):
@@ -632,5 +695,6 @@ class TrainingPlanRejectWizard(models.TransientModel):
             'state': 'draft'
         })
         # Ghi log vào chatter
-        self.plan_id.message_post(body=f"Đã từ chối. Lý do: {self.reject_reason}")
+        self.plan_id.message_post(
+            body=f"Đã từ chối. Lý do: {self.reject_reason}")
         return {'type': 'ir.actions.act_window_close'}

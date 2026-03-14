@@ -4,10 +4,10 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, AccessError
 
 HR_OFFICER = "quan_ly_tuyen_dung.group_recruitment_hr_officer"
-COMMITTEE  = 'quan_ly_tuyen_dung.group_recruitment_committee'
-DIRECTOR   = 'quan_ly_tuyen_dung.group_recruitment_director'
-BOARD      = 'quan_ly_tuyen_dung.group_recruitment_board'
-BASE       = 'base.group_user'
+COMMITTEE = 'quan_ly_tuyen_dung.group_recruitment_committee'
+DIRECTOR = 'quan_ly_tuyen_dung.group_recruitment_director'
+BOARD = 'quan_ly_tuyen_dung.group_recruitment_board'
+BASE = 'base.group_user'
 
 # 4 nhóm được phép sửa nomination_ids + requested_quantity ở trạng thái complete
 COMPLETE_EDITORS = {HR_OFFICER, COMMITTEE, DIRECTOR, BOARD}
@@ -19,9 +19,11 @@ class RecruitmentPlanDetail(models.Model):
     _order = "sequence, id"
 
     sequence = fields.Integer(string="STT", default=10)
-    stt = fields.Integer(string="STT hiển thị", compute="_compute_stt", store=False, readonly=True)
+    stt = fields.Integer(string="STT hiển thị",
+                         compute="_compute_stt", store=False, readonly=True)
 
-    plan_id = fields.Many2one("recruitment.plan", string="Kế hoạch", required=True, ondelete="cascade")
+    plan_id = fields.Many2one(
+        "recruitment.plan", string="Kế hoạch", required=True, ondelete="cascade")
 
     department_request = fields.Many2one(
         'hr.department',
@@ -35,8 +37,22 @@ class RecruitmentPlanDetail(models.Model):
         domain="[('department_id', '=', department_request)]",
         required=True,
     )
-    experient_request_id = fields.Many2one("experience.request", string="Yêu cầu kinh nghiệm")
-    requested_quantity = fields.Integer(string="Số lượng cần tuyển", required=True, default=1)
+    experient_request_id = fields.Many2one(
+        "experience.request", string="Yêu cầu kinh nghiệm")
+    requested_quantity = fields.Integer(
+        string="Số lượng cần tuyển",
+        compute="_compute_requested_quantity",
+        store=True,
+        readonly=False  # Cho phép nhập tay nếu là KH Quý không chia Q1,Q2...
+    )
+
+    @api.depends('qty_q1', 'qty_q2', 'qty_q3', 'qty_q4', 'plan_id.type')
+    def _compute_requested_quantity(self):
+        for rec in self:
+            # Nếu là Kế hoạch Năm thì mới tự động cộng 4 quý
+            if rec.plan_id and rec.plan_id.type == 'year':
+                rec.requested_quantity = rec.qty_q1 + rec.qty_q2 + rec.qty_q3 + rec.qty_q4
+
     professional_qualification = fields.Selection([
         ("bachelor", "Cử nhân"),
         ("engineer", "Kỹ sư"),
@@ -63,13 +79,24 @@ class RecruitmentPlanDetail(models.Model):
         string="Thành tiền",
         compute="_compute_total_line_fund",
         store=True,
-        currency_field='currency_id'
+        currency_field='currency_id',
+        readonly=False
     )
 
     @api.depends('requested_quantity', 'expense_per_head')
     def _compute_total_line_fund(self):
         for rec in self:
-            rec.total_line_fund = rec.requested_quantity * rec.expense_per_head
+            rec.total_line_fund = (
+                rec.requested_quantity or 0) * (rec.expense_per_head or 0.0)
+
+    # --- HÀM 3: CHIA TIỀN LẠI (Top-down: Nhập Thành tiền -> tự tính Chi phí/người) ---
+    @api.onchange('total_line_fund')
+    def _onchange_total_line_fund(self):
+        for rec in self:
+            if rec.requested_quantity > 0:
+                rec.expense_per_head = rec.total_line_fund / rec.requested_quantity
+            else:
+                rec.expense_per_head = 0.0
 
     note = fields.Char(string="Ghi chú")
 
@@ -121,7 +148,8 @@ class RecruitmentPlanDetail(models.Model):
         """
         # 1. Tìm ID của trạng thái 'Hợp đồng được ký'
         target_stage_name = 'Hợp đồng được ký'
-        stage = self.env['hr.recruitment.stage'].search([('name', '=', target_stage_name)], limit=1)
+        stage = self.env['hr.recruitment.stage'].search(
+            [('name', '=', target_stage_name)], limit=1)
 
         for line in self:
             # Kiểm tra dữ liệu đầu vào, thêm check department_request
@@ -133,12 +161,15 @@ class RecruitmentPlanDetail(models.Model):
             domain = [
                 ('recruitment_plan_id', '=', line.plan_id.id),     # Đúng Kế hoạch
                 ('job_id', '=', line.recruitment_job.id),           # Đúng Vị trí
-                ('stage_id', '=', stage.id),                        # Đúng Trạng thái
-                ('department_id', '=', line.department_request.id)  # <--- MỚI: Đúng Phòng ban
+                # Đúng Trạng thái
+                ('stage_id', '=', stage.id),
+                # <--- MỚI: Đúng Phòng ban
+                ('department_id', '=', line.department_request.id)
             ]
 
             # 3. Đếm số lượng
-            line.recruited_quantity = self.env['hr.applicant'].search_count(domain)
+            line.recruited_quantity = self.env['hr.applicant'].search_count(
+                domain)
 
     # Nút bấm để mở Wizard Từ chối
     def action_open_reject_wizard(self):
@@ -164,9 +195,11 @@ class RecruitmentPlanDetail(models.Model):
     def _check_nomination_ids_refused_or_archived(self):
         for rec in self:
             apps = rec.with_context(active_test=False).nomination_ids
-            wrong = apps.filtered(lambda a: not (a.refuse_reason_id or a.active is False))
+            wrong = apps.filtered(lambda a: not (
+                a.refuse_reason_id or a.active is False))
             if wrong:
-                names = ", ".join(wrong.mapped('partner_name') or wrong.mapped('name'))
+                names = ", ".join(wrong.mapped('partner_name')
+                                  or wrong.mapped('name'))
                 raise ValidationError(_(
                     "Chỉ được chọn ứng viên có lý do từ chối (refuse_reason_id) "
                     "hoặc đã lưu trữ (archived). Ứng viên không hợp lệ: %s"
@@ -254,13 +287,15 @@ class RecruitmentPlanDetail(models.Model):
             plan_id = (vals or {}).get('plan_id')
             plan = plan_id and self.env['recruitment.plan'].browse(plan_id)
             if not plan or not self._can_edit_in_state(plan.recruitment_status, 'create'):
-                raise AccessError(_("Bạn không có quyền thêm dòng trong trạng thái '%s'.") % plan.recruitment_status)
+                raise AccessError(
+                    _("Bạn không có quyền thêm dòng trong trạng thái '%s'.") % plan.recruitment_status)
         else:
             for rec in self:
                 state = rec.plan_id.recruitment_status
                 if not self._can_edit_in_state(state, op, vals):
                     vn = {'create': 'tạo', 'write': 'sửa', 'unlink': 'xóa'}
-                    raise AccessError(_("Không được %s dòng khi Kế hoạch ở trạng thái '%s'.") % (vn[op], state))
+                    raise AccessError(
+                        _("Không được %s dòng khi Kế hoạch ở trạng thái '%s'.") % (vn[op], state))
 
     def action_toggle_state(self):
         self.ensure_one()
@@ -284,12 +319,15 @@ class RecruitmentPlanDetail(models.Model):
         self._check_edit_permission('unlink')
         return super().unlink()
 
+
 class RecruitmentPlanDetailRejectWizard(models.TransientModel):
     _name = "recruitment.plan.detail.reject.wizard"
     _description = "Wizard Từ chối chi tiết kế hoạch"
 
-    detail_id = fields.Many2one('recruitment.plan.detail', string="Dòng chi tiết", required=True)
-    reason = fields.Text(string="Lý do từ chối", required=True) # Bắt buộc nhập
+    detail_id = fields.Many2one(
+        'recruitment.plan.detail', string="Dòng chi tiết", required=True)
+    reason = fields.Text(string="Lý do từ chối",
+                         required=True)  # Bắt buộc nhập
 
     def action_confirm_reject(self):
         self.ensure_one()

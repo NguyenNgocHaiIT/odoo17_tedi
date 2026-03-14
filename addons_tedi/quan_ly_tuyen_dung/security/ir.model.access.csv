@@ -67,3 +67,5 @@ access_recruitment_progress_wizard,recruitment.progress.wizard,model_recruitment
 access_recruitment_plan_detail_reject_wizard,recruitment_plan_detail_reject_wizard,model_recruitment_plan_detail_reject_wizard,base.group_user,1,1,1,1
 
 
+access_recruitment_plan_director,Recruitment Plan Director,model_recruitment_plan,quan_ly_tuyen_dung.group_recruitment_director,1,1,1,1
+access_recruitment_plan_board,Recruitment Plan Board,model_recruitment_plan,quan_ly_tuyen_dung.group_recruitment_board,1,1,1,1

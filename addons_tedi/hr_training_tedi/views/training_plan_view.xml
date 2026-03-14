@@ -159,7 +159,8 @@
                     <field name="expected_qty" sum="Tổng SL"/>
 
                     <field name="training_fee_per_person"/>
-                    <field name="training_total_fee" invisible="1"/>
+                    <field name="student_count" column_invisible="True"/>
+                    <field name="training_total_fee"/>
                     <field name="note"/>
 
                     <field name="state"
